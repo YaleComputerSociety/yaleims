@@ -64,10 +64,16 @@ This project is a web application for managing and tracking Yale's intramural sp
      CAS_URL=https://secure.its.yale.edu/cas
      ```
 
-5. Start the backend server:
-   ```bash
-   npm start
-   ```
+5. Build and start the backend server:
+   - First, build the project:
+     ```bash
+     npm run build
+     ```
+
+   - Then, start the backend server:
+     ```bash
+     npm run start
+     ```
 
 ### Frontend Setup
 
