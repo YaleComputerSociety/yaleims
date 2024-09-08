@@ -40,7 +40,7 @@ This project is a web application for managing and tracking Yale's intramural sp
 1. Clone the repository:
    ```bash
    git clone https://github.com/your-username/yaleims.git
-   cd yale-intramural-sports/backend
+   cd backend
    ```
 
 2. Install the dependencies:
