@@ -1,32 +1,40 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getFirestore, setLogLevel } from 'firebase/firestore';
-import {doc, setDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc } from "firebase/firestore"; // Import Firestore
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyB4ja4JXughIwxLPEt42mNClHH53sN0D6Q",
+  authDomain: "yims-125a2.firebaseapp.com",
+  projectId: "yims-125a2",
+  storageBucket: "yims-125a2.appspot.com",
+  messagingSenderId: "846558223250",
+  appId: "1:846558223250:web:ff5d718b60b2e6ed003f4b"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app); // Initialize Firestore
 
-const firestore = getFirestore(app);
+export {firestore};
 
-// Enable Firestore debug logging
-setLogLevel('debug');
- 
-};
-
-testFirestoreConnection();
-
-export {app, firestore}
+// // Function to add data
+// async function addUserData(userId, name, email) {
+//     try {
+//       const docRef = await addDoc(collection(firestore, "users"), {
+//         userId: userId,
+//         username: name,
+//         email: email
+//       });
+//       console.log("Document written with ID: ", docRef.id);
+//     } catch (error) {
+//       console.error("Error adding document: ", error);
+//     }
+//   }
+  
+//   // Call the function
+//   addUserData("user1", "Anna Xu", "anna@example.com");

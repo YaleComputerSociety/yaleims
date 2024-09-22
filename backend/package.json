@@ -29,6 +29,7 @@
     "express-session": "^1.18.0",
     "firebase": "^10.13.1",
     "firebase-admin": "^12.4.0",
+    "firebase-tools": "^13.16.0",
     "passport": "^0.7.0",
     "passport-cas": "^0.1.1",
     "redis": "^4.7.0",
