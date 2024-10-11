@@ -78,7 +78,7 @@ For local development, you'll need to install Redis on your machine. If you're u
    brew install redis
    ```
 
-3. Start the Redis server:
+3. Start the Redis server (developers you can skip this for now!):
    ```bash
    redis-server
    ```

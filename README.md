@@ -15,7 +15,7 @@ This project is a web application for managing and tracking Yale's intramural sp
 ## Tech Stack
 
 - **Frontend:** Next.js, React, Tailwind CSS
-- **Backend:** Express.js, Firebase Firestore
+- **Backend:** Express.js, Firebase Firestore, Firebase Cloud Functions
 - **Authentication:** Yale CAS Login
 - **Database:** Firebase Firestore
 - **Deployment:** 
@@ -57,18 +57,7 @@ This project is a web application for managing and tracking Yale's intramural sp
      FIREBASE_PROJECT_ID=your_project_id
      ```
 
-4. Set up Yale CAS for authentication:
-   - Configure the `passport-cas` middleware in the backend.
-   - Add your CAS configuration to the `.env` file:
-     ```bash
-     CAS_URL=https://secure.its.yale.edu/cas
-     ```
-
-5. Build and start the backend server:
-   - First, build the project:
-     ```bash
-     npm run build
-     ```
+5. Start the backend server:
 
    - Then, start the backend server:
      ```bash
@@ -87,7 +76,7 @@ This project is a web application for managing and tracking Yale's intramural sp
    npm install
    ```
 
-3. Set up environment variables in `.env.local` for the frontend:
+3. Set up environment variables in `.env.local` for the frontend (you can skip this for now!):
    ```bash
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
@@ -103,32 +92,3 @@ This project is a web application for managing and tracking Yale's intramural sp
 - Users can log in via Yale CAS.
 - Once logged in, users can view their profile, check their college's leaderboard standings, and browse match schedules and results.
 - Admins, secretaries, and referees can score matches and manage data related to intramural sports.
-
-Here's an updated version of your **Project Structure** section based on the screenshot and folder layout:
-
-```markdown
-## Project Structure
-
-```
-yaleims/
-├── backend/                 # Express.js backend with Firebase and Redis integration
-│   ├── @types/              # Custom TypeScript type definitions
-│   ├── database/            # Database setup and Firestore interaction logic
-│   ├── dist/                # Compiled TypeScript output (after build)
-│   ├── src/                 # Source code for Express server
-│   │   ├── server.ts        # Main server file
-│   ├── package.json         # Backend package configuration
-│   ├── tsconfig.json        # TypeScript configuration for backend
-│   └── README.md            # Backend-specific documentation
-├── frontend/                # Next.js frontend
-│   ├── public/              # Static assets (e.g., images, fonts, etc.)
-│   ├── src/                 # Source code for the frontend
-│   │   ├── components/      # Reusable React components
-│   │   ├── pages/           # Next.js pages (Home, Profile, Scores, etc.)
-│   ├── .eslintrc.json       # ESLint configuration for frontend
-│   ├── next.config.mjs      # Next.js configuration file
-│   ├── package.json         # Frontend package configuration
-│   ├── tailwind.config.ts   # Tailwind CSS configuration
-│   └── README.md            # Frontend-specific documentation
-└── README.md                # Project-level documentation
-```
