@@ -29,7 +29,7 @@ const HomePage: React.FC = () => {
 
   if (!user) {
     console.log("No User")
-    return <p>Loading...</p>; // Show a loading state until login is confirmed
+    return <p>Loading...</p>; // Need to change this so that there is a sign up page 
   }
 
   return (
