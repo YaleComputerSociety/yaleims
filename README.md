@@ -96,3 +96,4 @@ This project is a web application for managing and tracking Yale's intramural sp
 ## Contributers 
 - Anna Xu ('24.5)
 - Daniel Morales ('27)
+- Ephraim Akai-Nettey ('27)
