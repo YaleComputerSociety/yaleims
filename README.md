@@ -92,3 +92,6 @@ This project is a web application for managing and tracking Yale's intramural sp
 - Users can log in via Yale CAS.
 - Once logged in, users can view their profile, check their college's leaderboard standings, and browse match schedules and results.
 - Admins, secretaries, and referees can score matches and manage data related to intramural sports.
+
+## Contributers 
+- Anna Xu ('24.5)
