@@ -5,7 +5,7 @@ import session from 'express-session';
 import dotenv from 'dotenv';
 import cors from "cors";
 import RedisStore from 'connect-redis';
-import { createClient } from 'redis';
+// import { createClient } from 'redis';
 
 dotenv.config();
 
