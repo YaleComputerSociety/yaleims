@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { matches } from '../../data/previousMatches';
 import { colleges } from '../../data/colleges';
 import { sports } from '../../data/sports';
@@ -17,6 +17,14 @@ const ScoresPage: React.FC = () => {
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
+
+  useEffect(() => {
+    // Get a selected college from session storage
+    const selectedCollege = sessionStorage.getItem('selectedCollege');
+    if (selectedCollege) {
+      setFilter((prev) => ({ ...prev, college: selectedCollege }));
+    }
+  }, []);
 
   useEffect(() => {
     const filtered = Object.values(matches).filter((match) => {
