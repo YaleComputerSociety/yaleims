@@ -105,3 +105,4 @@ This project is a web application for managing and tracking Yale's intramural sp
 - Daniel Morales ('27)
 - Ephraim Akai-Nettey ('27)
 - Kaitlyn Oikle ('27)
+- Sam Meddin ('27)
