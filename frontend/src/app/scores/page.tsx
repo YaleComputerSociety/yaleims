@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { matches } from '../../data/previousMatches';
 import { colleges } from '../../data/colleges';
 import { sports } from '../../data/sports';
-
+import Image from 'next/image';
 interface FilterOptions {
   college: string;
   sport: string;
@@ -103,8 +103,9 @@ const ScoresPage: React.FC = () => {
 
       {/* College Summary (only displayed if a college is filtered) */}
       {filter.college && (
-        <div className="mb-8 bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto text-center">
+        <div className="mb-8 bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto text-center flex flex-col items-center justify-center">
           <h2 className="text-3xl font-bold mb-4">{filter.college} Overview</h2>
+          <Image src={`/college_flags/${filter.college}.png`} alt={`${filter.college}_flag`} width="64" height="64"/>
           <div className="text-xl text-gray-700 mb-4">
             <p>Total Points: <span className="font-semibold text-blue-600">{totalPoints}</span></p>
             <p>Games Played: <span className="font-semibold text-blue-600">{gamesPlayed}</span></p>
