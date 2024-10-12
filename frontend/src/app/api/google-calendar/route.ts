@@ -4,9 +4,6 @@ import { google } from 'googleapis';
 export async function POST(req: Request) {
   const { accessToken, match } = await req.json();
 
-  // Log the incoming request body to check its structure
-  console.log('Received request body:', { accessToken, match });
-
   try {
     // Initialize OAuth2 client and set credentials
     const oauth2Client = new google.auth.OAuth2();
