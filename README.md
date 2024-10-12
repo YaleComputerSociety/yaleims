@@ -18,7 +18,7 @@ This project is a web application for managing and tracking Yale's intramural sp
 - **Backend:** Express.js, Firebase Firestore, Firebase Cloud Functions
 - **Authentication:** Yale CAS Login
 - **Database:** Firebase Firestore
-- **Deployment:** 
+- **Deployment:**
 
 ## Features
 
@@ -38,17 +38,20 @@ This project is a web application for managing and tracking Yale's intramural sp
 ### Backend Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/your-username/YaleComputerSociety/yaleims.git
    cd backend
    ```
 
 2. Install the dependencies:
+
    ```bash
    npm install
    ```
 
 3. Set up Firebase:
+
    - Create a Firebase project and enable Firestore.
    - Add your Firebase credentials in a `.env` file:
      ```bash
@@ -57,7 +60,7 @@ This project is a web application for managing and tracking Yale's intramural sp
      FIREBASE_PROJECT_ID=your_project_id
      ```
 
-5. Start the backend server:
+4. Start the backend server:
 
    - Then, start the backend server:
      ```bash
@@ -67,16 +70,19 @@ This project is a web application for managing and tracking Yale's intramural sp
 ### Frontend Setup
 
 1. Navigate to the frontend folder:
+
    ```bash
    cd ../frontend
    ```
 
 2. Install the dependencies:
+
    ```bash
    npm install
    ```
 
 3. Set up environment variables in `.env.local` for the frontend (you can skip this for now!):
+
    ```bash
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
@@ -93,7 +99,9 @@ This project is a web application for managing and tracking Yale's intramural sp
 - Once logged in, users can view their profile, check their college's leaderboard standings, and browse match schedules and results.
 - Admins, secretaries, and referees can score matches and manage data related to intramural sports.
 
-## Contributers 
+## Contributers
+
 - Anna Xu ('24.5)
 - Daniel Morales ('27)
 - Ephraim Akai-Nettey ('27)
+- Kaitlyn Oikle ('27)
