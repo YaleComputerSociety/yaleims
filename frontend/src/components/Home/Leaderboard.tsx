@@ -1,10 +1,20 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { colleges } from '../../data/colleges';
 
 const Leaderboard: React.FC = () => {
+  const router = useRouter();
+
   // Sort colleges by points in descending order
   const collegeArray = Object.values(colleges);
   const sortedColleges = collegeArray.sort((a, b) => b.points - a.points);
+
+  // Function to handle clicking on a college
+  const handleCollegeClick = (collegeName: string) => {
+    // Store the selected college in session storage
+    sessionStorage.setItem('selectedCollege', collegeName);
+    router.push('/scores');
+  };
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -18,7 +28,7 @@ const Leaderboard: React.FC = () => {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {sortedColleges.map((college, index) => (
-            <tr key={college.id}>
+            <tr key={college.id} onClick={() => handleCollegeClick(college.name)} className="hover:bg-gray-100 cursor-pointer" >
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{college.name}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{college.points}</td>
