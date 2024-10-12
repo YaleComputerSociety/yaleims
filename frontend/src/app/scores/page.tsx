@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { matches } from "../../data/previousMatches";
 import { colleges } from "../../data/colleges";
 import { sports } from "../../data/sports";
@@ -13,8 +12,6 @@ interface FilterOptions {
 }
 
 const ScoresPage: React.FC = () => {
-  const router = useRouter();
-
   const [filter, setFilter] = useState<FilterOptions>({
     college: "",
     sport: "",
