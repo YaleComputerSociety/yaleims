@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { matches } from '../../data/previousMatches';
-import { colleges } from '../../data/colleges';
-import { sports } from '../../data/sports';
-import Image from 'next/image';
+import { useEffect, useState } from "react";
+import { matches } from "../../data/previousMatches";
+import { colleges } from "../../data/colleges";
+import { sports } from "../../data/sports";
+import Image from "next/image";
 interface FilterOptions {
   college: string;
   sport: string;
@@ -12,7 +12,11 @@ interface FilterOptions {
 }
 
 const ScoresPage: React.FC = () => {
-  const [filter, setFilter] = useState<FilterOptions>({ college: '', sport: '', date: '' });
+  const [filter, setFilter] = useState<FilterOptions>({
+    college: "",
+    sport: "",
+    date: "",
+  });
   const [filteredMatches, setFilteredMatches] = useState([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
@@ -20,7 +24,7 @@ const ScoresPage: React.FC = () => {
 
   useEffect(() => {
     // Get a selected college from session storage
-    const selectedCollege = sessionStorage.getItem('selectedCollege');
+    const selectedCollege = sessionStorage.getItem("selectedCollege");
     if (selectedCollege) {
       setFilter((prev) => ({ ...prev, college: selectedCollege }));
     }
@@ -28,7 +32,9 @@ const ScoresPage: React.FC = () => {
 
   useEffect(() => {
     const filtered = Object.values(matches).filter((match) => {
-      const collegeMatch = filter.college ? [match.college1, match.college2].includes(filter.college) : true;
+      const collegeMatch = filter.college
+        ? [match.college1, match.college2].includes(filter.college)
+        : true;
       const sportMatch = filter.sport ? match.sport === filter.sport : true;
       const dateMatch = filter.date ? match.date === filter.date : true;
       return collegeMatch && sportMatch && dateMatch;
@@ -42,17 +48,19 @@ const ScoresPage: React.FC = () => {
 
   const calculateCollegeStats = (college: string, matches) => {
     const points = matches.reduce((total, match) => {
-      const sportPoints = match.sport === 'Soccer' ? 11 : 6; // Adjust this as necessary
+      const sportPoints = match.sport === "Soccer" ? 11 : 6; // Adjust this as necessary
       if (match.winner === college) {
         return total + sportPoints; // Full points for win
-      } else if (match.winner === 'Tie') {
+      } else if (match.winner === "Tie") {
         return total + sportPoints / 2; // Half points for tie
       } else {
         return total; // Zero points for loss or forfeit
       }
     }, 0);
 
-    const games = matches.filter((match) => match.college1 === college || match.college2 === college).length;
+    const games = matches.filter(
+      (match) => match.college1 === college || match.college2 === college
+    ).length;
 
     setTotalPoints(points);
     setGamesPlayed(games);
@@ -61,14 +69,23 @@ const ScoresPage: React.FC = () => {
     setRank(1); // Assume rank 1 for now
   };
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+  const handleFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     setFilter((prev) => ({ ...prev, [name]: value }));
   };
 
+  // change the college filter to collegeName
+  const handleCollegeClick = (collegeName: string) => {
+    setFilter((prev) => ({ ...prev, college: collegeName }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Scores and Rankings</h1>
+      <h1 className="text-4xl font-bold text-center mb-8">
+        Scores and Rankings
+      </h1>
 
       {/* Filters */}
       <div className="mb-8 flex space-x-4 justify-center">
@@ -113,11 +130,24 @@ const ScoresPage: React.FC = () => {
       {filter.college && (
         <div className="mb-8 bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto text-center flex flex-col items-center justify-center">
           <h2 className="text-3xl font-bold mb-4">{filter.college} Overview</h2>
-          <Image src={`/college_flags/${filter.college}.png`} alt={`${filter.college}_flag`} width="64" height="64"/>
+          <Image
+            src={`/college_flags/${filter.college}.png`}
+            alt={`${filter.college}_flag`}
+            width="64"
+            height="64"
+          />
           <div className="text-xl text-gray-700 mb-4">
-            <p>Total Points: <span className="font-semibold text-blue-600">{totalPoints}</span></p>
-            <p>Games Played: <span className="font-semibold text-blue-600">{gamesPlayed}</span></p>
-            <p>Rank: <span className="font-semibold text-blue-600">{rank}</span></p>
+            <p>
+              Total Points:{" "}
+              <span className="font-semibold text-blue-600">{totalPoints}</span>
+            </p>
+            <p>
+              Games Played:{" "}
+              <span className="font-semibold text-blue-600">{gamesPlayed}</span>
+            </p>
+            <p>
+              Rank: <span className="font-semibold text-blue-600">{rank}</span>
+            </p>
           </div>
         </div>
       )}
@@ -126,25 +156,61 @@ const ScoresPage: React.FC = () => {
       <table className="min-w-full bg-white shadow-md rounded-lg">
         <thead className="bg-gray-200">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date/Time</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">College 1</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">College 2</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sport</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Date/Time
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              College 1
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              College 2
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Sport
+            </th>
           </tr>
         </thead>
         <tbody>
           {filteredMatches.map((match, index) => {
-            const college1Style = match.winner === match.college1 ? 'bg-green-200' : match.winner === 'Tie' ? 'bg-yellow-200' : 'bg-red-200';
-            const college2Style = match.winner === match.college2 ? 'bg-green-200' : match.winner === 'Tie' ? 'bg-yellow-200' : 'bg-red-200';
+            const college1Style =
+              match.winner === match.college1
+                ? "bg-green-200"
+                : match.winner === "Tie"
+                ? "bg-yellow-200"
+                : "bg-red-200";
+            const college2Style =
+              match.winner === match.college2
+                ? "bg-green-200"
+                : match.winner === "Tie"
+                ? "bg-yellow-200"
+                : "bg-red-200";
 
             return (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap">{match.date} {match.time}</td>
-                <td className={`px-6 py-4 whitespace-nowrap ${college1Style}`}>
-                  {match.college1} {match.winner === match.college1 ? `(+${match.sport === 'Soccer' ? 11 : 6} pts)` : match.winner === 'Tie' ? '(+Half pts)' : ''}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {match.date} {match.time}
                 </td>
-                <td className={`px-6 py-4 whitespace-nowrap ${college2Style}`}>
-                  {match.college2} {match.winner === match.college2 ? `(+${match.sport === 'Soccer' ? 11 : 6} pts)` : match.winner === 'Tie' ? '(+Half pts)' : ''}
+                <td
+                  className={`px-6 py-4 whitespace-nowrap ${college1Style}`}
+                  onClick={() => handleCollegeClick(match.college1)}
+                >
+                  {match.college1}{" "}
+                  {match.winner === match.college1
+                    ? `(+${match.sport === "Soccer" ? 11 : 6} pts)`
+                    : match.winner === "Tie"
+                    ? "(+Half pts)"
+                    : ""}
+                </td>
+                <td
+                  className={`px-6 py-4 whitespace-nowrap ${college2Style}`}
+                  onClick={() => handleCollegeClick(match.college2)}
+                >
+                  {match.college2}{" "}
+                  {match.winner === match.college2
+                    ? `(+${match.sport === "Soccer" ? 11 : 6} pts)`
+                    : match.winner === "Tie"
+                    ? "(+Half pts)"
+                    : ""}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{match.sport}</td>
               </tr>
