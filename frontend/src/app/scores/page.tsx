@@ -1,22 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { matches } from "../../data/previousMatches";
 import { colleges } from "../../data/colleges";
 import { sports } from "../../data/sports";
+import { FiltersContext } from "@src/context/FiltersContext";
 import Image from "next/image";
-interface FilterOptions {
-  college: string;
-  sport: string;
-  date: string;
-}
 
 const ScoresPage: React.FC = () => {
-  const [filter, setFilter] = useState<FilterOptions>({
-    college: "",
-    sport: "",
-    date: "",
-  });
+  const filtersContext = useContext(FiltersContext);
+  const { filter, setFilter } = filtersContext;
+
   const [filteredMatches, setFilteredMatches] = useState([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
