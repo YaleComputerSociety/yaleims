@@ -81,6 +81,11 @@ const ScoresPage: React.FC = () => {
     setFilter((prev) => ({ ...prev, college: collegeName }));
   };
 
+  // change sport filter to sportName
+  const handleSportClick = (sportName: string) => {
+    setFilter((prev) => ({ ...prev, sport: sportName }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <h1 className="text-4xl font-bold text-center mb-8">
@@ -212,7 +217,12 @@ const ScoresPage: React.FC = () => {
                     ? "(+Half pts)"
                     : ""}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">{match.sport}</td>
+                <td
+                  className="px-6 py-4 whitespace-nowrap"
+                  onClick={() => handleSportClick(match.sport)}
+                >
+                  {match.sport}
+                </td>
               </tr>
             );
           })}
