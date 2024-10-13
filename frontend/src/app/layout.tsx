@@ -18,7 +18,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <NavBar />
-        {children}
+        <div className="mb-10"></div>
+        {children}        
       </body>
     </html>
     </GoogleOAuthProvider>
