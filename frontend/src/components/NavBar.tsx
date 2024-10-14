@@ -32,8 +32,9 @@ const NavBar: React.FC = () => {
     <nav className="md:bg-blue-600 bg-blue-600 md:p-4 text-white items-center w-full fixed top-0">
       <div className="md:flex md:block justify-between hidden">
         <div className="flex space-x-4">          
-          {links.slice(0, -1).map((link) => (
+          {links.slice(0, -1).map((link, index) => (
             <Link
+              key={index}
               href={link.href}
               className="hover:underline flex fustify-between items-center"
               onClick={resetFilters}
@@ -58,7 +59,8 @@ const NavBar: React.FC = () => {
         <div className="md:hidden flex flex-col pb-4 pl-4 space-y-2">
           {links.map((link, index) => (
             <Link
-              key={index + '-second'} href={link.href}
+              key={index + '-second'} 
+              href={link.href}
               onClick={turnMenuOff}
               className="hover:underline flex items-center"
             >
