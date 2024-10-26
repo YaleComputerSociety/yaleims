@@ -16,6 +16,11 @@ const ScoresPage: React.FC = () => {
   const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
 
+  // change title of page
+  useEffect(() => {
+    document.title = "Scores";
+  }, []);
+
   useEffect(() => {
     // Get a selected college from session storage
     const selectedCollege = sessionStorage.getItem("selectedCollege");
