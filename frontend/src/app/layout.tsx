@@ -19,6 +19,10 @@ export default function RootLayout({
     <FiltersProvider>
       <GoogleOAuthProvider clientId={CLIENT_ID}>
         <html lang="en">
+          <head>
+            <link rel="icon" href="/favicon.ico" />
+            <title>Yale IMs</title>
+          </head>
           <body className={inter.className}>
             <NavBar />
             <div className="mb-10"></div>

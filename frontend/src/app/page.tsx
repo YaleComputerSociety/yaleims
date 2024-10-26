@@ -1,22 +1,24 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from 'react';
-import Leaderboard from '../components/Home/Leaderboard';
+import { useEffect, useState } from "react";
+import Leaderboard from "../components/Home/Leaderboard";
 
 const HomePage: React.FC = () => {
   const [user, setUser] = useState<string | null>(null);
-  
+
   useEffect(() => {
     // Fetch the session after a small delay
     setTimeout(() => {
-      fetch('http://localhost:5001/api/auth/session', { credentials: 'include' }) 
+      fetch("http://localhost:5001/api/auth/session", {
+        credentials: "include",
+      })
         .then((res) => res.json())
         .then((data) => {
           if (data.netid) {
             setUser(data.netid);
           } else {
-            if (!window.location.href.includes('/api/auth/login')) {
-              window.location.href = 'http://localhost:5001/api/auth/login';
+            if (!window.location.href.includes("/api/auth/login")) {
+              window.location.href = "http://localhost:5001/api/auth/login";
             }
           }
         })
@@ -25,11 +27,10 @@ const HomePage: React.FC = () => {
         });
     }, 500); // 500ms delay to allow session propagation
   }, []);
-  
 
   if (!user) {
-    console.log("No User")
-    return <p>Loading...</p>; // Need to change this so that there is a sign up page 
+    console.log("No User");
+    return <p>Loading...</p>; // Need to change this so that there is a sign up page
   }
 
   return (
