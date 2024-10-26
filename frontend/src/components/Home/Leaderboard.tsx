@@ -30,7 +30,10 @@ const Leaderboard: React.FC = () => {
           {sortedColleges.map((college, index) => (
             <tr key={college.id} onClick={() => handleCollegeClick(college.name)} className="hover:bg-gray-100 cursor-pointer" >
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{college.name}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center">
+                <img src={`/college_flags/${college.name}.png`} alt={college.name} className="w-6 h-6 mr-2 object-contain" />
+                {college.name}
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{college.points}</td>
             </tr>
           ))}
