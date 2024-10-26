@@ -8,19 +8,20 @@ import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { colleges } from "../../data/colleges";
 import { sports } from "../../data/sports";
+import { Match } from "../../data/matches";
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your actual client ID
 const localizer = momentLocalizer(moment);
 
 const SchedulePage: React.FC = () => {
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [selectedMatch, setSelectedMatch] = useState(null);
-  const [signUpModalOpen, setSignUpModalOpen] = useState(false);
-  const [filteredMatches, setFilteredMatches] = useState(
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [signUpModalOpen, setSignUpModalOpen] = useState<boolean>(false);
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>(
     Object.values(matches)
   );
-  const [collegeFilter, setCollegeFilter] = useState("");
-  const [sportFilter, setSportFilter] = useState("");
+  const [collegeFilter, setCollegeFilter] = useState<string>("");
+  const [sportFilter, setSportFilter] = useState<string>("");
 
   // change title of page
   useEffect(() => {
@@ -78,7 +79,7 @@ const SchedulePage: React.FC = () => {
   });
 
   // Handle match click
-  const handleMatchClick = (match: any) => {
+  const handleMatchClick = (match: Match) => {
     setSelectedMatch(match);
     setSignUpModalOpen(true);
   };
