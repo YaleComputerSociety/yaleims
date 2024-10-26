@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState, useContext } from "react";
-import { matches } from "../../data/previousMatches";
-import { colleges } from "../../data/colleges";
-import { sports } from "../../data/sports";
+import { useEffect, useState } from 'react';
+import { matches } from '../../data/previousMatches';
+import { colleges } from '../../data/colleges';
+import { sports } from '../../data/sports';
+import Image from 'next/image';
+import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from "@src/context/FiltersContext";
 import Image from "next/image";
+
+interface FilterOptions {
+  college: string;
+  sport: string;
+  date: string;
+}
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
@@ -22,6 +30,11 @@ const ScoresPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Display the loading screen
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // Wait for 1 second and then hide the loading screen
+    
     // Get a selected college from session storage
     const selectedCollege = sessionStorage.getItem("selectedCollege");
     if (selectedCollege) {
@@ -86,49 +99,49 @@ const ScoresPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">
-        Scores and Rankings
-      </h1>
+    <div> {isLoading ? <LoadingScreen /> : (
+    
+      <div className="min-h-screen bg-gray-100 p-8">
+        <h1 className="text-4xl font-bold text-center mb-8">Scores and Rankings</h1>
 
-      {/* Filters */}
-      <div className="mb-8 flex space-x-4 justify-center">
-        <select
-          name="college"
-          value={filter.college}
-          onChange={handleFilterChange}
-          className="p-2 border border-gray-300 rounded-lg"
-        >
-          <option value="">Filter by College</option>
-          {Object.values(colleges).map((college) => (
-            <option key={college.id} value={college.name}>
-              {college.name}
-            </option>
-          ))}
-        </select>
+        {/* Filters */}
+        <div className="mb-8 flex space-x-4 justify-center">
+          <select
+            name="college"
+            value={filter.college}
+            onChange={handleFilterChange}
+            className="p-2 border border-gray-300 rounded-lg"
+          >
+            <option value="">Filter by College</option>
+            {Object.values(colleges).map((college) => (
+              <option key={college.id} value={college.name}>
+                {college.name}
+              </option>
+            ))}
+          </select>
 
-        <select
-          name="sport"
-          value={filter.sport}
-          onChange={handleFilterChange}
-          className="p-2 border border-gray-300 rounded-lg"
-        >
-          <option value="">Filter by Sport</option>
-          {Object.values(sports).map((sport) => (
-            <option key={sport.id} value={sport.name}>
-              {sport.name}
-            </option>
-          ))}
-        </select>
+          <select
+            name="sport"
+            value={filter.sport}
+            onChange={handleFilterChange}
+            className="p-2 border border-gray-300 rounded-lg"
+          >
+            <option value="">Filter by Sport</option>
+            {Object.values(sports).map((sport) => (
+              <option key={sport.id} value={sport.name}>
+                {sport.name}
+              </option>
+            ))}
+          </select>
 
-        <input
-          type="date"
-          name="date"
-          value={filter.date}
-          onChange={handleFilterChange}
-          className="p-2 border border-gray-300 rounded-lg"
-        />
-      </div>
+          <input
+            type="date"
+            name="date"
+            value={filter.date}
+            onChange={handleFilterChange}
+            className="p-2 border border-gray-300 rounded-lg"
+          />
+        </div>
 
       {/* College Summary (only displayed if a college is filtered) */}
       {filter.college && (
