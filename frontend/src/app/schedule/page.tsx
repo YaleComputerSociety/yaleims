@@ -6,8 +6,8 @@ import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { colleges } from '../../data/colleges';
-import { sports } from '../../data/sports';
+import { colleges } from "../../data/colleges";
+import { sports } from "../../data/sports";
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your actual client ID
 const localizer = momentLocalizer(moment);
@@ -16,9 +16,16 @@ const SchedulePage: React.FC = () => {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [signUpModalOpen, setSignUpModalOpen] = useState(false);
-  const [filteredMatches, setFilteredMatches] = useState(Object.values(matches));
+  const [filteredMatches, setFilteredMatches] = useState(
+    Object.values(matches)
+  );
   const [collegeFilter, setCollegeFilter] = useState("");
   const [sportFilter, setSportFilter] = useState("");
+
+  // change title of page
+  useEffect(() => {
+    document.title = "Schedule";
+  }, []);
 
   // Sort matches by date and apply filters
   useEffect(() => {
@@ -105,14 +112,18 @@ const SchedulePage: React.FC = () => {
             onClick={handleViewToggle}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg"
           >
-            {view === "list" ? "Switch to Calendar View" : "Switch to List View"}
+            {view === "list"
+              ? "Switch to Calendar View"
+              : "Switch to List View"}
           </button>
         </div>
 
         {/* Filters */}
         <div className="flex justify-center space-x-4 mb-8">
           <div>
-            <label className="block text-lg font-bold mb-2">Filter by College</label>
+            <label className="block text-lg font-bold mb-2">
+              Filter by College
+            </label>
             <select
               value={collegeFilter}
               onChange={(e) => setCollegeFilter(e.target.value)}
@@ -128,7 +139,9 @@ const SchedulePage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-lg font-bold mb-2">Filter by Sport</label>
+            <label className="block text-lg font-bold mb-2">
+              Filter by Sport
+            </label>
             <select
               value={sportFilter}
               onChange={(e) => setSportFilter(e.target.value)}
@@ -148,15 +161,26 @@ const SchedulePage: React.FC = () => {
         {view === "list" && (
           <ul className="space-y-4">
             {filteredMatches.map((match, index) => (
-              <li key={index} className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out">
+              <li
+                key={index}
+                className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out"
+              >
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="text-2xl font-bold mb-1 text-gray-900">
-                      {match.college1} <span className="text-green-500">vs</span> {match.college2}
+                      {match.college1}{" "}
+                      <span className="text-green-500">vs</span>{" "}
+                      {match.college2}
                     </div>
-                    <div className="text-gray-600 font-semibold">{match.sport}</div>
-                    <div className="text-gray-500">{match.date} at {match.time}</div>
-                    <div className="text-gray-500">Location: {match.location}</div>
+                    <div className="text-gray-600 font-semibold">
+                      {match.sport}
+                    </div>
+                    <div className="text-gray-500">
+                      {match.date} at {match.time}
+                    </div>
+                    <div className="text-gray-500">
+                      Location: {match.location}
+                    </div>
                   </div>
                   <button
                     onClick={() => handleMatchClick(match)}
