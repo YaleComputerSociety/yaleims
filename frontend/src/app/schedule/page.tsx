@@ -17,10 +17,17 @@ const SchedulePage: React.FC = () => {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [signUpModalOpen, setSignUpModalOpen] = useState(false);
-  const [filteredMatches, setFilteredMatches] = useState(Object.values(matches));
+  const [filteredMatches, setFilteredMatches] = useState(
+    Object.values(matches)
+  );
   const [collegeFilter, setCollegeFilter] = useState("");
   const [sportFilter, setSportFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
+  // change title of page
+  useEffect(() => {
+    document.title = "Schedule";
+  }, []);
 
   // Sort matches by date and apply filters
   useEffect(() => {
