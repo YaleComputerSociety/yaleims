@@ -1,24 +1,19 @@
 "use client";
 
 import { useEffect, useState, useContext } from 'react';
-import { matches } from '../../data/previousMatches';
+import { matches, Match } from '../../data/previousMatches';
 import { colleges } from '../../data/colleges';
 import { sports } from '../../data/sports';
 import Image from 'next/image';
 import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from "@src/context/FiltersContext";
 
-interface FilterOptions {
-  college: string;
-  sport: string;
-  date: string;
-}
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
 
-  const [filteredMatches, setFilteredMatches] = useState([]);
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
@@ -58,8 +53,8 @@ const ScoresPage: React.FC = () => {
     }
   }, [filter]);
 
-  const calculateCollegeStats = (college: string, matches) => {
-    const points = matches.reduce((total, match) => {
+  const calculateCollegeStats = (college: string, matches: Match[]) => {
+    const points = matches.reduce((total: number, match) => {
       const sportPoints = match.sport === "Soccer" ? 11 : 6; // Adjust this as necessary
       if (match.winner === college) {
         return total + sportPoints; // Full points for win
