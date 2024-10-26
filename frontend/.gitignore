@@ -6,6 +6,8 @@ node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+../dump.rdb
+dump.rdb
 
 # testing
 /coverage
