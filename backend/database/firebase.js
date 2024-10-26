@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc } from "firebase/firestore"; // Import Firestore
 
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -20,7 +21,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app); // Initialize Firestore
 
-export {firestore};
+// Import Cloud Functions
+const functions = require("../functions/index.js");
+
+module.exports = { firestore, functions };
+
 
 // // Function to add data
 // async function addUserData(userId, name, email) {
