@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from 'react';
 import Leaderboard from '../components/Home/Leaderboard';
@@ -7,7 +7,12 @@ import LoadingScreen from '../components/LoadingScreen';
 const HomePage: React.FC = () => {
   const [user, setUser] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
+  // change title of page
+  useEffect(() => {
+    document.title = "Yale IMs";
+  }, []);
+
   useEffect(() => {
     
     // Display the loading
@@ -17,14 +22,16 @@ const HomePage: React.FC = () => {
     
     // Fetch the session after a small delay
     setTimeout(() => {
-      fetch('http://localhost:5001/api/auth/session', { credentials: 'include' }) 
+      fetch("http://localhost:5001/api/auth/session", {
+        credentials: "include",
+      })
         .then((res) => res.json())
         .then((data) => {
           if (data.netid) {
             setUser(data.netid);
           } else {
-            if (!window.location.href.includes('/api/auth/login')) {
-              window.location.href = 'http://localhost:5001/api/auth/login';
+            if (!window.location.href.includes("/api/auth/login")) {
+              window.location.href = "http://localhost:5001/api/auth/login";
             }
           }
         })
@@ -33,7 +40,6 @@ const HomePage: React.FC = () => {
         });
     }, 500); // 500ms delay to allow session propagation
   }, []);
-  
 
   if (!user) {
     console.log("No User")
