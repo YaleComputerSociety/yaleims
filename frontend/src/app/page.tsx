@@ -2,11 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import Leaderboard from '../components/Home/Leaderboard';
+import LoadingScreen from '../components/LoadingScreen';
 
 const HomePage: React.FC = () => {
   const [user, setUser] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
+    
+    // Display the loading
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // Wait for 3 seconds and then hide the loading screen
+    
     // Fetch the session after a small delay
     setTimeout(() => {
       fetch('http://localhost:5001/api/auth/session', { credentials: 'include' }) 
@@ -29,7 +37,7 @@ const HomePage: React.FC = () => {
 
   if (!user) {
     console.log("No User")
-    return <p>Loading...</p>; // Need to change this so that there is a sign up page 
+    return <LoadingScreen/>; 
   }
 
   return (
