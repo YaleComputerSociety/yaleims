@@ -28,10 +28,10 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "firebase": "^10.13.1",
-    "firebase-admin": "^12.4.0",
-    "firebase-tools": "^13.16.0",
+    "firebase-admin": "^12.6.0",
+    "firebase-tools": "^1.2.0",
     "passport": "^0.7.0",
-    "passport-cas": "^0.1.1",
+    "passport-cas": "^0.0.3",
     "redis": "^4.7.0",
     "ts-node": "^10.9.2"
   }
