@@ -181,12 +181,16 @@ const ScoresPage: React.FC = () => {
                 ? "text-green-500"
                 : match.winner === "Tie"
                 ? "text-yellow-500"
+                : match.winner === "Forfeit"
+                ? "text-gray-500"
                 : "text-red-500";
             const college2Style =
               match.winner === match.college2
                 ? "text-green-500"
                 : match.winner === "Tie"
                 ? "text-yellow-500"
+                : match.winner === "Forfeit"
+                ? "text-gray-500"
                 : "text-red-500";
 
             const college1Status: string =
@@ -194,6 +198,8 @@ const ScoresPage: React.FC = () => {
                 ? "W"
                 : match.winner === "Tie"
                 ? "T"
+                : match.winner === "Forfeit"
+                ? "F"
                 : "L";
 
             const college2Status: string =
@@ -201,6 +207,8 @@ const ScoresPage: React.FC = () => {
                 ? "W"
                 : match.winner === "Tie"
                 ? "T"
+                : match.winner === "Forfeit"
+                ? "F"
                 : "L";
 
             return (
