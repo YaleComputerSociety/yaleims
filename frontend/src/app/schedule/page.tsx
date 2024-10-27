@@ -6,8 +6,9 @@ import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { colleges } from "../../data/colleges";
-import { sports } from "../../data/sports";
+import { colleges } from '../../data/colleges';
+import { sports } from '../../data/sports';
+import LoadingScreen from '@src/components/LoadingScreen';
 import { Match } from "../../data/matches";
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your actual client ID
@@ -22,6 +23,7 @@ const SchedulePage: React.FC = () => {
   );
   const [collegeFilter, setCollegeFilter] = useState<string>("");
   const [sportFilter, setSportFilter] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   // change title of page
   useEffect(() => {
@@ -30,6 +32,11 @@ const SchedulePage: React.FC = () => {
 
   // Sort matches by date and apply filters
   useEffect(() => {
+    // Display the loading screen
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // Wait for 1 second and then hide the loading screen
+
     const sortedMatches = Object.values(matches).sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
@@ -103,138 +110,127 @@ const SchedulePage: React.FC = () => {
   };
 
   return (
-    <GoogleOAuthProvider clientId={CLIENT_ID}>
-      <div className="min-h-screen bg-gray-100 p-8">
-        <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
 
-        {/* Toggle View Button */}
-        <div className="text-center mb-8">
-          <button
-            onClick={handleViewToggle}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-          >
-            {view === "list"
-              ? "Switch to Calendar View"
-              : "Switch to List View"}
-          </button>
-        </div>
+    <div> {isLoading ? <LoadingScreen /> : (
 
-        {/* Filters */}
-        <div className="flex justify-center space-x-4 mb-8">
-          <div>
-            <label className="block text-lg font-bold mb-2">
-              Filter by College
-            </label>
-            <select
-              value={collegeFilter}
-              onChange={(e) => setCollegeFilter(e.target.value)}
-              className="p-2 border border-gray-300 rounded-lg w-48"
+      <GoogleOAuthProvider clientId={CLIENT_ID}>
+        <div className="min-h-screen bg-gray-100 p-8">
+          <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
+
+          {/* Toggle View Button */}
+          <div className="text-center mb-8">
+            <button
+              onClick={handleViewToggle}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
             >
-              <option value="">All Colleges</option>
-              {Object.values(colleges).map((college) => (
-                <option key={college.id} value={college.name}>
-                  {college.name}
-                </option>
-              ))}
-            </select>
+              {view === "list" ? "Switch to Calendar View" : "Switch to List View"}
+            </button>
           </div>
 
-          <div>
-            <label className="block text-lg font-bold mb-2">
-              Filter by Sport
-            </label>
-            <select
-              value={sportFilter}
-              onChange={(e) => setSportFilter(e.target.value)}
-              className="p-2 border border-gray-300 rounded-lg w-48"
-            >
-              <option value="">All Sports</option>
-              {Object.values(sports).map((sport) => (
-                <option key={sport.id} value={sport.name}>
-                  {sport.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* List View */}
-        {view === "list" && (
-          <ul className="space-y-4">
-            {filteredMatches.map((match, index) => (
-              <li
-                key={index}
-                className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out"
+          {/* Filters */}
+          <div className="flex justify-center space-x-4 mb-8">
+            <div>
+              <label className="block text-lg font-bold mb-2">Filter by College</label>
+              <select
+                value={collegeFilter}
+                onChange={(e) => setCollegeFilter(e.target.value)}
+                className="p-2 border border-gray-300 rounded-lg w-48"
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-2xl font-bold mb-1 text-gray-900">
-                      {match.college1}{" "}
-                      <span className="text-green-500">vs</span>{" "}
-                      {match.college2}
-                    </div>
-                    <div className="text-gray-600 font-semibold">
-                      {match.sport}
-                    </div>
-                    <div className="text-gray-500">
-                      {match.date} at {match.time}
-                    </div>
-                    <div className="text-gray-500">
-                      Location: {match.location}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleMatchClick(match)}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 focus:outline-none transition duration-300 ease-in-out"
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                <option value="">All Colleges</option>
+                {Object.values(colleges).map((college) => (
+                  <option key={college.id} value={college.name}>
+                    {college.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {/* Calendar View */}
-        {view === "calendar" && (
-          <Calendar
-            localizer={localizer}
-            events={calendarEvents}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: 500 }}
-            onSelectEvent={(event) => handleMatchClick(event.match)}
-          />
-        )}
-
-        {/* Sign-Up Modal */}
-        {signUpModalOpen && selectedMatch && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-            <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
-              <h2 className="text-2xl font-bold mb-4">Sign Up for Match</h2>
-              <p>
-                {selectedMatch.college1} vs {selectedMatch.college2} <br />
-                {selectedMatch.sport} <br />
-                {selectedMatch.date} at {selectedMatch.time} <br />
-                Location: {selectedMatch.location}
-              </p>
-              <button
-                onClick={handleSignUp}
-                className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg"
+            <div>
+              <label className="block text-lg font-bold mb-2">Filter by Sport</label>
+              <select
+                value={sportFilter}
+                onChange={(e) => setSportFilter(e.target.value)}
+                className="p-2 border border-gray-300 rounded-lg w-48"
               >
-                Confirm Sign-Up
-              </button>
-              <button
-                onClick={() => setSignUpModalOpen(false)}
-                className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg"
-              >
-                Cancel
-              </button>
+                <option value="">All Sports</option>
+                {Object.values(sports).map((sport) => (
+                  <option key={sport.id} value={sport.name}>
+                    {sport.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-        )}
-      </div>
-    </GoogleOAuthProvider>
+
+          {/* List View */}
+          {view === "list" && (
+            <ul className="space-y-4">
+              {filteredMatches.map((match, index) => (
+                <li key={index} className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-2xl font-bold mb-1 text-gray-900">
+                        {match.college1} <span className="text-green-500">vs</span> {match.college2}
+                      </div>
+                      <div className="text-gray-600 font-semibold">{match.sport}</div>
+                      <div className="text-gray-500">{match.date} at {match.time}</div>
+                      <div className="text-gray-500">Location: {match.location}</div>
+                    </div>
+                    <button
+                      onClick={() => handleMatchClick(match)}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 focus:outline-none transition duration-300 ease-in-out"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Calendar View */}
+          {view === "calendar" && (
+            <Calendar
+              localizer={localizer}
+              events={calendarEvents}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 500 }}
+              onSelectEvent={(event) => handleMatchClick(event.match)}
+            />
+          )}
+
+          {/* Sign-Up Modal */}
+          {signUpModalOpen && selectedMatch && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+              <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
+                <h2 className="text-2xl font-bold mb-4">Sign Up for Match</h2>
+                <p>
+                  {selectedMatch.college1} vs {selectedMatch.college2} <br />
+                  {selectedMatch.sport} <br />
+                  {selectedMatch.date} at {selectedMatch.time} <br />
+                  Location: {selectedMatch.location}
+                </p>
+                <button
+                  onClick={handleSignUp}
+                  className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg"
+                >
+                  Confirm Sign-Up
+                </button>
+                <button
+                  onClick={() => setSignUpModalOpen(false)}
+                  className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </GoogleOAuthProvider>
+
+    ) }</div>
+
   );
 };
 
