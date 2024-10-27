@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useState, useContext } from "react";
-import { matches } from "../../data/previousMatches";
-import { colleges } from "../../data/colleges";
-import { sports } from "../../data/sports";
+import { useEffect, useState, useContext } from 'react';
+import { matches, Match } from '../../data/previousMatches';
+import { colleges } from '../../data/colleges';
+import { sports } from '../../data/sports';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from "@src/context/FiltersContext";
-import Image from "next/image";
+
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
-
-  const [filteredMatches, setFilteredMatches] = useState([]);
+  const router = useRouter();
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // change title of page
   useEffect(() => {
@@ -22,6 +26,11 @@ const ScoresPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Display the loading screen
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // Wait for 1 second and then hide the loading screen
+    
     // Get a selected college from session storage
     const selectedCollege = sessionStorage.getItem("selectedCollege");
     if (selectedCollege) {
@@ -45,8 +54,8 @@ const ScoresPage: React.FC = () => {
     }
   }, [filter]);
 
-  const calculateCollegeStats = (college: string, matches) => {
-    const points = matches.reduce((total, match) => {
+  const calculateCollegeStats = (college: string, matches: Match[]) => {
+    const points = matches.reduce((total: number, match) => {
       const sportPoints = match.sport === "Soccer" ? 11 : 6; // Adjust this as necessary
       if (match.winner === college) {
         return total + sportPoints; // Full points for win
@@ -83,6 +92,13 @@ const ScoresPage: React.FC = () => {
   // change sport filter to sportName
   const handleSportClick = (sportName: string) => {
     setFilter((prev) => ({ ...prev, sport: sportName }));
+  };
+
+  // Function to handle clicking on a college
+  const handleScheduleButton = (collegeName: string) => {
+    // Store the selected college in session storage
+    sessionStorage.setItem('selectedCollege', collegeName);
+    router.push('/schedule');
   };
 
   return (
@@ -152,6 +168,19 @@ const ScoresPage: React.FC = () => {
             <p>
               Rank: <span className="font-semibold text-blue-600">{rank}</span>
             </p>
+
+            {/* See schedule button*/}
+            <div className="text-center mb-0">
+              <button
+                // onClick={handleViewToggle}
+                onClick={() => handleScheduleButton(filter.college)}
+                className="px-6 py-2 mt-5 bg-blue-600 text-white rounded-lg"
+              >
+                Schedule
+              </button>
+            </div>
+
+
           </div>
         </div>
       )}
@@ -178,16 +207,38 @@ const ScoresPage: React.FC = () => {
           {filteredMatches.map((match, index) => {
             const college1Style =
               match.winner === match.college1
-                ? "bg-green-200"
+                ? "text-green-500"
                 : match.winner === "Tie"
-                ? "bg-yellow-200"
-                : "bg-red-200";
+                ? "text-yellow-500"
+                : match.winner === "Forfeit"
+                ? "text-gray-500"
+                : "text-red-500";
             const college2Style =
               match.winner === match.college2
-                ? "bg-green-200"
+                ? "text-green-500"
                 : match.winner === "Tie"
-                ? "bg-yellow-200"
-                : "bg-red-200";
+                ? "text-yellow-500"
+                : match.winner === "Forfeit"
+                ? "text-gray-500"
+                : "text-red-500";
+
+            const college1Status: string =
+              match.winner === match.college1
+                ? "W"
+                : match.winner === "Tie"
+                ? "T"
+                : match.winner === "Forfeit"
+                ? "F"
+                : "L";
+
+            const college2Status: string =
+              match.winner === match.college2
+                ? "W"
+                : match.winner === "Tie"
+                ? "T"
+                : match.winner === "Forfeit"
+                ? "F"
+                : "L";
 
             return (
               <tr key={index}>
@@ -195,29 +246,25 @@ const ScoresPage: React.FC = () => {
                   {match.date} {match.time}
                 </td>
                 <td
-                  className={`px-6 py-4 whitespace-nowrap ${college1Style}`}
+                  className={`px-6 py-4 whitespace-nowrap hover:cursor-pointer hover:bg-gray-100`}
                   onClick={() => handleCollegeClick(match.college1)}
                 >
-                  {match.college1}{" "}
-                  {match.winner === match.college1
-                    ? `(+${match.sport === "Soccer" ? 11 : 6} pts)`
-                    : match.winner === "Tie"
-                    ? "(+Half pts)"
-                    : ""}
+                  <div className="flex justify-between">
+                    <span>{match.college1}</span>
+                    <span className={`${college1Style}`}>{college1Status}</span>
+                  </div>
                 </td>
                 <td
-                  className={`px-6 py-4 whitespace-nowrap ${college2Style}`}
+                  className={`px-6 py-4 whitespace-nowrap hover:cursor-pointer hover:bg-gray-100`}
                   onClick={() => handleCollegeClick(match.college2)}
                 >
-                  {match.college2}{" "}
-                  {match.winner === match.college2
-                    ? `(+${match.sport === "Soccer" ? 11 : 6} pts)`
-                    : match.winner === "Tie"
-                    ? "(+Half pts)"
-                    : ""}
+                  <div className="flex justify-between">
+                    <span>{match.college2}</span>
+                    <span className={`${college2Style}`}>{college2Status}</span>
+                  </div>
                 </td>
                 <td
-                  className="px-6 py-4 whitespace-nowrap"
+                  className="px-6 py-4 whitespace-nowrap hover:cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSportClick(match.sport)}
                 >
                   {match.sport}
@@ -229,6 +276,6 @@ const ScoresPage: React.FC = () => {
       </table>
     </div>
   );
-};
-
+}
+  
 export default ScoresPage;
