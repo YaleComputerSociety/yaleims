@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Leaderboard from "../components/Home/Leaderboard";
+import { useEffect, useState } from 'react';
+import Leaderboard from '../components/Home/Leaderboard';
+import LoadingScreen from '../components/LoadingScreen';
 
 const HomePage: React.FC = () => {
   const [user, setUser] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // change title of page
   useEffect(() => {
@@ -12,6 +14,12 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    
+    // Display the loading
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // Wait for 3 seconds and then hide the loading screen
+    
     // Fetch the session after a small delay
     setTimeout(() => {
       fetch("http://localhost:5001/api/auth/session", {
@@ -34,8 +42,8 @@ const HomePage: React.FC = () => {
   }, []);
 
   if (!user) {
-    console.log("No User");
-    return <p>Loading...</p>; // Need to change this so that there is a sign up page
+    console.log("No User")
+    return <LoadingScreen/>; 
   }
 
   return (
