@@ -30,7 +30,56 @@ interface Match {
     date: string;
     time: string;
     winner: string;
+}
+
+interface User {
+    firstname: string;
+    lastname: string;
+    matches: string[];
+    points: number;
+    college: string;
   }
+
+export const getMatches = functions.https.onRequest(async (req, res): Promise<void> => {
+  try {
+    const db = admin.firestore();
+    const matchesRef = db.collection('Matches');
+    const snapshot = await matchesRef.get();
+
+    if (snapshot.empty) {
+      res.status(404).send('No matches found');
+      return;
+    }
+
+    const matches: Match[] = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+
+      // Fetch referenced documents
+      const college1Doc = await data.college1.get();
+      const college2Doc = await data.college2.get();
+      const winnerDoc = data.winner ? await data.winner.get() : null;
+
+      matches.push({
+        id: doc.id,
+        college1: college1Doc.data().name,
+        college2: college2Doc.data().name,
+        sport: data.sport,
+        date: data.date,
+        time: data.time,
+        location: data.location,
+        winner: winnerDoc ? winnerDoc.data().name : null,
+        college1_participants: data.college1_participants,
+        college2_participants: data.college2_participants
+      } as Match);
+    }
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 
 // Start writing functions
@@ -53,7 +102,7 @@ export const getLeaderboard = functions.https.onRequest(async (req, res) => {
         }
 
         const leaderboard: College[] = [];
-        snapshot.forEach(doc => {\
+        snapshot.forEach(doc => {
             const data = doc.data();
             leaderboard.push({ id: doc.id, name: data.name, points: data.points } as College);
         });
@@ -97,7 +146,7 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
     }
   });
 
-  export const getSchedule = functions.https.onRequest(async (req, res): Promise<void> => {
+export const getSchedule = functions.https.onRequest(async (req, res): Promise<void> => {
     try {
       const db = admin.firestore();
       const matchesRef = db.collection('Matches');
@@ -134,6 +183,42 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
       res.status(200).json(matches);
     } catch (error) {
       console.error('Error fetching matches:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
+
+export const getUser = functions.https.onRequest(async (req, res): Promise<void> => {
+    try {
+      const db = admin.firestore();
+      const netid = req.query.netid as string;
+  
+      if (!netid) {
+        res.status(400).send('Missing netid parameter');
+        return;
+      }
+  
+      const usersRef = db.collection('users').where('netid', '==', netid);
+      const snapshot = await usersRef.get();
+  
+      if (snapshot.empty) {
+        res.status(404).send('User not found');
+        return;
+      }
+  
+      const userDoc = snapshot.docs[0];
+      const userData = userDoc.data();
+  
+      const user: User = {
+        firstname: userData.firstname,
+        lastname: userData.lastname,
+        matches: userData.matches,
+        points: userData.points,
+        college: userData.college
+      };
+  
+      res.status(200).json(user);
+    } catch (error) {
+      console.error('Error fetching user:', error);
       res.status(500).send('Internal Server Error');
     }
   });
