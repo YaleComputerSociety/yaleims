@@ -4,6 +4,7 @@ import { useEffect, useState, useContext } from 'react';
 import { matches, Match } from '../../data/previousMatches';
 import { colleges } from '../../data/colleges';
 import { sports } from '../../data/sports';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from "@src/context/FiltersContext";
@@ -12,7 +13,7 @@ import { FiltersContext } from "@src/context/FiltersContext";
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
-
+  const router = useRouter();
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
@@ -93,6 +94,13 @@ const ScoresPage: React.FC = () => {
     setFilter((prev) => ({ ...prev, sport: sportName }));
   };
 
+  // Function to handle clicking on a college
+  const handleScheduleButton = (collegeName: string) => {
+    // Store the selected college in session storage
+    sessionStorage.setItem('selectedCollege', collegeName);
+    router.push('/schedule');
+  };
+
   return (
     <div>
       {isLoading ? (
@@ -164,6 +172,18 @@ const ScoresPage: React.FC = () => {
                 <p>
                   Rank: <span className="font-semibold text-blue-600">{rank}</span>
                 </p>
+
+                {/* See schedule button*/}
+                <div className="text-center mb-0">
+                  <button
+                    // onClick={handleViewToggle}
+                    onClick={() => handleScheduleButton(filter.college)}
+                    className="px-6 py-2 mt-5 bg-blue-600 text-white rounded-lg"
+                  >
+                    Schedule
+                  </button>
+                </div>
+
               </div>
             </div>
           )}

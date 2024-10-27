@@ -28,6 +28,13 @@ const SchedulePage: React.FC = () => {
   // change title of page
   useEffect(() => {
     document.title = "Schedule";
+
+    // Get a selected college from session storage
+    const selectedCollege = sessionStorage.getItem("selectedCollege");
+    if (selectedCollege) {
+      setCollegeFilter(selectedCollege);
+    }
+
   }, []);
 
   // Sort matches by date and apply filters
