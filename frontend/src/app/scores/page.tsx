@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useState, useContext } from "react";
-import { matches } from "../../data/previousMatches";
-import { colleges } from "../../data/colleges";
-import { sports } from "../../data/sports";
+import { useEffect, useState, useContext } from 'react';
+import { matches, Match } from '../../data/previousMatches';
+import { colleges } from '../../data/colleges';
+import { sports } from '../../data/sports';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from "@src/context/FiltersContext";
-import Image from "next/image";
+
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
-
-  const [filteredMatches, setFilteredMatches] = useState([]);
+  const router = useRouter();
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
   const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // change title of page
   useEffect(() => {
@@ -22,6 +26,11 @@ const ScoresPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Display the loading screen
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // Wait for 1 second and then hide the loading screen
+    
     // Get a selected college from session storage
     const selectedCollege = sessionStorage.getItem("selectedCollege");
     if (selectedCollege) {
@@ -45,8 +54,8 @@ const ScoresPage: React.FC = () => {
     }
   }, [filter]);
 
-  const calculateCollegeStats = (college: string, matches) => {
-    const points = matches.reduce((total, match) => {
+  const calculateCollegeStats = (college: string, matches: Match[]) => {
+    const points = matches.reduce((total: number, match) => {
       const sportPoints = match.sport === "Soccer" ? 11 : 6; // Adjust this as necessary
       if (match.winner === college) {
         return total + sportPoints; // Full points for win
@@ -83,6 +92,13 @@ const ScoresPage: React.FC = () => {
   // change sport filter to sportName
   const handleSportClick = (sportName: string) => {
     setFilter((prev) => ({ ...prev, sport: sportName }));
+  };
+
+  // Function to handle clicking on a college
+  const handleScheduleButton = (collegeName: string) => {
+    // Store the selected college in session storage
+    sessionStorage.setItem('selectedCollege', collegeName);
+    router.push('/schedule');
   };
 
   return (
@@ -152,6 +168,19 @@ const ScoresPage: React.FC = () => {
             <p>
               Rank: <span className="font-semibold text-blue-600">{rank}</span>
             </p>
+
+            {/* See schedule button*/}
+            <div className="text-center mb-0">
+              <button
+                // onClick={handleViewToggle}
+                onClick={() => handleScheduleButton(filter.college)}
+                className="px-6 py-2 mt-5 bg-blue-600 text-white rounded-lg"
+              >
+                Schedule
+              </button>
+            </div>
+
+
           </div>
         </div>
       )}
@@ -247,6 +276,6 @@ const ScoresPage: React.FC = () => {
       </table>
     </div>
   );
-};
-
+}
+  
 export default ScoresPage;
