@@ -178,16 +178,30 @@ const ScoresPage: React.FC = () => {
           {filteredMatches.map((match, index) => {
             const college1Style =
               match.winner === match.college1
-                ? "bg-green-200"
+                ? "text-green-500"
                 : match.winner === "Tie"
-                ? "bg-yellow-200"
-                : "bg-red-200";
+                ? "text-yellow-500"
+                : "text-red-500";
             const college2Style =
               match.winner === match.college2
-                ? "bg-green-200"
+                ? "text-green-500"
                 : match.winner === "Tie"
-                ? "bg-yellow-200"
-                : "bg-red-200";
+                ? "text-yellow-500"
+                : "text-red-500";
+
+            const college1Status: string =
+              match.winner === match.college1
+                ? "W"
+                : match.winner === "Tie"
+                ? "T"
+                : "L";
+
+            const college2Status: string =
+              match.winner === match.college2
+                ? "W"
+                : match.winner === "Tie"
+                ? "T"
+                : "L";
 
             return (
               <tr key={index}>
@@ -195,29 +209,25 @@ const ScoresPage: React.FC = () => {
                   {match.date} {match.time}
                 </td>
                 <td
-                  className={`px-6 py-4 whitespace-nowrap ${college1Style}`}
+                  className={`px-6 py-4 whitespace-nowrap hover:cursor-pointer hover:bg-gray-100`}
                   onClick={() => handleCollegeClick(match.college1)}
                 >
-                  {match.college1}{" "}
-                  {match.winner === match.college1
-                    ? `(+${match.sport === "Soccer" ? 11 : 6} pts)`
-                    : match.winner === "Tie"
-                    ? "(+Half pts)"
-                    : ""}
+                  <div className="flex justify-between">
+                    <span>{match.college1}</span>
+                    <span className={`${college1Style}`}>{college1Status}</span>
+                  </div>
                 </td>
                 <td
-                  className={`px-6 py-4 whitespace-nowrap ${college2Style}`}
+                  className={`px-6 py-4 whitespace-nowrap hover:cursor-pointer hover:bg-gray-100`}
                   onClick={() => handleCollegeClick(match.college2)}
                 >
-                  {match.college2}{" "}
-                  {match.winner === match.college2
-                    ? `(+${match.sport === "Soccer" ? 11 : 6} pts)`
-                    : match.winner === "Tie"
-                    ? "(+Half pts)"
-                    : ""}
+                  <div className="flex justify-between">
+                    <span>{match.college2}</span>
+                    <span className={`${college2Style}`}>{college2Status}</span>
+                  </div>
                 </td>
                 <td
-                  className="px-6 py-4 whitespace-nowrap"
+                  className="px-6 py-4 whitespace-nowrap hover:cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSportClick(match.sport)}
                 >
                   {match.sport}
