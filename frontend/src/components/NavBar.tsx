@@ -29,7 +29,7 @@ const NavBar: React.FC = () => {
   ];
 
   return (
-    <nav className="md:bg-blue-600 bg-blue-600 md:p-4 text-white items-center w-full fixed top-0">
+    <nav className="md:bg-[#d7eaff] bg-[#d7eaff] md:p-4 text-black items-center w-full fixed top-0 z-20">  
       <div className="md:flex md:block justify-between hidden">
         <div className="flex space-x-4">          
           {links.slice(0, -1).map((link, index) => (
