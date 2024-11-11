@@ -76,6 +76,7 @@ app.get("/api/auth/callback", passport.authenticate("cas", { failureRedirect: '/
     if (err) {
       console.error("Error saving session:", err);
     }
+    console.log("CAS callback done");
     res.redirect("/api/auth/success");
   });
 });
