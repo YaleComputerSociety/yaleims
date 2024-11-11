@@ -118,7 +118,7 @@ const SchedulePage: React.FC = () => {
 
   return (
 
-    <div> {isLoading ? <LoadingScreen /> : (
+    <div className="pt-8"> {isLoading ? <LoadingScreen /> : (
 
       <GoogleOAuthProvider clientId={CLIENT_ID}>
         <div className="min-h-screen bg-gray-100 p-8">
