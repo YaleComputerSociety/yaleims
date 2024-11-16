@@ -1,5 +1,5 @@
 export interface Match {
-  matchId: string;  // Unique identifier for the match
+  matchId: string; // Unique identifier for the match
   college1: string;
   college2: string;
   sport: string;
@@ -8,8 +8,8 @@ export interface Match {
   location: string;
   ref_id: string | null;
   winner: string | null;
-  college1_participants: string[];  // List of participants from college1
-  college2_participants: string[];  // List of participants from college2
+  college1_participants: string[]; // List of participants from college1
+  college2_participants: string[]; // List of participants from college2
 }
 
 export const matches: { [key: string]: Match } = {
