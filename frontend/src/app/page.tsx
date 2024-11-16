@@ -37,10 +37,8 @@ const HomePage: React.FC = () => {
   return !user ? (
     <LoadingScreen />
   ) : (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-blue-100 p-8">
       <br />
-      <h1 className="text-4xl font-bold text-center mb-8">Welcome {user}</h1>
-      <h1 className="text-4xl font-bold text-center mb-8">Leaderboard</h1>
       <Leaderboard />
     </div>
   );
