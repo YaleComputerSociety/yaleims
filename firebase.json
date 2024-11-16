@@ -1,0 +1,9 @@
+{
+    "hosting": {
+      "public": "frontend/build"
+    },
+    "functions": {
+      "source": "backend/functions"
+    }
+  }
+  
