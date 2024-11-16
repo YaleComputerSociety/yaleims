@@ -1,53 +1,43 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import useAuth from "../hooks/useAuth";
 import Leaderboard from '../components/Home/Leaderboard';
 import LoadingScreen from '../components/LoadingScreen';
 
-const HomePage: React.FC = () => {
-  const [user, setUser] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // change title of page
+const HomePage: React.FC = () => {
+  const searchParams = useSearchParams();
+  const user = searchParams?.get("netid");
+  const { saveUser } = useAuth();
+  const router = useRouter();
+
   useEffect(() => {
     document.title = "Yale IMs";
-  }, []);
+
+    // Save token if it exists in the URL
+    const handleToken = async () => {
+      if (user && saveUser) {
+        await saveUser(user); // Ensure token is saved properly
+      }
+    };
+    handleToken();
+  }, [user, saveUser]);
 
   useEffect(() => {
-    
-    // Display the loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 3000); // Wait for 3 seconds and then hide the loading screen
-    
-    // Fetch the session after a small delay
-    setTimeout(() => {
-      fetch("http://localhost:5001/api/auth/session", {
-        credentials: "include",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.netid) {
-            setUser(data.netid);
-          } else {
-            if (!window.location.href.includes("/api/auth/login")) {
-              window.location.href = "http://localhost:5001/api/auth/login";
-            }
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to fetch session:", err);
-        });
-    }, 500); // 500ms delay to allow session propagation
-  }, []);
+    // Redirect to login if token is not present
+    if (!user) {
+      const currentUrl = window.location.toString(); // Current page URL
+      const redirectUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/login?redir=${encodeURIComponent(currentUrl)}`;
+      router.push(redirectUrl); // Use router for redirection
+    }
+  }, [user, router]);
 
-  if (!user) {
-    console.log("No User")
-    return <LoadingScreen/>; 
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
+  return !user ? (
+    <LoadingScreen />
+  ) : (
+    <div className="min-h-screen bg-blue-100 p-8">
       <br />
       <Leaderboard />
     </div>
