@@ -12,9 +12,12 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import * as cors from 'cors';
 
 // Initialize Firebase Admin
 admin.initializeApp();
+
+const corsHandler = cors({origin: true});
 
 interface College {
     id: string,
@@ -33,6 +36,7 @@ interface Match {
 }
 
 interface User {
+    netid: string;
     firstname: string;
     lastname: string;
     matches: string[];
@@ -43,7 +47,7 @@ interface User {
 export const getMatches = functions.https.onRequest(async (req, res): Promise<void> => {
   try {
     const db = admin.firestore();
-    const matchesRef = db.collection('Matches');
+    const matchesRef = db.collection('matches');
     const snapshot = await matchesRef.get();
 
     if (snapshot.empty) {
@@ -90,34 +94,36 @@ export const getMatches = functions.https.onRequest(async (req, res): Promise<vo
 //   response.send("Hello from Firebase!");
 // });
 
-export const getLeaderboard = functions.https.onRequest(async (req, res) => {
+export const getLeaderboard = functions.https.onRequest((req, res) => {
+  return corsHandler(req, res, async () => {
     try {
-        const db = admin.firestore();
-        const leaderboardRef = db.collection('colleges');
-        const snapshot = await leaderboardRef.orderBy('points', 'desc').get();
+      const db = admin.firestore();
+      const leaderboardRef = db.collection('colleges');
+      const snapshot = await leaderboardRef.orderBy('points', 'desc').get();
 
-        if (snapshot.empty) {
-            res.status(404).send('No colleges found');
-            return;
-        }
+      if (snapshot.empty) {
+        res.status(404).send('No colleges found');
+        return;
+      }
 
-        const leaderboard: College[] = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            leaderboard.push({ id: doc.id, name: data.name, points: data.points } as College);
-        });
-
-        res.status(200).json(leaderboard);
+      const leaderboard: College[] = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        leaderboard.push({ id: doc.id, name: data.name, points: data.points } as College);
+      });
+      //console.log('Leaderboard data:', JSON.stringify(leaderboard, null, 2));
+      res.status(200).json(leaderboard);
     } catch (error) {
-        console.error('Error fetching leaderboard:', error);
-        res.status(500).send('Internal Server Error');
+      console.error('Error fetching leaderboard from Function Code:', error);
+      res.status(500).send('Internal Server Error');
     }
+  });
 });
 
 export const getScores = functions.https.onRequest(async (req, res): Promise<void> => {
     try {
       const db = admin.firestore();
-      const matchesRef = db.collection('Matches');
+      const matchesRef = db.collection('matches');
       const snapshot = await matchesRef.get();
   
       if (snapshot.empty) {
@@ -149,7 +155,7 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
 export const getSchedule = functions.https.onRequest(async (req, res): Promise<void> => {
     try {
       const db = admin.firestore();
-      const matchesRef = db.collection('Matches');
+      const matchesRef = db.collection('matches');
       const snapshot = await matchesRef.get();
   
       if (snapshot.empty) {
@@ -209,6 +215,7 @@ export const getUser = functions.https.onRequest(async (req, res): Promise<void>
       const userData = userDoc.data();
   
       const user: User = {
+        netid: userData.netid,
         firstname: userData.firstname,
         lastname: userData.lastname,
         matches: userData.matches,

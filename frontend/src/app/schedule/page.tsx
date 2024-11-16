@@ -1,18 +1,21 @@
 "use client";
 
+import "./calendar.css";
+import "react-calendar/dist/Calendar.css";
 import { useState, useEffect } from "react";
 import { matches } from "../../data/matches"; // Import your matches data
 import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { colleges } from '../../data/colleges';
-import { sports } from '../../data/sports';
-import LoadingScreen from '@src/components/LoadingScreen';
+import { colleges } from "../../data/colleges";
+import { sports } from "../../data/sports";
+import LoadingScreen from "@src/components/LoadingScreen";
 import { Match } from "../../data/matches";
 import CalendarView from "../../components/Schedule/Calendar";
 import ViewToggleButton from "../../components/Schedule/ViewToggleButton";
 import Filters from "../../components/Schedule/Filter";
 import ListView from "../../components/Schedule/ListView";
 import SignUpModal from "../../components/Schedule/Signup";
+import Calendar, { CalendarType } from "react-calendar";
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your actual client ID
 
@@ -26,6 +29,9 @@ const SchedulePage: React.FC = () => {
   const [collegeFilter, setCollegeFilter] = useState<string>("");
   const [sportFilter, setSportFilter] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [date, setDate] = useState<Date | null>(null);
+
+  const calendarType: CalendarType = "gregory";
 
   // change title of page
   useEffect(() => {
@@ -36,7 +42,6 @@ const SchedulePage: React.FC = () => {
     if (selectedCollege) {
       setCollegeFilter(selectedCollege);
     }
-
   }, []);
 
   // Sort matches by date and apply filters
@@ -51,16 +56,18 @@ const SchedulePage: React.FC = () => {
     );
 
     const filtered = sortedMatches.filter((match) => {
+      const matchDate = new Date(match.date + "T" + match.time);
       return (
         (collegeFilter === "" ||
           match.college1 === collegeFilter ||
           match.college2 === collegeFilter) &&
-        (sportFilter === "" || match.sport === sportFilter)
+        (sportFilter === "" || match.sport === sportFilter) &&
+        (date === null || matchDate >= date)
       );
     });
 
     setFilteredMatches(filtered);
-  }, [collegeFilter, sportFilter]);
+  }, [collegeFilter, sportFilter, date]);
 
   // Google Login handler
   const handleGoogleLogin = useGoogleLogin({
@@ -118,37 +125,62 @@ const SchedulePage: React.FC = () => {
     handleGoogleLogin();
   };
 
+  // Function to handle date click
+  const handleDateClick = (value: Date) => {
+    setDate(value);
+  };
+
   return (
-    <div> {isLoading ? <LoadingScreen /> : (
+
+    <div className="pt-8"> {isLoading ? <LoadingScreen /> : (
+
       <GoogleOAuthProvider clientId={CLIENT_ID}>
         <div className="min-h-screen bg-gray-100 p-8">
           <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
 
-          {/* Toggle View Button */}
-          <ViewToggleButton view={view} setView={setView} />
+            {/* Toggle View Button */}
+            <ViewToggleButton view={view} setView={setView} />
 
-          {/* Filters */}
-          <Filters
+            {/* Filters */}
+            <Filters
               collegeFilter={collegeFilter}
               setCollegeFilter={setCollegeFilter}
               sportFilter={sportFilter}
               setSportFilter={setSportFilter}
             />
-          {/* List View or CalenderView */}
-          {view === "list" ? (
-              <ListView matches={filteredMatches} onMatchClick={handleMatchClick} />
-            ) : (
-              <CalendarView events={calendarEvents} onMatchClick={handleMatchClick} />
-          )}
 
-          {/* Sign-Up Modal */}
-          {signUpModalOpen && selectedMatch && (<SignUpModal
-              match={selectedMatch}
-              onConfirm={handleGoogleLogin}
-              onCancel={() => setSignUpModalOpen(false)}
-          />)}
-        </div>
-      </GoogleOAuthProvider>)}
+            <div className="flex flex-col lg:flex-row gap-8">
+              <div className="lg:w-1/2">
+                <Calendar
+                  locale="en-US"
+                  calendarType={calendarType}
+                  prev2Label={null}
+                  next2Label={null}
+                  selectRange={false}
+                  showNeighboringMonth={true}
+                  minDetail="month"
+                  onClickDay={handleDateClick}
+                />
+              </div>
+              <div className="lg:w-1/2">
+                <ListView
+                  matches={filteredMatches}
+                  onMatchClick={handleMatchClick}
+                />
+              </div>
+            </div>
+
+            {/* Sign-Up Modal */}
+            {signUpModalOpen && selectedMatch && (
+              <SignUpModal
+                match={selectedMatch}
+                onConfirm={handleGoogleLogin}
+                onCancel={() => setSignUpModalOpen(false)}
+              />
+            )}
+          </div>
+        </GoogleOAuthProvider>
+      )}
     </div>
   );
 };
