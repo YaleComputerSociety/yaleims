@@ -22,11 +22,11 @@ const NavBar: React.FC = () => {
   };
 
   const links = [
-    { href: "/", text: "YALE IMS", icon: [<FaHome />] },
-    { href: "/about", text: "About", icon: [<FaCalendar />] },
-    { href: "/scores", text: "Scores", icon: [<BsFileBarGraphFill />] },
-    { href: "/schedule", text: "Schedule", icon: [<FaCalendar />] },
-    { href: "/profile", text: "", icon: [<CgProfile />] },
+    { href: "/", text: "YALE IMS", icon: <FaHome /> },
+    { href: "/about", text: "About", icon: <FaCalendar /> },
+    { href: "/scores", text: "Scores", icon: <BsFileBarGraphFill /> },
+    { href: "/schedule", text: "Schedule", icon: <FaCalendar /> },
+    { href: "/profile", text: "", icon: <CgProfile /> },
   ];
 
   return (
@@ -43,13 +43,13 @@ const NavBar: React.FC = () => {
         <div className="flex space-x-4">          
           {links.slice(1).map((link, index) => (
             <Link
-              key={index}
+              key={link.href}
               href={link.href}
               className="hover:underline flex fustify-between items-center pl-4 pr-4 last:text-4xl last:pr-10"
               onClick={resetFilters}
             >
               <div>{link.text}</div>
-              <div className="pl-1">{link.icon[0]} </div>             
+              <div className="pl-1">{link.icon} </div>             
             </Link>
           ))}
         </div>
@@ -68,7 +68,7 @@ const NavBar: React.FC = () => {
               onClick={turnMenuOff}
               className="hover:underline flex items-center"
             >
-              {link.icon[0]}
+              {link.icon}
               {link.text}
             </Link>
           ))}

@@ -42,7 +42,7 @@ export async function POST(req: Request) {
 
     // Return success response
     return NextResponse.json({ message: 'Event created', eventId: response.data.id });
-  } catch (error) {
+  } catch (error: any) {
     // Log the full error for debugging
     console.error('Error creating event:', error.response ? error.response.data : error.message);
 
