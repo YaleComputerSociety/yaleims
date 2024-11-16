@@ -40,7 +40,7 @@ const Leaderboard: React.FC = () => {
           college ? (
             <div
               key={index}
-              className={`flex flex-col items-center ${offset} text-center`}
+              className={`flex flex-col items-center ${offset} text-center mb-3`}
             >
               <div
                 className={`relative ${
