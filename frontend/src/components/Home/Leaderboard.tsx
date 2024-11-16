@@ -27,7 +27,7 @@ const Leaderboard: React.FC = () => {
     router.push('/scores');
   };
 
-  const renderPodium = (topColleges: typeof colleges) => {
+  const renderPodium = (topColleges: any) => {
     const podiumItems = [
       { place: 'second', college: topColleges[1], size: 'small', offset: 'translate-y-6' },
       { place: 'first', college: topColleges[0], size: 'large', offset: 'translate-y-0' },
