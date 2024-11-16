@@ -1,64 +1,86 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // Import Next.js Image component
 import { colleges } from '../../data/colleges';
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [sortedColleges, setSortedColleges] = useState(
+    Object.values(colleges) // Convert object to array
+  );
 
-  // Sort colleges by points in descending order
-  const collegeArray = Object.values(colleges);
-  const sortedColleges = collegeArray.sort((a, b) => b.points - a.points);
+  useEffect(() => {
+    // Simulate a loading delay
+    const timer = setTimeout(() => {
+      // Sort colleges by points in descending order
+      const sorted = [...sortedColleges].sort((a, b) => b.points - a.points);
+      setSortedColleges(sorted);
+      setLoading(false);
+    }, 1000);
 
-  // Function to handle clicking on a college
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleCollegeClick = (collegeName: string) => {
-    // Store the selected college in session storage
     sessionStorage.setItem('selectedCollege', collegeName);
     router.push('/scores');
   };
 
-
-  const renderPodium = (topColleges: any[]) => {
+  const renderPodium = (topColleges: typeof colleges) => {
     const podiumItems = [
-      { place: 'second', college: topColleges[1], flagSize: 'w-18 h-18', overlaySize: 'w-50 h-50 top-2', textSize: 'w-32' },
-      { place: 'first', college: topColleges[0], flagSize: 'w-40 h-40', overlaySize: 'w-50 h-35 top-2', textSize: 'w-40' },
-      { place: 'third', college: topColleges[2], flagSize: 'w-18 h-18', overlaySize: 'w-50 h-50 top-2', textSize: 'w-32' }
+      { place: 'second', college: topColleges[1], size: 'small', offset: 'translate-y-6' },
+      { place: 'first', college: topColleges[0], size: 'large', offset: 'translate-y-0' },
+      { place: 'third', college: topColleges[2], size: 'small', offset: 'translate-y-6' },
     ];
   
     return (
-      <div className="flex justify-center items-end space-x-4">
-        {podiumItems.map(({ place, college, flagSize, overlaySize, textSize }) => (
-          <div key={place} className={`flex flex-col items-center space-y-2 text-center ${textSize}`}>
-            <div className={`flex items-center justify-center mx-auto relative ${place === 'first' ? 'w-40 h-40' : 'w-16 h-16'}`}>
-              <img
-                src={`/college_flags/${college.name}.png`}
-                alt={college.name}
-                className={`${flagSize} object-contain mb-2`}
-              />
-              <img
-                src={`/college_flags/podium_${place}.png`}
-                alt={`${place} Place Overlay`}
-                className={`absolute ${overlaySize}`}
-              />
+      <div className="flex justify-center items-end space-x-6">
+        {podiumItems.map(({ place, college, size, offset }, index) =>
+          college ? (
+            <div
+              key={index}
+              className={`flex flex-col items-center ${offset} text-center`}
+            >
+              <div
+                className={`relative ${
+                  size === 'large' ? 'w-32 h-32' : 'w-24 h-24'
+                } flex items-center justify-center mb-4`}
+              >
+                <Image
+                  src={`/college_flags/${college.name.replace(/\s+/g, ' ')}.png`}
+                  alt={college.name}
+                  width={size === 'large' ? 128 : 96}
+                  height={size === 'large' ? 128 : 96}
+                  className="object-contain p-3"
+                />
+                <Image
+                  src={`/college_flags/podium_${place}.png`}
+                  alt={`${place} Place Overlay`}
+                  width={size === 'large' ? 200 : 150} // Adjust the sizes to your needs
+                  height={size === 'large' ? 200 : 150}
+                  layout="intrinsic" // Ensures the image respects its intrinsic dimensions
+                  className="absolute top-3"
+                />
+              </div>
+              <h3 className="font-semibold text-sm text-gray-800 mt-2">{college.name}</h3>
+              <p className="text-sm text-gray-500">Points: {college.points}</p>
             </div>
-            <h3 className="font-semibold text-sm mt-10 text-gray-800 overflow-hidden text-ellipsis whitespace-nowrap">
-              {college.name}
-            </h3>
-            <p className="text-sm text-gray-500">Points: {college.points}</p>
-          </div>
-        ))}
+          ) : null
+        )}
       </div>
     );
   };
+  
 
+  if (loading) {
+    return <div className="text-center py-10">Loading leaderboard...</div>;
+  }
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
-
-      {/* Podium !! */}
-      <div className="flex justify-center space-x-8 py-6">
-        {/* Pass 3 to only grab the podium worthy teams! */}
-        {renderPodium(sortedColleges.slice(0, 3))}
-      </div>
+      {/* Podium */}
+      <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
 
       {/* Full Leaderboard */}
       <table className="min-w-full divide-y divide-gray-200">
@@ -70,14 +92,24 @@ const Leaderboard: React.FC = () => {
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {sortedColleges.map((college, index) => (
-            <tr key={college.id} onClick={() => handleCollegeClick(college.name)} className="hover:bg-gray-100 cursor-pointer" >
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex items-center">
-                <img src={`/college_flags/${college.name}.png`} alt={college.name} className="w-6 h-6 mr-2 object-contain" />
+          {sortedColleges.slice(3,).map((college, index) => (
+            <tr
+              key={college.id}
+              onClick={() => handleCollegeClick(college.name)}
+              className="hover:bg-gray-100 cursor-pointer"
+            >
+              <td className="px-6 py-4 text-sm font-medium text-gray-900">{index + 4}</td>
+              <td className="px-6 py-4 text-sm text-gray-900 flex items-center">
+                <Image
+                  src={`/college_flags/${college.name.replace(/\s+/g, ' ')}.png`}
+                  alt={college.name}
+                  width={24}
+                  height={24}
+                  className="mr-2 object-contain"
+                />
                 {college.name}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{college.points}</td>
+              <td className="px-6 py-4 text-sm text-gray-900">{college.points}</td>
             </tr>
           ))}
         </tbody>
