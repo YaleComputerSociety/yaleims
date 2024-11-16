@@ -13,38 +13,38 @@ const HomePage: React.FC = () => {
     document.title = "Yale IMs";
   }, []);
 
-  useEffect(() => {
+  // useEffect(() => {
     
-    // Display the loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 3000); // Wait for 3 seconds and then hide the loading screen
+  //   // Display the loading
+  //   setTimeout(() => {
+  //     setIsLoading(false);
+  //   }, 3000); // Wait for 3 seconds and then hide the loading screen
     
-    // Fetch the session after a small delay
-    setTimeout(() => {
-      fetch("http://localhost:5001/api/auth/session", {
-        credentials: "include",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.netid) {
-            setUser(data.netid);
-          } else {
-            if (!window.location.href.includes("/api/auth/login")) {
-              window.location.href = "http://localhost:5001/api/auth/login";
-            }
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to fetch session:", err);
-        });
-    }, 500); // 500ms delay to allow session propagation
-  }, []);
+  //   // Fetch the session after a small delay
+  //   setTimeout(() => {
+  //     fetch("http://localhost:5001/api/auth/session", {
+  //       credentials: "include",
+  //     })
+  //       .then((res) => res.json())
+  //       .then((data) => {
+  //         if (data.netid) {
+  //           setUser(data.netid);
+  //         } else {
+  //           if (!window.location.href.includes("/api/auth/login")) {
+  //             window.location.href = "http://localhost:5001/api/auth/login";
+  //           }
+  //         }
+  //       })
+  //       .catch((err) => {
+  //         console.error("Failed to fetch session:", err);
+  //       });
+  //   }, 500); // 500ms delay to allow session propagation
+  // }, []);
 
-  if (!user) {
-    console.log("No User")
-    return <LoadingScreen/>; 
-  }
+  // if (!user) {
+  //   console.log("No User")
+  //   return <LoadingScreen/>; 
+  // }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
