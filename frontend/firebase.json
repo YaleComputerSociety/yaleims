@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": "frontend/out",
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
