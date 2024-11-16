@@ -22,7 +22,7 @@ const NavBar: React.FC = () => {
   };
 
   const links = [
-    { href: "/", text: "YALE IM", icon: [<FaHome />] },
+    { href: "/", text: "YALE IMS", icon: [<FaHome />] },
     { href: "/about", text: "About", icon: [<FaCalendar />] },
     { href: "/scores", text: "Scores", icon: [<BsFileBarGraphFill />] },
     { href: "/schedule", text: "Schedule", icon: [<FaCalendar />] },
