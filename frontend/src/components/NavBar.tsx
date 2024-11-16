@@ -30,7 +30,7 @@ const NavBar: React.FC = () => {
   ];
 
   return (
-    <nav className="md:bg-[#D7EAFF] bg-[#D7EAFF] md:p-5 items-center w-full fixed top-0">
+    <nav className="md:bg-blue-600 bg-blue-600 text-white md:p-5 items-center w-full fixed top-0 z-50">
       <div className="md:flex md:block justify-between items-center hidden">
         <div className="text-xl pl-10">
           <Link 
