@@ -45,44 +45,47 @@ interface User {
   }
 
 export const getMatches = functions.https.onRequest(async (req, res): Promise<void> => {
-  try {
-    const db = admin.firestore();
-    const matchesRef = db.collection('matches');
-    const snapshot = await matchesRef.get();
+  return corsHandler(req, res, async () => {
+    try {
+      const db = admin.firestore();
+      const matchesRef = db.collection('matches');
+      const snapshot = await matchesRef.get();
 
-    if (snapshot.empty) {
-      res.status(404).send('No matches found');
-      return;
+      if (snapshot.empty) {
+        res.status(404).send('No matches found');
+        return;
+      }
+
+      const matches: Match[] = [];
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+
+        // Fetch referenced documents
+        const college1Doc = await data.college1.get();
+        const college2Doc = await data.college2.get();
+        const winnerDoc = data.winner ? await data.winner.get() : null;
+        const sportDoc = await data.sport.get();
+
+        matches.push({
+          id: doc.id,
+          college1: college1Doc.data().name,
+          college2: college2Doc.data().name,
+          sport: sportDoc.data().name,
+          date: data.date,
+          time: data.time,
+          location: data.location,
+          winner: winnerDoc ? winnerDoc.data().name : null,
+          college1_participants: data.college1_participants,
+          college2_participants: data.college2_participants
+        } as Match);
+      }
+
+      res.status(200).json(matches);
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      res.status(500).send('Internal Server Error');
     }
-
-    const matches: Match[] = [];
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-
-      // Fetch referenced documents
-      const college1Doc = await data.college1.get();
-      const college2Doc = await data.college2.get();
-      const winnerDoc = data.winner ? await data.winner.get() : null;
-
-      matches.push({
-        id: doc.id,
-        college1: college1Doc.data().name,
-        college2: college2Doc.data().name,
-        sport: data.sport,
-        date: data.date,
-        time: data.time,
-        location: data.location,
-        winner: winnerDoc ? winnerDoc.data().name : null,
-        college1_participants: data.college1_participants,
-        college2_participants: data.college2_participants
-      } as Match);
-    }
-
-    res.status(200).json(matches);
-  } catch (error) {
-    console.error('Error fetching matches:', error);
-    res.status(500).send('Internal Server Error');
-  }
+  })
 });
 
 
@@ -121,10 +124,12 @@ export const getLeaderboard = functions.https.onRequest((req, res) => {
 });
 
 export const getScores = functions.https.onRequest(async (req, res): Promise<void> => {
+  return corsHandler(req, res, async () => {
     try {
       const db = admin.firestore();
       const matchesRef = db.collection('matches');
       const snapshot = await matchesRef.get();
+      
   
       if (snapshot.empty) {
         res.status(404).send('No matches found');
@@ -134,6 +139,7 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
       const matches: Match[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
+        
         matches.push({
           id: doc.id,
           college1: data.college1,
@@ -150,9 +156,11 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
       console.error('Error fetching matches:', error);
       res.status(500).send('Internal Server Error');
     }
-  });
+  })
+});
 
 export const getSchedule = functions.https.onRequest(async (req, res): Promise<void> => {
+  return corsHandler(req, res, async () => {
     try {
       const db = admin.firestore();
       const matchesRef = db.collection('matches');
@@ -191,9 +199,11 @@ export const getSchedule = functions.https.onRequest(async (req, res): Promise<v
       console.error('Error fetching matches:', error);
       res.status(500).send('Internal Server Error');
     }
-  });
+  })
+});
 
 export const getUser = functions.https.onRequest(async (req, res): Promise<void> => {
+  return corsHandler(req, res, async () => {
     try {
       const db = admin.firestore();
       const netid = req.query.netid as string;
@@ -228,4 +238,5 @@ export const getUser = functions.https.onRequest(async (req, res): Promise<void>
       console.error('Error fetching user:', error);
       res.status(500).send('Internal Server Error');
     }
-  });
+  })
+});
