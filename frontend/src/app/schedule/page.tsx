@@ -131,14 +131,12 @@ const SchedulePage: React.FC = () => {
   };
 
   return (
-    <div>
-      {" "}
-      {isLoading ? (
-        <LoadingScreen />
-      ) : (
-        <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <div className="min-h-screen bg-gray-100 p-8">
-            <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
+
+    <div className="pt-8"> {isLoading ? <LoadingScreen /> : (
+
+      <GoogleOAuthProvider clientId={CLIENT_ID}>
+        <div className="min-h-screen bg-gray-100 p-8">
+          <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
 
             {/* Toggle View Button */}
             <ViewToggleButton view={view} setView={setView} />

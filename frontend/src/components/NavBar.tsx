@@ -22,32 +22,36 @@ const NavBar: React.FC = () => {
   };
 
   const links = [
-    { href: "/", text: "Home", icon: [<FaHome />] },
-    { href: "/scores", text: "Scores", icon: [<BsFileBarGraphFill />] },
-    { href: "/schedule", text: "Schedule", icon: [<FaCalendar />] },
-    { href: "/profile", text: "Profile", icon: [<CgProfile />] },
+    { href: "/", text: "YALE IMS", icon: <FaHome /> },
+    { href: "/about", text: "About", icon: <FaCalendar /> },
+    { href: "/scores", text: "Scores", icon: <BsFileBarGraphFill /> },
+    { href: "/schedule", text: "Schedule", icon: <FaCalendar /> },
+    { href: "/profile", text: "", icon: <CgProfile /> },
   ];
 
   return (
-    <nav className="md:bg-blue-600 bg-blue-600 md:p-4 text-white items-center w-full fixed top-0">
-      <div className="md:flex md:block justify-between hidden">
+    <nav className="md:bg-blue-600 bg-blue-600 text-white md:p-5 items-center w-full fixed top-0 z-50">
+      <div className="md:flex md:block justify-between items-center hidden">
+        <div className="text-xl pl-10">
+          <Link 
+            href={links[0].href}
+            onClick={resetFilters}
+          >
+            {links[0].text}
+          </Link>
+        </div>
         <div className="flex space-x-4">          
-          {links.slice(0, -1).map((link, index) => (
+          {links.slice(1).map((link, index) => (
             <Link
-              key={index}
+              key={link.href}
               href={link.href}
-              className="hover:underline flex fustify-between items-center"
+              className="hover:underline flex fustify-between items-center pl-4 pr-4 last:text-4xl last:pr-10"
               onClick={resetFilters}
             >
-              {link.icon[0]}
-              {link.text}
+              <div>{link.text}</div>
+              <div className="pl-1">{link.icon} </div>             
             </Link>
           ))}
-        </div>
-        <div className="w-auto">
-          <Link href='/profile' className="hover:underline flex items-center">
-              <CgProfile />Profile        
-          </Link>
         </div>
       </div>
       <div className="md:hidden flex p-3 items-center">
@@ -64,7 +68,7 @@ const NavBar: React.FC = () => {
               onClick={turnMenuOff}
               className="hover:underline flex items-center"
             >
-              {link.icon[0]}
+              {link.icon}
               {link.text}
             </Link>
           ))}
