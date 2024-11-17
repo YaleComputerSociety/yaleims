@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; // Import Next.js Image component
 import { colleges } from '../../data/colleges';
+import LoadingScreen from '../LoadingScreen';
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
@@ -74,10 +75,11 @@ const Leaderboard: React.FC = () => {
   
 
   if (loading) {
-    return <div className="text-center py-10">Loading leaderboard...</div>;
+    return <div className="text-center py-10"><LoadingScreen/></div>;
   }
 
   return (
+    
     <div className="bg-white shadow-md rounded-lg overflow-hidden">
       {/* Podium */}
       <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
