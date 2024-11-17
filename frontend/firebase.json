@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "frontend/out",
+    "public": "out",
     "cleanUrls": true,
     "rewrites": [
       {
