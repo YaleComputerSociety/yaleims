@@ -18,7 +18,7 @@ const Leaderboard: React.FC = () => {
       const sorted = [...sortedColleges].sort((a, b) => b.points - a.points);
       setSortedColleges(sorted);
       setLoading(false);
-    }, 1000);
+    }, 0);
 
     return () => clearTimeout(timer);
   }, []);
