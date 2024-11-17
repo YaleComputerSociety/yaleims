@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import passport from "passport";
-import { Strategy } from "passport-cas";
-
+import { Strategy } from "@coursetable/passport-cas";
 export default class CAS {
 	constructor() {
 		this.initializePassport();
@@ -14,7 +13,7 @@ export default class CAS {
 					version: "CAS2.0",
 					ssoBaseURL: "https://secure.its.yale.edu/cas",
 				},
-				async (profile, done) => {
+				async (profile: any, done: any) => {
 					return done(null, { netId: profile.user });
 				},
 			),
