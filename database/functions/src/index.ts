@@ -137,19 +137,24 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
       }
   
       const matches: Match[] = [];
-      snapshot.forEach(doc => {
+      for (const doc of snapshot.docs) {
         const data = doc.data();
+
+        // Fetch referenced documents
+        const college1Doc = await data.college1.get();
+        const college2Doc = await data.college2.get();
+        const sportDoc = await data.sport.get();
         
         matches.push({
           id: doc.id,
-          college1: data.college1,
-          college2: data.college2,
-          sport: data.sport,
+          college1: college1Doc.data().name,
+          college2: college2Doc.data().name,
+          sport: sportDoc.data().name,
           date: data.date,
           time: data.time,
           winner: data.winner
         } as Match);
-      });
+      };
   
       res.status(200).json(matches);
     } catch (error) {
@@ -178,13 +183,14 @@ export const getSchedule = functions.https.onRequest(async (req, res): Promise<v
         // Fetch referenced documents
         const college1Doc = await data.college1.get();
         const college2Doc = await data.college2.get();
+        const sportDoc = await data.sport.get();
         const winnerDoc = data.winner ? await data.winner.get() : null;
   
         matches.push({
           id: doc.id,
           college1: college1Doc.data().name,
           college2: college2Doc.data().name,
-          sport: data.sport,
+          sport: sportDoc.data().name,
           date: data.date,
           time: data.time,
           location: data.location,
@@ -223,12 +229,24 @@ export const getUser = functions.https.onRequest(async (req, res): Promise<void>
   
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
+
+      // Fetch all match documents
+      const matchPromises = userData.matches.map((matchRef: FirebaseFirestore.DocumentReference) => matchRef.get());
+      const matchSnapshots = await Promise.all(matchPromises);
+
+      const matches = matchSnapshots.map(matchSnapshot => {
+        const matchData = matchSnapshot.data();
+        return {
+          id: matchSnapshot.id,
+          ...matchData
+        };
+      });
   
       const user: User = {
-        netid: userData.netid,
+        netid: userData.id,
         firstname: userData.firstname,
         lastname: userData.lastname,
-        matches: userData.matches,
+        matches: matches,
         points: userData.points,
         college: userData.college
       };
