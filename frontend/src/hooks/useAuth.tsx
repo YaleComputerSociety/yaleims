@@ -2,15 +2,15 @@ import { useCallback } from "react";
 import { getCookie, setCookie } from "cookies-next";
 
 const useAuth = () => {
-	const saveToken = useCallback((token: string | null) => {
+	const saveUser = useCallback((token: string | null) => {
 		setCookie("token", token);
 	}, []);
 
-	const getToken = useCallback(() => {
+	const getUser = useCallback(() => {
 		return getCookie("token");
 	}, []);
 
-	return {getToken, saveToken};
+	return {getUser, saveUser};
 }
 
 export default useAuth;

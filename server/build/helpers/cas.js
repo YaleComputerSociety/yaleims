@@ -1,5 +1,5 @@
 import passport from "passport";
-import { Strategy } from "passport-cas";
+import { Strategy } from "@coursetable/passport-cas";
 export default class CAS {
     constructor() {
         this.initializePassport();
