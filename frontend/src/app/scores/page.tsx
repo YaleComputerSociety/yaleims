@@ -1,7 +1,6 @@
 "use client";
-
-import { useEffect, useState, useContext } from 'react';
-import { matches, Match } from '../../data/previousMatches';
+import React, { useEffect, useState, useContext } from 'react';
+import { Match } from '../../data/previousMatches';
 import { colleges } from '../../data/colleges';
 import { sports } from '../../data/sports';
 import { useRouter } from 'next/navigation';
@@ -19,6 +18,11 @@ const ScoresPage: React.FC = () => {
   const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  // States to store queried data
+  const [matches, setMatches] = React.useState<any[]>([]);
+  //const [colleges, setColleges] = React.useState<any[]>([]);
+  //const [sports, setSports] = React.useState<any[]>([]);
 
   // change title of page
   useEffect(() => {
@@ -38,7 +42,40 @@ const ScoresPage: React.FC = () => {
     }
   }, []);
 
+  // Fetch leaderboard data from the Cloud Function
+  const fetchMatches = async () => {
+    try {
+      const response = await fetch('https://getmatches-65477nrg6a-uc.a.run.app'); // Replace with your actual Firebase function endpoint
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      //console.log('Score matches:', data); // Add this line
+      return data;
+    } catch (error) {
+      console.error('Error fetching match data:', error);
+    }
+  };
+
   useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const data = await fetchMatches();
+        console.log('Data2: ', data);
+        setMatches(data);
+      } catch (error) {
+        console.error('Error fetching match data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    //console.log(matches);
     const filtered = Object.values(matches).filter((match) => {
       const collegeMatch = filter.college
         ? [match.college1, match.college2].includes(filter.college)
@@ -47,12 +84,12 @@ const ScoresPage: React.FC = () => {
       const dateMatch = filter.date ? match.date === filter.date : true;
       return collegeMatch && sportMatch && dateMatch;
     });
-
+    //console.log(filtered);
     setFilteredMatches(filtered);
     if (filter.college) {
       calculateCollegeStats(filter.college, filtered);
     }
-  }, [filter]);
+  }, [filter, matches]);
 
   const calculateCollegeStats = (college: string, matches: Match[]) => {
     const points = matches.reduce((total: number, match) => {

@@ -3,7 +3,7 @@
 import "./calendar.css";
 import "react-calendar/dist/Calendar.css";
 import { useState, useEffect } from "react";
-import { matches } from "../../data/matches"; // Import your matches data
+//import { matches } from "../../data/matches"; // Import your matches data
 import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { colleges } from "../../data/colleges";
@@ -23,9 +23,10 @@ const SchedulePage: React.FC = () => {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [signUpModalOpen, setSignUpModalOpen] = useState<boolean>(false);
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>(
-    Object.values(matches)
-  );
+  // const [filteredMatches, setFilteredMatches] = useState<Match[]>(
+  //   //Object.values(matches)
+  // );
+  const [matches, setFilteredMatches] = useState<Match[]>([]);
   const [collegeFilter, setCollegeFilter] = useState<string>("");
   const [sportFilter, setSportFilter] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +43,38 @@ const SchedulePage: React.FC = () => {
     if (selectedCollege) {
       setCollegeFilter(selectedCollege);
     }
+  }, []);
+
+  // retrive data from firestore
+  const fetchMatches = async () => {
+    try {
+      const response = await fetch('https://getmatches-65477nrg6a-uc.a.run.app'); // Replace with your actual Firebase function endpoint
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      //console.log('Score matches:', data); // Add this line
+      return data;
+    } catch (error) {
+      console.error('Error fetching match data:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const data = await fetchMatches();
+        console.log('Data2: ', data);
+        setFilteredMatches(data);
+      } catch (error) {
+        console.error('Error fetching match data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchData();
   }, []);
 
   // Sort matches by date and apply filters
@@ -166,7 +199,7 @@ const SchedulePage: React.FC = () => {
               </div>
               <div className="lg:w-1/2">
                 <ListView
-                  matches={filteredMatches}
+                  matches={matches}
                   onMatchClick={handleMatchClick}
                 />
               </div>

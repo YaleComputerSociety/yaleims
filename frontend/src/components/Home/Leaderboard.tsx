@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
-  // // State to store the college data
+  // State to store the college data
   const [colleges, setColleges] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
 
