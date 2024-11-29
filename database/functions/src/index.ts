@@ -29,25 +29,6 @@ interface College {
     points: number;
 }
 
-interface Match {
-    id: string;
-    college1: string;
-    college2: string;
-    sport: string;
-    date: string;
-    time: string;
-    winner: string;
-}
-
-interface User {
-    email: string;
-    firstname: string;
-    lastname: string;
-    matches: string[];
-    points: number;
-    college: string;
-  }
-
 export const fetchOrAddUser = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const { email } = req.body;  // The email passed directly in the request
@@ -115,49 +96,6 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
   });
 });
 
-export const getMatches = functions.https.onRequest(async (req, res): Promise<void> => {
-  return corsHandler(req, res, async () => {
-    try {
-      const matchesRef = db.collection('matches');
-      const snapshot = await matchesRef.get();
-
-      if (snapshot.empty) {
-        res.status(404).send('No matches found');
-        return;
-      }
-
-      const matches: Match[] = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-
-        // Fetch referenced documents
-        const college1Doc = await data.college1.get();
-        const college2Doc = await data.college2.get();
-        const winnerDoc = data.winner ? await data.winner.get() : null;
-        const sportDoc = await data.sport.get();
-
-        matches.push({
-          id: doc.id,
-          college1: college1Doc.data().name,
-          college2: college2Doc.data().name,
-          sport: sportDoc.data().name,
-          date: data.date,
-          time: data.time,
-          location: data.location,
-          winner: winnerDoc ? winnerDoc.data().name : null,
-          college1_participants: data.college1_participants,
-          college2_participants: data.college2_participants
-        } as Match);
-      }
-
-      res.status(200).json(matches);
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      res.status(500).send('Internal Server Error');
-    }
-  })
-});
-
 
 export const getLeaderboard = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
@@ -184,136 +122,48 @@ export const getLeaderboard = functions.https.onRequest((req, res) => {
   });
 });
 
-export const getScores = functions.https.onRequest(async (req, res): Promise<void> => {
+// Cloud function to get all matches and you can query
+export const getMatches = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const matchesRef = db.collection('matches');
-      const snapshot = await matchesRef.get();
-      
-  
-      if (snapshot.empty) {
-        res.status(404).send('No matches found');
-        return;
+      const { type } = req.query;  // Retrieve the 'type' query parameter from the request
+      const currentDate = new Date();
+      let query: FirebaseFirestore.Query = db.collection('matches'); // Ensure this is a Query type
+
+      // Apply filtering based on the 'type' query parameter (all, past, or future)
+      if (type === 'past') {
+        query = query.where('timestamp', '<', currentDate);  // Get past matches
+      } else if (type === 'future') {
+        query = query.where('timestamp', '>', currentDate);  // Get future matches
       }
-  
-      const matches: Match[] = [];
-      for (const doc of snapshot.docs) {
+
+      // Fetch the matches from Firestore
+      const snapshot = await query.get();
+
+      if (snapshot.empty) {
+        return res.status(404).send('No matches found');
+      }
+
+      // Process the query result and format the data
+      const matches = snapshot.docs.map(doc => {
         const data = doc.data();
-
-        // Fetch referenced documents
-        const college1Doc = await data.college1.get();
-        const college2Doc = await data.college2.get();
-        const sportDoc = await data.sport.get();
-        
-        matches.push({
-          id: doc.id,
-          college1: college1Doc.data().name,
-          college2: college2Doc.data().name,
-          sport: sportDoc.data().name,
-          date: data.date,
-          time: data.time,
-          winner: data.winner
-        } as Match);
-      };
-  
-      res.status(200).json(matches);
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      res.status(500).send('Internal Server Error');
-    }
-  })
-});
-
-export const getSchedule = functions.https.onRequest(async (req, res): Promise<void> => {
-  return corsHandler(req, res, async () => {
-    try {
-      const matchesRef = db.collection('matches');
-      const snapshot = await matchesRef.get();
-  
-      if (snapshot.empty) {
-        res.status(404).send('No matches found');
-        return;
-      }
-  
-      const matches: Match[] = [];
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-  
-        // Fetch referenced documents
-        const college1Doc = await data.college1.get();
-        const college2Doc = await data.college2.get();
-        const sportDoc = await data.sport.get();
-        const winnerDoc = data.winner ? await data.winner.get() : null;
-  
-        matches.push({
-          id: doc.id,
-          college1: college1Doc.data().name,
-          college2: college2Doc.data().name,
-          sport: sportDoc.data().name,
-          date: data.date,
-          time: data.time,
-          location: data.location,
-          winner: winnerDoc ? winnerDoc.data().name : null,
-          college1_participants: data.college1_participants,
-          college2_participants: data.college2_participants
-        } as Match);
-      }
-  
-      res.status(200).json(matches);
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      res.status(500).send('Internal Server Error');
-    }
-  })
-});
-
-export const getUser = functions.https.onRequest(async (req, res): Promise<void> => {
-  return corsHandler(req, res, async () => {
-    try {
-      const email = req.query.email as string;
-
-      if (!email) {
-        res.status(400).send('Missing email parameter');
-        return;
-      }
-
-      const usersRef = db.collection('users').where('email', '==', email);
-      const snapshot = await usersRef.get();
-
-      if (snapshot.empty) {
-        res.status(404).send('User not found');
-        return;
-      }
-
-      const userDoc = snapshot.docs[0];
-      const userData = userDoc.data();
-
-      // Fetch all match documents
-      const matchPromises = userData.matches.map((matchRef: FirebaseFirestore.DocumentReference) => matchRef.get());
-      const matchSnapshots = await Promise.all(matchPromises);
-
-      const matches = matchSnapshots.map((matchSnapshot) => {
-        const matchData = matchSnapshot.data();
         return {
-          id: matchSnapshot.id,
-          ...matchData,
+          home_college: data.home_college,
+          away_college: data.away_college,
+          sport: data.sport,
+          home_college_score: data.home_college_score,
+          away_college_score: data.away_college_score,
+          winner: data.winner,
+          timestamp: data.timestamp.toDate().toISOString(),  // Ensure timestamp is formatted correctly
         };
       });
 
-      const user: User = {
-        email: userData.email, // Updated to use email instead of netid
-        firstname: userData.firstname,
-        lastname: userData.lastname,
-        matches: matches,
-        points: userData.points,
-        college: userData.college,
-      };
+      // Return the matches as a JSON response
+      return res.status(200).json(matches);
 
-      res.status(200).json(user);
     } catch (error) {
-      console.error('Error fetching user:', error);
-      res.status(500).send('Internal Server Error');
+      console.error('Error fetching matches:', error);
+      return res.status(500).send('Internal Server Error');
     }
   });
 });
-
