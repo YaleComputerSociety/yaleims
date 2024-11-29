@@ -34,7 +34,7 @@ const Profile = () => {
           height={48}
           className="rounded-md object-contain"
         />
-        <h2 className="text-3xl font-semibold">{user.name}'s Profile</h2>
+        <h2 className="text-3xl font-semibold">{user.name}&apos;s Profile</h2>
       </div>
 
       <div className="space-y-3">
