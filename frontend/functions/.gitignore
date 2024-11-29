@@ -10,4 +10,4 @@ node_modules/
 *.local
 .env*
 
-.next
+.next/
