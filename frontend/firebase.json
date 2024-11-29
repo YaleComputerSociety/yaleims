@@ -1,12 +1,14 @@
 {
   "hosting": {
-    "public": "out", 
+    "public": "out",  
     "rewrites": [
       {
-        "source": "/**", 
-        "function": "nextApp"
+        "source": "/**",
+        "function": "nextApp"  
       }
-    ],
-    "cleanUrls": true
+    ]
+  },
+  "functions": {
+    "source": "functions" 
   }
 }
