@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "ESNext",  // Use ES Modules
+    "target": "es2017", // Use modern syntax
+    "moduleResolution": "Node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
   },
   "compileOnSave": true,
-  "include": [
-    "src"
-  ]
+  "include": ["src/**/*.ts"], // Adjust to match your source files
+  "exclude": ["node_modules", "lib"] // Exclude output and dependencies
 }

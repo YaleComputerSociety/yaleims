@@ -11,13 +11,17 @@
 // import * as logger from "firebase-functions/logger";
 
 import * as functions from "firebase-functions";
-import * as admin from "firebase-admin";
-import * as cors from 'cors';
+import admin from "firebase-admin";
+import cors from 'cors';
+import fetch from "node-fetch"; 
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
 const corsHandler = cors({origin: true});
+
+const db = admin.firestore();
+
 
 interface College {
     id: string,
@@ -36,7 +40,7 @@ interface Match {
 }
 
 interface User {
-    netid: string;
+    email: string;
     firstname: string;
     lastname: string;
     matches: string[];
@@ -44,10 +48,76 @@ interface User {
     college: string;
   }
 
+export const fetchOrAddUser = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    const { email } = req.body;  // The email passed directly in the request
+
+    // Step 1: Check that the email is a Yale email
+    if (!email || !email.endsWith('@yale.edu')) {
+      res.status(403).json({ error: 'You must use a Yale email to sign in.' });
+      return;
+    }
+
+    try {
+      // Step 2: Reference Firestore Document (Use Email as Document ID)
+      const userRef = admin.firestore().collection('users').doc(email);
+      const userDoc = await userRef.get();
+
+      // Step 3: If User Exists, Return Data
+      if (userDoc.exists) {
+        res.status(200).json({ message: 'User already exists.', user: userDoc.data() });
+        return;
+      }
+
+      // Step 4: Fetch User Details from Yalies API
+      const yaliesResponse = await fetch('https://yalies.io/api/people', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MjUzNzcxNTIsInN1YiI6ImF3eDIifQ.sKmMqhsyh71EIqfLPMqIx50py3nhhzo6kkq7OKPiHM8",
+        },
+        body: JSON.stringify({
+          filters: { email: [email] },
+          page: 1,
+          page_size: 1,
+        }),
+      });
+
+      if (!yaliesResponse.ok) {
+        res.status(500).json({ error: 'Failed to fetch data from the Yalies API.' });
+        return;
+      }
+
+      const yaliesData: any = await yaliesResponse.json();
+      if (yaliesData.length === 0) {
+        res.status(404).json({ error: `No data found for email: ${email}` });
+        return;
+      }
+
+      const yaliesInfo: any = yaliesData[0];
+      const { first_name, last_name, college } = yaliesInfo;
+
+      const newUser = {
+        email: email,
+        firstname: first_name,
+        lastname: last_name,
+        matches: [],
+        points: 0,
+        college: college || null,
+      };
+
+      await userRef.set(newUser);
+      res.status(200).json({ message: 'User successfully added.', user: newUser });
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+});
+
 export const getMatches = functions.https.onRequest(async (req, res): Promise<void> => {
   return corsHandler(req, res, async () => {
     try {
-      const db = admin.firestore();
       const matchesRef = db.collection('matches');
       const snapshot = await matchesRef.get();
 
@@ -89,18 +159,9 @@ export const getMatches = functions.https.onRequest(async (req, res): Promise<vo
 });
 
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-
 export const getLeaderboard = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const db = admin.firestore();
       const leaderboardRef = db.collection('colleges');
       const snapshot = await leaderboardRef.orderBy('points', 'desc').get();
 
@@ -126,7 +187,6 @@ export const getLeaderboard = functions.https.onRequest((req, res) => {
 export const getScores = functions.https.onRequest(async (req, res): Promise<void> => {
   return corsHandler(req, res, async () => {
     try {
-      const db = admin.firestore();
       const matchesRef = db.collection('matches');
       const snapshot = await matchesRef.get();
       
@@ -167,7 +227,6 @@ export const getScores = functions.https.onRequest(async (req, res): Promise<voi
 export const getSchedule = functions.https.onRequest(async (req, res): Promise<void> => {
   return corsHandler(req, res, async () => {
     try {
-      const db = admin.firestore();
       const matchesRef = db.collection('matches');
       const snapshot = await matchesRef.get();
   
@@ -211,22 +270,21 @@ export const getSchedule = functions.https.onRequest(async (req, res): Promise<v
 export const getUser = functions.https.onRequest(async (req, res): Promise<void> => {
   return corsHandler(req, res, async () => {
     try {
-      const db = admin.firestore();
-      const netid = req.query.netid as string;
-  
-      if (!netid) {
-        res.status(400).send('Missing netid parameter');
+      const email = req.query.email as string;
+
+      if (!email) {
+        res.status(400).send('Missing email parameter');
         return;
       }
-  
-      const usersRef = db.collection('users').where('netid', '==', netid);
+
+      const usersRef = db.collection('users').where('email', '==', email);
       const snapshot = await usersRef.get();
-  
+
       if (snapshot.empty) {
         res.status(404).send('User not found');
         return;
       }
-  
+
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
 
@@ -234,27 +292,28 @@ export const getUser = functions.https.onRequest(async (req, res): Promise<void>
       const matchPromises = userData.matches.map((matchRef: FirebaseFirestore.DocumentReference) => matchRef.get());
       const matchSnapshots = await Promise.all(matchPromises);
 
-      const matches = matchSnapshots.map(matchSnapshot => {
+      const matches = matchSnapshots.map((matchSnapshot) => {
         const matchData = matchSnapshot.data();
         return {
           id: matchSnapshot.id,
-          ...matchData
+          ...matchData,
         };
       });
-  
+
       const user: User = {
-        netid: userData.id,
+        email: userData.email, // Updated to use email instead of netid
         firstname: userData.firstname,
         lastname: userData.lastname,
         matches: matches,
         points: userData.points,
-        college: userData.college
+        college: userData.college,
       };
-  
+
       res.status(200).json(user);
     } catch (error) {
       console.error('Error fetching user:', error);
       res.status(500).send('Internal Server Error');
     }
-  })
+  });
 });
+

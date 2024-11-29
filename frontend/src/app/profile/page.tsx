@@ -1,45 +1,59 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useUser } from "../../context/UserContext";
+import { useUser } from "../../context/UserContext"; // Assuming the context is stored in this path
+import Image from "next/image";
 
-const ProfilePage: React.FC = () => {
-  const { user, signOut } = useUser(); // Access user and logout function
-  const [isLoading, setIsLoading] = useState(true);
+const Profile = () => {
+  const { user, loading } = useUser();
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen text-xl text-gray-500">
+        <span>Loading...</span>
+      </div>
+    );
   }
 
   if (!user) {
-    return <p>Please sign in to view your profile.</p>;
+    return (
+      <div className="flex justify-center items-center h-screen text-xl text-gray-500">
+        <span>User not signed in</span>
+      </div>
+    );
   }
 
   return (
-    <div className="p-4">
-      <h1>Profile</h1>
-      <ul>
-        <li>
-          <strong>Name:</strong> {user.name}
-        </li>
-        <li>
-          <strong>Email:</strong> {user.email}
-        </li>
-      </ul>
-      <button onClick={signOut} className="mt-4 bg-blue-500 text-white px-4 py-2 rounded">
-        Logout
-      </button>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg space-y-6">
+      <br></br>
+      <br></br>
+      <div className="flex items-center space-x-4">
+        <Image
+          src={`/college_flags/${user.college.replace(/\s+/g, " ")}.png`}
+          alt={user.college}
+          width={48}
+          height={48}
+          className="rounded-md object-contain"
+        />
+        <h2 className="text-3xl font-semibold">{user.name}'s Profile</h2>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-lg">
+          <strong>College:</strong> {user.college}
+        </p>
+        <p className="text-lg">
+          <strong>Points:</strong> {user.points}
+        </p>
+        <p className="text-lg">
+          <strong>Matches:</strong> {user.matches.length}
+        </p>
+      </div>
+
+      <div className="mt-6 text-gray-500 text-sm">
+        <p>Last updated: {new Date().toLocaleDateString()}</p>
+      </div>
     </div>
   );
 };
 
-export default ProfilePage;
+export default Profile;
