@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "yims-125a2"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
