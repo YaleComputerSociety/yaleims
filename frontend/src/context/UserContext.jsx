@@ -37,10 +37,11 @@ export const UserProvider = ({ children }) => {
         throw new Error("You must use a Yale email to sign in.");
       }
 
-      data = await fetchOrAddUserData(signedInUser.email); // Pass ID Token explicitly
+      const data = await fetchOrAddUserData(signedInUser.email); // Pass ID Token explicitly
+
       setUser({
-        name: currentUser.displayName,
-        email: currentUser.email,
+        name: signedInUser.displayName,
+        email: signedInUser.email,
         matches: data.user.matches,
         college: data.user.college,
         points: data.user.points
