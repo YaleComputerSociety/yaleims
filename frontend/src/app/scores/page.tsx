@@ -7,6 +7,30 @@ import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from '@src/context/FiltersContext';
 import { collegeMap, sportsMap, emojiMap } from '@src/data/helpers';
 
+type Match = {
+  id: string; // Unique identifier for the match
+  home_college: string; // Abbreviation of the home college
+  away_college: string; // Abbreviation of the away college
+  home_college_score: number; // Score of the home college
+  away_college_score: number; // Score of the away college
+  home_college_participants: [];
+  away_college_participants: [];
+  sport: string; // The sport played in the match (e.g., "Flag Football")
+  timestamp: string; // Date and time of the match, in ISO format or UNIX timestamp
+  location: string; // The location where the match was played (optional)
+  winner: string; // Determines the winner, or if it's a draw
+};
+
+interface TableRowProps {
+  match: Match; // match prop should be typed as a Match
+  onShowParticipants: (match: Match) => void; // onShowParticipants function prop
+}
+
+interface MatchesTableProps {
+  filteredMatches: Match[]; // Type the filteredMatches prop as an array of Match
+}
+
+
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
@@ -189,7 +213,7 @@ const ScoresPage: React.FC = () => {
     );
 
     // Updated TableRow Component
-    const TableRow = ({ match, onShowParticipants}) => (
+    const TableRow: React.FC<TableRowProps> = ({ match, onShowParticipants }) => (
       <tr className="bg-white">
         <td className="px-6 py-4 text-sm text-gray-500">{new Date(match.timestamp).toLocaleString('en-US', {
             month: 'short', // "Oct"
@@ -248,7 +272,7 @@ const ScoresPage: React.FC = () => {
             <>
               <strong 
                 className="cursor-pointer text-orange-500" 
-                onClick={() => openScoreOverview(match.home_college)} // Replace with your function
+                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
               >
                 {collegeMap[match.home_college]}
               </strong> 
@@ -256,7 +280,7 @@ const ScoresPage: React.FC = () => {
               {sportsMap[match.sport] / 2}pts vs 
               <strong 
                 className="cursor-pointer text-orange-500" 
-                onClick={() => openScoreOverview(match.away_college)} // Replace with your function
+                onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
               >
                 {" " +collegeMap[match.away_college]}
               </strong> 
@@ -283,8 +307,8 @@ const ScoresPage: React.FC = () => {
     );
 
     // Main MatchesTable Component
-    const MatchesTable = ({ filteredMatches }) => {
-      const onShowParticipants = (match) => {
+    const MatchesTable: React.FC<MatchesTableProps> = ({ filteredMatches }) => {
+      const onShowParticipants = (match: Match) => {
         // This could trigger a modal, display a dropdown, or anything else
         console.log("TODO")
       };

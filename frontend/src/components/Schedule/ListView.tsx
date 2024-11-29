@@ -1,4 +1,4 @@
-import { matches } from "@src/data/previousMatches";
+import { matches } from "@src/data/matches";
 import { Match } from "../../data/matches";
 
 interface MatchListProps {
