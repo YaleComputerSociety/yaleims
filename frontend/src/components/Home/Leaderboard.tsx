@@ -85,6 +85,7 @@ const Leaderboard: React.FC = () => {
                   width={size === "large" ? 128 : 96}
                   height={size === "large" ? 128 : 96}
                   className="object-contain p-3"
+                  unoptimized
                 />
                 <Image
                   src={`/college_flags/podium_${place}.png`}
@@ -93,6 +94,7 @@ const Leaderboard: React.FC = () => {
                   height={size === "large" ? 200 : 150}
                   layout="intrinsic"
                   className="absolute top-3"
+                  unoptimized
                 />
               </div>
               <h3 className="font-semibold text-sm text-gray-800 mt-2">
@@ -151,6 +153,7 @@ const Leaderboard: React.FC = () => {
                   width={24}
                   height={24}
                   className="mr-2 object-contain"
+                  unoptimized
                 />
                 {college.name}
               </td>
