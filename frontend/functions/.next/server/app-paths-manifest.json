@@ -1,0 +1,9 @@
+{
+  "/api/authenticate/route": "app/api/authenticate/route.js",
+  "/api/google-calendar/route": "app/api/google-calendar/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/schedule/page": "app/schedule/page.js",
+  "/page": "app/page.js",
+  "/scores/page": "app/scores/page.js"
+}
