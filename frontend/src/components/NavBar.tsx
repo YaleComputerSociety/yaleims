@@ -12,7 +12,7 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
       href="/profile"
       className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100"
     >
-      Welcome, {name}!
+      Welcome, {name.split(' ')[0]}!
     </Link>
   );
 };
@@ -62,6 +62,7 @@ const NavBar: React.FC = () => {
           ))}
 
           {/* User Profile or Sign-In */}
+          
           {loading ? (
             <div className="animate-pulse text-white">Loading...</div>
           ) : user ? (
@@ -76,10 +77,24 @@ const NavBar: React.FC = () => {
           )}
         </div>
       </div>
-      <div className="md:hidden flex items-center">
+      <div className="md:hidden flex items-center justify-between">
         <button onClick={toggleNavbar}>
-          {isClick ? <IoMdClose size={30} /> : <IoIosMenu size={30} />}
+          {isClick ? <IoMdClose size={30} /> : <IoIosMenu size={30}/> }
         </button>
+        <div className="flex justify-between items-center">
+          {!isClick ?  (loading ? (
+            <div className="animate-pulse text-white justify-between">Loading...</div>
+          ) : user ? (
+            <UserProfileButton name={user.name} />
+          ) : (
+            <button
+              onClick={signIn}
+              className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100"
+            >
+              Sign in with Google
+            </button>
+          )) : ""}
+        </div>
       </div>
       {isClick && (
         <div className="md:hidden bg-blue-600 flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
