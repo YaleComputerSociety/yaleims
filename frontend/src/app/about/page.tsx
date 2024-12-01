@@ -24,7 +24,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Ephraim Akai-Nettey",
       roles: ["Software Engineer"],
-      image: "/dev_images/Ephraim_Akai-Nettey.heic",
+      image: "/dev_images/Ephraim_Akai-Nettey.jpg",
       github: "https://github.com/dennisephraim",
       linkedin: "https://www.linkedin.com/in/ephraim-akai-nettey/",
       portfolio: "https://ephraimdennis.com/",
