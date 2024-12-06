@@ -1,21 +1,60 @@
-import { Match } from "../../data/matches";
+interface Match {
+  home_college: string | null;
+  away_college: string | null;
+  sport: string;
+  timestamp: string | null; // ISO 8601 format
+}
 
 interface SignUpProps {
-    match: Match;
-    onConfirm: () => void;
-    onCancel: () => void;
-  }
+  match: Match;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
 
-const SignUpModal: React.FC<SignUpProps> = ({ match, onConfirm, onCancel }) => (
+const SignUpModal: React.FC<SignUpProps> = ({ match, onConfirm, onCancel }) => {
+  const matchDate = match.timestamp
+    ? new Date(match.timestamp).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "Date TBD";
+
+  const matchTime = match.timestamp
+    ? new Date(match.timestamp).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Time TBD";
+
+  return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
         <h2 className="text-2xl font-bold mb-4">Sign Up for Match</h2>
-        <p>{match.college1} vs {match.college2} on {match.date} at {match.time}</p>
-        <button onClick={onConfirm} className="bg-green-600 text-white px-4 py-2 rounded-lg mt-4">Confirm Sign-Up</button>
-        <button onClick={onCancel} className="bg-red-600 text-white px-4 py-2 rounded-lg mt-2">Cancel</button>
+        <p className="mb-2">
+          <strong>{match.home_college || "TBD"}</strong> vs{" "}
+          <strong>{match.away_college || "TBD"}</strong>
+        </p>
+        <p className="mb-2">Sport: {match.sport}</p>
+        <p className="mb-4">
+          {matchDate} at {matchTime}
+        </p>
+        <button
+          onClick={onConfirm}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg mt-4 w-full"
+        >
+          Confirm Sign-Up
+        </button>
+        <button
+          onClick={onCancel}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg mt-2 w-full"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );
-  
-  export default SignUpModal;
-  
+};
+
+export default SignUpModal;
