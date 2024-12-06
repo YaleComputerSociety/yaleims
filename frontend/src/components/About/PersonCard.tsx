@@ -8,6 +8,7 @@ interface PersonCardProps {
   github: string | undefined;
   linkedin: string | undefined;
   portfolio: string | undefined;
+  specialThanks: boolean;
 }
 
 const PersonCard: React.FC<PersonCardProps> = ({
@@ -17,13 +18,17 @@ const PersonCard: React.FC<PersonCardProps> = ({
   github,
   linkedin,
   portfolio,
+  specialThanks,
 }) => {
   return (
     <div className="rounded-lg border min-w-fit bg-white mr-6 mb-6 shadow-lg \ transform transition-transform hover:scale-105 active:scale-100e">
       <img
         src={image}
         alt={name}
-        className="mb-2 min-w-full h-80 object-cover object-center rounded-t-lg"
+        className={
+          "mb-2 min-w-full object-cover object-center rounded-t-lg" +
+          (specialThanks ? " h-40" : " h-80")
+        }
       />
       <div className="px-5 pb-2">
         <h2 className="text-xl font-bold mt-4">{name}</h2>
