@@ -11,22 +11,28 @@ export const UserProvider = ({ children }) => {
 
   // Check if the user is already signed in
   useEffect(() => {
-    auth.onAuthStateChanged(async (currentUser) => {
-      if (currentUser) {
-        const data = await fetchOrAddUserData(currentUser.email); // Pass ID Token explicitly
-        setUser({
-          name: currentUser.displayName,
-          email: currentUser.email,
-          matches: data.user.matches,
-          college: data.user.college,
-          points: data.user.points
-        });
-      } else {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      if (currentUser && currentUser.email !== user?.email) {
+        try {
+          const data = await fetchOrAddUserData(currentUser.email);
+          setUser({
+            name: currentUser.displayName,
+            email: currentUser.email,
+            matches: data.user.matches,
+            college: data.user.college,
+            points: data.user.points,
+          });
+        } catch (error) {
+          console.error("Error setting user:", error);
+        }
+      } else if (!currentUser) {
         setUser(null);
       }
       setLoading(false);
     });
-  }, []);
+    return () => unsubscribe();
+  }, [user]);
+  
 
   const signIn = async () => {
     try {
