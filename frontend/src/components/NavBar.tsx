@@ -3,12 +3,13 @@ import Link from "next/link";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
 import { FiltersContext } from "@src/context/FiltersContext";
 import { useUser } from "../context/UserContext";
+import Image from 'next/image'
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
     <Link
       href="/profile"
-      className="text-blue-600 py-1 px-3 rounded hover:bg-gray-100 border rounded-lg border-blue-600"
+      className="mt-3 text-blue-600 py-1 px-3 rounded hover:bg-gray-100 border rounded-lg border-blue-600"
     >
       Welcome, {name.split(' ')[0]}!
     </Link>
@@ -43,7 +44,12 @@ const NavBar: React.FC = () => {
       <div className="md:flex md:block justify-between items-center hidden">
         <div className="hover:text-slate-300 text-xl pl-10">
           <Link href={links[0].href} onClick={resetFilters}>
-            {links[0].text}
+            <Image 
+              src="/LOGO.png"
+              width={150}
+              height={150}
+              alt="YALE IMS"
+            />
           </Link>
         </div>
         <div className="flex space-x-4">
@@ -54,27 +60,27 @@ const NavBar: React.FC = () => {
               className="hover:text-slate-300 flex justify-between items-center pl-4 pr-4 last:text-4xl last:pr-10"
               onClick={resetFilters}
             >
-              <div className=" ">{link.text}</div>
+              <div className="mt-3">{link.text}</div>
             </Link>
           ))}
 
           {/* User Profile or Sign-In */}
           
           {loading ? (
-            <div className="animate-pulse text-white">Loading...</div>
+            <div className="animate-pulse text-white mt-3">Loading...</div>
           ) : user ? (
             <UserProfileButton name={user.name} />
           ) : (
             <button
               onClick={signIn}
-              className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100"
+              className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100 mt-3"
             >
               Sign in with Google
             </button>
           )}
         </div>
       </div>
-      <div className={`${isClick ? 'bg-white p-4 rounded-lg' : 'bg-transparent'} md:hidden flex items-center justify-between`}>
+      <div className={`${isClick ? 'bg-white p-4 rounded-lg' : 'bg-transparent'} -mt-3 md:hidden flex items-center justify-between`}>
         <button onClick={toggleNavbar}>
           {isClick ? <IoMdClose size={30} /> : <IoIosMenu size={30}/> }
         </button>

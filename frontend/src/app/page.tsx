@@ -11,7 +11,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen p-8">
       <br />
-      <h1 className="text-4xl font-bold text-center mb-8">Leaderboard</h1>
+      <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">Leaderboard</h1>
       <Leaderboard />
     </div>
   );

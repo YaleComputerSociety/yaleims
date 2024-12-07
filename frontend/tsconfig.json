@@ -22,6 +22,6 @@
       "@src/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/authenticate.js", "src/data/helpers.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/authenticate.js", "src/data/helpers.ts", "src/app/_document.js"],
   "exclude": ["node_modules"]
 }
