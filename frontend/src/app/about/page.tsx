@@ -33,8 +33,8 @@ const AboutPage: React.FC = () => {
       name: "Brian Di Bassinga",
       roles: ["Software Engineer"],
       image: "https://randomuser.me/api/portrait",
-      github: undefined,
-      linkedin: undefined,
+      github: "https://github.com/btd2026",
+      linkedin: "https://www.linkedin.com/in/brian-di-bassinga-2399661a5?m",
       portfolio: undefined,
     },
     {
@@ -51,6 +51,81 @@ const AboutPage: React.FC = () => {
       image: "/dev_images/Kaitlyn_Oikle.jpg",
       github: "https://github.com/kjoikle",
       linkedin: "https://www.linkedin.com/in/kaitlyn-oikle/",
+      portfolio: undefined,
+    },
+    {
+      name: "Lily Lin",
+      roles: ["Lead Designer"],
+      image: "",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Naomi Ling",
+      roles: ["UI/UX Designer"],
+      image: "",
+      github: undefined,
+      linkedin: "https://www.linkedin.com/in/naomi-ling/",
+      portfolio: "https://naomiling.super.site/",
+    },
+    {
+      name: "Asya Tarabar",
+      roles: ["UI/UX Designer"],
+      image: "",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+  ];
+
+  const specialThanks = [
+    {
+      name: "Alejandro Gonzalez",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Alejandro_Gonzalez.png",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Mary Jiang",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Mary_Jiang.png",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Cierra Ouellette",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Cierra_Oullette.png",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Kelly Qiang",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Kelly_Qiang.jpeg",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Bienn Viquiera",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Bienn_Viquiera.png",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Edward Yang",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Edward_Yang.png",
+      github: undefined,
+      linkedin: undefined,
       portfolio: undefined,
     },
   ];
@@ -74,6 +149,26 @@ const AboutPage: React.FC = () => {
               github={member.github}
               linkedin={member.linkedin}
               portfolio={member.portfolio}
+              specialThanks={false}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="mb-8 bg-white shadow-lg p-5 rounded-lg w-4/5">
+        <p className="text-3xl font-semibold text-blue-500 pb-5">
+          Special Thanks
+        </p>
+        <div className="grid lg:grid-cols-4 md:grid-cols-2">
+          {specialThanks.map((member, index) => (
+            <PersonCard
+              key={index}
+              name={member.name}
+              roles={member.roles}
+              image={member.image}
+              github={member.github}
+              linkedin={member.linkedin}
+              portfolio={member.portfolio}
+              specialThanks={true}
             />
           ))}
         </div>

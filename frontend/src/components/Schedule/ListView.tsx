@@ -1,5 +1,12 @@
-import { matches } from "@src/data/matches";
-import { Match } from "../../data/matches";
+interface Match {
+  home_college: string | null;
+  away_college: string | null;
+  sport: string;
+  home_college_score: number | null;
+  away_college_score: number | null;
+  winner: string | null;
+  timestamp: string | null; // ISO 8601 format
+}
 
 interface MatchListProps {
   matches: Match[];
@@ -10,41 +17,67 @@ const ListView: React.FC<MatchListProps> = ({ matches, onMatchClick }) => {
   return (
     <div>
       {matches.length === 0 ? (
-        <div className="text-center text-gray-500">
-          No future matches found.
-        </div>
+        <div className="text-center text-gray-500">No future matches found.</div>
       ) : (
         <ul className="space-y-4">
-          {matches.map((match, index) => (
-            <li
-              key={index}
-              className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-2xl font-bold mb-1 text-gray-900">
-                    {match.college1} <span className="text-green-500">vs</span>{" "}
-                    {match.college2}
+          {matches.map((match, index) => {
+            const matchDate = match.timestamp
+              ? new Date(match.timestamp).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "Date TBD";
+
+            const matchTime = match.timestamp
+              ? new Date(match.timestamp).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Time TBD";
+
+            return (
+              <li
+                key={index}
+                className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-2xl font-bold mb-1 text-gray-900">
+                      {match.home_college || "TBD"}{" "}
+                      <span className="text-green-500">vs</span>{" "}
+                      {match.away_college || "TBD"}
+                    </div>
+                    <div className="text-gray-600 font-semibold">
+                      {match.sport}
+                    </div>
+                    <div className="text-gray-500">
+                      {matchDate} at {matchTime}
+                    </div>
+                    {match.home_college_score !== null &&
+                      match.away_college_score !== null && (
+                        <div className="text-gray-500">
+                          Score: {match.home_college_score} -{" "}
+                          {match.away_college_score}
+                        </div>
+                      )}
+                    {match.winner && (
+                      <div className="text-gray-500">
+                        Winner: {match.winner}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-gray-600 font-semibold">
-                    {match.sport}
-                  </div>
-                  <div className="text-gray-500">
-                    {match.date} at {match.time}
-                  </div>
-                  <div className="text-gray-500">
-                    Location: {match.location}
-                  </div>
+                  <button
+                    onClick={() => onMatchClick(match)}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 focus:outline-none transition duration-300 ease-in-out"
+                  >
+                    Sign Up
+                  </button>
                 </div>
-                <button
-                  onClick={() => onMatchClick(match)}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 focus:outline-none transition duration-300 ease-in-out"
-                >
-                  Sign Up
-                </button>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -117,7 +117,7 @@ const Leaderboard: React.FC = () => {
   }
 
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+    <div className="rounded-lg overflow-hidden">
       {/* Podium */}
       <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
 
