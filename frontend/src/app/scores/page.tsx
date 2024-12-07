@@ -251,14 +251,14 @@ const ScoresPage: React.FC = () => {
                   onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${collegeMap[match.home_college]}.png`}
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
                     alt=''
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
-                  {collegeMap[match.home_college]} 
+                  {toCollegeName[match.home_college]} 
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
                 </strong>
               </div> 
@@ -268,14 +268,14 @@ const ScoresPage: React.FC = () => {
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${collegeMap[match.away_college]}.png`}
+                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
                     alt=''
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
-                  {collegeMap[match.away_college]}
+                  {toCollegeName[match.away_college]}
                 </strong>
               </div>
               <div className='text-left'>
@@ -292,14 +292,14 @@ const ScoresPage: React.FC = () => {
                   onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${collegeMap[match.home_college]}.png`}
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
                     alt=''
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
-                  {collegeMap[match.home_college]} 
+                  {toCollegeName[match.home_college]} 
                 </strong>
               </div> 
               <div className='text-left'>
@@ -308,14 +308,14 @@ const ScoresPage: React.FC = () => {
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${collegeMap[match.away_college]}.png`}
+                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
                     alt=''
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
-                  {collegeMap[match.away_college]}
+                  {toCollegeName[match.away_college]}
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
                 </strong>
               </div>
@@ -333,14 +333,14 @@ const ScoresPage: React.FC = () => {
                   onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${collegeMap[match.home_college]}.png`}
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
                     alt=''
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
-                  {collegeMap[match.home_college]} 
+                  {toCollegeName[match.home_college]} 
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport] / 2}pts</span>
                 </strong>
               </div> 
@@ -350,14 +350,14 @@ const ScoresPage: React.FC = () => {
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${collegeMap[match.home_college]}.png`}
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
                     alt=''
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
-                  {collegeMap[match.away_college]}
+                  {toCollegeName[match.away_college]}
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport] / 2}pts</span>
                 </strong>
               </div>
