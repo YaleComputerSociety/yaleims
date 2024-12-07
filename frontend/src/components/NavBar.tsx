@@ -1,7 +1,5 @@
-import React, { useContext } from "react";
+import React, { useState, useContext } from "react";
 import Link from "next/link";
-import { FaHome, FaCalendar } from "react-icons/fa";
-import { BsFileBarGraphFill } from "react-icons/bs";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
 import { FiltersContext } from "@src/context/FiltersContext";
 import { useUser } from "../context/UserContext";
@@ -10,7 +8,7 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
     <Link
       href="/profile"
-      className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100"
+      className="text-blue-600 py-1 px-3 rounded hover:bg-gray-100 border rounded-lg border-blue-600"
     >
       Welcome, {name.split(' ')[0]}!
     </Link>
@@ -20,7 +18,7 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
 const NavBar: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { resetFilters } = filtersContext;
-  const [isClick, setisClick] = React.useState(false);
+  const [isClick, setisClick] = useState(false);
 
   const { user, signIn, loading } = useUser(); // Access user context
 
@@ -34,14 +32,14 @@ const NavBar: React.FC = () => {
   };
 
   const links = [
-    { href: "/", text: "YALE IMS", text_mobile: "Home", icon: <FaHome /> },
-    { href: "/about", text: "About", icon: <FaCalendar /> },
-    { href: "/scores", text: "Scores", icon: <BsFileBarGraphFill /> },
-    { href: "/schedule", text: "Schedule", icon: <FaCalendar /> },
+    { href: "/", text: "YALE IMS", text_mobile: "Home"},
+    { href: "/about", text: "About" },
+    { href: "/scores", text: "Scores" },
+    { href: "/schedule", text: "Schedule"},
   ];
 
   return (
-    <nav className="md:bg-blue-600 bg-blue-600 text-white p-5 items-center w-full fixed top-0 z-50">
+    <nav className="bg-light_grey text-blue-600 p-5 items-center w-full fixed top-0 z-50">
       <div className="md:flex md:block justify-between items-center hidden">
         <div className="hover:text-slate-300 text-xl pl-10">
           <Link href={links[0].href} onClick={resetFilters}>
@@ -57,7 +55,6 @@ const NavBar: React.FC = () => {
               onClick={resetFilters}
             >
               <div className=" ">{link.text}</div>
-              <div className="pl-1">{link.icon}</div>
             </Link>
           ))}
 
@@ -77,7 +74,7 @@ const NavBar: React.FC = () => {
           )}
         </div>
       </div>
-      <div className="md:hidden flex items-center justify-between">
+      <div className={`${isClick ? 'bg-white p-4 rounded-lg' : 'bg-transparent'} md:hidden flex items-center justify-between`}>
         <button onClick={toggleNavbar}>
           {isClick ? <IoMdClose size={30} /> : <IoIosMenu size={30}/> }
         </button>
@@ -97,7 +94,7 @@ const NavBar: React.FC = () => {
         </div>
       </div>
       {isClick && (
-        <div className="md:hidden bg-blue-600 flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
+        <div className="md:hidden -mt-8 bg-white flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
           {links.map((link, index) => (
             <Link
               key={index + "-second"}
@@ -109,7 +106,7 @@ const NavBar: React.FC = () => {
             </Link>
           ))}
           {/* Add User Profile or Sign-In in the mobile menu */}
-          <div className="pt-4 border-t border-white/30">
+          <div>
             {loading ? (
               <div className="animate-pulse text-gray-300 text-center">Loading...</div>
             ) : user ? (
@@ -127,7 +124,6 @@ const NavBar: React.FC = () => {
           </div>
         </div>
       )}
-
     </nav>
   );
 };

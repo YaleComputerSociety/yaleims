@@ -32,7 +32,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Brian Di Bassinga",
       roles: ["Software Engineer"],
-      image: "https://randomuser.me/api/portrait",
+      image: "/dev_images/Brian_Di_Bassinga.jpeg",
       github: "https://github.com/btd2026",
       linkedin: "https://www.linkedin.com/in/brian-di-bassinga-2399661a5?m",
       portfolio: undefined,
@@ -56,7 +56,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Lily Lin",
       roles: ["Lead Designer"],
-      image: "",
+      image: "/dev_images/Lily_Lin.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -64,7 +64,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Naomi Ling",
       roles: ["UI/UX Designer"],
-      image: "",
+      image: "/dev_images/Naomi_Ling.jpeg",
       github: undefined,
       linkedin: "https://www.linkedin.com/in/naomi-ling/",
       portfolio: "https://naomiling.super.site/",
@@ -72,7 +72,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Asya Tarabar",
       roles: ["UI/UX Designer"],
-      image: "",
+      image: "/dev_images/Asya_Tarabar.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -83,7 +83,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Alejandro Gonzalez",
       roles: ["Software Engineer"],
-      image: "/dev_images/Alejandro_Gonzalez.png",
+      image: "/dev_images/Alejandro_Gonzalez.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -91,7 +91,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Mary Jiang",
       roles: ["Software Engineer"],
-      image: "/dev_images/Mary_Jiang.png",
+      image: "/dev_images/Mary_Jiang.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -99,7 +99,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Cierra Ouellette",
       roles: ["Software Engineer"],
-      image: "/dev_images/Cierra_Oullette.png",
+      image: "/dev_images/Cierra_Ouellette.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -107,7 +107,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Kelly Qiang",
       roles: ["Software Engineer"],
-      image: "/dev_images/Kelly_Qiang.jpeg",
+      image: "/dev_images/Kelly_Qiang.png",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -115,7 +115,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Bienn Viquiera",
       roles: ["Software Engineer"],
-      image: "/dev_images/Bienn_Viquiera.png",
+      image: "/dev_images/Bienn_Viquiera.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -123,7 +123,7 @@ const AboutPage: React.FC = () => {
     {
       name: "Edward Yang",
       roles: ["Software Engineer"],
-      image: "/dev_images/Edward_Yang.png",
+      image: "/dev_images/Edward_Yang.jpeg",
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -131,46 +131,50 @@ const AboutPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 flex flex-col items-center">
-      <h1 className="text-4xl font-bold text-center mb-8 pt-5">About Us</h1>{" "}
-      <div className="mb-8 bg-white shadow-lg p-5 rounded-lg w-4/5 ">
-        <p className="text-3xl font-semibold text-blue-500">Our Story</p>
+    <div className="min-h-screen p-8 flex flex-col items-center">
+      <h1 className="text-blue-600 text-4xl font-bold text-center mb-8 pt-5 lg:-ml-6">About Us</h1>{" "}
+      <div className="mb-8 p-5 rounded-lg w-4/5 ">
+        <p className="text-3xl font-semibold text-blue-600">Our Story</p>
         <p className="text-2xl font-bold text-gray-800">.........</p>
       </div>
-      <div className="mb-8 bg-white shadow-lg p-5 rounded-lg w-4/5">
-        <p className="text-3xl font-semibold text-blue-500 pb-5">Our Team</p>
-        <div className="grid lg:grid-cols-4 md:grid-cols-2">
-          {teamMembers.map((member, index) => (
-            <PersonCard
-              key={index}
-              name={member.name}
-              roles={member.roles}
-              image={member.image}
-              github={member.github}
-              linkedin={member.linkedin}
-              portfolio={member.portfolio}
-              specialThanks={false}
-            />
-          ))}
+      <div className="mb-8 p-5 rounded-lg w-4/5">
+        <p className="text-3xl font-semibold text-blue-600 pb-5 text-center md:-ml-6">Our Team</p>
+        <div className="flex justify-center">
+          <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+            {teamMembers.map((member, index) => (
+              <PersonCard
+                key={index}
+                name={member.name}
+                roles={member.roles}
+                image={member.image}
+                github={member.github}
+                linkedin={member.linkedin}
+                portfolio={member.portfolio}
+                specialThanks={false}
+              />
+            ))}
+          </div>
         </div>
       </div>
-      <div className="mb-8 bg-white shadow-lg p-5 rounded-lg w-4/5">
-        <p className="text-3xl font-semibold text-blue-500 pb-5">
+      <div className="mb-8 p-5 rounded-lg w-4/5">
+        <p className="text-3xl font-semibold text-blue-600 pb-5 md:-ml-6 text-center">
           Special Thanks
         </p>
-        <div className="grid lg:grid-cols-4 md:grid-cols-2">
-          {specialThanks.map((member, index) => (
-            <PersonCard
-              key={index}
-              name={member.name}
-              roles={member.roles}
-              image={member.image}
-              github={member.github}
-              linkedin={member.linkedin}
-              portfolio={member.portfolio}
-              specialThanks={true}
-            />
-          ))}
+        <div className="flex justify-center">
+          <div className="grid lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-2 xs:grid-cols-2 gap-4">
+            {specialThanks.map((member, index) => (
+              <PersonCard
+                key={index}
+                name={member.name}
+                roles={member.roles}
+                image={member.image}
+                github={member.github}
+                linkedin={member.linkedin}
+                portfolio={member.portfolio}
+                specialThanks={true}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
