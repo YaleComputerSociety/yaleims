@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LoadingScreen from '@src/components/LoadingScreen';
 import { FiltersContext } from '@src/context/FiltersContext';
-import { collegeMap, sportsMap, emojiMap } from '@src/data/helpers';
+import { toCollegeName, sportsMap, emojiMap } from '@src/data/helpers';
 
 type Match = {
   id: string; // Unique identifier for the match
@@ -234,7 +234,7 @@ const ScoresPage: React.FC = () => {
                 className="cursor-pointer text-green-500" 
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
               >
-                {collegeMap[match.home_college]}
+                {toCollegeName[match.home_college]}
               </strong> 
               ({match.home_college_score}) + 
               {sportsMap[match.sport]}pts vs 
@@ -242,7 +242,7 @@ const ScoresPage: React.FC = () => {
                 className="cursor-pointer text-red-500" 
                 onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
               >
-                {" " + collegeMap[match.away_college]}
+                {" " + toCollegeName[match.away_college]}
               </strong> 
               ({match.away_college_score}) + 
               0pts
@@ -254,7 +254,7 @@ const ScoresPage: React.FC = () => {
                 className="cursor-pointer text-red-500" 
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
               >
-                {collegeMap[match.home_college]}
+                {toCollegeName[match.home_college]}
               </strong> 
               ({match.home_college_score}) + 
               0pts vs 
@@ -262,7 +262,7 @@ const ScoresPage: React.FC = () => {
                 className="cursor-pointer text-green-500" 
                 onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
               >
-                {" " + collegeMap[match.away_college]}
+                {" " + toCollegeName[match.away_college]}
               </strong> 
               ({match.away_college_score}) + 
               {sportsMap[match.sport]}pts
@@ -274,7 +274,7 @@ const ScoresPage: React.FC = () => {
                 className="cursor-pointer text-orange-500" 
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
               >
-                {collegeMap[match.home_college]}
+                {toCollegeName[match.home_college]}
               </strong> 
               ({match.home_college_score}) + 
               {sportsMap[match.sport] / 2}pts vs 
@@ -282,7 +282,7 @@ const ScoresPage: React.FC = () => {
                 className="cursor-pointer text-orange-500" 
                 onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
               >
-                {" " +collegeMap[match.away_college]}
+                {" " +toCollegeName[match.away_college]}
               </strong> 
               ({match.away_college_score}) + 
               {sportsMap[match.sport] / 2}pts
@@ -333,10 +333,10 @@ const ScoresPage: React.FC = () => {
       {/* College Summary (only displayed if a college is filtered) */}
       {filter.college && (
         <div className="mb-8 bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto text-center flex flex-col items-center justify-center">
-          <h2 className="text-3xl font-bold mb-4">{collegeMap[filter.college]} Overview</h2>
+          <h2 className="text-3xl font-bold mb-4">{toCollegeName[filter.college]} Overview</h2>
           <Image
-            src={`/college_flags/${collegeMap[filter.college]}.png`}
-            alt={`${collegeMap[filter.college]}_flag`}
+            src={`/college_flags/${toCollegeName[filter.college]}.png`}
+            alt={`${toCollegeName[filter.college]}_flag`}
             width="64"
             height="64"
           />
