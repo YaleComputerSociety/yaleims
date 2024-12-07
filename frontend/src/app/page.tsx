@@ -12,7 +12,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen p-8">
       <br />
-      <h1 className="text-xl md:text-4xl font-bold text-center mb-8">Leaderboard</h1>
+      <h1 className="text-xl md:text-4xl font-bold text-center mb-8 md:-ml-6">Leaderboard</h1>
       <div className="xs:hidden">
         <LeaderboardMobile />
       </div>

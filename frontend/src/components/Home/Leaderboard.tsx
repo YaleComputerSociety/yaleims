@@ -153,7 +153,7 @@ const Leaderboard: React.FC = () => {
             <tr
               key={college.id}
               onClick={() => handleCollegeClick(college.name)}
-              className="hover:bg-gray-100 cursor-pointer"
+              className="hover:bg-gray-50 cursor-pointer"
             >
               <td className="px-6 py-4 text-sm font-medium text-gray-900">
                 {index + 4}

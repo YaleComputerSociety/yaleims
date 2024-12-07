@@ -257,22 +257,30 @@ const ScoresPage: React.FC = () => {
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
                 </strong>
               </div> 
-              <div className='items-start text-xs md:text-sm'>
-                <strong 
-                  className="cursor-pointer text-gray-400 flex items-center" 
-                  onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
-                >
-                  <Image
-                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
-                    alt={match.away_college}
-                    width={20}
-                    height={20}
-                    className="mr-2 object-contain"
-                    unoptimized
-                  />
-                  {toCollegeName[match.away_college]}
-                </strong>
-              </div>
+                {
+                  match.away_college != "Bye" ? (
+                    <div className={`${match.away_college === "" ? "hidden" : "block"} items-start text-xs md:text-sm `}>
+                    <strong 
+                      className="cursor-pointer text-black flex items-center" 
+                      onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
+                    >
+                      <Image
+                        src={`/college_flags/${toCollegeName[match.away_college]}.png`}
+                        alt={match.away_college}
+                        width={20}
+                        height={20}
+                        className="mr-2 object-contain"
+                        unoptimized
+                      />
+                      {toCollegeName[match.away_college]}
+                      <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
+                    </strong>
+                  </div>
+                  ) :
+                  (
+                    <div className='pl-7 font-bold'>BYE</div>
+                  )
+                }
               <div className='text-left hidden md:block'>
                 <strong>{match.home_college_score ? match.home_college_score : 0}</strong>-
                 <strong className='text-gray-400'>{match.away_college_score ? match.away_college_score : 0}</strong>         
@@ -303,23 +311,24 @@ const ScoresPage: React.FC = () => {
                   {toCollegeName[match.home_college]} 
                 </strong>
               </div> 
-              <div className='items-start text-xs md:text-sm'>
-                <strong 
-                  className="cursor-pointer text-black flex items-center" 
-                  onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
-                >
-                  <Image
-                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
-                    alt={match.away_college}
-                    width={20}
-                    height={20}
-                    className="mr-2 object-contain"
-                    unoptimized
-                  />
-                  {toCollegeName[match.away_college]}
-                  <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
-                </strong>
-              </div>
+                  <div className={`${match.away_college === "" ? "hidden" : "block"} items-start text-xs md:text-sm `}>
+                  <strong 
+                    className="cursor-pointer text-black flex items-center" 
+                    onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
+                  >
+                    <Image
+                      src={`/college_flags/${toCollegeName[match.away_college]}.png`}
+                      alt={match.away_college}
+                      width={20}
+                      height={20}
+                      className="mr-2 object-contain"
+                      unoptimized
+                    />
+                    {toCollegeName[match.away_college]}
+                    <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
+                  </strong>
+                </div>
+
               <div className='text-left hidden md:block'>
                 <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>-
                 <strong>{match.away_college_score ? match.away_college_score : 0}</strong>                   
