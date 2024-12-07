@@ -6,6 +6,7 @@ import NavBar from "../components/NavBar"; // Adjust path accordingly
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { UserProvider } from "../context/UserContext";
 import FiltersProvider from "@src/context/FiltersContext";
+import Footer from "@src/components/Footer";
 
 const CLIENT_ID =
   "683055403263-8nk173ne786mjmhicqmuod2ufmcdnnec.apps.googleusercontent.com";
@@ -28,6 +29,7 @@ export default function RootLayout({
               <NavBar />
               <div className="mb-10"></div>
               {children}
+              <Footer />
             </body>
           </html>
         </GoogleOAuthProvider>
