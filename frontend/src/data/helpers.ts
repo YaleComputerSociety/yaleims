@@ -42,7 +42,7 @@ type Sport = {
   
   
   // College abbreviations mapped to full college names (fixed keys)
-  export const collegeMap: CollegeMap = {
+  export const toCollegeName: CollegeMap = {
     "BF": "Benjamin Franklin",
     "BK": "Berkeley",
     "BR": "Branford",  // Changed "BF" to "BC" to make it unique
@@ -58,4 +58,27 @@ type Sport = {
     "TD": "Timothy Dwight",
     "TC": "Trumbull"
   };
+
+    // College abbreviations mapped to full college names (fixed keys)
+    export const toCollegeAbbreviation: Record<string, string> = {
+      "Benjamin Franklin": "BF",
+      "Berkeley": "BK",
+      "Branford": "BR",
+      "Davenport": "DC",
+      "Ezra Stiles": "ES",
+      "Grace Hopper": "GH",
+      "Jonathan Edwards": "JE",
+      "Morse": "MC",
+      "Pauli Murray": "MY",
+      "Pierson": "PC",
+      "Saybrook": "SY",
+      "Silliman": "SM",
+      "Timothy Dwight": "TD",
+      "Trumbull": "TC"
+    };
+    
+  
+
+
+
   

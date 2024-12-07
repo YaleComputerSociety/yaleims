@@ -10,11 +10,11 @@ import Filters from "../../components/Schedule/Filter";
 import ListView from "../../components/Schedule/ListView";
 import SignUpModal from "../../components/Schedule/Signup";
 import Calendar, { CalendarType } from "react-calendar";
+import { toCollegeAbbreviation } from "@src/data/helpers"
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
 const SchedulePage: React.FC = () => {
-  const [view, setView] = useState<"list" | "calendar">("list");
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
   const [signUpModalOpen, setSignUpModalOpen] = useState<boolean>(false);
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
@@ -48,30 +48,35 @@ const SchedulePage: React.FC = () => {
             },
           }
         );
-
+  
         if (!response.ok) {
           throw new Error(`Error fetching scores: ${response.statusText}`);
         }
-
+  
         const data = await response.json();
         const filtered = data.filter((match: any) => {
           // Handle filtering
           const matchDate = match.timestamp ? new Date(match.timestamp) : null;
-
-          const collegeMatch = filter.college
-            ? [match.home_college, match.away_college].includes(filter.college)
+  
+          // Safely resolve abbreviation
+          const collegeAbbreviation : string = filter.college
+            ? toCollegeAbbreviation[filter.college]
+            : null;
+  
+          const collegeMatch = collegeAbbreviation
+            ? [match.home_college, match.away_college].includes(collegeAbbreviation)
             : true;
-
+  
           const sportMatch = filter.sport ? match.sport === filter.sport : true;
-
+  
           const dateMatch =
             filter.date && matchDate
               ? matchDate.toDateString() === filter.date.toDateString()
               : true;
-
+  
           return matchDate && collegeMatch && sportMatch && dateMatch;
         });
-
+  
         setFilteredMatches(filtered);
       } catch (error) {
         console.error("Failed to fetch scores:", error);
@@ -79,10 +84,10 @@ const SchedulePage: React.FC = () => {
         setIsLoading(false);
       }
     };
-
+  
     fetchScores();
-  }, [filter]);
-
+  }, [filter]); // Make sure to include filter as a dependency
+  
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
@@ -128,8 +133,8 @@ const SchedulePage: React.FC = () => {
       match,
     }));
 
-  const handleViewToggle = () => {
-    setView(view === "list" ? "calendar" : "list");
+  const updateFilter = (key: keyof typeof filter, value: string) => {
+    setFilter((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleDateClick = (value: Date) => {
@@ -147,15 +152,11 @@ const SchedulePage: React.FC = () => {
   
             {/* Filters */}
             <Filters
-              collegeFilter={filter.college}
-              setCollegeFilter={(value) =>
-                setFilter((prev) => ({ ...prev, college: value }))
-              }
-              sportFilter={filter.sport}
-              setSportFilter={(value) =>
-                setFilter((prev) => ({ ...prev, sport: value }))
-              }
+              filter={filter}
+              updateFilter={updateFilter}
             />
+
+
   
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Calendar */}
