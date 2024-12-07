@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
 
+import { FiltersContext } from "@src/context/FiltersContext";
+
 const Leaderboard: React.FC = () => {
+  const filtersContext = useContext(FiltersContext);
+  const { filter, setFilter } = filtersContext;
+
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
   const [sortedColleges, setSortedColleges] = useState<any[]>([]);
@@ -39,7 +44,7 @@ const Leaderboard: React.FC = () => {
   }, []);
 
   const handleCollegeClick = (collegeName: string) => {
-    sessionStorage.setItem("selectedCollege", collegeName);
+    setFilter((prev) => ({ ...prev, college: collegeName }));
     router.push("/scores");
   };
 
@@ -71,8 +76,8 @@ const Leaderboard: React.FC = () => {
         college: topColleges[0],
         size: "large",
         offset: "translate-y-0",
-      }
-    ]
+      },
+    ];
 
     return (
       <div className="flex flex-row justify-center md:gap-10 items-end space-x-6">
@@ -90,13 +95,16 @@ const Leaderboard: React.FC = () => {
               >
                 {/* Main College Flag */}
                 <Image
-                  src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
+                  src={`/college_flags/${college.name.replace(
+                    /\s+/g,
+                    " "
+                  )}.png`}
                   alt={college.name}
                   width={size === "large" ? 160 : 96}
                   height={size === "large" ? 160 : 96}
                   className="object-contain p-3"
                 />
-                
+
                 {/* Overlay Image */}
                 <Image
                   src={`/college_flags/${place}.png`}
@@ -104,7 +112,9 @@ const Leaderboard: React.FC = () => {
                   width={size === "large" ? 400 : 50}
                   height={size === "large" ? 400 : 50}
                   layout="fixed"
-                  className={`absolute ${place === "first" ? 'top-10' : 'top-20'}`}
+                  className={`absolute ${
+                    place === "first" ? "top-10" : "top-20"
+                  }`}
                 />
               </div>
 
@@ -147,7 +157,10 @@ const Leaderboard: React.FC = () => {
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 flex items-center">
                 <Image
-                  src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
+                  src={`/college_flags/${college.name.replace(
+                    /\s+/g,
+                    " "
+                  )}.png`}
                   alt={college.name}
                   width={24}
                   height={24}
