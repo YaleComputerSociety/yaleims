@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
-import { toCollegeName, sportsMap, emojiMap } from "@src/data/helpers";
+import { toCollegeName, sportsMap, emojiMap, toCollegeAbbreviation } from "@src/data/helpers";
 
 type Match = {
   id: string; // Unique identifier for the match
@@ -77,6 +77,7 @@ const ScoresPage: React.FC = () => {
         const data = await response.json();
         setOriginalData(data);
         setFilteredMatches(data);
+        console.log(data)
       } catch (error) {
         console.error("Failed to fetch scores:", error);
       }
@@ -84,6 +85,18 @@ const ScoresPage: React.FC = () => {
 
     fetchScores();
   }, []); // Add filter as a dependency to re-fetch when the filter changes
+
+  const filterCollege = (college: string) => {
+    console.log(college)
+    if (college == "All") {
+      setFilteredMatches(originalData)
+    } else {
+      const filtered = originalData.filter((match: Match) => {
+        return match.home_college == college || match.away_college == college
+      });
+      setFilteredMatches(filtered);
+    }
+  };
 
   const calculateCollegeStats = (college: string, matches: any[]) => {
     const points = matches.reduce((total: number, match) => {
@@ -113,6 +126,7 @@ const ScoresPage: React.FC = () => {
   ) => {
     const { name, value } = e.target;
     setFilter((prev) => ({ ...prev, [name]: value }));
+    filterCollege(value)
   };
 
   const handleCollegeClick = (collegeName: string) => {
