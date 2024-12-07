@@ -131,32 +131,19 @@ const Leaderboard: React.FC = () => {
     <div className="rounded-lg overflow-hidden">
       {/* Podium */}
 
-      <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
+      <div className="py-6">{renderPodium(sortedColleges.slice(0, 1))}</div>
 
       {/* Full Leaderboard */}
       <table className="min-w-full divide-y divide-gray-200 mt-4">
-        {/* <thead className="bg-blue-600">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              Rank
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              College
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              Points
-            </th>
-          </tr>
-        </thead> */}
         <tbody className="bg-white divide-y divide-gray-200">
-          {sortedColleges.slice(3).map((college, index) => (
+          {sortedColleges.slice(1).map((college, index) => (
             <tr
               key={college.id}
               onClick={() => handleCollegeClick(college.name)}
               className="hover:bg-gray-100 cursor-pointer"
             >
               <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                {index + 4}
+                {index + 2}
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 flex items-center">
                 <Image
