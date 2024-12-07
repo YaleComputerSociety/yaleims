@@ -145,10 +145,9 @@ const ScoresPage: React.FC = () => {
 
     allMatches.forEach(item => {
       const date: string = new Date(item.timestamp).toLocaleDateString("en-CA", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-    
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",    
       }); 
       // console.log(date)
       if (!groupedData[date]) {
@@ -162,77 +161,73 @@ const ScoresPage: React.FC = () => {
 
     // Updated TableHeader Component
     const TableHeader = () => (
-      <thead className="bg-gray-200">
-        <tr>
-          {/* Date/Time Column with Dropdown Filter */}
-          <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <div>
-              <select
-                name="date"
-                onChange={handleFilterChange}
-                className="text-xs border-gray-300 rounded-md py-1 px-2"
-              >
-                <option value="all">Date/Time</option>
-                <option value="today">Today</option>
-                <option value="this_week">This Week</option>
-              </select>
-            </div>
-          </th>
+      <div className="flex px-2 py-2 rounded-md justify-self-center border shadow-md">
+        {/* Date/Time Column with Dropdown Filter */}
+        <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
+          <div>
+            <select
+              name="date"
+              onChange={handleFilterChange}
+              className="text-xs md:text-sm rounded-md py-1 px-1"
+            >
+              <option value="all">Date/Time</option>
+              <option value="today">Today</option>
+              <option value="this_week">This Week</option>
+            </select>
+          </div>
+        </div>
 
-          {/* Colleges & Score Column with Dropdown Filter */}
-          <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <div>
-              <select
-                name="college"
-                onChange={handleFilterChange}
-                className="text-xs border-gray-300 rounded-md py-1 px-2"
-              >
-                <option value="">Colleges</option>
-                <option value="BF">Benjamin Franklin</option>
-                <option value="BR">Berkeley</option>
-                <option value="BR">Branford</option>
-                <option value="DC">Davenport</option>
-                <option value="ES">Ezra Stiles</option>
-                <option value="GH">Grace Hopper</option>
-                <option value="JE">Jonathan Edwards</option>
-                <option value="MC">Morse</option>
-                <option value="MY">Pauli Murray</option>
-                <option value="PC">Pierson</option>
-                <option value="SB">Saybrook</option>
-                <option value="SI">Silliman</option>
-                <option value="TD">Timothy Dwight</option>
-                <option value="TR">Trumbull</option>
-              </select>
-            </div>
-          </th>
+        {/* Colleges & Score Column with Dropdown Filter */}
+        <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
+          <div>
+            <select
+              name="college"
+              onChange={handleFilterChange}
+              className="text-xs md:text-sm rounded-md py-1 px-1"
+            >
+              <option value="">Colleges</option>
+              <option value="BF">Benjamin Franklin</option>
+              <option value="BR">Berkeley</option>
+              <option value="BR">Branford</option>
+              <option value="DC">Davenport</option>
+              <option value="ES">Ezra Stiles</option>
+              <option value="GH">Grace Hopper</option>
+              <option value="JE">Jonathan Edwards</option>
+              <option value="MC">Morse</option>
+              <option value="MY">Pauli Murray</option>
+              <option value="PC">Pierson</option>
+              <option value="SB">Saybrook</option>
+              <option value="SI">Silliman</option>
+              <option value="TD">Timothy Dwight</option>
+              <option value="TR">Trumbull</option>
+            </select>
+          </div>
+        </div>
 
-          {/* Sport Column with Dropdown Filter */}
-          <th className="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            <div>
-              <select
-                name="sport"
-                onChange={handleFilterChange}
-                className="text-xs border-gray-300 rounded-md py-1 px-2"
-              >
-                <option value="">All Sport</option>
-                <option value="Flag Football">Flag Football</option>
-                <option value="Spikeball">Spikeball</option>
-                <option value="Cornhole">Cornhole</option>
-                <option value="Pickleball">Pickleball</option>
-                <option value="Table Tennis">Table Tennis</option>
-              </select>
-            </div>
-          </th>
-
-          
-        </tr>
-      </thead>
+        {/* Sport Column with Dropdown Filter */}
+        <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
+          <div>
+            <select
+              name="sport"
+              onChange={handleFilterChange}
+              className="text-xs md:text-sm rounded-md py-1 px-1"
+            >
+              <option value="">All Sport</option>
+              <option value="Flag Football">Flag Football</option>
+              <option value="Spikeball">Spikeball</option>
+              <option value="Cornhole">Cornhole</option>
+              <option value="Pickleball">Pickleball</option>
+              <option value="Table Tennis">Table Tennis</option>
+            </select>
+          </div>
+        </div>
+      </div>
     );
 
     // Updated TableRow Component
     const TableRow: React.FC<TableRowProps> = ({ match, onShowParticipants }) => (
       <div className="bg-white grid grid-cols-[auto_1fr_auto] items-center">
-        <div className="px-6 py-4 text-sm text-gray-500">{new Date(match.timestamp).toLocaleString('en-US', {
+        <div className="md:px-6 pl-2 py-4 text-xs md:text-sm text-gray-500">{new Date(match.timestamp).toLocaleString('en-US', {
             hour: '2-digit', // "04"
             minute: '2-digit', // "00"
             hour12: true, // "AM/PM"
@@ -240,19 +235,19 @@ const ScoresPage: React.FC = () => {
         </div>
         
         {/* Combine Colleges and Scores into one column */}
-        <div className="text-left px-6 py-4 text-sm grid grid-cols-[0.7fr_0.7fr_0.3fr]">
+        <div className="text-left md:px-6 py-4 px-3 text-sm grid md:grid-cols-[0.7fr_0.7fr_0.3fr] md:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
           {/* Determine the winner and loser */}
           {match.home_college_score > match.away_college_score ? (
             // Home college wins
             <>
-              <div className='items-start'>
+              <div className='items-start text-xs md:text-sm'>
                 <strong 
                   className="cursor-pointer text-black flex items-center" 
                   onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
                 >
                   <Image
                     src={`/college_flags/${toCollegeName[match.home_college]}.png`}
-                    alt=''
+                    alt={match.home_college}
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
@@ -262,14 +257,14 @@ const ScoresPage: React.FC = () => {
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
                 </strong>
               </div> 
-              <div>
+              <div className='items-start text-xs md:text-sm'>
                 <strong 
                   className="cursor-pointer text-gray-400 flex items-center" 
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
                     src={`/college_flags/${toCollegeName[match.away_college]}.png`}
-                    alt=''
+                    alt={match.away_college}
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
@@ -278,22 +273,28 @@ const ScoresPage: React.FC = () => {
                   {toCollegeName[match.away_college]}
                 </strong>
               </div>
-              <div className='text-left'>
+              <div className='text-left hidden md:block'>
                 <strong>{match.home_college_score ? match.home_college_score : 0}</strong>-
+                <strong className='text-gray-400'>{match.away_college_score ? match.away_college_score : 0}</strong>         
+              </div>
+              <div className='text-right md:hidden text-xs'>
+                <strong>{match.home_college_score ? match.home_college_score : 0}</strong>        
+              </div>
+              <div className='text-right md:hidden text-xs'>
                 <strong className='text-gray-400'>{match.away_college_score ? match.away_college_score : 0}</strong>         
               </div>
             </>
           ) : match.home_college_score < match.away_college_score ? (
             // Away college wins
             <>
-              <div className=''>
+              <div className='items-start text-xs md:text-sm'>
                 <strong 
                   className="cursor-pointer text-gray-400 flex items-center" 
                   onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
                 >
                   <Image
                     src={`/college_flags/${toCollegeName[match.home_college]}.png`}
-                    alt=''
+                    alt={match.home_college}
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
@@ -302,14 +303,14 @@ const ScoresPage: React.FC = () => {
                   {toCollegeName[match.home_college]} 
                 </strong>
               </div> 
-              <div className='text-left'>
+              <div className='items-start text-xs md:text-sm'>
                 <strong 
                   className="cursor-pointer text-black flex items-center" 
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
                     src={`/college_flags/${toCollegeName[match.away_college]}.png`}
-                    alt=''
+                    alt={match.away_college}
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
@@ -319,22 +320,28 @@ const ScoresPage: React.FC = () => {
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
                 </strong>
               </div>
-              <div className='text-left'>
+              <div className='text-left hidden md:block'>
                 <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>-
                 <strong>{match.away_college_score ? match.away_college_score : 0}</strong>                   
+              </div>
+              <div className='text-right md:hidden text-xs'>
+                <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>                            
+              </div>
+              <div className='text-right md:hidden text-xs'>
+                <strong>{match.away_college_score ? match.away_college_score : 0}</strong>                
               </div>
             </>
           ) : (
             // Draw
             <>
-              <div className=''>
+              <div className='items-start text-xs md:text-sm'>
                 <strong 
                   className="cursor-pointer text-gray-400 flex items-center" 
                   onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
                 >
                   <Image
                     src={`/college_flags/${toCollegeName[match.home_college]}.png`}
-                    alt=''
+                    alt={match.home_college}
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
@@ -344,14 +351,14 @@ const ScoresPage: React.FC = () => {
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport] / 2}pts</span>
                 </strong>
               </div> 
-              <div className='text-left'>
+              <div className='items-start text-xs md:text-sm'>
                 <strong 
                   className="cursor-pointer text-gray-400 flex items-center" 
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
-                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
-                    alt=''
+                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
+                    alt={match.away_college}
                     width={20}
                     height={20}
                     className="mr-2 object-contain"
@@ -361,9 +368,15 @@ const ScoresPage: React.FC = () => {
                   <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport] / 2}pts</span>
                 </strong>
               </div>
-              <div className='text-left'>
+              <div className='text-left hidden md:block'>
                 <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>-
                 <strong className='text-gray-400'>{match.away_college_score ? match.away_college_score : 0}</strong>         
+              </div>
+              <div className='text-right md:hidden text-xs'>
+                <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>         
+              </div>
+              <div className='text-right md:hidden text-xs'>
+                <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>       
               </div>
             </>
           )}
@@ -383,15 +396,14 @@ const ScoresPage: React.FC = () => {
       };
       const test = groupByDate(filteredMatches)
       
-      console.log(test)
+      // console.log(test)
       return (
         <>
           {Object.entries(test).map(([date, items]) => (
-            <div key={date} className="min-w-full bg-white rounded-lg mb-4">
+            <div key={date} className="min-w-full rounded-lg mb-4">
               <div>
-                <div className="text-left text-gray-700 p-2 bg-gray-100 border-none">
-                    {date}
-                  
+                <div className="text-left text-gray-700 p-2 bg-black-100 border-none">
+                  {date}
                 </div>
               </div>
               <div>
@@ -407,8 +419,8 @@ const ScoresPage: React.FC = () => {
   
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold text-center mb-8 pt-8">Scores and Rankings</h1>
+    <div className="min-h-screen bg-gray-100 p-8 flex-col items-center">
+      <h1 className="md:text-4xl text-xl font-bold text-center mb-8 pt-8">Scores and Rankings</h1>
 
       {/* College Summary (only displayed if a college is filtered) */}
       {filter.college && (
@@ -442,10 +454,10 @@ const ScoresPage: React.FC = () => {
           </div>
         </div>
       )}
-      <div className="min-w-full px-20">
-        {/* <TableHeader /> */}
+      <div className="min-w-full flex-col items-center md:px-20">
+        <TableHeader />
         
-              <MatchesTable filteredMatches={filteredMatches} />
+        <MatchesTable filteredMatches={filteredMatches} />
       </div>
       {/* Loading Screen */}
       {isLoading && <LoadingScreen />}
