@@ -9,7 +9,7 @@ const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen p-8">
       <br />
       <h1 className="text-4xl font-bold text-center mb-8">Leaderboard</h1>
       <Leaderboard />
