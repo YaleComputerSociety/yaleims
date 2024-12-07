@@ -140,6 +140,26 @@ const ScoresPage: React.FC = () => {
     console.log("TODO")
   }
 
+  const groupByDate = (allMatches: Match[]) => {
+    const groupedData: { [key: string]: Match[] } = {};
+
+    allMatches.forEach(item => {
+      const date: string = new Date(item.timestamp).toLocaleDateString("en-CA", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+    
+      }); 
+      // console.log(date)
+      if (!groupedData[date]) {
+        groupedData[date] = [];
+      }
+      groupedData[date].push(item);
+    });
+  
+    return groupedData;
+  }
+
     // Updated TableHeader Component
     const TableHeader = () => (
       <thead className="bg-gray-200">
@@ -167,7 +187,7 @@ const ScoresPage: React.FC = () => {
                 onChange={handleFilterChange}
                 className="text-xs border-gray-300 rounded-md py-1 px-2"
               >
-                <option value="">All Colleges & Scores</option>
+                <option value="">Colleges</option>
                 <option value="BF">Benjamin Franklin</option>
                 <option value="BR">Berkeley</option>
                 <option value="BR">Branford</option>
@@ -204,126 +224,186 @@ const ScoresPage: React.FC = () => {
             </div>
           </th>
 
-          {/* Players Column */}
-          <th className="text-righ px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Players
-          </th>
+          
         </tr>
       </thead>
     );
 
     // Updated TableRow Component
     const TableRow: React.FC<TableRowProps> = ({ match, onShowParticipants }) => (
-      <tr className="bg-white">
-        <td className="px-6 py-4 text-sm text-gray-500">{new Date(match.timestamp).toLocaleString('en-US', {
-            month: 'short', // "Oct"
-            day: 'numeric', // "9"
-            year: 'numeric', // "2024"
+      <div className="bg-white grid grid-cols-[auto_1fr_auto] items-center">
+        <div className="px-6 py-4 text-sm text-gray-500">{new Date(match.timestamp).toLocaleString('en-US', {
             hour: '2-digit', // "04"
             minute: '2-digit', // "00"
             hour12: true, // "AM/PM"
-          })}</td>
+          })}
+        </div>
         
         {/* Combine Colleges and Scores into one column */}
-        <td className="text-center px-6 py-4 text-sm text-gray-500">
+        <div className="text-left px-6 py-4 text-sm grid grid-cols-[0.7fr_0.7fr_0.3fr]">
           {/* Determine the winner and loser */}
           {match.home_college_score > match.away_college_score ? (
             // Home college wins
             <>
-              <strong 
-                className="cursor-pointer text-green-500" 
-                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
-              >
-                {toCollegeName[match.home_college]}
-              </strong> 
-              ({match.home_college_score}) + 
-              {sportsMap[match.sport]}pts vs 
-              <strong 
-                className="cursor-pointer text-red-500" 
-                onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
-              >
-                {" " + toCollegeName[match.away_college]}
-              </strong> 
-              ({match.away_college_score}) + 
-              0pts
+              <div className='items-start'>
+                <strong 
+                  className="cursor-pointer text-black flex items-center" 
+                  onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
+                >
+                  <Image
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
+                    alt=''
+                    width={20}
+                    height={20}
+                    className="mr-2 object-contain"
+                    unoptimized
+                  />
+                  {toCollegeName[match.home_college]} 
+                  <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
+                </strong>
+              </div> 
+              <div>
+                <strong 
+                  className="cursor-pointer text-gray-400 flex items-center" 
+                  onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
+                >
+                  <Image
+                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
+                    alt=''
+                    width={20}
+                    height={20}
+                    className="mr-2 object-contain"
+                    unoptimized
+                  />
+                  {toCollegeName[match.away_college]}
+                </strong>
+              </div>
+              <div className='text-left'>
+                <strong>{match.home_college_score ? match.home_college_score : 0}</strong>-
+                <strong className='text-gray-400'>{match.away_college_score ? match.away_college_score : 0}</strong>         
+              </div>
             </>
           ) : match.home_college_score < match.away_college_score ? (
             // Away college wins
             <>
-              <strong 
-                className="cursor-pointer text-red-500" 
-                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
-              >
-                {toCollegeName[match.home_college]}
-              </strong> 
-              ({match.home_college_score}) + 
-              0pts vs 
-              <strong 
-                className="cursor-pointer text-green-500" 
-                onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
-              >
-                {" " + toCollegeName[match.away_college]}
-              </strong> 
-              ({match.away_college_score}) + 
-              {sportsMap[match.sport]}pts
+              <div className=''>
+                <strong 
+                  className="cursor-pointer text-gray-400 flex items-center" 
+                  onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
+                >
+                  <Image
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
+                    alt=''
+                    width={20}
+                    height={20}
+                    className="mr-2 object-contain"
+                    unoptimized
+                  />
+                  {toCollegeName[match.home_college]} 
+                </strong>
+              </div> 
+              <div className='text-left'>
+                <strong 
+                  className="cursor-pointer text-black flex items-center" 
+                  onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
+                >
+                  <Image
+                    src={`/college_flags/${toCollegeName[match.away_college]}.png`}
+                    alt=''
+                    width={20}
+                    height={20}
+                    className="mr-2 object-contain"
+                    unoptimized
+                  />
+                  {toCollegeName[match.away_college]}
+                  <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport]}pts</span>
+                </strong>
+              </div>
+              <div className='text-left'>
+                <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>-
+                <strong>{match.away_college_score ? match.away_college_score : 0}</strong>                   
+              </div>
             </>
           ) : (
             // Draw
             <>
-              <strong 
-                className="cursor-pointer text-orange-500" 
-                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
-              >
-                {toCollegeName[match.home_college]}
-              </strong> 
-              ({match.home_college_score}) + 
-              {sportsMap[match.sport] / 2}pts vs 
-              <strong 
-                className="cursor-pointer text-orange-500" 
-                onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
-              >
-                {" " +toCollegeName[match.away_college]}
-              </strong> 
-              ({match.away_college_score}) + 
-              {sportsMap[match.sport] / 2}pts
+              <div className=''>
+                <strong 
+                  className="cursor-pointer text-gray-400 flex items-center" 
+                  onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
+                >
+                  <Image
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
+                    alt=''
+                    width={20}
+                    height={20}
+                    className="mr-2 object-contain"
+                    unoptimized
+                  />
+                  {toCollegeName[match.home_college]} 
+                  <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport] / 2}pts</span>
+                </strong>
+              </div> 
+              <div className='text-left'>
+                <strong 
+                  className="cursor-pointer text-gray-400 flex items-center" 
+                  onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
+                >
+                  <Image
+                    src={`/college_flags/${toCollegeName[match.home_college]}.png`}
+                    alt=''
+                    width={20}
+                    height={20}
+                    className="mr-2 object-contain"
+                    unoptimized
+                  />
+                  {toCollegeName[match.away_college]}
+                  <span className='text-yellow-300 text-xs'>+{sportsMap[match.sport] / 2}pts</span>
+                </strong>
+              </div>
+              <div className='text-left'>
+                <strong className='text-gray-400'>{match.home_college_score? match.home_college_score : 0}</strong>-
+                <strong className='text-gray-400'>{match.away_college_score ? match.away_college_score : 0}</strong>         
+              </div>
             </>
           )}
-        </td>
+        </div>
 
-        <td className='text-center px-2 py-1'>
+        <div className='text-center px-2 py-1'>
           {emojiMap[match.sport]}
-        </td>
-
-        {/* Button to show participants */}
-        <td className="text-right px-6 text-sm text-gray-500">
-          <button
-            onClick={() => onShowParticipants(match)}
-            className="text-blue-500 hover:text-blue-700"
-          >
-            Players
-          </button>
-        </td>
-      </tr>
+        </div>
+      </div>
     );
 
     // Main MatchesTable Component
     const MatchesTable: React.FC<MatchesTableProps> = ({ filteredMatches }) => {
       const onShowParticipants = (match: Match) => {
         // This could trigger a modal, display a dropdown, or anything else
-        console.log("TODO")
+        console.log("TODO");
       };
-
+      const test = groupByDate(filteredMatches)
+      
+      console.log(test)
       return (
-        <table className="min-w-full bg-white shadow-md rounded-lg">
-          <TableHeader />
-          <tbody>
-            {filteredMatches.map((match, index) => (
-              <TableRow key={index} match={match} onShowParticipants={onShowParticipants} />
-            ))}
-          </tbody>
-        </table>
+        <>
+          {Object.entries(test).map(([date, items]) => (
+            <div key={date} className="min-w-full bg-white rounded-lg mb-4">
+              <div>
+                <div className="text-left text-gray-700 p-2 bg-gray-100 border-none">
+                    {date}
+                  
+                </div>
+              </div>
+              <div>
+                {items.map((match, index) => (
+                  <TableRow key={index} match={match} onShowParticipants={onShowParticipants} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
       );
-    };
+    };    
   
 
   return (
@@ -362,9 +442,11 @@ const ScoresPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      <MatchesTable filteredMatches={filteredMatches} />
-
+      <div className="min-w-full px-20">
+        {/* <TableHeader /> */}
+        
+              <MatchesTable filteredMatches={filteredMatches} />
+      </div>
       {/* Loading Screen */}
       {isLoading && <LoadingScreen />}
     </div>
