@@ -50,10 +50,10 @@ const ScoresPage: React.FC = () => {
       setIsLoading(false);
     }, 1000);
 
-    const selectedCollege = sessionStorage.getItem("selectedCollege");
-    if (selectedCollege) {
-      setFilter((prev) => ({ ...prev, college: selectedCollege }));
-    }
+    // const selectedCollege = sessionStorage.getItem("selectedCollege");
+    // if (selectedCollege) {
+    //   setFilter((prev) => ({ ...prev, college: selectedCollege }));
+    // }
   }, []);
 
   useEffect(() => {
