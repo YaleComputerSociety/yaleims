@@ -161,7 +161,7 @@ const ScoresPage: React.FC = () => {
 
     // Updated TableHeader Component
     const TableHeader = () => (
-      <div className="flex px-2 py-2 rounded-md justify-self-center border shadow-md">
+      <div className="flex px-2 py-2 rounded-md justify-center justify-self-center">
         {/* Date/Time Column with Dropdown Filter */}
         <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
           <div>
@@ -419,7 +419,7 @@ const ScoresPage: React.FC = () => {
   
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 flex-col items-center">
+    <div className="min-h-screen  p-8 flex-col items-center">
       <h1 className="md:text-4xl text-xl font-bold text-center mb-8 pt-8">Scores and Rankings</h1>
 
       {/* College Summary (only displayed if a college is filtered) */}
