@@ -493,10 +493,6 @@ const ScoresPage: React.FC = () => {
               Games Played:{" "}
               <span className="font-semibold text-blue-600">{gamesPlayed}</span>
             </p>
-            <p>
-              Rank: <span className="font-semibold text-blue-600">TODO</span>
-            </p>
-
             <div className="text-center mb-0">
               <button
                 onClick={() => handleScheduleButton(filter.college)}
