@@ -9,7 +9,7 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
     <Link
       href="/profile"
-      className="mt-3 py-1 px-3 rounded hover:bg-gray-100 border rounded-lg border-blue-600 text-blue-600"
+      className="mt-3 py-1 px-3 rounded hover:text-black hover:border-black border rounded-lg border-blue-600 text-blue-600"
     >
       Welcome, {name.split(' ')[0]}!
     </Link>

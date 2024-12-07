@@ -147,7 +147,7 @@ const SchedulePage: React.FC = () => {
         <LoadingScreen />
       ) : (
         <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <div className="min-h-screen bg-gray-100 p-8">
+          <div className="min-h-screen p-8">
             <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
   
             {/* Filters */}
