@@ -61,7 +61,7 @@ const SchedulePage: React.FC = () => {
           // Safely resolve abbreviation
           const collegeAbbreviation : string = filter.college
             ? toCollegeAbbreviation[filter.college]
-            : null;
+            : "";
   
           const collegeMatch = collegeAbbreviation
             ? [match.home_college, match.away_college].includes(collegeAbbreviation)
