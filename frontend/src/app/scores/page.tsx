@@ -257,10 +257,10 @@ const ScoresPage: React.FC = () => {
               <div
                 className={`${
                   match.away_college === "" ? "hidden" : "block"
-                } items-start text-xs md:text-sm `}
+                } items-start text-xs md:text-sm`}
               >
                 <strong
-                  className="cursor-pointer text-black flex items-center"
+                  className="cursor-pointer text-black flex items-center text-gray-400"
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
