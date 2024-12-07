@@ -36,9 +36,10 @@ const ScoresPage: React.FC = () => {
   const router = useRouter();
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [rank, setRank] = useState(0);
+  // const [rank, setRank] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [originalData, setOriginalData] = useState([])
 
   // change title of page
   useEffect(() => {
@@ -74,28 +75,15 @@ const ScoresPage: React.FC = () => {
         }
 
         const data = await response.json();
-        const filtered = data.filter((match: any) => {
-          const collegeMatch = filter.college
-            ? [match.home_college, match.away_college].includes(filter.college)
-            : true;
-          const sportMatch = filter.sport ? match.sport === filter.sport : true;
-          const dateMatch = filter.date
-            ? match.timestamp === filter.date
-            : true;
-          return collegeMatch && sportMatch && dateMatch;
-        });
-
-        setFilteredMatches(filtered);
-        if (filter.college) {
-          calculateCollegeStats(filter.college, filtered);
-        }
+        setOriginalData(data);
+        setFilteredMatches(data);
       } catch (error) {
         console.error("Failed to fetch scores:", error);
       }
     };
 
     fetchScores();
-  }, [filter]); // Add filter as a dependency to re-fetch when the filter changes
+  }, []); // Add filter as a dependency to re-fetch when the filter changes
 
   const calculateCollegeStats = (college: string, matches: any[]) => {
     const points = matches.reduce((total: number, match) => {
@@ -118,7 +106,6 @@ const ScoresPage: React.FC = () => {
     setGamesPlayed(games);
 
     // Placeholder rank logic
-    setRank(1);
   };
 
   const handleFilterChange = (
@@ -261,7 +248,7 @@ const ScoresPage: React.FC = () => {
                   unoptimized
                 />
                 {toCollegeName[match.home_college]}
-                <span className="text-yellow-300 text-xs">
+                <span className="text-yellow-500 text-xs">
                   +{sportsMap[match.sport]}pts
                 </span>
               </strong>
@@ -287,9 +274,6 @@ const ScoresPage: React.FC = () => {
                     unoptimized
                   />
                   {toCollegeName[match.away_college]}
-                  <span className="text-yellow-300 text-xs">
-                    +{sportsMap[match.sport]}pts
-                  </span>
                 </strong>
               </div>
             ) : (
@@ -356,7 +340,7 @@ const ScoresPage: React.FC = () => {
                   unoptimized
                 />
                 {toCollegeName[match.away_college]}
-                <span className="text-yellow-300 text-xs">
+                <span className="text-yellow-500 text-xs">
                   +{sportsMap[match.sport]}pts
                 </span>
               </strong>
@@ -513,9 +497,6 @@ const ScoresPage: React.FC = () => {
             <p>
               Games Played:{" "}
               <span className="font-semibold text-blue-600">{gamesPlayed}</span>
-            </p>
-            <p>
-              Rank: <span className="font-semibold text-blue-600">TODO</span>
             </p>
 
             <div className="text-center mb-0">
