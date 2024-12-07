@@ -40,7 +40,7 @@ const SchedulePage: React.FC = () => {
     const fetchScores = async () => {
       try {
         const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getMatches?type=all",
+          "https://us-central1-yims-125a2.cloudfunctions.net/getMatches?type=future",
           {
             method: "GET",
             headers: {
@@ -155,12 +155,10 @@ const SchedulePage: React.FC = () => {
               filter={filter}
               updateFilter={updateFilter}
             />
-
-
   
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Calendar */}
-              <div className="lg:w-1/2">
+              <div className="lg:w-1/2 flex justify-center items-start">
                 <Calendar
                   locale="en-US"
                   calendarType={calendarType}
@@ -174,7 +172,7 @@ const SchedulePage: React.FC = () => {
               </div>
   
               {/* ListView or No Matches Message */}
-              <div className="lg:w-1/2">
+              <div className="lg:w-1/2 flex justify-center">
                 {filteredMatches.length > 0 ? (
                   <ListView
                     matches={filteredMatches}

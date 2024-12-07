@@ -1,3 +1,4 @@
+import { toCollegeName } from "@src/data/helpers";
 interface Match {
   home_college: string | null;
   away_college: string | null;
@@ -45,9 +46,9 @@ const ListView: React.FC<MatchListProps> = ({ matches, onMatchClick }) => {
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="text-2xl font-bold mb-1 text-gray-900">
-                      {match.home_college || "TBD"}{" "}
-                      <span className="text-green-500">vs</span>{" "}
-                      {match.away_college || "TBD"}
+                      {toCollegeName[match.home_college || "TBD"]}{" "}
+                      <span>vs</span>{" "}
+                      {toCollegeName[match.away_college || "TBD"]}
                     </div>
                     <div className="text-gray-600 font-semibold">
                       {match.sport}
@@ -70,7 +71,7 @@ const ListView: React.FC<MatchListProps> = ({ matches, onMatchClick }) => {
                   </div>
                   <button
                     onClick={() => onMatchClick(match)}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 focus:outline-none transition duration-300 ease-in-out"
+                    className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
                   >
                     Sign Up
                   </button>

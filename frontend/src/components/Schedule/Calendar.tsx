@@ -2,9 +2,6 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
-
-import { Match } from "../../data/matches";
-
 interface CalendarViewProps {
   events: {
     title: string;
