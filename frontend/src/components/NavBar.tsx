@@ -9,7 +9,7 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
     <Link
       href="/profile"
-      className="mt-3 text-blue-600 py-1 px-3 rounded hover:bg-gray-100 border rounded-lg border-blue-600"
+      className="mt-3 py-1 px-3 rounded hover:bg-gray-100 border rounded-lg border-blue-600 text-blue-600"
     >
       Welcome, {name.split(' ')[0]}!
     </Link>
@@ -40,7 +40,7 @@ const NavBar: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-light_grey text-blue-600 p-5 items-center w-full fixed top-0 z-50">
+    <nav className="bg-light_grey p-5 items-center w-full fixed top-0 z-50">
       <div className="md:flex md:block justify-between items-center hidden">
         <div className="hover:text-slate-300 text-xl pl-10">
           <Link href={links[0].href} onClick={resetFilters}>
@@ -73,7 +73,7 @@ const NavBar: React.FC = () => {
           ) : (
             <button
               onClick={signIn}
-              className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100 mt-3"
+              className="bg-white py-1 px-3 rounded hover:bg-gray-100 mt-3"
             >
               Sign in with Google
             </button>
@@ -92,7 +92,7 @@ const NavBar: React.FC = () => {
           ) : (
             <button
               onClick={signIn}
-              className="bg-white text-blue-600 py-1 px-3 rounded hover:bg-gray-100"
+              className="bg-white py-1 px-3 rounded hover:bg-gray-100"
             >
               Sign in with Google
             </button>

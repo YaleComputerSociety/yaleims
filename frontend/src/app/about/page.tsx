@@ -132,13 +132,13 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen p-8 flex flex-col items-center">
-      <h1 className="text-blue-600 text-4xl font-bold text-center mb-8 pt-5 lg:-ml-6">About Us</h1>{" "}
+      <h1 className=" text-4xl font-bold text-center mb-8 pt-5 lg:-ml-6">About Us</h1>{" "}
       <div className="mb-8 p-5 rounded-lg w-4/5 ">
-        <p className="text-3xl font-semibold text-blue-600">Our Story</p>
+        <p className="text-3xl font-semibold">Our Story</p>
         <p className="text-2xl font-bold text-gray-800">.........</p>
       </div>
       <div className="mb-8 p-5 rounded-lg w-4/5">
-        <p className="text-3xl font-semibold text-blue-600 pb-5 text-center md:-ml-6">Our Team</p>
+        <p className="text-3xl font-semibold pb-5 text-center md:-ml-6">Our Team</p>
         <div className="flex justify-center">
           <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
             {teamMembers.map((member, index) => (
@@ -157,7 +157,7 @@ const AboutPage: React.FC = () => {
         </div>
       </div>
       <div className="mb-8 p-5 rounded-lg w-4/5">
-        <p className="text-3xl font-semibold text-blue-600 pb-5 md:-ml-6 text-center">
+        <p className="text-3xl font-semibold pb-5 md:-ml-6 text-center">
           Special Thanks
         </p>
         <div className="flex justify-center">

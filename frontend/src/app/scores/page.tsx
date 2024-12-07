@@ -420,7 +420,7 @@ const ScoresPage: React.FC = () => {
 
   return (
     <div className="min-h-screen  p-8 flex-col items-center">
-      <h1 className="md:text-4xl text-xl text-blue-600 font-bold text-center mb-8 pt-8">Scores and Rankings</h1>
+      <h1 className="md:text-4xl text-xl font-bold text-center mb-8 pt-8">Scores and Rankings</h1>
 
       {/* College Summary (only displayed if a college is filtered) */}
       {filter.college && (
