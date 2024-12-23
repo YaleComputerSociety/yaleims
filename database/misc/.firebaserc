@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "yims-125a2"
+<<<<<<< HEAD:backend/database/.firebaserc
+  }
+}
+=======
+  },
+  "targets": {},
+  "etags": {}
+}
+>>>>>>> 6f7308f97cb09a70a6e206569055424bea0bbc8b:database/misc/.firebaserc

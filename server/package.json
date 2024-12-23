@@ -1,0 +1,41 @@
+{
+  "name": "yaleims-backend",
+  "version": "1.0.0",
+  "description": "Yale IM's backend",
+  "main": "index.ts",
+  "scripts": {
+    "start": "npx tsc && node build/index.js",
+    "lint": "eslint src/**/*.ts",
+    "format": "eslint src/**/*.ts --fix"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/dotenv": "^8.2.3",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.18.0",
+    "@types/node": "^20.8.4",
+    "@types/passport": "^1.0.16",
+    "@types/passport-strategy": "^0.2.38",
+    "eslint": "^8.57.0",
+    "eslint-plugin-github": "^5.0.1",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.4.0",
+    "@typescript-eslint/parser": "^8.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "firebase": "^10.13.1",
+    "firebase-admin": "^12.6.0",
+    "firebase-tools": "^1.2.0",
+    "passport": "^0.7.0",
+    "@coursetable/passport-cas": "^0.1.2",
+    "tough-cookie": "^5.0.0"
+  }
+}
