@@ -1,16 +1,10 @@
 // Define types for the sports
-type Sport = {
-  id: string;
-  name: string;
-  points_for_win: number;
-  emoji: string;
-  season: Record<string, string>; // This allows for multiple seasons if needed
-};
-
 // Define types for the college map
 type CollegeMap = Record<string, string>; // Map of abbreviation to full name
 type SportMap = Record<string, number>;
 type EmojiMap = Record<string, string>;
+
+import { Match, Sport } from "@src/types/components";
 
 // List of sports with the proper type
 export const sports: Sport[] = [
@@ -148,4 +142,43 @@ export const getPlace = (number: number | undefined): string => {
     default:
       return `${number}th`;
   }
+};
+
+export const getRatioAsString = (
+  numerator: number | undefined,
+  denominator: number | undefined
+) => {
+  if (numerator === undefined || denominator === undefined) {
+    return "0%";
+  }
+
+  const ratio = (numerator / denominator) * 100;
+
+  if (ratio == 0) {
+    return "2%";
+  }
+
+  return `${ratio}%`;
+};
+
+export const groupByDate = (allMatches: Match[]) => {
+  const groupedData: { [key: string]: Match[] } = {};
+
+  allMatches.forEach((item) => {
+    const date: string = new Date(item.timestamp).toLocaleDateString(
+      "en-CA",
+      {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }
+    );
+    // console.log(date)
+    if (!groupedData[date]) {
+      groupedData[date] = [];
+    }
+    groupedData[date].push(item);
+  });
+
+  return groupedData;
 };
