@@ -1,19 +1,5 @@
 import React, { createContext, useState, ReactNode } from "react";
-
-// Define the type for the filters
-interface Filters {
-  college: string;
-  sport: string;
-  date: string;
-}
-
-// Define the context type
-interface FiltersContextType {
-  filter: Filters;
-  setFilter: React.Dispatch<React.SetStateAction<Filters>>;
-  resetFilters: () => void;
-}
-
+import { Filters, FiltersContextType } from "@src/types/components";
 // Create the context with an undefined default value
 export const FiltersContext = createContext<FiltersContextType>({
   filter: { college: "", sport: "", date: "" }, // Provide default values
