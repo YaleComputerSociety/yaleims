@@ -1,3 +1,5 @@
+# THIS IS NOT USED. THIS IS OLD. DON'T BE FOOLED!
+
 # Yale Intramural Sports Backend
 
 This is the backend server for the Yale Intramural Sports application. It handles authentication via Yale CAS, session management using Redis, and serves various API endpoints to support the frontend.
