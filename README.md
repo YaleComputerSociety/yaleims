@@ -43,7 +43,7 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
 
    ```bash
    git clone https://github.com/your-username/YaleComputerSociety/yaleims.git
-   cd backend
+   cd database/functions
    ```
 
 2. Install the dependencies:
