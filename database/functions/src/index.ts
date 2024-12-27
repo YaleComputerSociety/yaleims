@@ -301,7 +301,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       // update college stats
       const collegeUpdateData: any = {};
-      const pointsForWin = sports[sport].points; // evetually change this to get from firestore - but right now the data is stored weird; change id to string
+      const pointsForWin = sports[sport].points; // evetually change this to get from firestore - but right now the data is stored weird; change id to string of the sport name rather than a number
 
       // all cases for updating college stats of win, loss, tie, forfeit, points (all cases increment games played)
       // this code is veryyy lengthy, but i'm unsure if there's a more concise way since there are just a lot of cases to manage
