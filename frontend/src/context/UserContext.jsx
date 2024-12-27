@@ -28,7 +28,10 @@ export const UserProvider = ({ children }) => {
 
   const saveUserToCookies = (userData, token) => {
     setCookie("token", token, { path: "/", maxAge: 60 * 60 * 24 * 7 }); // Store token for 7 days
-    setCookie("user", JSON.stringify(userData), { path: "/", maxAge: 60 * 60 * 24 * 7 }); // Serialize user data
+    setCookie("user", JSON.stringify(userData), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    }); // Serialize user data
   };
 
   const clearUserCookies = () => {
@@ -53,11 +56,11 @@ export const UserProvider = ({ children }) => {
         matches: data.user.matches,
         college: data.user.college,
         points: data.user.points,
+        role: data.user.role,
       };
 
       setUser(userData); // Update user state
       saveUserToCookies(userData, signedInUser.accessToken); // Save user and token in cookies
-
     } catch (error) {
       console.error("Error during sign-in:", error.message);
       alert(error.message);
@@ -77,13 +80,16 @@ export const UserProvider = ({ children }) => {
 
   const fetchOrAddUserData = async (email) => {
     try {
-      const response = await fetch('https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
       const result = await response.json();
       return result;
     } catch (error) {
