@@ -91,6 +91,7 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         matches: [],
         points: 0,
         college: college || null,
+        role: "user", // default role; otherwise "admin" can be set in firestore
       };
 
       await userRef.set(newUser);
@@ -210,13 +211,18 @@ export const getCollege = functions.https.onRequest(async (req, res) => {
   });
 });
 
+// gets unscored matches (winner is null) that have already occurred (timestamp is in the past)
 export const getUnscoredMatches = functions.https.onRequest(
   async (req, res) => {
     return corsHandler(req, res, async () => {
       try {
+        const currentDate = new Date();
+
         const snapshot = await db
           .collection("matches")
           .where("winner", "==", null)
+          .where("timestamp", "<", currentDate) // get past matches
+          .orderBy("timestamp", "asc") // orders oldest first
           .get();
 
         if (snapshot.empty) {
@@ -251,6 +257,10 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         sport,
       } = req.body;
 
+      if (req.method !== "POST") {
+        return res.status(405).send("Method Not Allowed");
+      }
+
       // validate request parameters
       if (
         !matchId ||
@@ -265,8 +275,6 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         return res.status(400).send("Error with parameters");
       }
 
-      // TODO: validate user auth / role
-
       let winningTeam: string;
       const doubleForfeit = homeForfeit && awayForfeit;
 
@@ -276,7 +284,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       } else if (homeForfeit || awayForfeit) {
         homeForfeit ? (winningTeam = awayTeam) : (winningTeam = homeTeam);
       } else if (homeScore == awayScore) {
-        winningTeam = "Draw"; // not sure if i understood this correctly
+        winningTeam = "Draw";
       } else {
         homeScore > awayScore
           ? (winningTeam = homeTeam)
@@ -375,7 +383,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await batch.commit();
 
-      // update ranks -- may be a good idea to have a separate function for this as well, scheduled to run every so often, to protect against failures
+      // update ranks -- may be a good idea to have a separate function for this as well, scheduled to run every so often, to protect against failures (if this section doesn't run properly for some reason)
       const collegesSnapshot = await db.collection("colleges_testing").get();
       const colleges: { id: string; points: number; wins: number }[] = [];
 
@@ -389,7 +397,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       colleges.sort((a, b) => {
         if (b.points !== a.points) {
-          return b.points - a.points; // Descending by points
+          return b.points - a.points;
         }
         return b.wins - a.wins; // Tie-breaker: descending by wins; might change
       });

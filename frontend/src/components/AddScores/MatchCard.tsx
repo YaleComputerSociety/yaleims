@@ -11,8 +11,6 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
   const [awayForfeit, setAwayForfeit] = useState<boolean>(false);
   const [homeForfeit, setHomeForfeit] = useState<boolean>(false);
 
-  // confused about forfeit logic but implemented as in figma
-
   const handleAwayCheckboxChange = () => {
     setAwayForfeit(!awayForfeit);
 
@@ -82,7 +80,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
       console.error("Failed to submit score:", error);
     } finally {
       setLoading(false);
-      window.location.reload(); // to refresh page and show updated list of matches; is there a better way to do this?
+      window.location.reload(); // to refresh page and show updated list of matches
     }
   };
 
@@ -104,22 +102,23 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
     day: "2-digit",
   });
 
-  // need to make mobile compatible
   return (
-    <div className="w-full">
+    <div className="w-full text-xs md:text-sm mb-4">
       {/* Header Row */}
-      <div className="grid grid-cols-6 items-center text-sm font-semibold text-black mb-2 px-8">
-        <div className="col-span-3">{formattedDate}</div>{" "}
-        {/* add string like, "Today", etc. */}
+      <div className="grid md:grid-cols-5 grid-cols-4 items-center font-semibold text-black mb-2 px-2 md:px-8">
+        <div className="col-span-2">{formattedDate}</div>{" "}
         <div className="text-center">Forfeit?</div>
         <div className="text-center">Score</div>
         <div></div> {/* Empty for spacing */}
       </div>
+
       {/* Match Card */}
-      <div className="grid grid-cols-6 bg-white justify-between items-center py-4 px-8">
-        <p>{formattedTime}</p>
-        <p>{emojiMap[match.sport]}</p>
-        <div className="flex flex-col justify-between items-start gap-4">
+      <div className="grid md:grid-cols-5 grid-cols-4 bg-white justify-between items-center py-4 px-2 md:px-8">
+        <div className="flex flex-col md:flex-row items-center pr-1 lg:pr-8 h-full py-1 justify-between md:justify-around">
+          <p>{formattedTime}</p>
+          <p>{emojiMap[match.sport]}</p>
+        </div>
+        <div className="flex flex-col justify-between items-start gap-4 sm:pl-4 xl:pl-16 lg:pl-10">
           <div className="flex items-center">
             <Image
               src={`/college_flags/${toCollegeName[match.away_college]}.png`}
@@ -143,44 +142,48 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
             <p>{toCollegeName[match.home_college]}</p>
           </div>
         </div>
-        <div className="flex flex-col items-center gap-4">
-          {/* want to make the checked box have a checkmark in it */}
+        <div className="flex flex-col items-center gap-4 h-full justify-between">
           <input
             type="checkbox"
-            className="appearance-none disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200 checked:bg-blue-600 checked:border-transparent hover:cursor-pointer w-10 h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className="appearance-none disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200 checked:bg-blue-600 checked:border-transparent hover:cursor-pointer w-5 h-5 md:w-10 md:h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             checked={awayForfeit}
             onChange={handleAwayCheckboxChange}
           />
           <input
             type="checkbox"
-            className="appearance-none disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200 checked:bg-blue-600 checked:border-transparent hover:cursor-pointer w-10 h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className="appearance-none disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200 checked:bg-blue-600 checked:border-transparent hover:cursor-pointer w-5 h-5 md:w-10 md:h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             checked={homeForfeit}
             onChange={handleHomeCheckboxChange}
           />
         </div>
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 h-full justify-between">
           <input
             type="text"
-            className="w-10 h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
+            className="w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
             value={awayScore}
             onChange={(e) => handleAwayScoreChange(e)}
             disabled={awayForfeit}
           />
           <input
             type="text"
-            className="w-10 h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
+            className="w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
             value={homeScore}
             onChange={(e) => handleHomeScoreChange(e)}
             disabled={homeForfeit}
           />
         </div>
         <button
-          className="bg-blue-500 text-center py-5 rounded-lg text-white text-bold disabled:bg-gray-400 disabled:cursor-not-allowed"
-          disabled={
-            // !awayForfeit && (confused about the forfeit logic)
-            // !homeForfeit &&
-            awayScore === "" || homeScore === ""
-          }
+          className="hidden md:block bg-blue-500 w-full text-center py-5 rounded-lg text-white text-bold disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={awayScore === "" || homeScore === ""}
+          onClick={handleSubmit}
+        >
+          Submit
+        </button>
+      </div>
+      <div className="w-full mt-4 block md:hidden">
+        <button
+          className="text-md bg-blue-500 w-full text-center py-2 rounded-lg text-white text-bold disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={awayScore === "" || homeScore === ""}
           onClick={handleSubmit}
         >
           Submit
@@ -191,79 +194,3 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
 };
 
 export default MatchCard;
-
-// {/* <div>
-// <div className="flex flex-row px-8">Date</div> {/* figure out parsing */}
-// <div className="flex flex-row bg-white justify-between items-center py-4 px-8">
-//   <p>Time</p> {/* figure out parsing */}
-//   <p>{emojiMap[match.sport]}</p>
-//   <div className="flex flex-col justify-between items-start gap-4">
-//     <div className="flex items-center">
-//       <Image
-//         src={`/college_flags/${toCollegeName[match.away_college]}.png`}
-//         alt={match.away_college}
-//         width={20}
-//         height={20}
-//         className="mr-2 object-contain"
-//         unoptimized
-//       />
-//       <p>{toCollegeName[match.away_college]}</p>
-//     </div>
-//     <div className="flex items-center">
-//       <Image
-//         src={`/college_flags/${toCollegeName[match.home_college]}.png`}
-//         alt={match.home_college}
-//         width={20}
-//         height={20}
-//         className="mr-2 object-contain"
-//         unoptimized
-//       />
-//       <p>{toCollegeName[match.home_college]}</p>
-//     </div>
-//   </div>
-//   <div className="flex flex-col items-center gap-4">
-//     {/* want to make the checked box have a checkmark in it */}
-//     <input
-//       type="checkbox"
-//       className="appearance-none disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200 checked:bg-blue-600 checked:border-transparent hover:cursor-pointer w-10 h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-//       checked={awayForfeit}
-//       onChange={handleAwayCheckboxChange}
-//       disabled={homeForfeit}
-//     />
-//     <input
-//       type="checkbox"
-//       className="appearance-none disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200 checked:bg-blue-600 checked:border-transparent hover:cursor-pointer w-10 h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-//       checked={homeForfeit}
-//       onChange={handleHomeCheckboxChange}
-//       disabled={awayForfeit}
-//     />
-//   </div>
-//   <div className="flex flex-col items-center gap-4">
-//     <input
-//       type="text"
-//       className="w-10 h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
-//       value={awayScore}
-//       onChange={(e) => handleAwayScoreChange(e)}
-//       disabled={awayForfeit || homeForfeit}
-//     />
-//     <input
-//       type="text"
-//       className="w-10 h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
-//       value={homeScore}
-//       onChange={(e) => handleHomeScoreChange(e)}
-//       disabled={homeForfeit || awayForfeit}
-//     />
-//   </div>
-//   <button
-//     className="bg-blue-500 py-5 px-10 rounded-lg text-white text-bold disabled:bg-gray-400 disabled:cursor-not-allowed"
-//     disabled={
-//       !awayForfeit &&
-//       !homeForfeit &&
-//       (awayScore === "" || homeScore === "")
-//     }
-//     onClick={handleSubmit}
-//   >
-//     Submit
-//   </button>
-// </div>
-// </div> */}
