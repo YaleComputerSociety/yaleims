@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useEffect } from "react";
-import PersonCard from "@src/components/About/PersonCard";
+import PersonCard from "@src/components/about/PersonCard";
 
-const AboutPage: React.FC = () => {
+const AboutUsPage: React.FC = () => {
   // title of page
   useEffect(() => {
     document.title = "About";
@@ -185,4 +185,4 @@ const AboutPage: React.FC = () => {
   );
 };
 
-export default AboutPage;
+export default AboutUsPage;

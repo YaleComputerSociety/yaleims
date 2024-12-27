@@ -3,11 +3,11 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "@src/components/LoadingScreen";
-import CollegeSummaryCard from "@src/components/Scores/CollegeSummaryCard";
-import CollegeSummaryCardMobile from "@src/components/Scores/CollegeSummaryCardMobile";
+import CollegeSummaryCard from "@src/components/scores/CollegeSummaryCard";
+import CollegeSummaryCardMobile from "@src/components/scores/CollegeSummaryCardMobile";
 import { FiltersContext } from "@src/context/FiltersContext";
-import TableHeader from "@src/components/Scores/TableHeader";
-import MatchesTable from "@src/components/Scores/MatchTable";
+import TableHeader from "@src/components/scores/TableHeader";
+import MatchesTable from "@src/components/scores/MatchTable";
 import { Match, CollegeStats } from "@src/types/components";
 
 import "react-loading-skeleton/dist/skeleton.css";

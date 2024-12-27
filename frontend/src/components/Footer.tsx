@@ -14,32 +14,21 @@ function Footer() {
   ];
 
   return (
-    <div className="p-5 bg-blue-500 text-white">
-      <div className="flex pb-5 justify-between">
-        <p>Yale IMs &copy; 2024</p>
-        <div className="flex flex-row space-x-2">
-          <a href="https://yalecomputersociety.org">YCS </a>
+    <footer className="p-5">
+      <div>
+        <div className="text-9xl font-medium -ml-8 -mb-4">YALE</div>
+        <div className="flex items-center gap-10">
+          <div className="text-9xl font-medium ">IMS</div>
+          <div className="flex flex-row space-x-2 items-center">
+          <a href="https://yalecomputersociety.org" className="text-center font-mono">Yale<br></br> Computer  <br></br> Society </a>
           <p> x </p>
           <a href="https://designatyale.com"> day</a>
+          <p>Yale IMs &copy; 2024</p>
+        </div>
         </div>
       </div>
-      <div className="flex flex-row xs:space-x-10 pb-5 justify-center">
-        {links.map((link, index) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="hover:text-slate-300 flex justify-between items-center pl-4 pr-4"
-            onClick={resetFilters}
-          >
-            <div className=" ">{link.text}</div>
-          </Link>
-        ))}
-      </div>
 
-      <div className="flex justify-center">
-        <img src="/LOGO.png" />
-      </div>
-    </div>
+    </footer>
   );
 }
 

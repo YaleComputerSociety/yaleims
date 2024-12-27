@@ -1,25 +1,24 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: 'class', // Ensure this is set to 'class'
   content: [
-    "./src/**/*.{html,js,jsx,ts,tsx,mdx}",
-    "./public/**/*.html",
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+      screens: {
+        xs: "480px", // Custom screen size for smaller devices
       },
       colors: {
-        light_grey: "#e4effc",
-      },
-      screens: {
-        xs: '480px',
-      },
+        primary_light: "#8DB8EA",
+        podium_light: "#7FA9DB",
+      }
     },
   },
   plugins: [],
 };
+
 export default config;
