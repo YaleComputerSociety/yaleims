@@ -87,3 +87,10 @@ export interface FiltersContextType {
   setFilter: React.Dispatch<React.SetStateAction<Filters>>;
   resetFilters: () => void;
 }
+
+export interface PaginationProps {
+  currentPageNumber: number;
+  totalPages: number;
+  setPageNumber: React.Dispatch<React.SetStateAction<number>>;
+  setQueryType: React.Dispatch<React.SetStateAction<string>>;
+}
