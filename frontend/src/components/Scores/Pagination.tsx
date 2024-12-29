@@ -18,7 +18,7 @@ const Pagination: React.FC<PaginationProps> = ({
       }
     }
     setPages(arr);
-  }, [currentPageNumber]);
+  }, [currentPageNumber, totalPages]);
 
   const handlePrevClick = () => {
     if (currentPageNumber === 1) return;
@@ -94,7 +94,9 @@ const Pagination: React.FC<PaginationProps> = ({
           currentPageNumber === totalPages
             ? "bg-blue-500 text-white"
             : "bg-white text-black"
-        } flex flex-row items-center justify-center px-2 py-1 rounded-lg `}
+        } flex flex-row items-center justify-center px-2 py-1 rounded-lg ${
+          totalPages === 1 ? "hidden" : ""
+        }`}
       >
         {totalPages}
       </button>

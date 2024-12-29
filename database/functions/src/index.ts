@@ -198,6 +198,7 @@ export const getMatchesPaginated = functions.https.onRequest(
           lastVisible,
           type,
           firstVisible,
+          sport,
         } = req.query;
 
         if (!college || !pageSize) {
@@ -208,11 +209,7 @@ export const getMatchesPaginated = functions.https.onRequest(
         const pageIndexNum = parseInt(pageIndex as string, 10);
 
         const scoresRef = db.collection("matches").orderBy("timestamp", "desc");
-
-        const currentDate = new Date();
-        let query = scoresRef
-          .where("timestamp", "<", currentDate)
-          .where("winner", "!=", null); // only past, scored matches; could easily be changed to be a parameter instead to allow option to get different subset
+        let query = scoresRef;
 
         // college filter query
         if (college !== "All") {
@@ -224,10 +221,20 @@ export const getMatchesPaginated = functions.https.onRequest(
           );
         }
 
+        // sport filter query
+        if (sport !== "All") {
+          query = query.where("sport", "==", sport);
+        }
+
         // Calculate total pages of query
         const totalResultsSnapshot = await query.count().get();
         const totalResults = totalResultsSnapshot.data().count;
         const totalPages = Math.ceil(totalResults / pageSizeNum);
+
+        const currentDate = new Date();
+        query = query
+          .where("timestamp", "<", currentDate) // currently doesn't support other date queries
+          .where("winner", "!=", null); // only past, scored matches; could easily be changed to be a parameter instead to allow option to get different subset
 
         // query types
         if (type === "next") {

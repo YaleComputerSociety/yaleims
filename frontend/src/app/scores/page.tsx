@@ -40,12 +40,13 @@ const ScoresPage: React.FC = () => {
     setLastVisible("");
   };
 
-  // param types for fetching matches
+  // param types for fetching matches; doesn't yet support a date query
   const paramsIndex = new URLSearchParams({
     type: "index",
     pageIndex: page.toString(),
     pageSize: "20",
     college: filter.college ? filter.college : "All",
+    sport: filter.sport ? filter.sport : "All",
   }).toString();
 
   const paramsNext = new URLSearchParams({
@@ -53,6 +54,7 @@ const ScoresPage: React.FC = () => {
     lastVisible: lastVisible,
     pageSize: "20",
     college: filter.college ? filter.college : "All",
+    sport: filter.sport ? filter.sport : "All",
   }).toString();
 
   const paramsPrev = new URLSearchParams({
@@ -60,6 +62,7 @@ const ScoresPage: React.FC = () => {
     firstVisible: firstVisible,
     pageSize: "20",
     college: filter.college ? filter.college : "All",
+    sport: filter.sport ? filter.sport : "All",
   }).toString();
 
   const getParams = () => {
@@ -79,7 +82,6 @@ const ScoresPage: React.FC = () => {
   useEffect(() => {
     const fetchMatches = async () => {
       setIsLoading(true);
-      console.log("fetching matches with params:", getParams());
       try {
         const response = await fetch(
           `https://us-central1-yims-125a2.cloudfunctions.net/getMatchesPaginated?${getParams()}`
@@ -103,7 +105,7 @@ const ScoresPage: React.FC = () => {
 
     window.scrollTo(0, 0); // scroll to top of page when data changes
     fetchMatches();
-  }, [page, queryType, filter.college]); // Re-fetch matches when page or query type changes
+  }, [page, queryType, filter.college, filter.sport]); // Re-fetch matches when page or query type changes
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
