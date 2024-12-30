@@ -6,6 +6,23 @@ type EmojiMap = Record<string, string>;
 
 import { Match, Sport } from "@src/types/components";
 
+export const colleges = [
+  { id: "BF", name: "Benjamin Franklin" },
+  { id: "BK", name: "Berkeley" },
+  { id: "BR", name: "Branford" },
+  { id: "DC", name: "Davenport" },
+  { id: "ES", name: "Ezra Stiles" },
+  { id: "GH", name: "Grace Hopper" },
+  { id: "JE", name: "Jonathan Edwards" },
+  { id: "MC", name: "Morse" },
+  { id: "MY", name: "Pauli Murray" },
+  { id: "PC", name: "Pierson" },
+  { id: "SY", name: "Saybrook" },
+  { id: "SM", name: "Silliman" },
+  { id: "TD", name: "Timothy Dwight" },
+  { id: "TC", name: "Trumbull" },
+];
+
 // List of sports with the proper type
 export const sports: Sport[] = [
   {

@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useEffect } from "react";
-import PersonCard from "@src/components/About/PersonCard";
+import PersonCard from "@src/components/about/PersonCard";
 
-const AboutPage: React.FC = () => {
+const AboutUsPage: React.FC = () => {
   // title of page
   useEffect(() => {
     document.title = "About";
@@ -144,7 +144,7 @@ const AboutPage: React.FC = () => {
           Our Team
         </p>
         <div className="flex justify-center">
-          <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-4">
+          <div className="grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 gap-4">
             {teamMembers.map((member, index) => (
               <PersonCard
                 key={index}
@@ -185,4 +185,4 @@ const AboutPage: React.FC = () => {
   );
 };
 
-export default AboutPage;
+export default AboutUsPage;

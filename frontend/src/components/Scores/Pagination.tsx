@@ -54,17 +54,17 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handlePrevClick}
         disabled={currentPageNumber === 1}
-        className={`flex flex-row items-center justify-center px-2 py-1 rounded-lg bg-white text-black `}
+        className={`flex flex-row items-center justify-center px-2 py-1 rounded-lg hover:text-gray-700 dark:hover:text-gray-600 dark:disabled:hover:text-gray-600 disabled:hover:text-gray-600 disabled:text-gray-600 disabled:cursor-not-allowed`}
       >
-        {"<prev"}
+        {"< prev"}
       </button>
 
       <button
         onClick={() => handleIndexClick(1)}
         className={`${
           currentPageNumber === 1
-            ? "bg-blue-500 text-white"
-            : "bg-white text-black"
+            ? "text-blue-500"
+            : "hover:text-gray-700 dark:hover:text-gray-400"
         } flex flex-row items-center justify-center px-2 py-1 rounded-lg `}
       >
         1
@@ -78,8 +78,8 @@ const Pagination: React.FC<PaginationProps> = ({
           onClick={() => handleIndexClick(page)}
           className={`${
             currentPageNumber === page
-              ? "bg-blue-500 text-white"
-              : "bg-white text-black"
+              ? "text-blue-500"
+              : "hover:text-gray-700 dark:hover:text-gray-400"
           } flex flex-row items-center justify-center px-2 py-1 rounded-lg `}
         >
           {page}
@@ -92,8 +92,8 @@ const Pagination: React.FC<PaginationProps> = ({
         onClick={() => handleIndexClick(totalPages)}
         className={`${
           currentPageNumber === totalPages
-            ? "bg-blue-500 text-white"
-            : "bg-white text-black"
+            ? "text-blue-500"
+            : ""
         } flex flex-row items-center justify-center px-2 py-1 rounded-lg ${
           totalPages === 1 ? "hidden" : ""
         }`}
@@ -104,9 +104,8 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handleNextClick}
         disabled={currentPageNumber === totalPages}
-        className="flex flex-row items-center justify-center px-2 py-1 rounded-lg bg-white text-black "
-      >
-        {"next>"}
+        className={`flex flex-row items-center justify-center px-2 py-1 rounded-lg hover:text-gray-700 dark:hover:text-gray-600 dark:disabled:hover:text-gray-600 disabled:hover:text-gray-600 disabled:text-gray-600 disabled:cursor-not-allowed`}      >
+        {"next >"}
       </button>
     </div>
   );

@@ -1,6 +1,4 @@
-import {
-    groupByDate,
-  } from "@src/data/helpers";
+import { groupByDate } from "@src/utils/helpers";
 
 import TableRow from "./TableRow";
 
@@ -14,6 +12,7 @@ const onShowParticipants = (match: Match) => {
     // This could trigger a modal, display a dropdown, or anything else
     console.log("TODO");
 };
+
 const test = groupByDate(filteredMatches);
 
 return (
@@ -21,7 +20,7 @@ return (
     {Object.entries(test).map(([date, items]) => (
         <div key={date} className="min-w-full rounded-lg mb-4">
         <div>
-            <div className="text-left text-gray-700 p-2 bg-black-100 border-none">
+            <div className="text-left p-2 bg-black-100 border-none">
             {date}
             </div>
         </div>

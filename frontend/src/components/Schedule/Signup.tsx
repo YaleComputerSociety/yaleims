@@ -1,19 +1,7 @@
-import { toCollegeName } from "@src/data/helpers";
+import { toCollegeName } from "@src/utils/helpers";
+import { MatchSignUpProps } from "@src/types/components";
 
-interface Match {
-  home_college: string | null;
-  away_college: string | null;
-  sport: string;
-  timestamp: string | null; // ISO 8601 format
-}
-
-interface SignUpProps {
-  match: Match;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const SignUpModal: React.FC<SignUpProps> = ({ match, onConfirm, onCancel }) => {
+const SignUpModal: React.FC<MatchSignUpProps> = ({ match, onConfirm, onCancel }) => {
   const matchDate = match.timestamp
     ? new Date(match.timestamp).toLocaleDateString("en-US", {
         weekday: "long",

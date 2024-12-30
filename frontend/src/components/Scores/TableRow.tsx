@@ -3,13 +3,13 @@ import {
     toCollegeName,
     sportsMap,
     emojiMap,
-  } from "@src/data/helpers";
+  } from "@src/utils/helpers";
 
-import {TableRowProps, Match } from '@src/types/components';
+import {TableRowProps } from '@src/types/components';
 
   //TableRow Component
   const TableRow: React.FC<TableRowProps> = ({ match, handleCollegeClick }) => (
-    <div className="bg-white grid grid-cols-[auto_1fr_auto] items-center">
+    <div className="bg-white dark:bg-gray-900 grid grid-cols-[auto_1fr_auto] items-center">
       <div className="md:px-6 pl-2 py-4 text-xs md:text-sm text-gray-500">
         {new Date(match.timestamp).toLocaleString("en-US", {
           hour: "2-digit", // "04"
@@ -26,7 +26,7 @@ import {TableRowProps, Match } from '@src/types/components';
           <>
             <div className="items-start text-xs md:text-sm">
               <strong
-                className="cursor-pointer text-black flex items-center"
+                className="cursor-pointer flex items-center"
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
               >
                 <Image
@@ -52,7 +52,7 @@ import {TableRowProps, Match } from '@src/types/components';
                 } items-start text-xs md:text-sm`}
               >
                 <strong
-                  className="cursor-pointer text-black flex items-center text-gray-400"
+                  className="cursor-pointer flex items-center text-gray-400"
                   onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
                 >
                   <Image
@@ -118,7 +118,7 @@ import {TableRowProps, Match } from '@src/types/components';
               } items-start text-xs md:text-sm `}
             >
               <strong
-                className="cursor-pointer text-black flex items-center"
+                className="cursor-pointer flex items-center"
                 onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
               >
                 <Image
@@ -177,7 +177,7 @@ import {TableRowProps, Match } from '@src/types/components';
                   unoptimized
                 />
                 {toCollegeName[match.home_college]}
-                <span className="text-yellow-300 text-xs">
+                <span className="text-yellow-500 text-xs">
                   +{sportsMap[match.sport] / 2}pts
                 </span>
               </strong>
@@ -198,7 +198,7 @@ import {TableRowProps, Match } from '@src/types/components';
                   unoptimized
                 />
                 {toCollegeName[match.away_college]}
-                <span className="text-yellow-300 text-xs">
+                <span className="text-yellow-500 text-xs">
                   +{sportsMap[match.sport] / 2}pts
                 </span>
               </strong>
