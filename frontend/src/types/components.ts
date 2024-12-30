@@ -86,6 +86,12 @@ export interface FiltersContextType {
   resetFilters: () => void;
 }
 
+export interface PaginationProps {
+  currentPageNumber: number;
+  totalPages: number;
+  setPageNumber: React.Dispatch<React.SetStateAction<number>>;
+  setQueryType: React.Dispatch<React.SetStateAction<string>>;
+}
 export interface CalendarViewProps {
   events: {
     title: string;

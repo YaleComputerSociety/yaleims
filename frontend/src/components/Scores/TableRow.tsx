@@ -9,7 +9,7 @@ import {TableRowProps } from '@src/types/components';
 
   //TableRow Component
   const TableRow: React.FC<TableRowProps> = ({ match, handleCollegeClick }) => (
-    <div className="bg-white dark:bg-black grid grid-cols-[auto_1fr_auto] items-center">
+    <div className="bg-white dark:bg-gray-900 grid grid-cols-[auto_1fr_auto] items-center">
       <div className="md:px-6 pl-2 py-4 text-xs md:text-sm text-gray-500">
         {new Date(match.timestamp).toLocaleString("en-US", {
           hour: "2-digit", // "04"

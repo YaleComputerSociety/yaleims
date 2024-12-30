@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from "react";
-import { useRouter } from "next/navigation";
 import LoadingScreen from "@src/components/LoadingScreen";
 import CollegeSummaryCard from "@src/components/scores/CollegeSummaryCard";
 import CollegeSummaryCardMobile from "@src/components/scores/CollegeSummaryCardMobile";
@@ -9,35 +8,83 @@ import { FiltersContext } from "@src/context/FiltersContext";
 import TableHeader from "@src/components/scores/TableHeader";
 import MatchesTable from "@src/components/scores/MatchTable";
 import { Match, CollegeStats } from "@src/types/components";
+import Pagination from "@src/components/scores/Pagination";
 
 import "react-loading-skeleton/dist/skeleton.css";
+
+// once this version is merged and deployed, we can delete the original getMatches cloud function
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
-  const router = useRouter();
 
   // State for matches
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
-  const [originalData, setOriginalData] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for college stats
   const [collegeStats, setCollegeStats] = useState<CollegeStats | null>(null);
   const [collegeIsLoading, setCollegeIsLoading] = useState(false);
 
-  // Fetch scores only once
+  // State for pagination
+  const [page, setPage] = useState<number>(1); // 1-indexed
+  const [firstVisible, setFirstVisible] = useState<string>("");
+  const [lastVisible, setLastVisible] = useState<string>("");
+  const [queryType, setQueryType] = useState<string>("index");
+  const [totalPages, setTotalPages] = useState<number>(10);
+
+  const resetPaginationState = () => {
+    setPage(1); // Reset page number when filter is changed
+    setQueryType("index");
+    setFirstVisible("");
+    setLastVisible("");
+  };
+
+  // param types for fetching matches; doesn't yet support a date query
+  const paramsIndex = new URLSearchParams({
+    type: "index",
+    pageIndex: page.toString(),
+    pageSize: "20",
+    college: filter.college ? filter.college : "All",
+    sport: filter.sport ? filter.sport : "All",
+  }).toString();
+
+  const paramsNext = new URLSearchParams({
+    type: "next",
+    lastVisible: lastVisible,
+    pageSize: "20",
+    college: filter.college ? filter.college : "All",
+    sport: filter.sport ? filter.sport : "All",
+  }).toString();
+
+  const paramsPrev = new URLSearchParams({
+    type: "prev",
+    firstVisible: firstVisible,
+    pageSize: "20",
+    college: filter.college ? filter.college : "All",
+    sport: filter.sport ? filter.sport : "All",
+  }).toString();
+
+  const getParams = () => {
+    if (queryType === "index") {
+      return paramsIndex;
+    } else if (queryType === "next") {
+      return paramsNext;
+    } else if (queryType === "prev") {
+      return paramsPrev;
+    } else {
+      console.error("Invalid query type");
+      return "";
+    }
+  };
+
+  // fetch matches with pagination
   useEffect(() => {
-    const fetchScores = async () => {
+    const fetchMatches = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getMatches?type=past",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMatchesPaginated?${getParams()}`
         );
 
         if (!response.ok) {
@@ -45,8 +92,10 @@ const ScoresPage: React.FC = () => {
         }
 
         const data = await response.json();
-        setOriginalData(data); // Cache original data
-        setFilteredMatches(data); // Initialize filtered matches
+        setFilteredMatches(data.matches);
+        setFirstVisible(data.firstVisible);
+        setLastVisible(data.lastVisible);
+        setTotalPages(data.totalPages);
       } catch (error) {
         console.error("Failed to fetch scores:", error);
       } finally {
@@ -54,8 +103,9 @@ const ScoresPage: React.FC = () => {
       }
     };
 
-    fetchScores();
-  }, []); // Empty dependency array ensures it only runs once
+    window.scrollTo(0, 0); // scroll to top of page when data changes
+    fetchMatches();
+  }, [page, queryType, filter.college, filter.sport]); // Re-fetch matches when page or query type changes
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
@@ -88,25 +138,6 @@ const ScoresPage: React.FC = () => {
     fetchCollegeStats();
   }, [filter.college]); // Re-fetch stats only when the college filter changes
 
-  // Apply filters locally
-  useEffect(() => {
-    const applyFilters = () => {
-      let matches = originalData;
-
-      if (filter.college && filter.college !== "All") {
-        matches = matches.filter(
-          (match: Match) =>
-            match.home_college === filter.college ||
-            match.away_college === filter.college
-        );
-      }
-
-      setFilteredMatches(matches); // Update filtered matches
-    };
-
-    applyFilters();
-  }, [filter, originalData]); // Re-run filtering when filter or data changes
-
   // Handle filter change
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -114,11 +145,13 @@ const ScoresPage: React.FC = () => {
       ...prev,
       [name]: value,
     }));
+    resetPaginationState();
   };
 
   // Handle college click
   const handleCollegeClick = (collegeName: string) => {
     setFilter((prev) => ({ ...prev, college: collegeName }));
+    resetPaginationState();
   };
 
   return (
@@ -151,6 +184,13 @@ const ScoresPage: React.FC = () => {
           handleCollegeClick={handleCollegeClick}
         />
       </div>
+
+      <Pagination
+        currentPageNumber={page}
+        totalPages={totalPages}
+        setPageNumber={setPage}
+        setQueryType={setQueryType}
+      />
 
       {isLoading && <LoadingScreen />}
     </div>

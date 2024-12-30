@@ -12,7 +12,7 @@ import {colleges} from "@src/utils/helpers"
           <select
             name="date"
             onChange={handleFilterChange}
-            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
           >
             <option value="all">Date/Time</option>
             <option value="today">Today</option>
@@ -27,7 +27,7 @@ import {colleges} from "@src/utils/helpers"
           <select
             name="college"
             onChange={handleFilterChange}
-            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
           >
           {colleges.map((college) => (
             <option key={college.id} value={college.id}>
@@ -44,7 +44,7 @@ import {colleges} from "@src/utils/helpers"
           <select
             name="sport"
             onChange={handleFilterChange}
-            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
           >
             <option value="">All Sport</option>
             <option value="Flag Football">Flag Football</option>
