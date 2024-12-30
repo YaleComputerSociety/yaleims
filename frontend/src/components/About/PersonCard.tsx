@@ -23,7 +23,7 @@ const PersonCard: React.FC<PersonCardProps> = ({
   return (
     <div
       className={`flex flex-col ${
-        specialThanks ? "w-24" : "w-64 bg-white"
+        specialThanks ? "w-24" : "w-64 bg-white dark:bg-black"
       } mr-6 mb-6 transform transition-transform`}
     >
       <img

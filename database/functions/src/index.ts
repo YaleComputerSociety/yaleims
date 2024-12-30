@@ -10,7 +10,7 @@
 // import {onRequest} from "firebase-functions/v2/https";
 // import * as logger from "firebase-functions/logger";
 
-import { Query } from "firebase-admin/firestore";
+import { Filter, Query } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "firebase-admin";
 import cors from "cors";
@@ -154,8 +154,9 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
       const snapshot = await query.get();
 
       if (snapshot.empty) {
-        return res.status(404).send("No matches found");
+        return res.status(200).json([]); // Respond with an empty array instead of return res.status(404).send("No matches found");
       }
+
 
       // Process the query result and format the data
       const matches = snapshot.docs.map((doc) => {
@@ -182,6 +183,136 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
     }
   });
 });
+
+// pretty efficient in terms of minimizing reads, except for when a request is made with a large offset
+// as that still reads all the documents before the offset (e.g. if the user requests the last page it will have to read all the pages before)
+// i think there isn't a way to avoid this with Firestore, but i could be wrong
+// the logic for navigating to adjacent pages is much better though and only reads the according documents; overall should decrease reads by alot
+export const getMatchesPaginated = functions.https.onRequest(
+  async (req, res) => {
+    return corsHandler(req, res, async () => {
+      try {
+        const {
+          college,
+          pageIndex,
+          pageSize,
+          lastVisible,
+          type,
+          firstVisible,
+          sport,
+        } = req.query;
+
+        if (!college || !pageSize) {
+          return res.status(400).send("Missing required parameters");
+        }
+
+        const pageSizeNum = parseInt(pageSize as string, 10);
+        const pageIndexNum = parseInt(pageIndex as string, 10);
+
+        const scoresRef = db.collection("matches").orderBy("timestamp", "desc");
+        let query = scoresRef;
+
+        // college filter query
+        if (college !== "All") {
+          query = query.where(
+            Filter.or(
+              Filter.where("home_college", "==", college),
+              Filter.where("away_college", "==", college)
+            )
+          );
+        }
+
+        // sport filter query
+        if (sport !== "All") {
+          query = query.where("sport", "==", sport);
+        }
+
+        // Calculate total pages of query
+        const totalResultsSnapshot = await query.count().get();
+        const totalResults = totalResultsSnapshot.data().count;
+        const totalPages = Math.ceil(totalResults / pageSizeNum);
+
+        const currentDate = new Date();
+        query = query
+          .where("timestamp", "<", currentDate) // currently doesn't support other date queries
+          .where("winner", "!=", null); // only past, scored matches; could easily be changed to be a parameter instead to allow option to get different subset
+
+        // query types
+        if (type === "next") {
+          // next page
+          if (!lastVisible) {
+            return res.status(400).send("Missing 'lastVisible' parameter");
+          }
+          const lastVisibleDoc = await db
+            .collection("matches")
+            .doc(lastVisible as string)
+            .get();
+          query = query.startAfter(lastVisibleDoc);
+        } else if (type === "prev") {
+          // previous page
+          if (!firstVisible) {
+            return res.status(400).send("Missing 'firstVisible' parameter");
+          }
+          const firstVisibleDoc = await db
+            .collection("matches")
+            .doc(firstVisible as string)
+            .get();
+          query = query.endBefore(firstVisibleDoc);
+        } else if (type === "index") {
+          // get a specific page
+          if (!pageIndex) {
+            return res.status(400).send("Missing 'pageIndex' parameter");
+          }
+          if (pageIndexNum > 1) {
+            query = query.offset((pageIndexNum - 1) * pageSizeNum);
+          }
+        } else {
+          return res.status(400).send("Invalid 'type' parameter");
+        }
+
+        query = query.limit(pageSizeNum);
+
+        const snapshot = await query.get();
+
+        if (snapshot.empty) {
+          return res.status(404).send("No matches found");
+        }
+
+        const matches = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            home_college: data.home_college,
+            away_college: data.away_college,
+            sport: data.sport,
+            home_college_score: data.home_college_score,
+            away_college_score: data.away_college_score,
+            winner: data.winner,
+            timestamp:
+              data.timestamp && data.timestamp.toDate
+                ? data.timestamp.toDate().toISOString()
+                : null, // Fallback if timestamp is missing or invalid
+          };
+        });
+
+        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+        const nextLastVisible = lastDoc ? lastDoc.id : null;
+        const firstDoc = snapshot.docs[0];
+        const nextFirstVisible = firstDoc ? firstDoc.id : null;
+
+        return res.status(200).json({
+          matches,
+          lastVisible: nextLastVisible,
+          firstVisible: nextFirstVisible,
+          totalPages,
+        });
+      } catch (error) {
+        console.error("Error fetching college data:", error);
+        return res.status(500).send("Internal Server Error");
+      }
+    });
+  }
+);
 
 // returns the college data for a given collegeId
 export const getCollege = functions.https.onRequest(async (req, res) => {
