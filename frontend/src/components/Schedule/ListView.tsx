@@ -1,20 +1,7 @@
-import { toCollegeName } from "@src/data/helpers";
-interface Match {
-  home_college: string | null;
-  away_college: string | null;
-  sport: string;
-  home_college_score: number | null;
-  away_college_score: number | null;
-  winner: string | null;
-  timestamp: string | null; // ISO 8601 format
-}
+import { toCollegeName } from "@src/utils/helpers";
+import { CalendarMatchListProps } from "@src/types/components";
 
-interface MatchListProps {
-  matches: Match[];
-  onMatchClick: (match: Match) => void;
-}
-
-const ListView: React.FC<MatchListProps> = ({ matches, onMatchClick }) => {
+const ListView: React.FC<CalendarMatchListProps> = ({ matches, onMatchClick }) => {
   return (
     <div>
       {matches.length === 0 ? (

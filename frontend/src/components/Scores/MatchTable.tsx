@@ -1,6 +1,6 @@
 import {
     groupByDate,
-  } from "@src/data/helpers";
+  } from "@src/utils/helpers";
 
 import TableRow from "./TableRow";
 

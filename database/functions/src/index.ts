@@ -152,8 +152,9 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
       const snapshot = await query.get();
 
       if (snapshot.empty) {
-        return res.status(404).send("No matches found");
+        return res.status(200).json([]); // Respond with an empty array instead of return res.status(404).send("No matches found");
       }
+
 
       // Process the query result and format the data
       const matches = snapshot.docs.map((doc) => {

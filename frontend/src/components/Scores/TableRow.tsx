@@ -3,7 +3,7 @@ import {
     toCollegeName,
     sportsMap,
     emojiMap,
-  } from "@src/data/helpers";
+  } from "@src/utils/helpers";
 
 import {TableRowProps, Match } from '@src/types/components';
 

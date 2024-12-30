@@ -10,7 +10,7 @@ import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
 import SignUpModal from "../../components/schedule/Signup";
 import Calendar, { CalendarType } from "react-calendar";
-import { toCollegeAbbreviation } from "@src/data/helpers"
+import { toCollegeAbbreviation } from "@src/utils/helpers"
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
@@ -29,7 +29,6 @@ const SchedulePage: React.FC = () => {
 
   useEffect(() => {
     document.title = "Schedule";
-
     const selectedCollege = sessionStorage.getItem("selectedCollege");
     if (selectedCollege) {
       setFilter((prev) => ({ ...prev, college: selectedCollege }));

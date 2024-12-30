@@ -5,7 +5,7 @@ import { CollegeSummaryCardProps } from "@src/types/components";
 import {
     getPlace,
     getRatioAsString
-  } from "@src/data/helpers";
+  } from "@src/utils/helpers";
 
 
 

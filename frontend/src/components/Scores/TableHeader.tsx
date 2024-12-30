@@ -1,5 +1,6 @@
 import { TableHeaderProps } from "@src/types/components";
 import React from 'react';
+import {colleges} from "@src/utils/helpers"
 
 
   // Updated TableHeader Component
@@ -28,21 +29,11 @@ import React from 'react';
             onChange={handleFilterChange}
             className="text-xs md:text-sm rounded-md py-1 px-1"
           >
-            <option value="">Colleges</option>
-            <option value="BF">Benjamin Franklin</option>
-            <option value="BK">Berkeley</option>
-            <option value="BR">Branford</option>
-            <option value="DC">Davenport</option>
-            <option value="ES">Ezra Stiles</option>
-            <option value="GH">Grace Hopper</option>
-            <option value="JE">Jonathan Edwards</option>
-            <option value="MC">Morse</option>
-            <option value="MY">Pauli Murray</option>
-            <option value="PC">Pierson</option>
-            <option value="SY">Saybrook</option>
-            <option value="SM">Silliman</option>
-            <option value="TD">Timothy Dwight</option>
-            <option value="TC">Trumbull</option>
+          {colleges.map((college) => (
+            <option key={college.id} value={college.id}>
+              {college.name}
+            </option>
+          ))}
           </select>
         </div>
       </div>
