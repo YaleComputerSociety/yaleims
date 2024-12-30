@@ -6,11 +6,11 @@ import { useState, useEffect } from "react";
 import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import LoadingScreen from "@src/components/LoadingScreen";
-import Filters from "../../components/Schedule/Filter";
-import ListView from "../../components/Schedule/ListView";
-import SignUpModal from "../../components/Schedule/Signup";
+import Filters from "../../components/schedule/Filter";
+import ListView from "../../components/schedule/ListView";
+import SignUpModal from "../../components/schedule/Signup";
 import Calendar, { CalendarType } from "react-calendar";
-import { toCollegeAbbreviation } from "@src/data/helpers"
+import { toCollegeAbbreviation } from "@src/utils/helpers"
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
@@ -29,7 +29,6 @@ const SchedulePage: React.FC = () => {
 
   useEffect(() => {
     document.title = "Schedule";
-
     const selectedCollege = sessionStorage.getItem("selectedCollege");
     if (selectedCollege) {
       setFilter((prev) => ({ ...prev, college: selectedCollege }));

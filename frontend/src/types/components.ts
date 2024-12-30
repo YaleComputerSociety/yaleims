@@ -75,15 +75,39 @@ export type Sport = {
 
 // Define the type for the filters
 export interface Filters {
-  college: string;
-  sport: string;
-  date: string;
-}
-
-// Define the context type
-
+    college: string;
+    sport: string;
+    date: string;
+  }
+  
 export interface FiltersContextType {
   filter: Filters;
   setFilter: React.Dispatch<React.SetStateAction<Filters>>;
   resetFilters: () => void;
+}
+
+export interface CalendarViewProps {
+  events: {
+    title: string;
+    start: Date;
+    end: Date;
+    match: Match;
+  }[];
+  onMatchClick: (match: Match) => void;
+}
+
+export interface CalendarMatchListProps {
+  matches: Match[];
+  onMatchClick: (match: Match) => void;
+}
+  
+export interface MatchSignUpProps {
+    match: Match;
+    onConfirm: () => void;
+    onCancel: () => void;
+}
+
+export interface CalendarFiltersProps {
+  filter: { college: string; sport: string; date: Date | null };
+  updateFilter: (key: keyof CalendarFiltersProps['filter'], value: string) => void;
 }

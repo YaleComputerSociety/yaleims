@@ -1,17 +1,14 @@
-import { colleges } from '../../data/colleges';
-import { sports } from '../../data/sports';
+import { colleges } from '../../utils/helpers';
+import { sports } from '../../utils/helpers';
 
-interface FiltersProps {
-  filter: { college: string; sport: string; date: Date | null };
-  updateFilter: (key: keyof FiltersProps['filter'], value: string) => void;
-}
+import { CalendarFiltersProps } from '@src/types/components';
 
-const Filters: React.FC<FiltersProps> = ({ filter, updateFilter }) => (
+const Filters: React.FC<CalendarFiltersProps> = ({ filter, updateFilter }) => (
   <div className="flex justify-center space-x-4 mb-8">
     <select
       value={filter.college}
       onChange={(e) => updateFilter('college', e.target.value)}
-      className="p-2 border w-48"
+      className="p-2 border w-48 dark:bg-black"
     >
       <option value="">All Colleges</option>
       {Object.values(colleges).map((college) => (
@@ -23,7 +20,7 @@ const Filters: React.FC<FiltersProps> = ({ filter, updateFilter }) => (
     <select
       value={filter.sport}
       onChange={(e) => updateFilter('sport', e.target.value)}
-      className="p-2 border w-48"
+      className="p-2 border w-48 dark:bg-black"
     >
       <option value="">All Sports</option>
       {Object.values(sports).map((sport) => (
