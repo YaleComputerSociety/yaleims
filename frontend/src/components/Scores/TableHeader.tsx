@@ -7,12 +7,12 @@ import {colleges} from "@src/utils/helpers"
   const TableHeader : React.FC<TableHeaderProps> = ({ handleFilterChange }) => (
     <div className="flex px-2 py-2 rounded-md justify-center justify-self-center">
       {/* Date/Time Column with Dropdown Filter */}
-      <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
+      <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
         <div>
           <select
             name="date"
             onChange={handleFilterChange}
-            className="text-xs md:text-sm rounded-md py-1 px-1"
+            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
           >
             <option value="all">Date/Time</option>
             <option value="today">Today</option>
@@ -22,12 +22,12 @@ import {colleges} from "@src/utils/helpers"
       </div>
 
       {/* Colleges & Score Column with Dropdown Filter */}
-      <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
+      <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
         <div>
           <select
             name="college"
             onChange={handleFilterChange}
-            className="text-xs md:text-sm rounded-md py-1 px-1"
+            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
           >
           {colleges.map((college) => (
             <option key={college.id} value={college.id}>
@@ -39,12 +39,12 @@ import {colleges} from "@src/utils/helpers"
       </div>
 
       {/* Sport Column with Dropdown Filter */}
-      <div className="py-1 px-1 text-xs font-medium rounded-md text-gray-500 uppercase md:tracking-wider hover:bg-yellow-400">
+      <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
         <div>
           <select
             name="sport"
             onChange={handleFilterChange}
-            className="text-xs md:text-sm rounded-md py-1 px-1"
+            className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
           >
             <option value="">All Sport</option>
             <option value="Flag Football">Flag Football</option>

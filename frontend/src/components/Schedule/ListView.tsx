@@ -28,7 +28,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, onMatchClick }) =
             return (
               <li
                 key={index}
-                className="bg-white shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out"
+                className="bg-white dark:bg-black shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out"
               >
                 <div className="flex justify-between items-center">
                   <div>

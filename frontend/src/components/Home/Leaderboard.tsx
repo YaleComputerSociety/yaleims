@@ -47,21 +47,18 @@ const Leaderboard: React.FC = () => {
     const podiumItems = [
       {
         place: "second",
-        podium_text: "2nd",
         college: topColleges[1],
         size: "small",
         offset: "translate-y-6",
       },
       {
         place: "first",
-        podium_text: "1st",
         college: topColleges[0],
         size: "large",
         offset: "translate-y-0",
       },
       {
         place: "third",
-        podium_text: "3rd",
         college: topColleges[2],
         size: "small",
         offset: "translate-y-6",
@@ -79,7 +76,7 @@ const Leaderboard: React.FC = () => {
 
     return (
       <div className="flex flex-row justify-center md:gap-10 items-end space-x-6">
-        {podiumItems.map(({ place, podium_text, college, size, offset }, index) =>
+        {podiumItems.map(({ place, college, size, offset }, index) =>
           college ? (
             <div
               key={index}
@@ -111,13 +108,10 @@ const Leaderboard: React.FC = () => {
                 />
               </div>
 
-              <div className="bg-podium_light dark:bg-black text-center p-4 rounded-lg">
-                <h3 className="font-semibold text-sm text-gray-800 mt-10">
-                  {college.name}
-                </h3>
-                <p className="text-sm text-gray-500">Points: {college.points}</p>
-                <h1>{podium_text}</h1>
-              </div>
+              <h3 className="font-semibold text-sm mt-10 text-center">
+                {college.name}
+              </h3>
+              <p className="text-sm text-gray-500">Points: {college.points}</p>
             </div>
           ) : null
         )}
@@ -140,34 +134,34 @@ const Leaderboard: React.FC = () => {
   
       {/* Full Leaderboard */}
       <div className="overflow-x-auto">
-        <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 divide-y divide-gray-200 mt-4">
-          <thead className="bg-white text-black">
+        <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200 mt-4">
+          <thead className="bg-white dark:bg-[#132750]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
                 Rank
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
                 College
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
                 Change?
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
                 Points
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-[#132750] divide-y divide-gray-200">
             {sortedColleges.slice(3).map((college, index) => (
               <tr
                 key={college.id}
                 onClick={() => handleCollegeClick(college.name)}
-                className="hover:bg-gray-50 cursor-pointer"
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
               >
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 border border-gray-300">
+                <td className="w-[50px] text-sm font-medium border border-gray-300 dark:border-gray-600 text-center">
                   {index + 4}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900  border border-gray-300">
+                <td className="px-6 py-4 text-sm border border-gray-300 dark:border-gray-600">
                     <div className="flex items-center">
                     <Image
                       src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
@@ -181,10 +175,10 @@ const Leaderboard: React.FC = () => {
                   </div>
 
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 text-center border border-gray-300">
+                <td className="w-[75px] text-sm text-center border border-gray-300 dark:border-gray-600">
                   -0
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 border border-gray-300">
+                <td className="w-[150px] px-6 py-4 text-sm border border-gray-300 dark:border-gray-600">
                   {college.points} points
                 </td>
               </tr>

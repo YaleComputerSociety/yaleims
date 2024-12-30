@@ -16,7 +16,7 @@ function Footer() {
   return (
     <footer className="p-5">
       <div>
-        <div className="sm:text-9xl text-3xl font-medium -ml-8 -mb-4 xs:m-0">YALE</div>
+        {/* <div className="sm:text-9xl text-3xl font-medium -ml-8 -mb-4 xs:m-0">YALE</div>
         <div className="flex items-center gap-10">
           <div className="sm:text-9xl text-3xl font-medium ">IMS</div>
           <div className="flex flex-row space-x-2 items-center">
@@ -26,7 +26,9 @@ function Footer() {
           <p>The Team.</p>
           <p>Yale IMs &copy; 2024</p>
         </div>
-        </div>
+        </div> */}
+        <br></br>
+        <p className="text-right">Yale IMs &copy; 2024 - A <a className="font-bold" href="https://yalecomputersociety.org/">y/cs</a> and <a className="font-bold" href="https://designatyale.com/">day</a> product</p>
       </div>
 
     </footer>

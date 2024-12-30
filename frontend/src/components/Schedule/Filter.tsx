@@ -8,7 +8,7 @@ const Filters: React.FC<CalendarFiltersProps> = ({ filter, updateFilter }) => (
     <select
       value={filter.college}
       onChange={(e) => updateFilter('college', e.target.value)}
-      className="p-2 border w-48"
+      className="p-2 border w-48 dark:bg-black"
     >
       <option value="">All Colleges</option>
       {Object.values(colleges).map((college) => (
@@ -20,7 +20,7 @@ const Filters: React.FC<CalendarFiltersProps> = ({ filter, updateFilter }) => (
     <select
       value={filter.sport}
       onChange={(e) => updateFilter('sport', e.target.value)}
-      className="p-2 border w-48"
+      className="p-2 border w-48 dark:bg-black"
     >
       <option value="">All Sports</option>
       {Object.values(sports).map((sport) => (
