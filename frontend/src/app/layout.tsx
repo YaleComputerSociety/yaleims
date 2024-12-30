@@ -31,7 +31,7 @@ export default function RootLayout({
               <NavBar />
               <div className="mb-10"></div>
               {children}
-              {/* <Footer /> */}
+              <Footer />
             </body>
           </html>
         </GoogleOAuthProvider>

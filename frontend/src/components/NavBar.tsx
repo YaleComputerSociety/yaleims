@@ -103,21 +103,24 @@ const NavBar: React.FC = () => {
           {isClick ? (
             <IoMdClose
               size={30}
-              className="text-gray-800"
+              className="text-gray-800 dark:text-gray-100"
             />
           ) : (
             <IoIosMenu
               size={30}
-              className="mt-3 text-gray-800"
+              className="mt-3 text-gray-800 dark:text-gray-100"
             />
           )}
         </button>
         <div className="flex gap-4">
-          <div>
-            <button
-                onClick={toggleTheme}
-                className="mt-4 rounded transition-colors"
-                aria-label="Toggle Light/Dark Mode"
+            <div>
+            {isClick ? (
+              ""
+            ) : (
+              <button
+              onClick={toggleTheme}
+              className="mt-4 rounded transition-colors"
+              aria-label="Toggle Light/Dark Mode"
               >
                 {theme === "light" ? (
                   <MdOutlineLightMode className="text-gray-800 hover:text-blue-600" size={24} />
@@ -125,6 +128,8 @@ const NavBar: React.FC = () => {
                   <MdDarkMode className="text-gray-100 hover:text-blue-300" size={24} />
                 )}
             </button>
+            )}
+
           </div>
           <div className="flex justify-between items-center">
             {!isClick ? (

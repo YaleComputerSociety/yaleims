@@ -134,56 +134,67 @@ const Leaderboard: React.FC = () => {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden">
+    <div className="rounded-lg overflow-hidden max-w-4xl mx-auto">
       {/* Podium */}
-
       <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
-
+  
       {/* Full Leaderboard */}
-      <table className="min-w-full sm:width-80 divide-y divide-gray-200 mt-4">
-        <thead className="bg-white text-black">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium  tracking-wider">
-              Rank
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium  tracking-wider">
-              College
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium  tracking-wider">
-              Points
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {sortedColleges.slice(3).map((college, index) => (
-            <tr
-              key={college.id}
-              onClick={() => handleCollegeClick(college.name)}
-              className="hover:bg-gray-50 cursor-pointer"
-            >
-              <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                {index + 4}
-              </td>
-              <td className="px-6 py-4 text-sm text-gray-900 flex items-center">
-                <Image
-                  src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
-                  alt={college.name}
-                  width={24}
-                  height={24}
-                  className="mr-2 object-contain"
-                  unoptimized
-                />
-                {college.name}
-              </td>
-              <td className="px-6 py-4 text-sm text-gray-900">
-                {college.points} points
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 divide-y divide-gray-200 mt-4">
+          <thead className="bg-white text-black">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+                Rank
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+                College
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+                Change?
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300">
+                Points
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {sortedColleges.slice(3).map((college, index) => (
+              <tr
+                key={college.id}
+                onClick={() => handleCollegeClick(college.name)}
+                className="hover:bg-gray-50 cursor-pointer"
+              >
+                <td className="px-6 py-4 text-sm font-medium text-gray-900 border border-gray-300">
+                  {index + 4}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900  border border-gray-300">
+                    <div className="flex items-center">
+                    <Image
+                      src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
+                      alt={college.name}
+                      width={24}
+                      height={24}
+                      className="mr-2 object-contain"
+                      unoptimized
+                    />
+                    {college.name}
+                  </div>
+
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900 text-center border border-gray-300">
+                  -0
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900 border border-gray-300">
+                  {college.points} points
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
+  
 };
 
 export default Leaderboard;
