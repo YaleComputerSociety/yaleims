@@ -45,7 +45,7 @@ const NavBar: React.FC = () => {
   return (
     <nav className="p-3 pb-4 items-center w-full fixed top-0 z-50 transition-colors duration-300 pr-5">
       <div className="md:flex md:block justify-between items-center hidden">
-        <div className="hover:text-slate-300 text-xl pl-10">
+        <div className="hover:text-slate-500 text-xl pl-10">
           <Link href={links[0].href} onClick={resetFilters}>
             <Image src="/LOGO.png" width={130} height={130} alt="YALE IMS" />
           </Link>
@@ -55,7 +55,7 @@ const NavBar: React.FC = () => {
             <Link
               key={link.href}
               href={link.href}
-              className="hover:text-slate-300 dark:hover:text-blue-400 flex justify-between items-center pl-4 pr-4 last:text-4xl last:pr-10"
+              className="hover:text-slate-600 dark:hover:text-blue-400 flex justify-between items-center pl-4 pr-4 last:text-4xl last:pr-10"
               onClick={resetFilters}
             >
               <div className="mt-2">{link.text}</div>

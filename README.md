@@ -1,6 +1,15 @@
 # Yale Intramural Sports App
 
-This project is a web application for managing and tracking Yale's intramural sports events. The app provides users with features such as viewing profiles, checking leaderboards, accessing scores, and reviewing game schedules. It is built with a modern tech stack to ensure ease of use, scalability, and maintainability.
+This project is a web application designed to manage and track Yale's intramural sports events. The app offers users a range of features, including:
+
+- Checking leaderboards to track standings
+- Accessing scores and reviewing game schedules
+- Adding events directly to your Google Calendar
+- Exploring college overviews to see detailed insights about different teams
+
+Additionally, the app allows for real-time updates and scoring of games, keeping all participants and spectators up-to-date.
+
+
 
 ## Table of Contents
 
@@ -15,17 +24,10 @@ This project is a web application for managing and tracking Yale's intramural sp
 ## Tech Stack
 
 - **Frontend:** Next.js, React, Tailwind CSS
-- **Backend:** Express.js, Firebase Firestore, Firebase Cloud Functions
-- **Authentication:** Yale CAS Login
+- **Backend:** Firebase Firestore, Firebase Cloud Functions
+- **Authentication:** Firebase Authentication
 - **Database:** Firebase Firestore
-- **Deployment:**
-
-## Features
-
-- **Profile Pages:** View personal profiles with information such as netid, name, college, role (player, referee, secretary, or admin), and personal points.
-- **Leaderboard:** Check the overall rankings and points of colleges participating in intramural sports.
-- **Scores:** View detailed scores and match results, with a filterable table highlighting winners, losers, and tied games.
-- **Schedule:** See upcoming and past matches in both list and calendar views, with options to sign up for games.
+- **Deployment:** Firebase Hosting
 
 ## Installation
 
@@ -41,7 +43,7 @@ This project is a web application for managing and tracking Yale's intramural sp
 
    ```bash
    git clone https://github.com/your-username/YaleComputerSociety/yaleims.git
-   cd backend
+   cd database/functions
    ```
 
 2. Install the dependencies:
@@ -92,12 +94,6 @@ This project is a web application for managing and tracking Yale's intramural sp
    ```bash
    npm run dev
    ```
-
-## Usage
-
-- Users can log in via Yale CAS.
-- Once logged in, users can view their profile, check their college's leaderboard standings, and browse match schedules and results.
-- Admins, secretaries, and referees can score matches and manage data related to intramural sports.
 
 ## Contributers
 
