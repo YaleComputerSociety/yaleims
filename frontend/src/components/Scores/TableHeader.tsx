@@ -47,11 +47,18 @@ import {colleges} from "@src/utils/helpers"
             className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
           >
             <option value="">All Sport</option>
+            <option value="Soccer">Soccer</option>
             <option value="Flag Football">Flag Football</option>
             <option value="Spikeball">Spikeball</option>
             <option value="Cornhole">Cornhole</option>
             <option value="Pickleball">Pickleball</option>
             <option value="Table Tennis">Table Tennis</option>
+            <option value="Broomball">Broomball</option>
+            <option value="Basketball">Basketball</option>
+            <option value="Indoor Soccer">Indoor Soccer</option>
+            <option value="Dodgeball">Dodgeball</option>
+            <option value="Volleyball">Volleyball</option>
+            <option value="Netball">Netball</option>
           </select>
         </div>
       </div>
