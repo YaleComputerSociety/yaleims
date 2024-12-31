@@ -210,6 +210,7 @@ export const getMatchesPaginated = functions.https.onRequest(
         const pageIndexNum = parseInt(pageIndex as string, 10);
 
         const scoresRef = db.collection("matches").orderBy("timestamp", "desc");
+        
         let query = scoresRef;
 
         // college filter query
@@ -275,7 +276,7 @@ export const getMatchesPaginated = functions.https.onRequest(
         const snapshot = await query.get();
 
         if (snapshot.empty) {
-          return res.status(404).send("No matches found");
+          return res.status(200).json([]);
         }
 
         const matches = snapshot.docs.map((doc) => {

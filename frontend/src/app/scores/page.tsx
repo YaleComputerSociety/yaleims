@@ -92,6 +92,7 @@ const ScoresPage: React.FC = () => {
         }
 
         const data = await response.json();
+        
         setFilteredMatches(data.matches);
         setFirstVisible(data.firstVisible);
         setLastVisible(data.lastVisible);
@@ -116,7 +117,6 @@ const ScoresPage: React.FC = () => {
           const response = await fetch(
             `https://us-central1-yims-125a2.cloudfunctions.net/getCollege?collegeId=${filter.college}`
           );
-
           if (!response.ok) {
             throw new Error(
               `Error fetching college stats: ${response.statusText}`
@@ -175,23 +175,27 @@ const ScoresPage: React.FC = () => {
             />
           </div>
         </>
-      )}
-
+      )}      
       <div className="min-w-full flex-col items-center md:px-20">
         <TableHeader handleFilterChange={handleFilterChange} />
-        <MatchesTable
-          filteredMatches={filteredMatches}
-          handleCollegeClick={handleCollegeClick}
-        />
+        {!filteredMatches ? 
+          <div className="text-center mt-10">
+            <h1>No matches found!</h1>
+            <h1>This sport has not been played yet</h1>
+          </div> :
+        <>
+          <MatchesTable
+            filteredMatches={filteredMatches}
+            handleCollegeClick={handleCollegeClick}
+          />    
+          <Pagination
+            currentPageNumber={page}
+            totalPages={totalPages}
+            setPageNumber={setPage}
+            setQueryType={setQueryType}
+          />
+        </>}
       </div>
-
-      <Pagination
-        currentPageNumber={page}
-        totalPages={totalPages}
-        setPageNumber={setPage}
-        setQueryType={setQueryType}
-      />
-
       {isLoading && <LoadingScreen />}
     </div>
   );
