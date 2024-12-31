@@ -2,12 +2,12 @@ import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
+import { toCollegeAbbreviation } from "@src/utils/helpers";
 
 import { FiltersContext } from "@src/context/FiltersContext";
 
 const Leaderboard: React.FC = () => {
-  const filtersContext = useContext(FiltersContext);
-  const { filter, setFilter } = filtersContext;
+  const { setFilter } = useContext(FiltersContext);
 
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,7 +44,11 @@ const Leaderboard: React.FC = () => {
   }, []);
 
   const handleCollegeClick = (collegeName: string) => {
-    setFilter((prev) => ({ ...prev, college: collegeName }));
+    setFilter({
+      college: toCollegeAbbreviation[collegeName],
+      sport: "",
+      date: "",
+    });
     router.push("/scores");
   };
 
