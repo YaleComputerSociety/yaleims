@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
+import { FiltersContext } from "@src/context/FiltersContext";
+import { toCollegeAbbreviation } from "@src/utils/helpers";
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
   const [sortedColleges, setSortedColleges] = useState<any[]>([]);
+  const { setFilter } = useContext(FiltersContext);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -39,7 +42,11 @@ const Leaderboard: React.FC = () => {
   }, []);
 
   const handleCollegeClick = (collegeName: string) => {
-    sessionStorage.setItem("selectedCollege", collegeName);
+    setFilter({
+      college: toCollegeAbbreviation[collegeName],
+      sport: "",
+      date: "",
+    });
     router.push("/scores");
   };
 
@@ -71,8 +78,8 @@ const Leaderboard: React.FC = () => {
         college: topColleges[0],
         size: "large",
         offset: "translate-y-0",
-      }
-    ]
+      },
+    ];
 
     return (
       <div className="flex flex-row justify-center md:gap-10 items-end space-x-6">
@@ -90,13 +97,16 @@ const Leaderboard: React.FC = () => {
               >
                 {/* Main College Flag */}
                 <Image
-                  src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
+                  src={`/college_flags/${college.name.replace(
+                    /\s+/g,
+                    " "
+                  )}.png`}
                   alt={college.name}
                   width={size === "large" ? 160 : 96}
                   height={size === "large" ? 160 : 96}
                   className="object-contain p-3"
                 />
-                
+
                 {/* Overlay Image */}
                 <Image
                   src={`/college_flags/${place}.png`}
@@ -104,7 +114,9 @@ const Leaderboard: React.FC = () => {
                   width={size === "large" ? 400 : 50}
                   height={size === "large" ? 400 : 50}
                   layout="fixed"
-                  className={`absolute ${place === "first" ? 'top-10' : 'top-20'}`}
+                  className={`absolute ${
+                    place === "first" ? "top-10" : "top-20"
+                  }`}
                 />
               </div>
 
@@ -131,7 +143,7 @@ const Leaderboard: React.FC = () => {
     <div className="rounded-lg overflow-hidden max-w-4xl mx-auto">
       {/* Podium */}
       <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
-  
+
       {/* Full Leaderboard */}
       <div className="overflow-x-auto">
         <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200 mt-4">
@@ -162,9 +174,12 @@ const Leaderboard: React.FC = () => {
                   {index + 4}
                 </td>
                 <td className="px-6 py-4 text-sm border border-gray-300 dark:border-gray-600">
-                    <div className="flex items-center">
+                  <div className="flex items-center">
                     <Image
-                      src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
+                      src={`/college_flags/${college.name.replace(
+                        /\s+/g,
+                        " "
+                      )}.png`}
                       alt={college.name}
                       width={24}
                       height={24}
@@ -173,7 +188,6 @@ const Leaderboard: React.FC = () => {
                     />
                     {college.name}
                   </div>
-
                 </td>
                 <td className="w-[75px] text-sm text-center border border-gray-300 dark:border-gray-600">
                   -0
@@ -188,7 +202,6 @@ const Leaderboard: React.FC = () => {
       </div>
     </div>
   );
-  
 };
 
 export default Leaderboard;
