@@ -180,12 +180,12 @@ const ScoresPage: React.FC = () => {
           </div>
         </>
       )}
+
       <div className="min-w-full flex-col items-center md:px-20">
         <TableHeader handleFilterChange={handleFilterChange} filter={filter} />
         {filteredMatches.length == 0 ? (
           <div className="text-center mt-10">
             <h1>No matches found!</h1>
-            <h1>This sport has not been played yet</h1>
           </div>
         ) : (
           <>
