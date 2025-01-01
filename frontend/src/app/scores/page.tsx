@@ -92,7 +92,7 @@ const ScoresPage: React.FC = () => {
         }
 
         const data = await response.json();
-        
+
         setFilteredMatches(data.matches);
         setFirstVisible(data.firstVisible);
         setLastVisible(data.lastVisible);
@@ -154,13 +154,17 @@ const ScoresPage: React.FC = () => {
     resetPaginationState();
   };
 
+  useEffect(() => {
+    console.log(filteredMatches);
+  }, [filteredMatches]);
+
   return (
     <div className="min-h-screen p-8 flex-col items-center">
       <h1 className="md:text-4xl text-xl font-bold text-center mb-8 pt-8">
         Scores and Rankings
       </h1>
 
-      {filter.college && (
+      {filter.college && filter.college != "All" && (
         <>
           <div className="hidden xs:block">
             <CollegeSummaryCard
@@ -175,26 +179,28 @@ const ScoresPage: React.FC = () => {
             />
           </div>
         </>
-      )}      
+      )}
       <div className="min-w-full flex-col items-center md:px-20">
-        <TableHeader handleFilterChange={handleFilterChange} />
-        {!filteredMatches ? 
+        <TableHeader handleFilterChange={handleFilterChange} filter={filter} />
+        {filteredMatches.length == 0 ? (
           <div className="text-center mt-10">
             <h1>No matches found!</h1>
             <h1>This sport has not been played yet</h1>
-          </div> :
-        <>
-          <MatchesTable
-            filteredMatches={filteredMatches}
-            handleCollegeClick={handleCollegeClick}
-          />    
-          <Pagination
-            currentPageNumber={page}
-            totalPages={totalPages}
-            setPageNumber={setPage}
-            setQueryType={setQueryType}
-          />
-        </>}
+          </div>
+        ) : (
+          <>
+            <MatchesTable
+              filteredMatches={filteredMatches}
+              handleCollegeClick={handleCollegeClick}
+            />
+            <Pagination
+              currentPageNumber={page}
+              totalPages={totalPages}
+              setPageNumber={setPage}
+              setQueryType={setQueryType}
+            />
+          </>
+        )}
       </div>
       {isLoading && <LoadingScreen />}
     </div>

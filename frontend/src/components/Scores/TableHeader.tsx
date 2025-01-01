@@ -2,8 +2,28 @@ import { TableHeaderProps } from "@src/types/components";
 import React from "react";
 import { colleges } from "@src/utils/helpers";
 
+// list of options for college filter
+const collegeOptions: Array<any> = [];
+
+collegeOptions.push(
+  <option key={"All"} value={"All"}>
+    {"All Colleges"}
+  </option>
+);
+
+colleges.map((college) =>
+  collegeOptions.push(
+    <option key={college.id} value={college.id}>
+      {college.name}
+    </option>
+  )
+);
+
 // Updated TableHeader Component
-const TableHeader: React.FC<TableHeaderProps> = ({ handleFilterChange }) => (
+const TableHeader: React.FC<TableHeaderProps> = ({
+  handleFilterChange,
+  filter,
+}) => (
   <div className="flex flex-wrap px-2 py-2 rounded-md justify-center justify-self-center">
     {/* Date/Time Column with Dropdown Filter */}
     <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
@@ -27,12 +47,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({ handleFilterChange }) => (
           name="college"
           onChange={handleFilterChange}
           className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
+          value={filter.college}
         >
-          {colleges.map((college) => (
-            <option key={college.id} value={college.id}>
-              {college.name}
-            </option>
-          ))}
+          {collegeOptions}
         </select>
       </div>
     </div>
