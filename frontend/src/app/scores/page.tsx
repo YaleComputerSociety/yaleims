@@ -92,7 +92,7 @@ const ScoresPage: React.FC = () => {
         }
 
         const data = await response.json();
-        
+
         setFilteredMatches(data.matches);
         setFirstVisible(data.firstVisible);
         setLastVisible(data.lastVisible);
@@ -175,26 +175,28 @@ const ScoresPage: React.FC = () => {
             />
           </div>
         </>
-      )}      
+      )}
       <div className="min-w-full flex-col items-center md:px-20">
         <TableHeader handleFilterChange={handleFilterChange} />
-        {!filteredMatches ? 
+        {!filteredMatches ? (
           <div className="text-center mt-10">
             <h1>No matches found!</h1>
             <h1>This sport has not been played yet</h1>
-          </div> :
-        <>
-          <MatchesTable
-            filteredMatches={filteredMatches}
-            handleCollegeClick={handleCollegeClick}
-          />    
-          <Pagination
-            currentPageNumber={page}
-            totalPages={totalPages}
-            setPageNumber={setPage}
-            setQueryType={setQueryType}
-          />
-        </>}
+          </div>
+        ) : (
+          <>
+            <MatchesTable
+              filteredMatches={filteredMatches}
+              handleCollegeClick={handleCollegeClick}
+            />
+            <Pagination
+              currentPageNumber={page}
+              totalPages={totalPages}
+              setPageNumber={setPage}
+              setQueryType={setQueryType}
+            />
+          </>
+        )}
       </div>
       {isLoading && <LoadingScreen />}
     </div>

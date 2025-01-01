@@ -157,7 +157,6 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
         return res.status(200).json([]); // Respond with an empty array instead of return res.status(404).send("No matches found");
       }
 
-
       // Process the query result and format the data
       const matches = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -210,7 +209,7 @@ export const getMatchesPaginated = functions.https.onRequest(
         const pageIndexNum = parseInt(pageIndex as string, 10);
 
         const scoresRef = db.collection("matches").orderBy("timestamp", "desc");
-        
+
         let query = scoresRef;
 
         // college filter query
@@ -248,7 +247,12 @@ export const getMatchesPaginated = functions.https.onRequest(
             .collection("matches")
             .doc(lastVisible as string)
             .get();
-          query = query.startAfter(lastVisibleDoc);
+
+          if (!lastVisibleDoc.exists) {
+            return res.status(404).send("First visible document not found");
+          }
+
+          query = query.startAfter(lastVisibleDoc).limit(pageSizeNum);
         } else if (type === "prev") {
           // previous page
           if (!firstVisible) {
@@ -258,25 +262,35 @@ export const getMatchesPaginated = functions.https.onRequest(
             .collection("matches")
             .doc(firstVisible as string)
             .get();
-          query = query.endBefore(firstVisibleDoc);
+
+          if (!firstVisibleDoc.exists) {
+            return res.status(404).send("First visible document not found");
+          }
+
+          query = query.endBefore(firstVisibleDoc).limitToLast(pageSizeNum);
         } else if (type === "index") {
           // get a specific page
           if (!pageIndex) {
             return res.status(400).send("Missing 'pageIndex' parameter");
           }
-          if (pageIndexNum > 1) {
-            query = query.offset((pageIndexNum - 1) * pageSizeNum);
+          if (pageIndexNum >= 1) {
+            query = query
+              .offset((pageIndexNum - 1) * pageSizeNum)
+              .limit(pageSizeNum);
           }
         } else {
           return res.status(400).send("Invalid 'type' parameter");
         }
 
-        query = query.limit(pageSizeNum);
-
         const snapshot = await query.get();
 
         if (snapshot.empty) {
-          return res.status(200).json([]);
+          return res.status(200).json({
+            matches: [],
+            lastVisible: null,
+            firstVisible: null,
+            totalPages,
+          });
         }
 
         const matches = snapshot.docs.map((doc) => {
