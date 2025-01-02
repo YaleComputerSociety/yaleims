@@ -10,11 +10,13 @@ import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
 import SignUpModal from "../../components/schedule/Signup";
 import Calendar, { CalendarType } from "react-calendar";
+import { useUser } from "../../context/UserContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers"
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
 const SchedulePage: React.FC = () => {
+  const { user, signIn, loading } = useUser(); // Use already fetched user data
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
   const [signUpModalOpen, setSignUpModalOpen] = useState<boolean>(false);
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
@@ -90,7 +92,16 @@ const SchedulePage: React.FC = () => {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const response = await fetch("/api/google-calendar", {
+        // Construct the matchId based on home_college, away_college, and timestamp
+        if (!selectedMatch || !selectedMatch.home_college || !selectedMatch.away_college || !selectedMatch.timestamp) {
+          console.error("Missing fields in selectedMatch:", selectedMatch);
+          alert("Unable to proceed: Missing match details.");
+          return;
+        }
+        const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
+  
+        // Add the event to Google Calendar
+        const calendarResponse = await fetch("/api/google-calendar", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -100,20 +111,68 @@ const SchedulePage: React.FC = () => {
             match: selectedMatch,
           }),
         });
-
-        const data = await response.json();
-        if (response.ok) {
+  
+        const calendarData = await calendarResponse.json();
+        if (calendarResponse.ok) {
           alert("Event added to your Google Calendar!");
+          // console.log("Google Calendar response:", calendarData);
         } else {
-          alert("Failed to add event: " + data.error);
+          alert("Failed to add event: " + calendarData.error);
+          console.error("Google Calendar error:", calendarData.error);
+        }
+  
+        /** Add user to the appropriate participant array and update their matches **/
+        
+        const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
+  
+        // Ensure user college abbreviation matches home/away college
+        const isHomeCollege = selectedMatch.home_college === userCollegeAbbreviation;
+        const isAwayCollege = selectedMatch.away_college === userCollegeAbbreviation;
+  
+        if (isHomeCollege || isAwayCollege) {
+          const participantType = isHomeCollege
+            ? "home_college_participants"
+            : "away_college_participants";
+  
+          const cloudFunctionUrl = "https://addparticipant-65477nrg6a-uc.a.run.app"; // Cloud function URL
+  
+          const cloudFunctionResponse = await fetch(cloudFunctionUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              matchId,         // Use constructed matchId
+              participantType, // Send participantType
+              user,            // Send entire user object
+              selectedMatch,   // Send selectedMatch to add to user's matches
+            }),
+          });
+  
+          const cloudFunctionData = await cloudFunctionResponse.json();
+          if (!cloudFunctionResponse.ok) {
+            console.error("Error:", cloudFunctionData.error);
+            alert(`Error: ${cloudFunctionData.error}`);
+          } else {
+            alert(
+              `Successfully signed up and updated your matches!`
+            );
+          }
+        } else {
+          console.warn(
+            `Your college (${user.college}) does not match home or away college for this match.`
+          );
+          alert("Your college does not match the home or away college for this match.");
         }
       } catch (error) {
         console.error("Error:", error);
+        alert("An error occurred while processing your request. Please try again.");
       }
       setSignUpModalOpen(false);
     },
     onError: () => {
       console.error("Google login failed");
+      alert("Google login failed. Please try again.");
     },
     scope: "https://www.googleapis.com/auth/calendar.events",
   });
