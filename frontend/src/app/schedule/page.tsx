@@ -3,15 +3,14 @@
 import "./calendar.css";
 import "react-calendar/dist/Calendar.css";
 import { useState, useEffect } from "react";
-import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import LoadingScreen from "@src/components/LoadingScreen";
 import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
-import SignUpModal from "../../components/schedule/Signup";
 import Calendar, { CalendarType } from "react-calendar";
 import { useUser } from "../../context/UserContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers"
+import { Match } from "@src/types/components";
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
@@ -87,10 +86,9 @@ const SchedulePage: React.FC = () => {
     };
   
     fetchScores();
-  }, [filter]); // Make sure to include filter as a dependency
+  }, [filter]); 
   
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
+  const signUp = async (selectedMatch: Match) => {
       try {
         // Construct the matchId based on home_college, away_college, and timestamp
         if (!selectedMatch || !selectedMatch.home_college || !selectedMatch.away_college || !selectedMatch.timestamp) {
@@ -100,29 +98,7 @@ const SchedulePage: React.FC = () => {
         }
         const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
   
-        // Add the event to Google Calendar
-        const calendarResponse = await fetch("/api/google-calendar", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            accessToken: tokenResponse.access_token,
-            match: selectedMatch,
-          }),
-        });
-  
-        const calendarData = await calendarResponse.json();
-        if (calendarResponse.ok) {
-          alert("Event added to your Google Calendar!");
-          // console.log("Google Calendar response:", calendarData);
-        } else {
-          alert("Failed to add event: " + calendarData.error);
-          console.error("Google Calendar error:", calendarData.error);
-        }
-  
         /** Add user to the appropriate participant array and update their matches **/
-        
         const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
   
         // Ensure user college abbreviation matches home/away college
@@ -169,27 +145,7 @@ const SchedulePage: React.FC = () => {
         alert("An error occurred while processing your request. Please try again.");
       }
       setSignUpModalOpen(false);
-    },
-    onError: () => {
-      console.error("Google login failed");
-      alert("Google login failed. Please try again.");
-    },
-    scope: "https://www.googleapis.com/auth/calendar.events",
-  });
-
-  const handleMatchClick = (match: any) => {
-    setSelectedMatch(match);
-    setSignUpModalOpen(true);
   };
-
-  const calendarEvents = filteredMatches
-    .filter((match) => match.timestamp) // Exclude matches with null timestamps
-    .map((match) => ({
-      title: `${match.home_college} vs ${match.away_college}`,
-      start: new Date(match.timestamp),
-      end: new Date(match.timestamp),
-      match,
-    }));
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
@@ -204,56 +160,45 @@ const SchedulePage: React.FC = () => {
       {isLoading ? (
         <LoadingScreen />
       ) : (
-        <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <div className="min-h-screen p-8">
-            <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
-  
-            {/* Filters */}
-            <Filters
-              filter={filter}
-              updateFilter={updateFilter}
-            />
-  
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Calendar */}
-              <div className="lg:w-1/2 flex justify-center items-start">
-                <Calendar
-                  locale="en-US"
-                  calendarType={calendarType}
-                  prev2Label={null}
-                  next2Label={null}
-                  selectRange={false}
-                  showNeighboringMonth={true}
-                  minDetail="month"
-                  onClickDay={handleDateClick}
-                />
-              </div>
-  
-              {/* ListView or No Matches Message */}
-              <div className="lg:w-1/2 flex justify-center">
-                {filteredMatches.length > 0 ? (
-                  <ListView
-                    matches={filteredMatches}
-                    onMatchClick={handleMatchClick}
-                  />
-                ) : (
-                  <div className="text-center mt-8 text-gray-600">
-                    No matches found.
-                  </div>
-                )}
-              </div>
-            </div>
-  
-            {/* Sign-Up Modal */}
-            {signUpModalOpen && selectedMatch && (
-              <SignUpModal
-                match={selectedMatch}
-                onConfirm={handleGoogleLogin}
-                onCancel={() => setSignUpModalOpen(false)}
+        <div className="min-h-screen p-8">
+          <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
+
+          {/* Filters */}
+          <Filters
+            filter={filter}
+            updateFilter={updateFilter}
+          />
+
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Calendar */}
+            <div className="lg:w-1/2 flex justify-center items-start">
+              <Calendar
+                locale="en-US"
+                calendarType={calendarType}
+                prev2Label={null}
+                next2Label={null}
+                selectRange={false}
+                showNeighboringMonth={true}
+                minDetail="month"
+                onClickDay={handleDateClick}
               />
-            )}
+            </div>
+
+            {/* ListView or No Matches Message */}
+            <div className="lg:w-1/2 flex justify-center">
+              {filteredMatches.length > 0 ? (
+                <ListView
+                  matches={filteredMatches}
+                  signUp={signUp}
+                />
+              ) : (
+                <div className="text-center mt-8 text-gray-600">
+                  No matches found.
+                </div>
+              )}
+            </div>
           </div>
-        </GoogleOAuthProvider>
+        </div>
       )}
     </div>
   );

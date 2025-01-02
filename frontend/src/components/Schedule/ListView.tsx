@@ -1,7 +1,49 @@
-import { toCollegeName } from "@src/utils/helpers";
+import { useEffect, useState } from "react";
+import { toCollegeName, emojiMap, toCollegeAbbreviation } from "@src/utils/helpers";
 import { CalendarMatchListProps } from "@src/types/components";
+import { FaCalendar } from "react-icons/fa";
+import { useAddToGCal } from "@src/hooks/useAddToGCal";
+import { useUser } from "@src/context/UserContext";
+import { Match } from "@src/types/components";
 
-const ListView: React.FC<CalendarMatchListProps> = ({ matches, onMatchClick }) => {
+const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
+  const { user } = useUser(); // Use already fetched user data
+  const { addToGCal } = useAddToGCal();
+  const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
+
+  const handleAddToGCal = (match: Match) => {
+    addToGCal(match);
+  };
+
+  console.log(user)
+
+  const fetchSignedUpMatches = async () => {
+    try {
+  
+      const response = await fetch(`https://us-central1-yims-125a2.cloudfunctions.net/getUserMatches?userId=${user.email}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch signed-up matches");
+      }
+
+      const data = await response.json();
+      setSignedUpMatches(data); // Update state with signed-up matches
+    } catch (error) {
+      console.error("Error fetching signed-up matches:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchSignedUpMatches();
+    }
+  }, [user]);
+
   return (
     <div>
       {matches.length === 0 ? (
@@ -25,6 +67,14 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, onMatchClick }) =
                 })
               : "Time TBD";
 
+            const isUserTeam =
+              match.home_college === toCollegeAbbreviation[user.college] ||
+              match.away_college === toCollegeAbbreviation[user.college];
+
+            const isSignedUp = signedUpMatches.some(
+              (signedUpMatch) => signedUpMatch.id === match.id
+            );
+
             return (
               <li
                 key={index}
@@ -32,13 +82,13 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, onMatchClick }) =
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="text-2xl font-bold mb-1 text-gray-900">
+                    <div className="text-2xl font-bold mb-1">
                       {toCollegeName[match.home_college || "TBD"]}{" "}
                       <span>vs</span>{" "}
                       {toCollegeName[match.away_college || "TBD"]}
                     </div>
                     <div className="text-gray-600 font-semibold">
-                      {match.sport}
+                      {match.sport} {emojiMap[match.sport]}
                     </div>
                     <div className="text-gray-500">
                       {matchDate} at {matchTime}
@@ -56,12 +106,31 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, onMatchClick }) =
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => onMatchClick(match)}
-                    className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
-                  >
-                    Sign Up
-                  </button>
+                  <div className="flex">
+                    {isUserTeam ? (
+                      isSignedUp ? (
+                        <button
+                          className="px-6 ml-5 py-3 bg-green-600 text-white rounded-lg shadow cursor-not-allowed"
+                        >
+                          Playing!
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => signUp(match)}
+                          className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
+                        >
+                          Sign Up
+                        </button>
+                      )
+                    ) : null}
+
+                    <button
+                      onClick={() => handleAddToGCal(match)}
+                      className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
+                    >
+                      <FaCalendar />
+                    </button>
+                  </div>
                 </div>
               </li>
             );
