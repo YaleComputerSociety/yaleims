@@ -131,15 +131,16 @@ const AboutUsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen p-8 flex flex-col items-center">
+    <div className="min-h-screen p-8 flex flex-col items-center w-4/5 justify-center m-auto">
       <h1 className=" text-4xl font-bold text-center mb-8 pt-5 lg:-ml-6">
         About Us
-      </h1>{" "}
-      {/* <div className="mb-8 p-5 rounded-lg w-4/5 ">
-        <p className="text-3xl font-semibold">Our Story</p>
-        <p className="text-2xl font-bold text-gray-800">.........</p>
-      </div> */}
-      <div className="mb-8 p-5 rounded-lg w-4/5">
+      </h1>
+      <p>Every year Yale’s 14 colleges compete in various intermural sports. The college with the most points at the end of Spring Semester wins the famous Tyng Cup. As sports players and enthusiasts ourselves, we know the joy and stress relief that comes from playing games and being part of a team. However, despite the incredible opportunities IMs offer, participation has always been a challenge.</p>
+      <br></br>
+      <p>The core issue is logistics. It’s hard to know who’s attending games, where your college stands in the Tyng Cup rankings, or even when and where matches are happening. Organizing IMs across 14 colleges is no small feat. Previous attempts to tackle these challenges with apps have fallen short. The complexity of the rules, ever-changing schedules, and the sheer number of moving parts make it difficult to create a system that truly works for everyone.</p>
+      <br></br>
+      <p>That’s where YaleIMs comes in. What began as a small project two years ago has grown into a dedicated effort to transform how IMs are organized and experienced. With input from IM secretaries, referees, and players, we’ve designed a platform that simplifies scheduling, enhances communication, and helps reduce forfeits. Our goal is simple: to make intramurals more accessible, enjoyable, and rewarding for everyone. By addressing the logistical hurdles, we hope this app will unlock the full potential of IMs as one of the best traditions at Yale.</p>
+      <div className="mb-8 p-5 rounded-lg ">
         <p className="text-3xl font-semibold pb-5 text-center md:-ml-6">
           Our Team
         </p>
