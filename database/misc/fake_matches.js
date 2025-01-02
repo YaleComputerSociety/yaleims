@@ -9,49 +9,69 @@ sunday.setDate(today.getDate() + (7 - today.getDay()) % 7 + 2); // Move to Sunda
 // Fake matches array
 const fake_matches = [
   {
+    forfeit: false,
     home_college: "BF",
     away_college: "BK",
+    home_college_participants: [],
+    away_college_participants: [],
+    home_college_score: null,
+    away_college_score: null,
+    location: "test",
     sport: "Table Tennis",
-    home_college_score: null,
-    away_college_score: null,
-    winner: null,
     timestamp: new Date(sunday.setHours(10, 0, 0, 0)), // Sunday at 10:00 AM UTC
+    winner: null,
   },
   {
-    home_college: "ES",
-    away_college: "MC",
-    sport: "Cornhole",
+    forfeit: false,
+    home_college: "JE",
+    away_college: "TD",
+    home_college_participants: [],
+    away_college_participants: [],
     home_college_score: null,
     away_college_score: null,
-    winner: null,
+    location: "test",
+    sport: "Soccer",
     timestamp: new Date(sunday.setHours(13, 0, 0, 0)), // Sunday at 1:00 PM UTC
+    winner: null,
   },
   {
-    home_college: "TD",
+    forfeit: false,
+    home_college: "SY",
     away_college: "DC",
-    sport: "Pickleball",
+    home_college_participants: [],
+    away_college_participants: [],
     home_college_score: null,
     away_college_score: null,
-    winner: null,
-    timestamp: new Date(sunday.setHours(16, 0, 0, 0)), // Sunday at 4:00 PM UTC
-  },
-  {
-    home_college: "PC",
-    away_college: "SY",
-    sport: "Flag Football",
-    home_college_score: null,
-    away_college_score: null,
-    winner: null,
-    timestamp: new Date(sunday.setHours(18, 0, 0, 0)), // Sunday at 6:00 PM UTC
-  },
-  {
-    home_college: "GH",
-    away_college: "MY",
+    location: "test",
     sport: "Cornhole",
+    timestamp: new Date(sunday.setHours(16, 0, 0, 0)), // Sunday at 4:00 PM UTC
+    winner: null,
+  },
+  {
+    forfeit: false,
+    home_college: "GH",
+    away_college: "JE",
+    home_college_participants: [],
+    away_college_participants: [],
     home_college_score: null,
     away_college_score: null,
+    location: "test",
+    sport: "Table Tennis",
+    timestamp: new Date(sunday.setHours(18, 0, 0, 0)), // Sunday at 6:00 PM UTC
     winner: null,
+  },
+  {
+    forfeit: false,
+    home_college: "BF",
+    away_college: "BK",
+    home_college_participants: [],
+    away_college_participants: [],
+    home_college_score: null,
+    away_college_score: null,
+    location: "test",
+    sport: "Table Tennis",
     timestamp: new Date(sunday.setHours(20, 0, 0, 0)), // Sunday at 8:00 PM UTC
+    winner: null,
   },
 ];
 

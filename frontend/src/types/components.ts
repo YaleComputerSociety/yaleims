@@ -105,7 +105,7 @@ export interface CalendarViewProps {
 
 export interface CalendarMatchListProps {
   matches: Match[];
-  onMatchClick: (match: Match) => void;
+  signUp: (match: Match) => void;
 }
 
 export interface MatchSignUpProps {
