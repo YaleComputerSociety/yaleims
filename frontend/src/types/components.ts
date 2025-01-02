@@ -57,6 +57,7 @@ export interface MatchesTableProps {
 
 export interface TableHeaderProps {
   handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  filter: Filters;
 }
 
 export interface TableRowProps {
@@ -75,11 +76,11 @@ export type Sport = {
 
 // Define the type for the filters
 export interface Filters {
-    college: string;
-    sport: string;
-    date: string;
-  }
-  
+  college: string;
+  sport: string;
+  date: string;
+}
+
 export interface FiltersContextType {
   filter: Filters;
   setFilter: React.Dispatch<React.SetStateAction<Filters>>;
@@ -104,16 +105,19 @@ export interface CalendarViewProps {
 
 export interface CalendarMatchListProps {
   matches: Match[];
-  onMatchClick: (match: Match) => void;
+  signUp: (match: Match) => void;
 }
-  
+
 export interface MatchSignUpProps {
-    match: Match;
-    onConfirm: () => void;
-    onCancel: () => void;
+  match: Match;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 export interface CalendarFiltersProps {
   filter: { college: string; sport: string; date: Date | null };
-  updateFilter: (key: keyof CalendarFiltersProps['filter'], value: string) => void;
+  updateFilter: (
+    key: keyof CalendarFiltersProps["filter"],
+    value: string
+  ) => void;
 }

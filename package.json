@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "cors": "^2.8.5",
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.2.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/node-fetch": "^2.6.12"
+  }
+}

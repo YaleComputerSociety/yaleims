@@ -3,18 +3,19 @@
 import "./calendar.css";
 import "react-calendar/dist/Calendar.css";
 import { useState, useEffect } from "react";
-import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import LoadingScreen from "@src/components/LoadingScreen";
 import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
-import SignUpModal from "../../components/schedule/Signup";
 import Calendar, { CalendarType } from "react-calendar";
+import { useUser } from "../../context/UserContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers"
+import { Match } from "@src/types/components";
 
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
 const SchedulePage: React.FC = () => {
+  const { user, signIn, loading } = useUser(); // Use already fetched user data
   const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
   const [signUpModalOpen, setSignUpModalOpen] = useState<boolean>(false);
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
@@ -85,52 +86,62 @@ const SchedulePage: React.FC = () => {
     };
   
     fetchScores();
-  }, [filter]); // Make sure to include filter as a dependency
+  }, [filter]); 
   
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
+  const signUp = async (selectedMatch: Match) => {
       try {
-        const response = await fetch("/api/google-calendar", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            accessToken: tokenResponse.access_token,
-            match: selectedMatch,
-          }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          alert("Event added to your Google Calendar!");
+        // Construct the matchId based on home_college, away_college, and timestamp
+        if (!selectedMatch || !selectedMatch.home_college || !selectedMatch.away_college || !selectedMatch.timestamp) {
+          console.error("Missing fields in selectedMatch:", selectedMatch);
+          alert("Unable to proceed: Missing match details.");
+          return;
+        }
+        const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
+  
+        /** Add user to the appropriate participant array and update their matches **/
+        const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
+  
+        // Ensure user college abbreviation matches home/away college
+        const isHomeCollege = selectedMatch.home_college === userCollegeAbbreviation;
+        const isAwayCollege = selectedMatch.away_college === userCollegeAbbreviation;
+  
+        if (isHomeCollege || isAwayCollege) {
+          const participantType = isHomeCollege
+            ? "home_college_participants"
+            : "away_college_participants";
+  
+          const cloudFunctionUrl = "https://addparticipant-65477nrg6a-uc.a.run.app"; // Cloud function URL
+  
+          const cloudFunctionResponse = await fetch(cloudFunctionUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              matchId,         // Use constructed matchId
+              participantType, // Send participantType
+              user,            // Send entire user object
+              selectedMatch,   // Send selectedMatch to add to user's matches
+            }),
+          });
+  
+          const cloudFunctionData = await cloudFunctionResponse.json();
+          if (!cloudFunctionResponse.ok) {
+            console.error("Error:", cloudFunctionData.error);
+            alert(`Error: ${cloudFunctionData.error}`);
+          } 
         } else {
-          alert("Failed to add event: " + data.error);
+          console.warn(
+            `Your college (${user.college}) does not match home or away college for this match.`
+          );
+          alert("Your college does not match the home or away college for this match.");
         }
       } catch (error) {
         console.error("Error:", error);
+        alert("An error occurred while processing your request. Please try again.");
       }
       setSignUpModalOpen(false);
-    },
-    onError: () => {
-      console.error("Google login failed");
-    },
-    scope: "https://www.googleapis.com/auth/calendar.events",
-  });
-
-  const handleMatchClick = (match: any) => {
-    setSelectedMatch(match);
-    setSignUpModalOpen(true);
   };
-
-  const calendarEvents = filteredMatches
-    .filter((match) => match.timestamp) // Exclude matches with null timestamps
-    .map((match) => ({
-      title: `${match.home_college} vs ${match.away_college}`,
-      start: new Date(match.timestamp),
-      end: new Date(match.timestamp),
-      match,
-    }));
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
@@ -145,56 +156,45 @@ const SchedulePage: React.FC = () => {
       {isLoading ? (
         <LoadingScreen />
       ) : (
-        <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <div className="min-h-screen p-8">
-            <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
-  
-            {/* Filters */}
-            <Filters
-              filter={filter}
-              updateFilter={updateFilter}
-            />
-  
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Calendar */}
-              <div className="lg:w-1/2 flex justify-center items-start">
-                <Calendar
-                  locale="en-US"
-                  calendarType={calendarType}
-                  prev2Label={null}
-                  next2Label={null}
-                  selectRange={false}
-                  showNeighboringMonth={true}
-                  minDetail="month"
-                  onClickDay={handleDateClick}
-                />
-              </div>
-  
-              {/* ListView or No Matches Message */}
-              <div className="lg:w-1/2 flex justify-center">
-                {filteredMatches.length > 0 ? (
-                  <ListView
-                    matches={filteredMatches}
-                    onMatchClick={handleMatchClick}
-                  />
-                ) : (
-                  <div className="text-center mt-8 text-gray-600">
-                    No matches found.
-                  </div>
-                )}
-              </div>
-            </div>
-  
-            {/* Sign-Up Modal */}
-            {signUpModalOpen && selectedMatch && (
-              <SignUpModal
-                match={selectedMatch}
-                onConfirm={handleGoogleLogin}
-                onCancel={() => setSignUpModalOpen(false)}
+        <div className="min-h-screen p-8">
+          <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
+
+          {/* Filters */}
+          <Filters
+            filter={filter}
+            updateFilter={updateFilter}
+          />
+
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Calendar */}
+            <div className="lg:w-1/2 flex justify-center items-start">
+              <Calendar
+                locale="en-US"
+                calendarType={calendarType}
+                prev2Label={null}
+                next2Label={null}
+                selectRange={false}
+                showNeighboringMonth={true}
+                minDetail="month"
+                onClickDay={handleDateClick}
               />
-            )}
+            </div>
+
+            {/* ListView or No Matches Message */}
+            <div className="lg:w-1/2 flex justify-center">
+              {filteredMatches.length > 0 ? (
+                <ListView
+                  matches={filteredMatches}
+                  signUp={signUp}
+                />
+              ) : (
+                <div className="text-center mt-8 text-gray-600">
+                  No matches found.
+                </div>
+              )}
+            </div>
           </div>
-        </GoogleOAuthProvider>
+        </div>
       )}
     </div>
   );
