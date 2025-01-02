@@ -32,6 +32,7 @@ const ScoresPage: React.FC = () => {
   const [lastVisible, setLastVisible] = useState<string>("");
   const [queryType, setQueryType] = useState<string>("index");
   const [totalPages, setTotalPages] = useState<number>(10);
+  const [sortOrder, setSortOrder] = useState<string>("desc");
 
   const resetPaginationState = () => {
     setPage(1); // Reset page number when filter is changed
@@ -47,6 +48,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
+    sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
   const paramsNext = new URLSearchParams({
@@ -55,6 +57,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
+    sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
   const paramsPrev = new URLSearchParams({
@@ -63,6 +66,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
+    sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
   const getParams = () => {
@@ -106,7 +110,7 @@ const ScoresPage: React.FC = () => {
 
     window.scrollTo(0, 0); // scroll to top of page when data changes
     fetchMatches();
-  }, [page, queryType, filter.college, filter.sport]); // Re-fetch matches when page or query type changes
+  }, [page, queryType, filter.college, filter.sport, sortOrder]); // Re-fetch matches when page or query type changes
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
@@ -154,9 +158,10 @@ const ScoresPage: React.FC = () => {
     resetPaginationState();
   };
 
-  useEffect(() => {
-    console.log(filteredMatches);
-  }, [filteredMatches]);
+  const handleSortOrderChange = (newSortOrder: string) => {
+    setSortOrder(newSortOrder);
+    resetPaginationState();
+  };
 
   return (
     <div className="min-h-screen p-8 flex-col items-center">
@@ -182,7 +187,12 @@ const ScoresPage: React.FC = () => {
       )}
 
       <div className="min-w-full flex-col items-center md:px-20">
-        <TableHeader handleFilterChange={handleFilterChange} filter={filter} />
+        <TableHeader
+          handleFilterChange={handleFilterChange}
+          filter={filter}
+          sortOrder={sortOrder}
+          handleSortOrderChange={handleSortOrderChange}
+        />
         {filteredMatches.length == 0 ? (
           <div className="text-center mt-10">
             <h1>No matches found!</h1>

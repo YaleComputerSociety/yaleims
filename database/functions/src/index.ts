@@ -144,7 +144,11 @@ export const getUserMatches = functions.https.onRequest((req, res) => {
         return;
       }
 
-      const userDoc = await admin.firestore().collection("users").doc(userId as string).get();
+      const userDoc = await admin
+        .firestore()
+        .collection("users")
+        .doc(userId as string)
+        .get();
 
       if (!userDoc.exists) {
         res.status(404).send("User not found");
@@ -161,7 +165,6 @@ export const getUserMatches = functions.https.onRequest((req, res) => {
     }
   });
 });
-
 
 export const getMatches = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
@@ -228,6 +231,7 @@ export const getMatchesPaginated = functions.https.onRequest(
           type,
           firstVisible,
           sport,
+          sortOrder = "desc",
         } = req.query;
 
         if (!college || !pageSize) {
@@ -237,7 +241,13 @@ export const getMatchesPaginated = functions.https.onRequest(
         const pageSizeNum = parseInt(pageSize as string, 10);
         const pageIndexNum = parseInt(pageIndex as string, 10);
 
-        const scoresRef = db.collection("matches").orderBy("timestamp", "desc");
+        if (sortOrder !== "asc" && sortOrder !== "desc") {
+          return res.status(400).send("Invalid 'sortOrder' parameter");
+        }
+
+        const scoresRef = db
+          .collection("matches")
+          .orderBy("timestamp", sortOrder);
 
         let query = scoresRef;
 
@@ -604,7 +614,13 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       const { matchId, participantType, user, selectedMatch } = req.body;
 
       // Check if all required parameters are provided
-      if (!matchId || !participantType || !user || !user.email || !selectedMatch) {
+      if (
+        !matchId ||
+        !participantType ||
+        !user ||
+        !user.email ||
+        !selectedMatch
+      ) {
         console.error("Missing required parameters:", {
           matchId,
           participantType,
@@ -616,7 +632,8 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       }
 
       // Query Firestore to find the match document by its ID
-      const matchDoc = await admin.firestore()
+      const matchDoc = await admin
+        .firestore()
         .collection("matches")
         .doc(matchId)
         .get();
@@ -630,8 +647,14 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       // Retrieve match data
       const matchData = matchDoc.data();
 
-      if (!matchData || !matchData.home_college_participants || !matchData.away_college_participants) {
-        res.status(400).json({ error: "Invalid match data, missing participant fields" });
+      if (
+        !matchData ||
+        !matchData.home_college_participants ||
+        !matchData.away_college_participants
+      ) {
+        res
+          .status(400)
+          .json({ error: "Invalid match data, missing participant fields" });
         return;
       }
 
@@ -642,13 +665,17 @@ export const addParticipant = functions.https.onRequest((req, res) => {
           : matchData.away_college_participants;
 
       // Check for duplicate participant by email
-      const isDuplicate = participantsArray.some((participant: { email: string }) => {
-        return participant.email === user.email;
-      });
+      const isDuplicate = participantsArray.some(
+        (participant: { email: string }) => {
+          return participant.email === user.email;
+        }
+      );
 
       if (isDuplicate) {
         console.warn(`${user.email} is already a participant`);
-        res.status(400).json({ error: `${user.email} is already a participant` });
+        res
+          .status(400)
+          .json({ error: `${user.email} is already a participant` });
         return;
       }
 
@@ -673,7 +700,9 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       const userMatches = userData?.matches || [];
 
       // Check if the match is already in the user's matches array
-      const isMatchDuplicate = userMatches.some((match: any) => match.matchId === matchId);
+      const isMatchDuplicate = userMatches.some(
+        (match: any) => match.matchId === matchId
+      );
 
       if (isMatchDuplicate) {
         console.warn(`Match ${matchId} is already in your matches`);
@@ -683,7 +712,6 @@ export const addParticipant = functions.https.onRequest((req, res) => {
         await userDocRef.update({
           matches: userMatches,
         });
-
       }
 
       res.status(200).json({
