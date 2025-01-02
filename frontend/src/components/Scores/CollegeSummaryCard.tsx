@@ -82,7 +82,7 @@ const CollegeSummaryCard: React.FC<CollegeSummaryCardProps> = ({
             className="flex flex-col items-center justify-center  font-bold text-sm h-full"
             style={{ width: getRatioAsString(stats?.losses, stats?.games) }}
           >
-            <div className="flex w-full items-center justify-center bg-red-400 py-1 dark:bg-red-500 grow">
+            <div className="flex w-full items-center justify-center py-1  bg-red-400 dark:bg-red-500 grow">
               <p>{stats?.losses}</p>
             </div>
             <p className="text-xs font-medium">
@@ -94,7 +94,7 @@ const CollegeSummaryCard: React.FC<CollegeSummaryCardProps> = ({
             className="flex flex-col items-center justify-center font-bold text-sm h-full"
             style={{ width: getRatioAsString(stats?.forfeits, stats?.games) }}
           >
-            <div className="flex w-full items-center justify-center bg-slate-400 py-1 grow dark:bg-slate-500">
+            <div className="flex w-full items-center justify-center py-1 grow bg-slate-400 dark:bg-slate-600">
               <p>{stats?.forfeits}</p>
             </div>
             <p className="text-xs font-medium">

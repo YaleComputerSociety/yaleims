@@ -56,7 +56,7 @@ const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
             className="flex flex-col items-center justify-center font-bold text-sm h-full"
             style={{ width: getRatioAsString(stats?.wins, stats?.games) }} // adjust width dynamically
           >
-            <div className="flex w-full items-center justify-center bg-green-700 py-1 grow">
+            <div className="flex w-full items-center justify-center bg-green-400 dark:bg-green-700 py-1 grow">
               <p>{stats?.wins}</p>
             </div>
             <p className="text-xs font-medium ">
@@ -68,7 +68,7 @@ const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
             className="flex flex-col items-center justify-center  font-bold text-sm h-full"
             style={{ width: getRatioAsString(stats?.ties, stats?.games) }}
           >
-            <div className="flex w-full items-center justify-center bg-yellow-500 py-1 px-2 grow">
+            <div className="flex w-full items-center justify-center bg-yellow-300 py-1 dark:bg-yellow-600 py-1 px-2 grow">
               <p>{stats?.ties}</p>
             </div>
             <p className="text-xs font-medium ">
@@ -80,7 +80,7 @@ const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
             className="flex flex-col items-center justify-center font-bold text-sm h-full"
             style={{ width: getRatioAsString(stats?.losses, stats?.games) }}
           >
-            <div className="flex w-full items-center justify-center bg-red-500 py-1 px-2 grow">
+            <div className="flex w-full items-center justify-center bg-red-400 dark:bg-red-500 py-1 px-2 grow">
               <p>{stats?.losses}</p>
             </div>
             <p className="text-xs font-medium ">
@@ -92,7 +92,7 @@ const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
             className="flex flex-col items-center justify-center font-bold text-sm h-full"
             style={{ width: getRatioAsString(stats?.forfeits, stats?.games) }}
           >
-            <div className="flex w-full items-center justify-center bg-slate-600 py-1 px-2 grow">
+            <div className="flex w-full items-center justify-center py-1 px-2 grow bg-slate-400 dark:bg-slate-600">
               <p>{stats?.forfeits}</p>
             </div>
             <p className="text-xs font-medium">
