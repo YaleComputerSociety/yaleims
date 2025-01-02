@@ -4,6 +4,7 @@ import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
+import Podium from "@src/components/home/Podium"
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
@@ -142,7 +143,8 @@ const Leaderboard: React.FC = () => {
   return (
     <div className="rounded-lg overflow-hidden max-w-4xl mx-auto">
       {/* Podium */}
-      <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
+      {/* <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div> */}
+      <Podium colleges={sortedColleges.slice(0, 3)} /> 
 
       {/* Full Leaderboard */}
       <div className="overflow-x-auto">
