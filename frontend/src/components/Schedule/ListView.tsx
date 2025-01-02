@@ -12,6 +12,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
   const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
   const [signUpTriggered, setSignUpTriggered] = useState(false); // Tracks sign-up events
 
+
   const handleAddToGCal = (match: Match) => {
     addToGCal(match);
   };
@@ -39,7 +40,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
     }
   };
 
-  const handleSignUp = async (match) => {
+  const handleSignUp = async (match: Match) => {
     try {
       await signUp(match); // Call the provided sign-up function
       setSignUpTriggered((prev) => !prev); // Toggle the state to trigger useEffect
@@ -131,7 +132,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
                       ) : (
                         <button
                           onClick={() => handleSignUp(match)}
-                          className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
+                          className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-800 focus:outline-none transition duration-200 ease-in-out"
                         >
                           Sign Up
                         </button>
