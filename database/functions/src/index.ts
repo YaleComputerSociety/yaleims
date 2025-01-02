@@ -228,6 +228,7 @@ export const getMatchesPaginated = functions.https.onRequest(
           type,
           firstVisible,
           sport,
+          date,
         } = req.query;
 
         if (!college || !pageSize) {
@@ -254,17 +255,38 @@ export const getMatchesPaginated = functions.https.onRequest(
         // sport filter query
         if (sport !== "All") {
           query = query.where("sport", "==", sport);
+        }  
+
+        // date filter query
+        const currentDate = new Date();       
+        
+        if (date) {
+          if (date !== "All") {
+            let startDate: Date | undefined;
+            // can add more options if needed, would have to update the frontend to reflect changes
+            if (date === "today") {
+              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+            } else if (date === "yesterday") {
+              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1);
+            } else if (date === "last7days") {
+              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7);
+            } else if (date === "last30days") {
+              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 30);
+            } else if (date === "last60days") {
+              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 60);
+            } else {
+              return res.status(400).send("Invalid dateFilter value");
+            }
+            query = query.where("timestamp", ">=", startDate).where("winner", "!=", null); ;
+          } else {
+            query = query.where("timestamp", "<", currentDate).where("winner", "!=", null); 
+          }
         }
 
         // Calculate total pages of query
         const totalResultsSnapshot = await query.count().get();
         const totalResults = totalResultsSnapshot.data().count;
         const totalPages = Math.ceil(totalResults / pageSizeNum);
-
-        const currentDate = new Date();
-        query = query
-          .where("timestamp", "<", currentDate) // currently doesn't support other date queries
-          .where("winner", "!=", null); // only past, scored matches; could easily be changed to be a parameter instead to allow option to get different subset
 
         // query types
         if (type === "next") {
