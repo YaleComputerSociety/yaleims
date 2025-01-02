@@ -10,6 +10,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
   const { user } = useUser(); // Use already fetched user data
   const { addToGCal } = useAddToGCal();
   const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
+  const [signUpTriggered, setSignUpTriggered] = useState(false); // Tracks sign-up events
 
   const handleAddToGCal = (match: Match) => {
     addToGCal(match);
@@ -38,11 +39,20 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
     }
   };
 
+  const handleSignUp = async (match) => {
+    try {
+      await signUp(match); // Call the provided sign-up function
+      setSignUpTriggered((prev) => !prev); // Toggle the state to trigger useEffect
+    } catch (error) {
+      console.error("Error signing up for match:", error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchSignedUpMatches();
     }
-  }, [user]);
+  }, [user, signUpTriggered]);
 
   return (
     <div>
@@ -71,10 +81,14 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
               match.home_college === toCollegeAbbreviation[user.college] ||
               match.away_college === toCollegeAbbreviation[user.college];
 
-            const isSignedUp = signedUpMatches.some(
-              (signedUpMatch) => signedUpMatch.id === match.id
-            );
-
+            const isSignedUp = signedUpMatches.some((signedUpMatch) => {
+              const matchDate = new Date(match.timestamp);
+              const signedUpMatchDate = new Date(signedUpMatch.timestamp)
+              const matchId = `${match.home_college}-${match.away_college}-${matchDate.toISOString()}`;
+              const signedUpMatchId = `${signedUpMatch.home_college}-${signedUpMatch.away_college}-${signedUpMatchDate.toISOString()}`;
+              return signedUpMatchId === matchId;
+            });
+              
             return (
               <li
                 key={index}
@@ -110,13 +124,13 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
                     {isUserTeam ? (
                       isSignedUp ? (
                         <button
-                          className="px-6 ml-5 py-3 bg-green-600 text-white rounded-lg shadow cursor-not-allowed"
+                          className="px-6 ml-5 py-3 bg-green-600 text-white rounded-lg shadow"
                         >
                           Playing!
                         </button>
                       ) : (
                         <button
-                          onClick={() => signUp(match)}
+                          onClick={() => handleSignUp(match)}
                           className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
                         >
                           Sign Up

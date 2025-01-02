@@ -129,11 +129,7 @@ const SchedulePage: React.FC = () => {
           if (!cloudFunctionResponse.ok) {
             console.error("Error:", cloudFunctionData.error);
             alert(`Error: ${cloudFunctionData.error}`);
-          } else {
-            alert(
-              `Successfully signed up and updated your matches!`
-            );
-          }
+          } 
         } else {
           console.warn(
             `Your college (${user.college}) does not match home or away college for this match.`
