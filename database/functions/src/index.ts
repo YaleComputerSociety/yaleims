@@ -10,7 +10,7 @@
 // import {onRequest} from "firebase-functions/v2/https";
 // import * as logger from "firebase-functions/logger";
 
-import { Filter, Query } from "firebase-admin/firestore";
+import { Filter, Query, OrderByDirection } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "firebase-admin";
 import cors from "cors";
@@ -144,7 +144,11 @@ export const getUserMatches = functions.https.onRequest((req, res) => {
         return;
       }
 
-      const userDoc = await admin.firestore().collection("users").doc(userId as string).get();
+      const userDoc = await admin
+        .firestore()
+        .collection("users")
+        .doc(userId as string)
+        .get();
 
       if (!userDoc.exists) {
         res.status(404).send("User not found");
@@ -161,7 +165,6 @@ export const getUserMatches = functions.https.onRequest((req, res) => {
     }
   });
 });
-
 
 export const getMatches = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
@@ -212,24 +215,20 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
   });
 });
 
-// pretty efficient in terms of minimizing reads, except for when a request is made with a large offset
-// as that still reads all the documents before the offset (e.g. if the user requests the last page it will have to read all the pages before)
-// i think there isn't a way to avoid this with Firestore, but i could be wrong
-// the logic for navigating to adjacent pages is much better though and only reads the according documents; overall should decrease reads by alot
+
 export const getMatchesPaginated = functions.https.onRequest(
   async (req, res) => {
     return corsHandler(req, res, async () => {
       try {
-        const {
-          college,
-          pageIndex,
-          pageSize,
-          lastVisible,
-          type,
-          firstVisible,
-          sport,
-          date,
-        } = req.query;
+        const college = req.query.college as string;
+        const pageIndex = req.query.pageIndex as string;
+        const pageSize = req.query.pageSize as string;
+        const lastVisible = req.query.lastVisible as string;
+        const type = req.query.type as string;
+        const firstVisible = req.query.firstVisible as string;
+        const sport = req.query.sport as string;
+        const sortOrder = (req.query.sortOrder as string) || "desc";
+        const date = req.query.date as string;
 
         if (!college || !pageSize) {
           return res.status(400).send("Missing required parameters");
@@ -237,12 +236,28 @@ export const getMatchesPaginated = functions.https.onRequest(
 
         const pageSizeNum = parseInt(pageSize as string, 10);
         const pageIndexNum = parseInt(pageIndex as string, 10);
+        if (!["asc", "desc"].includes(sortOrder)) {
+          return res.status(400).send("Invalid 'sortOrder' parameter");
+        }
 
-        const scoresRef = db.collection("matches").orderBy("timestamp", "desc");
+        const currentDate = new Date();
+        type DateFilterKey = "today" | "yesterday" | "last7days" | "last30days" | "last60days";
+        const dateFilters: Record<DateFilterKey, Date> = {
+          today: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()),
+          yesterday: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1),
+          last7days: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7),
+          last30days: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 30),
+          last60days: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 60),
+        };
+        
 
-        let query = scoresRef;
-
-        // college filter query
+        if (!["asc", "desc"].includes(sortOrder)) {
+          return res.status(400).send("Invalid 'sortOrder' parameter");
+        }
+        
+        const sortOrderValidated = sortOrder as OrderByDirection;
+        let query = db.collection("matches").orderBy("timestamp", sortOrderValidated);
+        
         if (college !== "All") {
           query = query.where(
             Filter.or(
@@ -252,128 +267,55 @@ export const getMatchesPaginated = functions.https.onRequest(
           );
         }
 
-        // sport filter query
-        if (sport !== "All") {
-          query = query.where("sport", "==", sport);
-        }  
+        if (sport && sport !== "All") query = query.where("sport", "==", sport);
 
-        // date filter query
-        const currentDate = new Date();       
-        
-        if (date) {
-          if (date !== "All") {
-            let startDate: Date | undefined;
-            // can add more options if needed, would have to update the frontend to reflect changes
-            if (date === "today") {
-              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-            } else if (date === "yesterday") {
-              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1);
-            } else if (date === "last7days") {
-              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7);
-            } else if (date === "last30days") {
-              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 30);
-            } else if (date === "last60days") {
-              startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 60);
-            } else {
-              return res.status(400).send("Invalid dateFilter value");
-            }
-            query = query.where("timestamp", ">=", startDate).where("winner", "!=", null); ;
-          } else {
-            query = query.where("timestamp", "<", currentDate).where("winner", "!=", null); 
+        if (date && date !== "All") {
+          if (!(date in dateFilters)) {
+            return res.status(400).send("Invalid date filter");
           }
+        
+          const startDate = dateFilters[date as keyof typeof dateFilters];
+          query = query.where("timestamp", ">=", startDate).where("winner", "!=", null);
+        } else {
+          query = query.where("timestamp", "<", currentDate).where("winner", "!=", null);
         }
 
-        // Calculate total pages of query
-        const totalResultsSnapshot = await query.count().get();
-        const totalResults = totalResultsSnapshot.data().count;
+        const totalResults = (await query.count().get()).data().count;
         const totalPages = Math.ceil(totalResults / pageSizeNum);
 
-        // query types
-        if (type === "next") {
-          // next page
-          if (!lastVisible) {
-            return res.status(400).send("Missing 'lastVisible' parameter");
-          }
-          const lastVisibleDoc = await db
-            .collection("matches")
-            .doc(lastVisible as string)
-            .get();
-
-          if (!lastVisibleDoc.exists) {
-            return res.status(404).send("First visible document not found");
-          }
-
+        if (type === "next" && lastVisible) {
+          const lastVisibleDoc = await db.collection("matches").doc(lastVisible as string).get();
+          if (!lastVisibleDoc.exists) return res.status(404).send("Last visible document not found");
           query = query.startAfter(lastVisibleDoc).limit(pageSizeNum);
-        } else if (type === "prev") {
-          // previous page
-          if (!firstVisible) {
-            return res.status(400).send("Missing 'firstVisible' parameter");
-          }
-          const firstVisibleDoc = await db
-            .collection("matches")
-            .doc(firstVisible as string)
-            .get();
-
-          if (!firstVisibleDoc.exists) {
-            return res.status(404).send("First visible document not found");
-          }
-
+        } else if (type === "prev" && firstVisible) {
+          const firstVisibleDoc = await db.collection("matches").doc(firstVisible as string).get();
+          if (!firstVisibleDoc.exists) return res.status(404).send("First visible document not found");
           query = query.endBefore(firstVisibleDoc).limitToLast(pageSizeNum);
-        } else if (type === "index") {
-          // get a specific page
-          if (!pageIndex) {
-            return res.status(400).send("Missing 'pageIndex' parameter");
-          }
-          if (pageIndexNum >= 1) {
-            query = query
-              .offset((pageIndexNum - 1) * pageSizeNum)
-              .limit(pageSizeNum);
-          }
+        } else if (type === "index" && pageIndexNum >= 1) {
+          query = query.offset((pageIndexNum - 1) * pageSizeNum).limit(pageSizeNum);
         } else {
-          return res.status(400).send("Invalid 'type' parameter");
+          return res.status(400).send("Invalid or missing 'type' parameter");
         }
 
         const snapshot = await query.get();
-
         if (snapshot.empty) {
-          return res.status(200).json({
-            matches: [],
-            lastVisible: null,
-            firstVisible: null,
-            totalPages,
-          });
+          return res.status(200).json({ matches: [], lastVisible: null, firstVisible: null, totalPages });
         }
 
-        const matches = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            home_college: data.home_college,
-            away_college: data.away_college,
-            sport: data.sport,
-            home_college_score: data.home_college_score,
-            away_college_score: data.away_college_score,
-            winner: data.winner,
-            timestamp:
-              data.timestamp && data.timestamp.toDate
-                ? data.timestamp.toDate().toISOString()
-                : null, // Fallback if timestamp is missing or invalid
-          };
-        });
-
-        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        const nextLastVisible = lastDoc ? lastDoc.id : null;
-        const firstDoc = snapshot.docs[0];
-        const nextFirstVisible = firstDoc ? firstDoc.id : null;
+        const matches = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate?.()?.toISOString() || null,
+        }));
 
         return res.status(200).json({
           matches,
-          lastVisible: nextLastVisible,
-          firstVisible: nextFirstVisible,
+          lastVisible: snapshot.docs[snapshot.docs.length - 1]?.id || null,
+          firstVisible: snapshot.docs[0]?.id || null,
           totalPages,
         });
       } catch (error) {
-        console.error("Error fetching college data:", error);
+        console.error("Error fetching matches:", error);
         return res.status(500).send("Internal Server Error");
       }
     });
@@ -626,7 +568,13 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       const { matchId, participantType, user, selectedMatch } = req.body;
 
       // Check if all required parameters are provided
-      if (!matchId || !participantType || !user || !user.email || !selectedMatch) {
+      if (
+        !matchId ||
+        !participantType ||
+        !user ||
+        !user.email ||
+        !selectedMatch
+      ) {
         console.error("Missing required parameters:", {
           matchId,
           participantType,
@@ -638,7 +586,8 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       }
 
       // Query Firestore to find the match document by its ID
-      const matchDoc = await admin.firestore()
+      const matchDoc = await admin
+        .firestore()
         .collection("matches")
         .doc(matchId)
         .get();
@@ -652,8 +601,14 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       // Retrieve match data
       const matchData = matchDoc.data();
 
-      if (!matchData || !matchData.home_college_participants || !matchData.away_college_participants) {
-        res.status(400).json({ error: "Invalid match data, missing participant fields" });
+      if (
+        !matchData ||
+        !matchData.home_college_participants ||
+        !matchData.away_college_participants
+      ) {
+        res
+          .status(400)
+          .json({ error: "Invalid match data, missing participant fields" });
         return;
       }
 
@@ -664,13 +619,17 @@ export const addParticipant = functions.https.onRequest((req, res) => {
           : matchData.away_college_participants;
 
       // Check for duplicate participant by email
-      const isDuplicate = participantsArray.some((participant: { email: string }) => {
-        return participant.email === user.email;
-      });
+      const isDuplicate = participantsArray.some(
+        (participant: { email: string }) => {
+          return participant.email === user.email;
+        }
+      );
 
       if (isDuplicate) {
         console.warn(`${user.email} is already a participant`);
-        res.status(400).json({ error: `${user.email} is already a participant` });
+        res
+          .status(400)
+          .json({ error: `${user.email} is already a participant` });
         return;
       }
 
@@ -695,7 +654,9 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       const userMatches = userData?.matches || [];
 
       // Check if the match is already in the user's matches array
-      const isMatchDuplicate = userMatches.some((match: any) => match.matchId === matchId);
+      const isMatchDuplicate = userMatches.some(
+        (match: any) => match.matchId === matchId
+      );
 
       if (isMatchDuplicate) {
         console.warn(`Match ${matchId} is already in your matches`);
@@ -705,7 +666,6 @@ export const addParticipant = functions.https.onRequest((req, res) => {
         await userDocRef.update({
           matches: userMatches,
         });
-
       }
 
       res.status(200).json({

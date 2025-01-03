@@ -58,6 +58,8 @@ export interface MatchesTableProps {
 export interface TableHeaderProps {
   handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   filter: Filters;
+  sortOrder: string;
+  handleSortOrderChange: (newSortOrder: string) => void;
 }
 
 export interface TableRowProps {
