@@ -4,7 +4,7 @@ import React from "react";
 
 const AboutIMSPage: React.FC = () => {
     return (
-        <div className="w-4/5 mx-auto space-y-8 text-gray-800">
+        <div className="w-4/5 mx-auto space-y-8">
             <br></br>
             <br></br>
             <h1 className="text-3xl font-bold text-center text-blue-700">
