@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { MatchCardProps } from "@src/types/components";
-import { emojiMap, toCollegeName } from "@src/data/helpers";
+import { emojiMap, toCollegeName } from "@src/utils/helpers";
 import Image from "next/image";
 
 const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {

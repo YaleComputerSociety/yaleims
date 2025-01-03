@@ -23,6 +23,8 @@ colleges.map((college) =>
 const TableHeader: React.FC<TableHeaderProps> = ({
   handleFilterChange,
   filter,
+  sortOrder,
+  handleSortOrderChange,
 }) => (
   <div className="flex flex-wrap px-2 py-2 rounded-md justify-center justify-self-center">
     {/* Date/Time Column with Dropdown Filter */}
@@ -81,6 +83,37 @@ const TableHeader: React.FC<TableHeaderProps> = ({
         </select>
       </div>
     </div>
+
+    {/* Sort By Asc/Desc Filter */}
+    <div className="pl-2 text-xs font-medium rounded-md">
+      <fieldset>
+        <div className="flex items-center space-x-4 mt-2">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sortOrder"
+              value="desc"
+              checked={sortOrder === "desc"}
+              onChange={(e) => handleSortOrderChange(e.target.value)}
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-gray-900"
+            />
+            <span className="ml-2 text-xs md:text-sm">desc</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sortOrder"
+              value="asc"
+              checked={sortOrder === "asc"}
+              onChange={(e) => handleSortOrderChange(e.target.value)}
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-gray-900"
+            />
+            <span className="ml-2 text-xs md:text-sm">asc</span>
+          </label>
+        </div>
+      </fieldset>
+    </div>
+
   </div>
 );
 
