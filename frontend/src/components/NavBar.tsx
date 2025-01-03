@@ -84,11 +84,15 @@ const NavBar: React.FC = () => {
             <UserProfileButton name={user.name} />
           ) : (
             <button
-              onClick={signIn}
-              className="py-1 px-3 rounded"
-            >
-              Sign in with Google
-            </button>
+                onClick={signIn}
+                className={`py-1 px-3 rounded border ${
+                  theme === "light"
+                    ? "border-black hover:border-gray-400 hover:text-gray-400"
+                    : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
+                }`}
+              >
+                Sign in with Google
+              </button>
           )}
           </div>
 
