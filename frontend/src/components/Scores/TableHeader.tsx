@@ -82,19 +82,35 @@ const TableHeader: React.FC<TableHeaderProps> = ({
     </div>
 
     {/* Sort By Asc/Desc Filter */}
-    <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
-      <div>
-        <select
-          name="sort"
-          onChange={(e) => handleSortOrderChange(e.target.value)}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
-          value={sortOrder}
-        >
-          <option value="desc">Sort Desc</option>
-          <option value="asc">Sort Asc</option>
-        </select>
-      </div>
+    <div className="pl-2 text-xs font-medium rounded-md">
+      <fieldset>
+        <div className="flex items-center space-x-4 mt-2">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sortOrder"
+              value="desc"
+              checked={sortOrder === "desc"}
+              onChange={(e) => handleSortOrderChange(e.target.value)}
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-gray-900"
+            />
+            <span className="ml-2 text-xs md:text-sm">desc</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="sortOrder"
+              value="asc"
+              checked={sortOrder === "asc"}
+              onChange={(e) => handleSortOrderChange(e.target.value)}
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-gray-900"
+            />
+            <span className="ml-2 text-xs md:text-sm">asc</span>
+          </label>
+        </div>
+      </fieldset>
     </div>
+
   </div>
 );
 
