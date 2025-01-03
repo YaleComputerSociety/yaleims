@@ -35,9 +35,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           onChange={handleFilterChange}
           className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
         >
-          <option value="all">Date/Time</option>
+          <option value="All">All Past Games</option>
           <option value="today">Today</option>
-          <option value="this_week">This Week</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="last7days">Last 7 Days</option>
+          <option value="last30days">Last 30 Days</option>
+          <option value="last60days">Last 60 Days</option>
         </select>
       </div>
     </div>

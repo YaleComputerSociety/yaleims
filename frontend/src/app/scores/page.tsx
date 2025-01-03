@@ -48,6 +48,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
+    date: filter.date ? filter.date : "All",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -57,6 +58,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
+    date: filter.date ? filter.date : "All",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -66,6 +68,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
+    date: filter.date ? filter.date : "All",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -110,7 +113,7 @@ const ScoresPage: React.FC = () => {
 
     window.scrollTo(0, 0); // scroll to top of page when data changes
     fetchMatches();
-  }, [page, queryType, filter.college, filter.sport, sortOrder]); // Re-fetch matches when page or query type changes
+  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder]); // Re-fetch matches when page or query type changes
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
