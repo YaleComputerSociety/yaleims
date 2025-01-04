@@ -15,9 +15,7 @@ import { Match } from "@src/types/components";
 const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 
 const SchedulePage: React.FC = () => {
-  const { user, signIn, loading } = useUser(); // Use already fetched user data
-  const [selectedMatch, setSelectedMatch] = useState<any | null>(null);
-  const [signUpModalOpen, setSignUpModalOpen] = useState<boolean>(false);
+  const { user } = useUser(); // Use already fetched user data
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
   const [filter, setFilter] = useState({
     college: "",
@@ -140,7 +138,6 @@ const SchedulePage: React.FC = () => {
         console.error("Error:", error);
         alert("An error occurred while processing your request. Please try again.");
       }
-      setSignUpModalOpen(false);
   };
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
