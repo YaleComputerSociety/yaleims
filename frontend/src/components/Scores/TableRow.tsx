@@ -12,7 +12,7 @@ const TableRow: React.FC<TableRowProps> = ({
 }) => {
   // Combine base and conditional classes
   const rowClasses = `
-    bg-white dark:bg-gray-900 grid grid-cols-[auto_1fr_auto] items-center 
+    bg-white dark:bg-black grid grid-cols-[auto_1fr_auto] items-center 
     ${isFirst ? "rounded-t-lg" : ""} 
     ${isLast ? "rounded-b-lg" : ""}
   `;

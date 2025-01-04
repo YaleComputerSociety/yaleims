@@ -33,7 +33,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
         <select
           name="date"
           onChange={handleFilterChange}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
+          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
         >
           <option value="All">All Past Games</option>
           <option value="today">Today</option>
@@ -45,13 +45,13 @@ const TableHeader: React.FC<TableHeaderProps> = ({
       </div>
     </div>
 
-    {/* Colleges & Score Column with Dropdown Filter */}
+    {/* Colleges Column with Dropdown Filter */}
     <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
       <div>
         <select
           name="college"
           onChange={handleFilterChange}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
+          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
           value={filter.college}
         >
           {collegeOptions}
@@ -65,7 +65,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
         <select
           name="sport"
           onChange={handleFilterChange}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
+          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
         >
           <option value="">All Sports</option>
           <option value="Soccer">Soccer</option>
@@ -95,7 +95,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
               value="desc"
               checked={sortOrder === "desc"}
               onChange={(e) => handleSortOrderChange(e.target.value)}
-              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-gray-900"
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-black"
             />
             <span className="ml-2 text-xs md:text-sm">desc</span>
           </label>
@@ -106,7 +106,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
               value="asc"
               checked={sortOrder === "asc"}
               onChange={(e) => handleSortOrderChange(e.target.value)}
-              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-gray-900"
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-black"
             />
             <span className="ml-2 text-xs md:text-sm">asc</span>
           </label>
