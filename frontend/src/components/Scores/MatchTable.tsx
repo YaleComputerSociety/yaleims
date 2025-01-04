@@ -17,26 +17,28 @@ const test = groupByDate(filteredMatches);
 
 return (
     <>
-    {Object.entries(test).map(([date, items]) => (
+      {Object.entries(test).map(([date, items]) => (
         <div key={date} className="min-w-full rounded-lg mb-4">
-        <div>
-            <div className="text-left p-2 bg-black-100 border-none">
-            {date}
-            </div>
-        </div>
-        <div>
+          <div>
+            <div className="text-left p-2 bg-black-100 border-none">{date}</div>
+          </div>
+          <div>
             {items.map((match, index) => (
-            <TableRow
+              <TableRow
                 key={index}
                 match={match}
-                handleCollegeClick = {handleCollegeClick}
-            />
+                handleCollegeClick={handleCollegeClick}
+                isFirst={index === 0} // Check if it's the first row
+                isLast={index === items.length - 1} // Check if it's the last row
+              />
             ))}
+          </div>
         </div>
-        </div>
-    ))}
+      ))}
     </>
-);
+  );
+  
+
 };
 
 export default MatchesTable;

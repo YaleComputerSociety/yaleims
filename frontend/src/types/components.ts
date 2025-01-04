@@ -61,11 +61,11 @@ export interface TableHeaderProps {
   sortOrder: string;
   handleSortOrderChange: (newSortOrder: string) => void;
 }
-
 export interface TableRowProps {
-  match: Match; // match prop should be typed as a Match
-  // onShowParticipants: (match: Match) => void; // onShowParticipants function prop
-  handleCollegeClick: (college: string) => void;
+  match: Match; // `match` prop remains typed as `Match`
+  handleCollegeClick: (college: string) => void; // Function to handle college clicks
+  isFirst?: boolean; // Optional prop to indicate if this is the first row
+  isLast?: boolean; // Optional prop to indicate if this is the last row
 }
 
 export type Sport = {
