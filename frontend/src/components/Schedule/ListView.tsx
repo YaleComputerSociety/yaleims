@@ -70,7 +70,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
             {!user && (
               <li
                 className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
-                          hover:shadow-lg hover:scale-105 transition-transform 
+                          hover:shadow-lg hover:scale-110 transition-transform 
                           duration-300 ease-in-out text-center"
                 onClick={signIn}
               >
@@ -157,7 +157,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
                         ) : (
                           <button
                             onClick={() => handleSignUp(match)}
-                            className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-800 focus:outline-none transition duration-200 ease-in-out"
+                            className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:scale-110 focus:outline-none transition duration-200 ease-in-out"
                           >
                             Sign Up
                           </button>
@@ -166,7 +166,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
 
                       <button
                         onClick={() => handleAddToGCal(match)}
-                        className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 focus:outline-none transition duration-300 ease-in-out"
+                        className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:scale-110 focus:outline-none transition duration-300 ease-in-out"
                       >
                         <FaCalendar />
                       </button>
