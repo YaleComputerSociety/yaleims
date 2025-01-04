@@ -8,7 +8,6 @@ import Image from "next/image";
 import { useTheme } from "../context/ThemeContext";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
-  
   return (
     <Link
       href="/profile"
@@ -68,22 +67,28 @@ const NavBar: React.FC = () => {
             aria-label="Toggle Light/Dark Mode"
           >
             {theme === "light" ? (
-              <MdOutlineLightMode className="text-gray-800 hover:text-blue-400" size={24} />
+              <MdOutlineLightMode
+                className="text-gray-800 hover:text-blue-400"
+                size={24}
+              />
             ) : (
-              <MdDarkMode className="text-gray-100 hover:text-yellow-300" size={24} />
+              <MdDarkMode
+                className="text-gray-100 hover:text-yellow-300"
+                size={24}
+              />
             )}
           </button>
 
           {/* User Profile or Sign-In */}
           <div className="mt-2">
-          {loading ? (
-            <div className="animate-pulse text-gray-800 dark:text-gray-300">
-              Loading...
-            </div>
-          ) : user ? (
-            <UserProfileButton name={user.name} />
-          ) : (
-            <button
+            {loading ? (
+              <div className="animate-pulse text-gray-800 dark:text-gray-300">
+                Loading...
+              </div>
+            ) : user ? (
+              <UserProfileButton name={user.name} />
+            ) : (
+              <button
                 onClick={signIn}
                 className={`py-1 px-3 rounded border ${
                   theme === "light"
@@ -93,21 +98,22 @@ const NavBar: React.FC = () => {
               >
                 Sign in with Google
               </button>
-          )}
+            )}
           </div>
-
         </div>
       </div>
       <div
         className={`${
-          isClick ? "bg-white dark:bg-gray-700 p-4 rounded-lg" : "bg-transparent"
+          isClick
+            ? "bg-white dark:bg-gray-700 pt-4 rounded-lg"
+            : "bg-transparent"
         } -mt-2 md:hidden flex items-center justify-between`}
       >
-        <button onClick={toggleNavbar}>
+        <button onClick={toggleNavbar} className="pl-4">
           {isClick ? (
             <IoMdClose
               size={30}
-              className="text-gray-800 dark:text-gray-100"
+              className="-pl-8 text-gray-800 dark:text-gray-100"
             />
           ) : (
             <IoIosMenu
@@ -117,23 +123,28 @@ const NavBar: React.FC = () => {
           )}
         </button>
         <div className="flex gap-4">
-            <div>
+          <div>
             {isClick ? (
               ""
             ) : (
               <button
-              onClick={toggleTheme}
-              className="mt-4 rounded transition-colors"
-              aria-label="Toggle Light/Dark Mode"
+                onClick={toggleTheme}
+                className="mt-4 rounded transition-colors"
+                aria-label="Toggle Light/Dark Mode"
               >
                 {theme === "light" ? (
-                  <MdOutlineLightMode className="text-gray-800 hover:text-blue-600" size={24} />
+                  <MdOutlineLightMode
+                    className="text-gray-800 hover:text-blue-600"
+                    size={24}
+                  />
                 ) : (
-                  <MdDarkMode className="text-gray-100 hover:text-blue-300" size={24} />
+                  <MdDarkMode
+                    className="text-gray-100 hover:text-blue-300"
+                    size={24}
+                  />
                 )}
-            </button>
+              </button>
             )}
-
           </div>
           <div className="flex justify-between items-center">
             {!isClick ? (
@@ -162,7 +173,7 @@ const NavBar: React.FC = () => {
         </div>
       </div>
       {isClick && (
-        <div className="md:hidden -mt-8 bg-white dark:bg-gray-700 flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
+        <div className="md:hidden -mt-4 bg-white dark:bg-gray-700 flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
           {links.map((link, index) => (
             <Link
               key={index + "-second"}
