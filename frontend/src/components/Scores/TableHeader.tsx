@@ -67,7 +67,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           onChange={handleFilterChange}
           className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-gray-900"
         >
-          <option value="">All Sport</option>
+          <option value="">All Sports</option>
           <option value="Soccer">Soccer</option>
           <option value="Flag Football">Flag Football</option>
           <option value="Spikeball">Spikeball</option>
@@ -113,7 +113,6 @@ const TableHeader: React.FC<TableHeaderProps> = ({
         </div>
       </fieldset>
     </div>
-
   </div>
 );
 
