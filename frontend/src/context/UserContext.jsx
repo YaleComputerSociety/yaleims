@@ -3,21 +3,28 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { setCookie, getCookie, deleteCookie } from "cookies-next";
 import { auth, provider, signInWithPopup } from "../../lib/firebase";
+import { GoogleAuthProvider } from "firebase/auth";
+import { set } from "date-fns";
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [googleAccessToken, setGoogleAccessToken] = useState(null);
 
   // On first load, check cookies for user state
   useEffect(() => {
     const token = getCookie("token"); // Get token from cookies
     const userData = getCookie("user"); // Get user data from cookies (serialized JSON)
-    if (token && userData) {
+    const googleToken = getCookie("googleToken"); // Get google token from cookies
+    if (token && userData && googleToken) {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser); // Restore user from cookies
+
+        const googleTokenObj = JSON.parse(googleToken);
+        setGoogleAccessToken(googleTokenObj); // Restore google token from cookies
       } catch (err) {
         console.error("Error parsing user data from cookies:", err);
         setUser(null);
@@ -26,23 +33,40 @@ export const UserProvider = ({ children }) => {
     setLoading(false); // Stop loading after initial check
   }, []);
 
-  const saveUserToCookies = (userData, token) => {
+  const saveUserToCookies = (userData, token, googleToken) => {
     setCookie("token", token, { path: "/", maxAge: 60 * 60 * 24 * 7 }); // Store token for 7 days
     setCookie("user", JSON.stringify(userData), {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     }); // Serialize user data
+    setCookie("googleToken", JSON.stringify(googleToken), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
   };
 
   const clearUserCookies = () => {
     deleteCookie("token", { path: "/" });
     deleteCookie("user", { path: "/" });
+    deleteCookie("googleToken", { path: "/" });
   };
 
   const signIn = async () => {
     try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope("https://www.googleapis.com/auth/calendar");
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
+      const googleAccessToken = result._tokenResponse.oauthAccessToken;
+      const tokenExpiryTime =
+        Date.now() + result._tokenResponse.oauthExpireIn * 1000;
+
+      const googleToken = {
+        token: googleAccessToken,
+        expiry: tokenExpiryTime,
+      };
+
+      setGoogleAccessToken(googleToken); // Update user google token
 
       if (!signedInUser.email.endsWith("@yale.edu")) {
         throw new Error("You must use a Yale email to sign in.");
@@ -60,7 +84,7 @@ export const UserProvider = ({ children }) => {
       };
 
       setUser(userData); // Update user state
-      saveUserToCookies(userData, signedInUser.accessToken); // Save user and token in cookies
+      saveUserToCookies(userData, signedInUser.accessToken, googleToken); // Save user and token in cookies
     } catch (error) {
       console.error("Error during sign-in:", error.message);
       alert(error.message);
@@ -99,7 +123,15 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, signIn, signOut, loading }}>
+    <UserContext.Provider
+      value={{
+        user,
+        signIn,
+        signOut,
+        loading,
+        googleAccessToken,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

@@ -193,6 +193,7 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
       const matches = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
+          id: doc.id,
           home_college: data.home_college,
           away_college: data.away_college,
           sport: data.sport,
@@ -214,7 +215,6 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
     }
   });
 });
-
 
 export const getMatchesPaginated = functions.https.onRequest(
   async (req, res) => {
@@ -241,23 +241,49 @@ export const getMatchesPaginated = functions.https.onRequest(
         }
 
         const currentDate = new Date();
-        type DateFilterKey = "today" | "yesterday" | "last7days" | "last30days" | "last60days";
+        type DateFilterKey =
+          | "today"
+          | "yesterday"
+          | "last7days"
+          | "last30days"
+          | "last60days";
         const dateFilters: Record<DateFilterKey, Date> = {
-          today: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()),
-          yesterday: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1),
-          last7days: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7),
-          last30days: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 30),
-          last60days: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 60),
+          today: new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            currentDate.getDate()
+          ),
+          yesterday: new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            currentDate.getDate() - 1
+          ),
+          last7days: new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            currentDate.getDate() - 7
+          ),
+          last30days: new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            currentDate.getDate() - 30
+          ),
+          last60days: new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth(),
+            currentDate.getDate() - 60
+          ),
         };
-        
 
         if (!["asc", "desc"].includes(sortOrder)) {
           return res.status(400).send("Invalid 'sortOrder' parameter");
         }
-        
+
         const sortOrderValidated = sortOrder as OrderByDirection;
-        let query = db.collection("matches").orderBy("timestamp", sortOrderValidated);
-        
+        let query = db
+          .collection("matches")
+          .orderBy("timestamp", sortOrderValidated);
+
         if (college !== "All") {
           query = query.where(
             Filter.or(
@@ -273,36 +299,55 @@ export const getMatchesPaginated = functions.https.onRequest(
           if (!(date in dateFilters)) {
             return res.status(400).send("Invalid date filter");
           }
-        
+
           const startDate = dateFilters[date as keyof typeof dateFilters];
-          query = query.where("timestamp", ">=", startDate).where("winner", "!=", null);
+          query = query
+            .where("timestamp", ">=", startDate)
+            .where("winner", "!=", null);
         } else {
-          query = query.where("timestamp", "<", currentDate).where("winner", "!=", null);
+          query = query
+            .where("timestamp", "<", currentDate)
+            .where("winner", "!=", null);
         }
 
         const totalResults = (await query.count().get()).data().count;
         const totalPages = Math.ceil(totalResults / pageSizeNum);
 
         if (type === "next" && lastVisible) {
-          const lastVisibleDoc = await db.collection("matches").doc(lastVisible as string).get();
-          if (!lastVisibleDoc.exists) return res.status(404).send("Last visible document not found");
+          const lastVisibleDoc = await db
+            .collection("matches")
+            .doc(lastVisible as string)
+            .get();
+          if (!lastVisibleDoc.exists)
+            return res.status(404).send("Last visible document not found");
           query = query.startAfter(lastVisibleDoc).limit(pageSizeNum);
         } else if (type === "prev" && firstVisible) {
-          const firstVisibleDoc = await db.collection("matches").doc(firstVisible as string).get();
-          if (!firstVisibleDoc.exists) return res.status(404).send("First visible document not found");
+          const firstVisibleDoc = await db
+            .collection("matches")
+            .doc(firstVisible as string)
+            .get();
+          if (!firstVisibleDoc.exists)
+            return res.status(404).send("First visible document not found");
           query = query.endBefore(firstVisibleDoc).limitToLast(pageSizeNum);
         } else if (type === "index" && pageIndexNum >= 1) {
-          query = query.offset((pageIndexNum - 1) * pageSizeNum).limit(pageSizeNum);
+          query = query
+            .offset((pageIndexNum - 1) * pageSizeNum)
+            .limit(pageSizeNum);
         } else {
           return res.status(400).send("Invalid or missing 'type' parameter");
         }
 
         const snapshot = await query.get();
         if (snapshot.empty) {
-          return res.status(200).json({ matches: [], lastVisible: null, firstVisible: null, totalPages });
+          return res.status(200).json({
+            matches: [],
+            lastVisible: null,
+            firstVisible: null,
+            totalPages,
+          });
         }
 
-        const matches = snapshot.docs.map(doc => ({
+        const matches = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           timestamp: doc.data().timestamp?.toDate?.()?.toISOString() || null,

@@ -123,3 +123,8 @@ export interface CalendarFiltersProps {
     value: string
   ) => void;
 }
+
+export interface addingMatch {
+  isAddingToCalendar: boolean;
+  matchId: string;
+}

@@ -1,37 +1,49 @@
-import { useGoogleLogin } from "@react-oauth/google";
-import {Match} from "@src/types/components"
+import { Match } from "@src/types/components";
+import { useState } from "react";
+import { useUser } from "@src/context/UserContext";
+import { addingMatch } from "@src/types/components";
 
-let cachedToken: string | null = null;
-let tokenExpiryTime: number | null = null;
+const addingMatchDefault: addingMatch = {
+  isAddingToCalendar: false,
+  matchId: "",
+};
 
 export const useAddToGCal = () => {
-  const triggerGoogleLogin = useGoogleLogin({
-    onSuccess: (response) => {
-      cachedToken = response.access_token;
-      tokenExpiryTime = Date.now() + response.expires_in * 1000;
-    },
-    onError: () => {
-      alert("Google login failed. Please try again.");
-    },
-    scope: "https://www.googleapis.com/auth/calendar.events",
-  });
+  const { googleAccessToken, signIn } = useUser();
+  const [addingToCalendar, setAddingToCalendar] =
+    useState<addingMatch>(addingMatchDefault);
 
   const addToGCal = async (match: Match) => {
     try {
-      if (!cachedToken || (tokenExpiryTime && Date.now() >= tokenExpiryTime)) {
-        await triggerGoogleLogin();
-        if (!cachedToken) {
+      const addingState: addingMatch = {
+        isAddingToCalendar: true,
+        matchId: match.id,
+      };
+      setAddingToCalendar(addingState);
+
+      if (
+        !googleAccessToken ||
+        (googleAccessToken.expiry && Date.now() >= googleAccessToken.expiry)
+      ) {
+        console.log("Google token expired. Triggering login...");
+
+        await signIn(); // Trigger Google login
+        if (!googleAccessToken) {
           throw new Error("Failed to retrieve Google token.");
         }
       }
 
       const response = await fetch("/api/google-calendar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken: cachedToken, match }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${googleAccessToken.token}`,
+        },
+        body: JSON.stringify({ accessToken: googleAccessToken.token, match }),
       });
 
       const result = await response.json();
+
       if (response.ok) {
         alert("Event added to your Google Calendar!");
       } else {
@@ -40,8 +52,10 @@ export const useAddToGCal = () => {
     } catch (error) {
       console.error("Error adding to Google Calendar:", error);
       alert("An error occurred. Please try again.");
+    } finally {
+      setAddingToCalendar(addingMatchDefault);
     }
   };
 
-  return { addToGCal };
+  return { addToGCal, addingToCalendar };
 };

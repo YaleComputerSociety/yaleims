@@ -5,14 +5,15 @@ import {
   toCollegeAbbreviation,
 } from "@src/utils/helpers";
 import { CalendarMatchListProps } from "@src/types/components";
-import { FaCalendar } from "react-icons/fa";
+import { FaCalendar, FaSpinner } from "react-icons/fa";
 import { useAddToGCal } from "@src/hooks/useAddToGCal";
 import { useUser } from "@src/context/UserContext";
 import { Match } from "@src/types/components";
+import { is } from "date-fns/locale";
 
 const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
   const { user, signIn } = useUser(); // Use already fetched user data
-  const { addToGCal } = useAddToGCal();
+  const { addToGCal, addingToCalendar } = useAddToGCal();
   const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
   const [signUpTriggered, setSignUpTriggered] = useState(false); // Tracks sign-up events
   const [loading, setLoading] = useState(true);
@@ -201,7 +202,12 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
                       onClick={() => handleAddToGCal(match)}
                       className="px-6 ml-5 py-3 bg-blue-600 text-white rounded-lg shadow hover:scale-110 focus:outline-none transition duration-300 ease-in-out"
                     >
-                      <FaCalendar />
+                      {addingToCalendar.isAddingToCalendar &&
+                      addingToCalendar.matchId === match.id ? (
+                        <FaSpinner className="animate-spin" />
+                      ) : (
+                        <FaCalendar />
+                      )}
                     </button>
                   </div>
                 </li>
