@@ -12,8 +12,6 @@ import Pagination from "@src/components/scores/Pagination";
 
 import "react-loading-skeleton/dist/skeleton.css";
 
-// once this version is merged and deployed, we can delete the original getMatches cloud function
-
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
@@ -41,7 +39,7 @@ const ScoresPage: React.FC = () => {
     setLastVisible("");
   };
 
-  // param types for fetching matches; doesn't yet support a date query
+  // param types for fetching matches
   const paramsIndex = new URLSearchParams({
     type: "index",
     pageIndex: page.toString(),
@@ -161,6 +159,11 @@ const ScoresPage: React.FC = () => {
     resetPaginationState();
   };
 
+  const handleSportClick = (sportName: string) => {
+    setFilter((prev) => ({ ...prev, sport: sportName }));
+    resetPaginationState();
+  };
+
   const handleSortOrderChange = (newSortOrder: string) => {
     setSortOrder(newSortOrder);
     resetPaginationState();
@@ -205,6 +208,7 @@ const ScoresPage: React.FC = () => {
             <MatchesTable
               filteredMatches={filteredMatches}
               handleCollegeClick={handleCollegeClick}
+              handleSportClick={handleSportClick}
             />
             <Pagination
               currentPageNumber={page}
