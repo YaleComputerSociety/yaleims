@@ -123,6 +123,14 @@ export const getLeaderboard = functions.https.onRequest((req, res) => {
           id: doc.id,
           name: data.name,
           points: data.points,
+          rank: data.rank,
+          prevRank: data.prevRank,
+          games: data.games,
+          wins: data.wins,
+          ties: data.ties,
+          losses: data.losses,
+          forfeits: data.forfeits,
+          dayChange: data.dayChange
         } as College);
       });
       //console.log('Leaderboard data:', JSON.stringify(leaderboard, null, 2));
@@ -543,11 +551,32 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       // ranks batch write
       const rankBatch = db.batch();
-      colleges.forEach((college, index) => {
+      const dateToday = new Date();
+      const formattedDate = `${dateToday.getDate()}-${dateToday.getMonth() + 1}-${dateToday.getFullYear()}`;
+
+      for (const [index, college] of colleges.entries()) {
+        const collegeDoc = await db.collection("colleges_testing").doc(college.id).get();
+        let currentDate = collegeDoc.data()?.today || formattedDate
+        const newRank = index + 1
+        const prevRank = collegeDoc.data()?.rank || newRank;
+        const diff = prevRank - newRank
+        let dayChange = collegeDoc.data()?.dayChange || 0
+
+        if (currentDate === formattedDate) {
+          dayChange += diff
+        } else {
+          currentDate = formattedDate
+          dayChange = 0
+        }        
+
         rankBatch.update(db.collection("colleges_testing").doc(college.id), {
-          rank: index + 1,
+          today: currentDate,
+          dayChange: dayChange,
+          prevRank: prevRank, 
+          rank: newRank,
         });
-      });
+      }
+
       await rankBatch.commit();
 
       // return success response

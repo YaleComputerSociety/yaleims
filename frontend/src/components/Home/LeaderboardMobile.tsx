@@ -93,9 +93,8 @@ const Leaderboard: React.FC = () => {
               className={`flex flex-col items-center ${offset}text-center mb-3 cursor-pointer`}
             >
               <div
-                className={`relative ${
-                  size === "large" ? "w-52 h-52" : "w-24 h-24"
-                } flex items-center justify-center mb-4`}
+                className={`relative ${size === "large" ? "w-52 h-52" : "w-24 h-24"
+                  } flex items-center justify-center mb-4`}
               >
                 {/* Main College Flag */}
                 <Image
@@ -116,9 +115,8 @@ const Leaderboard: React.FC = () => {
                   width={size === "large" ? 400 : 50}
                   height={size === "large" ? 400 : 50}
                   layout="fixed"
-                  className={`absolute ${
-                    place === "first" ? "top-10" : "top-20"
-                  }`}
+                  className={`absolute ${place === "first" ? "top-10" : "top-20"
+                    }`}
                 />
               </div>
 
