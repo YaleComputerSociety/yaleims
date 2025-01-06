@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "ESNext",  // Use ES Modules
-    "target": "es2017", // Use modern syntax
+    "module": "ESNext",
+    "target": "ESNext",
     "moduleResolution": "Node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
@@ -9,9 +9,9 @@
     "sourceMap": true,
     "strict": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   },
   "compileOnSave": true,
-  "include": ["src/**/*.ts"], // Adjust to match your source files
-  "exclude": ["node_modules", "lib"] // Exclude output and dependencies
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "lib"]
 }

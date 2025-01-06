@@ -7,8 +7,6 @@ import {
     getRatioAsString
   } from "@src/utils/helpers";
 
-
-
 const CollegeSummaryCard: React.FC<CollegeSummaryCardProps> = ({
     stats,
     isLoading,
