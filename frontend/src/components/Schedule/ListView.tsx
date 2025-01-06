@@ -6,19 +6,19 @@ import {
 } from "@src/utils/helpers";
 import { CalendarMatchListProps } from "@src/types/components";
 import { FaCalendar } from "react-icons/fa";
-import { useAddToGCal } from "@src/hooks/useAddToGCal";
 import { useUser } from "@src/context/UserContext";
 import { Match } from "@src/types/components";
+import { generateGoogleCalendarLink } from "@src/utils/helpers";
 
 const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp }) => {
   const { user, signIn } = useUser(); // Use already fetched user data
-  const { addToGCal } = useAddToGCal();
   const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
   const [signUpTriggered, setSignUpTriggered] = useState(false); // Tracks sign-up events
   const [loading, setLoading] = useState(true);
 
   const handleAddToGCal = (match: Match) => {
-    addToGCal(match);
+    const link = generateGoogleCalendarLink(match);
+    window.open(link);
   };
 
   const fetchSignedUpMatches = async () => {
