@@ -9,6 +9,7 @@ const TableRow: React.FC<TableRowProps> = ({
   handleCollegeClick,
   isFirst,
   isLast,
+  handleSportClick,
 }) => {
   // Combine base and conditional classes
   const rowClasses = `
@@ -234,8 +235,9 @@ const TableRow: React.FC<TableRowProps> = ({
       </div>
 
       <div
-        className="text-center px-2 py-1 relative group"
+        className="text-center px-2 py-1 relative group hover:cursor-pointer"
         title={match.sport} // Tooltip with the sport name
+        onClick={() => handleSportClick(match.sport)}
       >
         {/* Display the emoji */}
         <div>{emojiMap[match.sport]}</div>
