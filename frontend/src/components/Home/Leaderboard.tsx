@@ -30,7 +30,7 @@ const Leaderboard: React.FC = () => {
 
         const data = await response.json();
         const sorted = data.sort((a: any, b: any) => b.points - a.points);
-        setSortedColleges(sorted);
+        setSortedColleges(() => sorted);
       } catch (error) {
         console.error("Failed to fetch leaderboard:", error);
       } finally {
@@ -91,9 +91,8 @@ const Leaderboard: React.FC = () => {
               className={`flex flex-col items-center ${offset}text-center mb-3 cursor-pointer`}
             >
               <div
-                className={`relative ${
-                  size === "large" ? "w-52 h-52" : "w-24 h-24"
-                } flex items-center justify-center mb-4`}
+                className={`relative ${size === "large" ? "w-52 h-52" : "w-24 h-24"
+                  } flex items-center justify-center mb-4`}
               >
                 {/* Main College Flag */}
                 <Image
@@ -114,9 +113,8 @@ const Leaderboard: React.FC = () => {
                   width={size === "large" ? 400 : 50}
                   height={size === "large" ? 400 : 50}
                   layout="fixed"
-                  className={`absolute ${
-                    place === "first" ? "top-10" : "top-20"
-                  }`}
+                  className={`absolute ${place === "first" ? "top-10" : "top-20"
+                    }`}
                 />
               </div>
 
@@ -190,7 +188,7 @@ const Leaderboard: React.FC = () => {
                   </div>
                 </td>
                 <td className="w-[75px] text-sm text-center border border-gray-300 dark:border-gray-600">
-                  -0
+                  {college.dayChange}
                 </td>
                 <td className="w-[150px] px-6 py-4 text-sm border border-gray-300 dark:border-gray-600">
                   {college.points} points
