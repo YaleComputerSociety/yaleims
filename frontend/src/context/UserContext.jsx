@@ -57,6 +57,7 @@ export const UserProvider = ({ children }) => {
         college: data.user.college,
         points: data.user.points,
         role: data.user.role,
+        matches_played: data.user.matches_played,
       };
 
       setUser(userData); // Update user state

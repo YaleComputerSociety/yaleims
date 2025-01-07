@@ -92,6 +92,7 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         points: 0,
         college: college || null,
         role: "user", // default role; otherwise "admin" can be set in firestore
+        matches_played: 0,
       };
 
       await userRef.set(newUser);
@@ -652,6 +653,7 @@ export const addParticipant = functions.https.onRequest((req, res) => {
 
       const userData = userDoc.data();
       const userMatches = userData?.matches || [];
+      const matchesPlayed = userData?.matches_played; // TEST
 
       // Check if the match is already in the user's matches array
       const isMatchDuplicate = userMatches.some(
@@ -665,6 +667,7 @@ export const addParticipant = functions.https.onRequest((req, res) => {
 
         await userDocRef.update({
           matches: userMatches,
+          matches_played: matchesPlayed + 1, // Increment matches_played by 1
         });
       }
 
@@ -677,3 +680,199 @@ export const addParticipant = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
+  return corsHandler(req, res, async () => {
+    try {
+      const { type, sortOrder = "desc", college } = req.query; // Retrieve 'type', 'sortOrder', and 'college' query parameters
+      const currentDate = new Date();
+      let query: Query = db.collection("matches"); // Explicitly use Query type
+
+      // Apply filtering based on the 'type' query parameter (all, past, or future)
+      if (type === "past") {
+        query = query.where("timestamp", "<", currentDate); // Get past matches
+      } else if (type === "future") {
+        query = query.where("timestamp", ">", currentDate); // Get future matches
+      }
+
+      query = query.orderBy("timestamp", sortOrder as "asc" | "desc");
+
+      // Fetch the matches for home_college
+      let homeMatchesQuery = query.where("home_college", "==", college);
+      let awayMatchesQuery = query.where("away_college", "==", college);
+
+      // Execute both queries and merge the results
+      const homeMatchesSnapshot = await homeMatchesQuery.get();
+      const awayMatchesSnapshot = await awayMatchesQuery.get();
+
+      // Log the results of both queries to see how many matches are being returned
+      // console.log("Home Matches Snapshot:", homeMatchesSnapshot.docs.length);
+      // console.log("Away Matches Snapshot:", awayMatchesSnapshot.docs.length);
+
+      // Combine the results from both queries and ensure data is valid
+      const allMatches = [
+        ...homeMatchesSnapshot.docs
+          .map((doc) => doc.data())
+          .filter((data) => data !== undefined), // Filter out undefined data
+        ...awayMatchesSnapshot.docs
+          .map((doc) => doc.data())
+          .filter((data) => data !== undefined), // Filter out undefined data
+      ];
+
+      // Log all matches before returning
+      // console.log("All Matches:", allMatches);
+
+      // Process and format the results
+      const matches = allMatches.map((data) => {
+        if (!data) return null; // Ensure that data is defined
+        return {
+          home_college: data.home_college,
+          away_college: data.away_college,
+          sport: data.sport,
+          home_college_score: data.home_college_score,
+          away_college_score: data.away_college_score,
+          home_college_participants: data.home_college_participants,
+          away_college_participants: data.away_college_participants,
+          winner: data.winner,
+          timestamp:
+            data.timestamp && data.timestamp.toDate
+              ? data.timestamp.toDate().toISOString()
+              : null, // Fallback if timestamp is missing or invalid
+        };
+      }).filter((match) => match !== null); // Filter out null matches
+
+      // Return the matches as a JSON response
+      return res.status(200).json(matches);
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+      return res.status(500).send("Internal Server Error");
+    }
+  });
+});
+
+export const removeParticipant = functions.https.onRequest((req, res) => {
+  return corsHandler(req, res, async () => {
+    try {
+      // Extract fields from the request body
+      const { matchId, participantType, user, selectedMatch } = req.body;
+
+      // Check if all required parameters are provided
+      if (
+        !matchId ||
+        !participantType ||
+        !user ||
+        !user.email ||
+        !selectedMatch
+      ) {
+        console.error("Missing required parameters:", {
+          matchId,
+          participantType,
+          user,
+          selectedMatch,
+        });
+        res.status(400).json({ error: "Missing required parameters" });
+        return;
+      }
+
+      // Query Firestore to find the match document by its ID
+      const matchDoc = await admin
+        .firestore()
+        .collection("matches")
+        .doc(matchId)
+        .get();
+
+      if (!matchDoc.exists) {
+        console.error("Match not found for matchId:", matchId);
+        res.status(404).json({ error: "Match not found" });
+        return;
+      }
+
+      // Retrieve match data
+      const matchData = matchDoc.data();
+
+      if (
+        !matchData ||
+        !matchData.home_college_participants ||
+        !matchData.away_college_participants
+      ) {
+        res
+          .status(400)
+          .json({ error: "Invalid match data, missing participant fields" });
+        return;
+      }
+
+      // Determine the appropriate participants array
+      const participantsArray =
+        participantType === "home_college_participants"
+          ? matchData.home_college_participants
+          : matchData.away_college_participants;
+
+      // Find the participant by email
+      const participantIndex = participantsArray.findIndex(
+        (participant: { email: string }) => participant.email === user.email
+      );
+
+      if (participantIndex === -1) {
+        console.warn(`${user.email} is not a participant`);
+        res
+          .status(400)
+          .json({ error: `${user.email} is not a participant in this match` });
+        return;
+      }
+
+      // Remove the participant and update Firestore
+      participantsArray.splice(participantIndex, 1);
+
+      await matchDoc.ref.update({
+        [participantType]: participantsArray,
+      });
+
+      // Update the user's "matches" array in the "users" collection
+      const userDocRef = admin.firestore().collection("users").doc(user.email);
+      const userDoc = await userDocRef.get();
+
+      if (!userDoc.exists) {
+        console.error(`User document not found for email: ${user.email}`);
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const userData = userDoc.data();
+      const userMatches = userData?.matches || [];
+      const userMatchesPlayed = userData?.matches_played;
+
+      // Remove the match from the user's matches array
+      const matchIndex = userMatches.findIndex(
+        (match: any) => match.matchId === matchId
+      );
+
+      if (matchIndex !== -1) {
+        userMatches.splice(matchIndex, 1);
+
+        await userDocRef.update({
+          matches: userMatches,
+          matches_played: userMatchesPlayed - 1,
+        });
+      }
+
+      res.status(200).json({
+        message: `Successfully unregistered and updated your matches!`,
+      });
+    } catch (error) {
+      console.error("Error processing request:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+

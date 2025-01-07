@@ -11,7 +11,7 @@ const fake_matches = [
   {
     forfeit: false,
     home_college: "BF",
-    away_college: "BK",
+    away_college: "MC",
     home_college_participants: [],
     away_college_participants: [],
     home_college_score: null,
@@ -24,7 +24,7 @@ const fake_matches = [
   {
     forfeit: false,
     home_college: "JE",
-    away_college: "TD",
+    away_college: "MC",
     home_college_participants: [],
     away_college_participants: [],
     home_college_score: null,
@@ -37,7 +37,7 @@ const fake_matches = [
   {
     forfeit: false,
     home_college: "SY",
-    away_college: "DC",
+    away_college: "MY",
     home_college_participants: [],
     away_college_participants: [],
     home_college_score: null,
@@ -49,7 +49,7 @@ const fake_matches = [
   },
   {
     forfeit: false,
-    home_college: "GH",
+    home_college: "PC",
     away_college: "JE",
     home_college_participants: [],
     away_college_participants: [],
@@ -62,7 +62,7 @@ const fake_matches = [
   },
   {
     forfeit: false,
-    home_college: "BF",
+    home_college: "SM",
     away_college: "BK",
     home_college_participants: [],
     away_college_participants: [],
