@@ -2,6 +2,8 @@
 
 import React from "react";
 
+// this is a rough draft
+
 const AboutIMSPage: React.FC = () => {
     return (
         <div className="w-4/5 mx-auto space-y-8">

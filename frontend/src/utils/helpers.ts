@@ -182,14 +182,11 @@ export const groupByDate = (allMatches: Match[]) => {
   const groupedData: { [key: string]: Match[] } = {};
 
   allMatches.forEach((item) => {
-    const date: string = new Date(item.timestamp).toLocaleDateString(
-      "en-CA",
-      {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }
-    );
+    const date: string = new Date(item.timestamp).toLocaleDateString("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
     // console.log(date)
     if (!groupedData[date]) {
       groupedData[date] = [];
@@ -199,3 +196,33 @@ export const groupByDate = (allMatches: Match[]) => {
 
   return groupedData;
 };
+
+function formatDateTime(date: Date | string): string {
+  const validDate = date instanceof Date ? date : new Date(date);
+
+  if (isNaN(validDate.getTime())) {
+    throw new Error("Invalid date format. Ensure 'start' is a valid date.");
+  }
+
+  const isoString = validDate.toISOString();
+  return isoString.replace(/[-:]/g, "").split(".")[0] + "Z";
+}
+
+export function generateGoogleCalendarLink(match: Match): string {
+  const baseUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+
+  const start = new Date(match.timestamp);
+  const end = new Date(start);
+  end.setHours(start.getHours() + 1); // 1 hour long event
+
+  const params = new URLSearchParams({
+    text: `IM ${match.sport}: ${match.home_college} vs. ${match.away_college}`,
+    details: `Intramural ${match.sport} match between ${
+      toCollegeName[match.home_college]
+    } and ${toCollegeName[match.away_college]}.`,
+    location: match.location || "",
+    dates: formatDateTime(start) + "/" + formatDateTime(end),
+  });
+
+  return `${baseUrl}&${params.toString()}`;
+}

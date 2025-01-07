@@ -136,7 +136,7 @@ const AboutUsPage: React.FC = () => {
       <h1 className=" text-4xl font-bold text-center mb-8 pt-5 lg:-ml-6">
         About Us
       </h1>
-      <p>Every year Yale’s 14 colleges compete in various intermural sports. Read more about how it all works <Link className="text-blue-600 dark:text-blue-300" href="/about-ims">here.</Link> The college with the most points at the end of Spring Semester wins the famous Tyng Cup. As sports players and enthusiasts ourselves, we know the joy and stress relief that comes from playing games and being part of a team. However, despite the incredible opportunities IMs offer, participation has always been a challenge.</p>
+      <p>Every year Yale’s 14 colleges compete in various intramural sports. Read more about how it all works <Link className="text-blue-600 dark:text-blue-300" href="/about-ims">here.</Link> The college with the most points at the end of Spring Semester wins the famous Tyng Cup. As sports players and enthusiasts ourselves, we know the joy and stress relief that comes from playing games and being part of a team. However, despite the incredible opportunities IMs offer, participation has always been a challenge.</p>
       <br></br>
       <p>The core issue is logistics. It’s hard to know who’s attending games, where your college stands in the Tyng Cup rankings, or even when and where matches are happening. Organizing IMs across 14 colleges is no small feat. Previous attempts to tackle these challenges with apps have fallen short. The complexity of the rules, ever-changing schedules, and the sheer number of moving parts make it difficult to create a system that truly works for everyone.</p>
       <br></br>

@@ -5,9 +5,9 @@ import {
   toCollegeAbbreviation,
 } from "@src/utils/helpers";
 import { FaCalendar } from "react-icons/fa";
-import { useAddToGCal } from "@src/hooks/useAddToGCal";
 import { useUser } from "@src/context/UserContext";
 import { Match } from "@src/types/components";
+import { generateGoogleCalendarLink } from "@src/utils/helpers";
 
 // Define the props type for the ListView component
 interface CalendarMatchListProps {
@@ -18,13 +18,13 @@ interface CalendarMatchListProps {
 
 const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp, unregister }) => {
   const { user, signIn } = useUser(); // Use already fetched user data
-  const { addToGCal } = useAddToGCal();
   const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
   const [signUpTriggered, setSignUpTriggered] = useState(false); // Tracks sign-up events
   const [loading, setLoading] = useState(true);
 
   const handleAddToGCal = (match: Match) => {
-    addToGCal(match);
+    const link = generateGoogleCalendarLink(match);
+    window.open(link);
   };
 
   const fetchSignedUpMatches = async () => {

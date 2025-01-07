@@ -66,6 +66,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           name="sport"
           onChange={handleFilterChange}
           className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+          value={filter.sport}
         >
           <option value="">All Sports</option>
           <option value="Soccer">Soccer</option>

@@ -4,18 +4,20 @@ import TableRow from "./TableRow";
 
 import { MatchesTableProps, Match } from "@src/types/components";
 
-
 // Main MatchesTable Component
-const MatchesTable: React.FC<MatchesTableProps> = ({ filteredMatches, handleCollegeClick }) => {
-
-const onShowParticipants = (match: Match) => {
+const MatchesTable: React.FC<MatchesTableProps> = ({
+  filteredMatches,
+  handleCollegeClick,
+  handleSportClick,
+}) => {
+  const onShowParticipants = (match: Match) => {
     // This could trigger a modal, display a dropdown, or anything else
     console.log("TODO");
-};
+  };
 
-const test = groupByDate(filteredMatches);
+  const test = groupByDate(filteredMatches);
 
-return (
+  return (
     <>
       {Object.entries(test).map(([date, items]) => (
         <div key={date} className="min-w-full rounded-lg mb-4">
@@ -30,6 +32,7 @@ return (
                 handleCollegeClick={handleCollegeClick}
                 isFirst={index === 0} // Check if it's the first row
                 isLast={index === items.length - 1} // Check if it's the last row
+                handleSportClick={handleSportClick}
               />
             ))}
           </div>
@@ -37,8 +40,6 @@ return (
       ))}
     </>
   );
-  
-
 };
 
 export default MatchesTable;
