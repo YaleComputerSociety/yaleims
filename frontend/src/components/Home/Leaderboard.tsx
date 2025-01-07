@@ -4,7 +4,7 @@ import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
-import Podium from "@src/components/home/Podium"
+import Podium from "@src/components/home/Podium";
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
@@ -141,14 +141,30 @@ const Leaderboard: React.FC = () => {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden max-w-4xl mx-auto">
+    <div className="rounded-lg overflow-hidden max-w-6xl mx-auto relative">
       {/* Podium */}
-      {/* <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div> */}
-      <Podium colleges={sortedColleges.slice(0, 3)} /> 
+      {/* <div className="py-6">{renderPodium(sortedColleges.slice(0, 3)http://localhost:3000/confetti.png)}</div> */}
+      {/* Overlay Image */}
+      <h1 className="text-blue-700 text-6xl mt-4 absolute md:ml-10 ml-3 font-bold">
+        TYNG CUP<br></br>STANDINGS
+      </h1>
+      <div className="absolute inset-5 w-full h-full flex justify-center z-10">
+        <Image
+          src="/confetti2.png"
+          width={940}
+          height={940}
+          alt="Confetti"
+          className="object-contain object-top z-10 min-w-[994px] min-h-[994px]"
+        />
+      </div>
+
+      <div className="mt-10">
+        <Podium colleges={sortedColleges.slice(0, 3)} />
+      </div>
 
       {/* Full Leaderboard */}
-      <div className="overflow-x-auto">
-        <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200 mt-4">
+      <div className="overflow-x-auto -mt-4">
+        <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200 ">
           <thead className="bg-white dark:bg-[#132750]">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">

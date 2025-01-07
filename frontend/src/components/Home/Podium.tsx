@@ -5,43 +5,58 @@ const Podium = (colleges: any) => {
   console.log(colleges.colleges[1]);
   console.log(colleges["1"]);
   return (
-    <div className="flex gap-4 justify-center">
-{/*         
-      <div
-        className={`relative ${
-          size === "large" ? "w-52 h-52" : "w-24 h-24"
-        } flex items-center justify-center mb-4`}
-      > */}
+    <div className="flex items-center gap-4 justify-center">
+      <div className="relative flex flex-col items-center justify-center mb-4 self-end">
         {/* Main College Flag */}
-        {/* <Image
-          src={`/college_flags/${college.name.replace(/\s+/g, " ")}.png`}
-          alt={college.name}
-          width={size === "large" ? 160 : 96}
-          height={size === "large" ? 160 : 96}
+        <Image
+          src={`/college_flags/${colleges.colleges[2].name.replace(
+            /\s+/g,
+            " "
+          )}.png`}
+          alt={colleges.colleges[2].name}
+          width={160}
+          height={160}
           className="object-contain p-3"
-        /> */}
-
-        {/* Overlay Image */}
-        {/* <Image
-          src={`/college_flags/${place}.png`}
-          alt={`${place} Place Overlay`}
-          width={size === "large" ? 400 : 50}
-          height={size === "large" ? 400 : 50}
-          layout="fixed"
-          className={`absolute ${place === "first" ? "top-10" : "top-20"}`}
         />
-      </div> */}
-      <div className="flex flex-col items-center justify-center rounded-lg w-48 h-40 bg-podium_light text-white dark:bg-black">
-        <p>{colleges.colleges[1]["name"]}</p>
-        <p className="text-xl font-bold">2nd</p>
+        <div className="flex flex-col items-center justify-center rounded-lg w-48 h-36 bg-podium_light text-white dark:bg-black">
+          <p>{colleges.colleges[2]["name"]}</p>
+          <p className="text-xl font-bold">3rd</p>
+        </div>
       </div>
-      <div className="flex flex-col items-center justify-center rounded-lg w-48 h-100 bg-podium_light text-white dark:bg-black">
-        <p>{colleges.colleges[0]["name"]}</p>
-        <p className="text-xl font-bold">1st</p>
+
+      <div className="relative flex flex-col items-center justify-center mb-4">
+        {/* Main College Flag */}
+        <Image
+          src={`/college_flags/${colleges.colleges[0].name.replace(
+            /\s+/g,
+            " "
+          )}.png`}
+          alt={colleges.colleges[0].name}
+          width={160}
+          height={160}
+          className="object-contain p-3"
+        />
+        <div className="flex flex-col items-center justify-center rounded-lg w-48 h-60 bg-podium_light text-white dark:bg-black">
+          <p>{colleges.colleges[0]["name"]}</p>
+          <p className="text-xl font-bold">1st</p>
+        </div>
       </div>
-      <div className="flex flex-col items-center justify-center rounded-lg w-48 h-40 bg-podium_light text-white dark:bg-black">
-        <p>{colleges.colleges[2]["name"]}</p>
-        <p className="text-xl font-bold">3rd</p>
+      <div className="relative flex flex-col items-center mb-4 self-end">
+        {/* Main College Flag */}
+        <Image
+          src={`/college_flags/${colleges.colleges[1].name.replace(
+            /\s+/g,
+            " "
+          )}.png`}
+          alt={colleges.colleges[1].name}
+          width={160}
+          height={160}
+          className="object-contain p-3"
+        />
+        <div className="flex flex-col items-center justify-center rounded-lg w-48 h-48 bg-podium_light text-white dark:bg-black">
+          <p>{colleges.colleges[1]["name"]}</p>
+          <p className="text-xl font-bold">2nd</p>
+        </div>
       </div>
     </div>
   );
