@@ -10,15 +10,20 @@ const db = admin.firestore();
 export const getMatches = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const { type, sortOrder = "desc" } = req.query; // Retrieve the 'type' and 'sortOrder' query parameters
-      const currentDate = new Date();
+      const {
+        type,
+        sortOrder = "asc",
+        filterDate = new Date().toISOString(),
+      } = req.query; // Retrieve the query parameters
       let query: Query = db.collection("matches"); // Explicitly use Query type
+
+      const filterDateObj = new Date(filterDate as string); // Convert filterDate to a Date object
 
       // Apply filtering based on the 'type' query parameter (all, past, or future)
       if (type === "past") {
-        query = query.where("timestamp", "<", currentDate); // Get past matches
+        query = query.where("timestamp", "<", filterDateObj); // Get past matches
       } else if (type === "future") {
-        query = query.where("timestamp", ">", currentDate); // Get future matches
+        query = query.where("timestamp", ">=", filterDateObj); // Get future matches
       }
 
       query = query.orderBy("timestamp", sortOrder as "asc" | "desc");
