@@ -22,20 +22,18 @@ export default function RootLayout({
     <UserProvider>
       <FiltersProvider>
         <ThemeProvider>
-        <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <html lang="en">
-            <head>
-              <link rel="icon" href="/favicon.ico" />
-            </head>
-            <body className=
-            {`${inter.className} min-h-screen`}>
-              <NavBar />
-              <div className="mb-10"></div>
-              {children}
-              <Footer />
-            </body>
-          </html>
-        </GoogleOAuthProvider>
+          <GoogleOAuthProvider clientId={CLIENT_ID}>
+            <html lang="en">
+              <head>
+                <link rel="icon" href="/favicon.ico" />
+              </head>
+              <body className={`${inter.className} min-h-screen`}>
+                <NavBar />
+                <div className="mb-10"></div>
+                {children}
+              </body>
+            </html>
+          </GoogleOAuthProvider>
         </ThemeProvider>
       </FiltersProvider>
     </UserProvider>

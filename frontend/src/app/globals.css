@@ -12,18 +12,33 @@ body {
 
 /* Default styles for the light mode */
 :root {
-  --html-bg: #D0E4FB; /* White background for html */
-  --body-bg: linear-gradient(to bottom, #D0E4FB, #8DB8EA); /* Light blue gradient for body */
+  --html-bg: #d0e4fb; /* White background for html */
+  --body-bg: linear-gradient(
+    to bottom,
+    #d0e4fb,
+    #8db8ea
+  ); /* Light blue gradient for body */
   --foreground: #1f2937; /* Text color for light mode */
-  --nav-bg: #D0E4FB;
+  --nav-bg: #d0e4fb;
 }
 
 /* Dark mode styles */
 :root.dark {
-  --html-bg: #0E265C; /* Black background for html */
-  --body-bg: linear-gradient(to bottom, #0E265C, #0F0F0F); /* Dark blue gradient for body */
+  --html-bg: #0e265c; /* Black background for html */
+  --body-bg: linear-gradient(
+    to bottom,
+    #0e265c,
+    #0f0f0f
+  ); /* Dark blue gradient for body */
   --foreground: #e5e7eb; /* Text color for dark mode */
-  --nav-bg: #0E265C;
+  --nav-bg: #0e265c;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Apply styles to html and body */

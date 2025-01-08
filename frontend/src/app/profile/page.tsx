@@ -7,6 +7,7 @@ import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this impor
 import { Match, Participant } from "@src/types/components";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
+import Footer from "@src/components/Footer";
 
 const Profile = () => {
   const { user, loading, signOut } = useUser();
@@ -103,14 +104,14 @@ const Profile = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-[80vh]">
-      <div className="flex-grow m-3">
+    <div className="flex flex-col">
+      <div className="flex-grow m-3 ">
         <h2 className="text-2xl font-semibold text-center mt-10">
           Hey {user.name.split(" ")[0]}, play some IMs today!
         </h2>
-        <div className="mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:items-start lg:flex-row lg:space-y-0 lg:space-x-6">
+        <div className="mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:items-start lg:flex-row lg:space-y-0 lg:space-x-6 justify-center lg:ml-10">
           {/* Right Side: Stats */}
-          <div className="flex justify-center items-center flex-col space-y-6 lg:w-1/2 order-1 lg:order-2">
+          <div className="flex justify-center items-center flex-col space-y-6 lg:w-2/5 order-1 lg:order-2">
             <div className="p-6  bg-white dark:bg-black shadow-lg rounded-lg space-y-4 flex justify-center flex-col">
               <h2 className="text-2xl font-semibold">Your 2025 Stats Box!</h2>
               <div className="flex justify-center items-center space-x-4">
@@ -139,7 +140,7 @@ const Profile = () => {
           </div>
 
           {/* Left Side */}
-          <div className="flex flex-col space-y-6 lg:w-1/2 order-2 lg:order-1">
+          <div className="flex flex-col space-y-6 lg:w-3/5 order-2 lg:order-1">
             <div className="flex flex-col space-y-2">
               <div className="text-xl font-semibold mb-2">
                 Your Upcoming Games
@@ -170,6 +171,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

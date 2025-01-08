@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Leaderboard from "../components/home/Leaderboard";
 import LeaderboardMobile from "../components/home/LeaderboardMobile";
+import Footer from "@src/components/Footer";
 
 const HomePage: React.FC = () => {
   const [theme, setTheme] = useState("light");
