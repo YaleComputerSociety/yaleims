@@ -95,7 +95,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                   className={`ml-4 text-xl font-semibold  ${
                     dateMatches.length === 0
                       ? "text-gray-400 text-xs"
-                      : "text-black"
+                      : "text-black dark:text-white"
                   }`}
                 >
                   {format(date, "EEEE, MMMM d, yyyy")}
