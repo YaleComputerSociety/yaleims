@@ -6,16 +6,14 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import LoadingScreen from "@src/components/LoadingScreen";
 import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
-import { useUser } from "../../context/UserContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
 import { Match } from "@src/types/components";
 import Calendar from "@src/components/schedule/Calendar";
+import { FaSpinner } from "react-icons/fa"; // Example using Font Awesome spinner
 
-const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
 const PAGE_SIZE = "10";
 
 const SchedulePage: React.FC = () => {
-  const { user } = useUser(); // Use already fetched user data
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
   const [filter, setFilter] = useState({
     college: "",
@@ -74,7 +72,14 @@ const SchedulePage: React.FC = () => {
         }
 
         const data = await response.json();
-        setFilteredMatches((prevMatches) => [...prevMatches, ...data.matches]); // append new matches to existing matches
+
+        setFilteredMatches((prevMatches) => {
+          const matchIds = new Set(prevMatches.map((match) => match.id));
+          const uniqueMatches = data.matches.filter(
+            (match: Match) => !matchIds.has(match.id)
+          );
+          return [...prevMatches, ...uniqueMatches];
+        });
         setLastVisible(data.lastVisible);
         setHasMoreMatches(data.hasMoreMatches);
       } catch (error) {
@@ -87,74 +92,6 @@ const SchedulePage: React.FC = () => {
 
     fetchMoreMatches();
   }, [filter.college, filter.date, filter.sport, chunksLoaded]);
-
-  // fetch new matches on filter change
-
-  const signUp = async (selectedMatch: Match) => {
-    try {
-      // Construct the matchId based on home_college, away_college, and timestamp
-      if (
-        !selectedMatch ||
-        !selectedMatch.home_college ||
-        !selectedMatch.away_college ||
-        !selectedMatch.timestamp
-      ) {
-        console.error("Missing fields in selectedMatch:", selectedMatch);
-        alert("Unable to proceed: Missing match details.");
-        return;
-      }
-      const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
-
-      /** Add user to the appropriate participant array and update their matches **/
-      const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
-
-      // Ensure user college abbreviation matches home/away college
-      const isHomeCollege =
-        selectedMatch.home_college === userCollegeAbbreviation;
-      const isAwayCollege =
-        selectedMatch.away_college === userCollegeAbbreviation;
-
-      if (isHomeCollege || isAwayCollege) {
-        const participantType = isHomeCollege
-          ? "home_college_participants"
-          : "away_college_participants";
-
-        const cloudFunctionUrl =
-          "https://addparticipant-65477nrg6a-uc.a.run.app"; // Cloud function URL
-
-        const cloudFunctionResponse = await fetch(cloudFunctionUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            matchId, // Use constructed matchId
-            participantType, // Send participantType
-            user, // Send entire user object
-            selectedMatch, // Send selectedMatch to add to user's matches
-          }),
-        });
-
-        const cloudFunctionData = await cloudFunctionResponse.json();
-        if (!cloudFunctionResponse.ok) {
-          console.error("Error:", cloudFunctionData.error);
-          alert(`Error: ${cloudFunctionData.error}`);
-        }
-      } else {
-        console.warn(
-          `Your college (${user.college}) does not match home or away college for this match.`
-        );
-        alert(
-          "Your college does not match the home or away college for this match."
-        );
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert(
-        "An error occurred while processing your request. Please try again."
-      );
-    }
-  };
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
@@ -175,20 +112,28 @@ const SchedulePage: React.FC = () => {
       {isFirstLoad ? (
         <LoadingScreen />
       ) : (
-        <div className="min-h-screen p-8">
+        <div className="min-h-screen p-8 flex flex-col items-center">
           <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
 
-          {/* Filters */}
-          <Filters filter={filter} updateFilter={updateFilter} />
+          {/* Main Layout */}
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl">
+            {/* Filters and Calendar Section */}
+            <div className="flex flex-col items-center lg:w-2/5">
+              <Filters filter={filter} updateFilter={updateFilter} />
+              <div className="sm:mt-6 w-full">
+                <Calendar onClickDay={handleDateClick} />
+              </div>
+            </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Calendar */}
-            <Calendar onClickDay={handleDateClick} />
-
-            {/* ListView or No Matches Message */}
-            <div className="lg:w-1/2 flex-col justify-center">
+            {/* ListView Section */}
+            <div className="lg:w-3/5 flex flex-col items-center">
+              {/* Scrollable ListView or No Matches Message */}
               {filteredMatches.length > 0 ? (
-                <ListView matches={filteredMatches} signUp={signUp} />
+                <div className="max-h-[700px] w-full overflow-y-auto p-4 rounded-lg">
+                  <ListView
+                    matches={filteredMatches}
+                  />
+                </div>
               ) : (
                 !isLoadingMore && (
                   <div className="text-center mt-8 text-gray-600">
@@ -196,6 +141,8 @@ const SchedulePage: React.FC = () => {
                   </div>
                 )
               )}
+
+              {/* Load More Button */}
               {hasMoreMatches && (
                 <div className="w-full flex justify-center mt-4">
                   {!isLoadingMore ? (
@@ -206,7 +153,10 @@ const SchedulePage: React.FC = () => {
                       Load More Matches
                     </button>
                   ) : (
-                    <p>Loading...</p>
+                    <div className="flex flex-row items-center justify-center space-x-2">
+                      <span>Loading</span>
+                      <FaSpinner className="animate-spin" />
+                    </div>
                   )}
                 </div>
               )}

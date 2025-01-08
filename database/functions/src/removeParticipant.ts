@@ -6,7 +6,7 @@ const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
 
-export const addParticipant = functions.https.onRequest((req, res) => {
+export const removeParticipant = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
       // Extract fields from the request body
@@ -31,7 +31,11 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       }
 
       // Query Firestore to find the match document by its ID
-      const matchDoc = await db.collection("matches").doc(matchId).get();
+      const matchDoc = await admin
+        .firestore()
+        .collection("matches")
+        .doc(matchId)
+        .get();
 
       if (!matchDoc.exists) {
         console.error("Match not found for matchId:", matchId);
@@ -59,29 +63,27 @@ export const addParticipant = functions.https.onRequest((req, res) => {
           ? matchData.home_college_participants
           : matchData.away_college_participants;
 
-      // Check for duplicate participant by email
-      const isDuplicate = participantsArray.some(
-        (participant: { email: string }) => {
-          return participant.email === user.email;
-        }
+      // Find the participant by email
+      const participantIndex = participantsArray.findIndex(
+        (participant: { email: string }) => participant.email === user.email
       );
 
-      if (isDuplicate) {
-        console.warn(`${user.email} is already a participant`);
+      if (participantIndex === -1) {
+        console.warn(`${user.email} is not a participant`);
         res
           .status(400)
-          .json({ error: `${user.email} is already a participant` });
+          .json({ error: `${user.email} is not a participant in this match` });
         return;
       }
 
-      // Add the participant (entire user object) and update Firestore
-      participantsArray.push(user);
+      // Remove the participant and update Firestore
+      participantsArray.splice(participantIndex, 1);
 
       await matchDoc.ref.update({
         [participantType]: participantsArray,
       });
 
-      // Add the match to the user's "matches" array in the "users" collection
+      // Update the user's "matches" array in the "users" collection
       const userDocRef = db.collection("users").doc(user.email);
       const userDoc = await userDocRef.get();
 
@@ -93,26 +95,24 @@ export const addParticipant = functions.https.onRequest((req, res) => {
 
       const userData = userDoc.data();
       const userMatches = userData?.matches || [];
-      const matchesPlayed = userData?.matches_played; // TEST
+      const userMatchesPlayed = userData?.matches_played;
 
-      // Check if the match is already in the user's matches array
-      const isMatchDuplicate = userMatches.some(
+      // Remove the match from the user's matches array
+      const matchIndex = userMatches.findIndex(
         (match: any) => match.matchId === matchId
       );
 
-      if (isMatchDuplicate) {
-        console.warn(`Match ${matchId} is already in your matches`);
-      } else {
-        userMatches.push({ matchId, ...selectedMatch });
+      if (matchIndex !== -1) {
+        userMatches.splice(matchIndex, 1);
 
         await userDocRef.update({
           matches: userMatches,
-          matches_played: matchesPlayed + 1, // Increment matches_played by 1
+          matches_played: userMatchesPlayed - 1,
         });
       }
 
       res.status(200).json({
-        message: `Successfully signed up and updated your matches!`,
+        message: `Successfully unregistered and updated your matches!`,
       });
     } catch (error) {
       console.error("Error processing request:", error);

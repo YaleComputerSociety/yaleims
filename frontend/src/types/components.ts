@@ -109,13 +109,10 @@ export interface CalendarViewProps {
 
 export interface CalendarMatchListProps {
   matches: Match[];
-  signUp: (match: Match) => void;
 }
 
 export interface MatchSignUpProps {
   match: Match;
-  onConfirm: () => void;
-  onCancel: () => void;
 }
 
 export interface CalendarFiltersProps {
@@ -124,4 +121,10 @@ export interface CalendarFiltersProps {
     key: keyof CalendarFiltersProps["filter"],
     value: string
   ) => void;
+}
+
+export interface Participant {
+  email: string;
+  name: string;
+  // Add other fields as needed
 }
