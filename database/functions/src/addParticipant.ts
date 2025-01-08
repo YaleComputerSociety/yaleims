@@ -31,11 +31,7 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       }
 
       // Query Firestore to find the match document by its ID
-      const matchDoc = await admin
-        .firestore()
-        .collection("matches")
-        .doc(matchId)
-        .get();
+      const matchDoc = await db.collection("matches").doc(matchId).get();
 
       if (!matchDoc.exists) {
         console.error("Match not found for matchId:", matchId);
@@ -86,7 +82,7 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       });
 
       // Add the match to the user's "matches" array in the "users" collection
-      const userDocRef = admin.firestore().collection("users").doc(user.email);
+      const userDocRef = db.collection("users").doc(user.email);
       const userDoc = await userDocRef.get();
 
       if (!userDoc.exists) {

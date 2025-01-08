@@ -2,24 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "../../context/UserContext";
-import ListView from "../../components/Profile/ListView";
+import ListView from "../../components/profile/ListView";
 import Image from "next/image";
 import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
-
-interface Participant {
-  email: string;
-  name: string;
-  // Add other fields as needed
-}
-
-interface Match {
-  home_college_participants: Participant[];
-  away_college_participants: Participant[];
-  timestamp: string;
-  home_college: string;
-  away_college: string;
-  // Add other fields as needed
-}
+import { Match, Participant } from "@src/types/components";
+import LoadingScreen from "@src/components/LoadingScreen";
 
 const Profile = () => {
   const { user, loading, signOut } = useUser();
@@ -34,14 +21,18 @@ const Profile = () => {
 
       setFetching(true);
       try {
-        const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || user.college;
+        const userCollegeAbbreviation =
+          toCollegeAbbreviation[user.college] || user.college;
 
-        const response = await fetch(`${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Error fetching matches: ${response.statusText}`);
@@ -70,8 +61,12 @@ const Profile = () => {
     const awayParticipants = match.away_college_participants || [];
 
     return (
-      homeParticipants.some((participant) => participant.email === user?.email) ||
-      awayParticipants.some((participant) => participant.email === user?.email)
+      homeParticipants.some(
+        (participant: Participant) => participant.email === user?.email
+      ) ||
+      awayParticipants.some(
+        (participant: Participant) => participant.email === user?.email
+      )
     );
   });
 
@@ -80,7 +75,9 @@ const Profile = () => {
     const awayParticipants = match.away_college_participants || [];
 
     return (
-      !homeParticipants.some((participant) => participant.email === user?.email) &&
+      !homeParticipants.some(
+        (participant) => participant.email === user?.email
+      ) &&
       !awayParticipants.some((participant) => participant.email === user?.email)
     );
   });
@@ -152,7 +149,6 @@ const Profile = () => {
     }
   };
 
-
   const unregister = async (selectedMatch: Match) => {
     try {
       // Construct the matchId based on home_college, away_college, and timestamp
@@ -167,23 +163,23 @@ const Profile = () => {
         return;
       }
       const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
-  
+
       const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
-  
+
       // Ensure user college abbreviation matches home/away college
       const isHomeCollege =
         selectedMatch.home_college === userCollegeAbbreviation;
       const isAwayCollege =
         selectedMatch.away_college === userCollegeAbbreviation;
-  
+
       if (isHomeCollege || isAwayCollege) {
         const participantType = isHomeCollege
           ? "home_college_participants"
           : "away_college_participants";
-  
+
         const cloudFunctionUrl =
           "https://removeparticipant-65477nrg6a-uc.a.run.app"; // Cloud function URL
-  
+
         const cloudFunctionResponse = await fetch(cloudFunctionUrl, {
           method: "POST",
           headers: {
@@ -196,12 +192,12 @@ const Profile = () => {
             selectedMatch, // Send selectedMatch to remove from user's matches
           }),
         });
-  
+
         const cloudFunctionData = await cloudFunctionResponse.json();
         if (!cloudFunctionResponse.ok) {
           console.error("Error:", cloudFunctionData.error);
           alert(`Error: ${cloudFunctionData.error}`);
-        } 
+        }
       } else {
         console.warn(
           `Your college (${user.college}) does not match home or away college for this match.`
@@ -217,7 +213,6 @@ const Profile = () => {
       );
     }
   };
-  
 
   const handleLogout = async () => {
     try {
@@ -228,11 +223,7 @@ const Profile = () => {
   };
 
   if (loading || fetching) {
-    return (
-      <div className="flex justify-center items-center h-screen text-xl text-gray-500">
-        <span>Loading...</span>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {
@@ -246,35 +237,10 @@ const Profile = () => {
   return (
     <div className="flex flex-col min-h-[80vh]">
       <div className="flex-grow m-3">
-        <div className="max-w-6xl mx-auto p-6 m-4 rounded-lg flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6">
-          {/* Left Side */}
-          <div className="lg:w-1/2 flex flex-col space-y-6">
-            <div className="flex flex-col space-y-2">
-              <div className="text-xl font-semibold mb-2">Your Upcoming Games</div>
-              {signedUpMatches.length > 0 ? (
-                <div className="w-full">
-                  <ListView matches={signedUpMatches} signUp={signUp} unregister={unregister}/>
-                </div>
-              ) : (
-                <div className="text-center mt-8 text-gray-600">No upcoming games found.</div>
-              )}
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <div className="text-xl font-semibold mb-2">Sign Up Today</div>
-              {availableMatches.length > 0 ? (
-                <div className="w-full">
-                  <ListView matches={availableMatches} signUp={signUp} unregister={unregister}/>
-                </div>
-              ) : (
-                <div className="text-center mt-8 text-gray-600">No available games to sign up for.</div>
-              )}
-            </div>
-          </div>
-
+        <div className="max-w-6xl mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:flex-row lg:space-y-0 lg:space-x-6">
           {/* Right Side: Stats */}
-          <div className="lg:w-1/2 flex justify-center items-center flex-col space-y-6">
-            <div className="p-6 border border-black rounded-lg space-y-4 flex justify-center items-center flex-col">
+          <div className="flex justify-center items-center flex-col space-y-6 lg:w-1/2 order-1 lg:order-2">
+            <div className="p-6 border bg-white dark:bg-black border-black dark:border-white rounded-lg space-y-4 flex justify-center items-center flex-col">
               <h2 className="text-2xl font-semibold">Your 2025 Stats Box!</h2>
               <div className="flex items-center space-x-4">
                 <Image
@@ -284,13 +250,13 @@ const Profile = () => {
                   height={100}
                   className="rounded-md object-contain"
                 />
-                {/* <h2 className="text-3xl font-semibold">{user.name}</h2> */}
               </div>
               <h2 className="text-2xl font-semibold">{user.name}</h2>
               <div className="space-y-2 flex items-center flex-col space-y-2">
-                {/* <p className="text-md font-bold">Games Played: {signedUpMatches.length}</p> */}
-                <p className="text-md font-bold">Games Played: {user.matches_played}</p>
-                <p className="text-md font-bold">Coins: {user.points}</p> {/* Update this to work with real coins*/}
+                <p className="text-md font-bold">
+                  Games Played: {user.matches_played}
+                </p>
+                <p className="text-md font-bold">Coins: {user.points}</p>
               </div>
             </div>
 
@@ -300,6 +266,45 @@ const Profile = () => {
             >
               Log Out
             </button>
+          </div>
+
+          {/* Left Side */}
+          <div className="flex flex-col space-y-6 lg:w-1/2 order-2 lg:order-1">
+            <div className="flex flex-col space-y-2">
+              <div className="text-xl font-semibold mb-2">
+                Your Upcoming Games
+              </div>
+              {signedUpMatches.length > 0 ? (
+                <div className="w-full">
+                  <ListView
+                    matches={signedUpMatches}
+                    signUp={signUp}
+                    unregister={unregister}
+                  />
+                </div>
+              ) : (
+                <div className="text-center mt-8 text-gray-600">
+                  No upcoming games found.
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <div className="text-xl font-semibold mb-2">Sign Up Today</div>
+              {availableMatches.length > 0 ? (
+                <div className="w-full">
+                  <ListView
+                    matches={availableMatches}
+                    signUp={signUp}
+                    unregister={unregister}
+                  />
+                </div>
+              ) : (
+                <div className="text-center mt-8 text-gray-600">
+                  No available games to sign up for.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

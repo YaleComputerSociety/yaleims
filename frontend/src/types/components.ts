@@ -125,3 +125,9 @@ export interface CalendarFiltersProps {
     value: string
   ) => void;
 }
+
+export interface Participant {
+  email: string;
+  name: string;
+  // Add other fields as needed
+}

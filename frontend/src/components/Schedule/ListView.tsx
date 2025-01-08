@@ -16,7 +16,11 @@ interface CalendarMatchListProps {
   unregister: (match: Match) => void; // New unregister function
 }
 
-const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp, unregister }) => {
+const ListView: React.FC<CalendarMatchListProps> = ({
+  matches,
+  signUp,
+  unregister,
+}) => {
   const { user, signIn } = useUser(); // Use already fetched user data
   const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
   const [signUpTriggered, setSignUpTriggered] = useState(false); // Tracks sign-up events
@@ -175,12 +179,24 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp, unregiste
                         isSignedUp ? (
                           <button
                             onClick={() => !loading && handleUnregister(match)} // Prevent clicking while loading
+                            onMouseEnter={(e) =>
+                              e.currentTarget.classList.replace(
+                                "bg-green-600",
+                                "bg-red-600"
+                              )
+                            } // Change to red on hover
+                            onMouseLeave={(e) =>
+                              e.currentTarget.classList.replace(
+                                "bg-red-600",
+                                "bg-green-600"
+                              )
+                            } // Revert to green when not hovering
                             className={`ml-5 w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out 
-                                ${
-                                  loading
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-red-600 hover:scale-110 focus:outline-none"
-                                }`}
+          ${
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-600 hover:scale-110"
+          }`}
                             disabled={loading} // Disable button while loading
                           >
                             {loading ? (
@@ -204,18 +220,18 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches, signUp, unregiste
                                 </svg>
                               </div>
                             ) : (
-                              "Unregister"
+                              "Playing"
                             )}
                           </button>
                         ) : (
                           <button
                             onClick={() => !loading && handleSignUp(match)} // Prevent clicking while loading
                             className={`ml-5 w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out 
-                                ${
-                                  loading
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-green-600 hover:scale-110 focus:outline-none"
-                                }`}
+          ${
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:scale-110"
+          }`}
                             disabled={loading} // Disable button while loading
                           >
                             {loading ? (

@@ -11,8 +11,6 @@ import { toCollegeAbbreviation } from "@src/utils/helpers";
 import { Match } from "@src/types/components";
 import Calendar from "@src/components/schedule/Calendar";
 
-const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
-
 const SchedulePage: React.FC = () => {
   const { user } = useUser(); // Use already fetched user data
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
@@ -22,6 +20,8 @@ const SchedulePage: React.FC = () => {
     date: null as Date | null,
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  console.log("hello");
 
   useEffect(() => {
     document.title = "Schedule";
@@ -49,6 +49,7 @@ const SchedulePage: React.FC = () => {
         }
 
         const data = await response.json();
+
         const filtered = data.filter((match: any) => {
           // Handle filtering
           const matchDate = match.timestamp ? new Date(match.timestamp) : null;
@@ -153,69 +154,69 @@ const SchedulePage: React.FC = () => {
   };
 
   const unregister = async (selectedMatch: Match) => {
-      try {
-        // Construct the matchId based on home_college, away_college, and timestamp
-        if (
-          !selectedMatch ||
-          !selectedMatch.home_college ||
-          !selectedMatch.away_college ||
-          !selectedMatch.timestamp
-        ) {
-          console.error("Missing fields in selectedMatch:", selectedMatch);
-          alert("Unable to proceed: Missing match details.");
-          return;
+    try {
+      // Construct the matchId based on home_college, away_college, and timestamp
+      if (
+        !selectedMatch ||
+        !selectedMatch.home_college ||
+        !selectedMatch.away_college ||
+        !selectedMatch.timestamp
+      ) {
+        console.error("Missing fields in selectedMatch:", selectedMatch);
+        alert("Unable to proceed: Missing match details.");
+        return;
+      }
+      const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
+
+      const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
+
+      // Ensure user college abbreviation matches home/away college
+      const isHomeCollege =
+        selectedMatch.home_college === userCollegeAbbreviation;
+      const isAwayCollege =
+        selectedMatch.away_college === userCollegeAbbreviation;
+
+      if (isHomeCollege || isAwayCollege) {
+        const participantType = isHomeCollege
+          ? "home_college_participants"
+          : "away_college_participants";
+
+        const cloudFunctionUrl =
+          "https://removeparticipant-65477nrg6a-uc.a.run.app"; // Cloud function URL
+
+        const cloudFunctionResponse = await fetch(cloudFunctionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            matchId, // Use constructed matchId
+            participantType, // Send participantType
+            user, // Send entire user object
+            selectedMatch, // Send selectedMatch to remove from user's matches
+          }),
+        });
+
+        const cloudFunctionData = await cloudFunctionResponse.json();
+        if (!cloudFunctionResponse.ok) {
+          console.error("Error:", cloudFunctionData.error);
+          alert(`Error: ${cloudFunctionData.error}`);
         }
-        const matchId = `${selectedMatch.home_college}-${selectedMatch.away_college}-${selectedMatch.timestamp}`;
-    
-        const userCollegeAbbreviation = toCollegeAbbreviation[user.college] || "";
-    
-        // Ensure user college abbreviation matches home/away college
-        const isHomeCollege =
-          selectedMatch.home_college === userCollegeAbbreviation;
-        const isAwayCollege =
-          selectedMatch.away_college === userCollegeAbbreviation;
-    
-        if (isHomeCollege || isAwayCollege) {
-          const participantType = isHomeCollege
-            ? "home_college_participants"
-            : "away_college_participants";
-    
-          const cloudFunctionUrl =
-            "https://removeparticipant-65477nrg6a-uc.a.run.app"; // Cloud function URL
-    
-          const cloudFunctionResponse = await fetch(cloudFunctionUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              matchId, // Use constructed matchId
-              participantType, // Send participantType
-              user, // Send entire user object
-              selectedMatch, // Send selectedMatch to remove from user's matches
-            }),
-          });
-    
-          const cloudFunctionData = await cloudFunctionResponse.json();
-          if (!cloudFunctionResponse.ok) {
-            console.error("Error:", cloudFunctionData.error);
-            alert(`Error: ${cloudFunctionData.error}`);
-          } 
-        } else {
-          console.warn(
-            `Your college (${user.college}) does not match home or away college for this match.`
-          );
-          alert(
-            "Your college does not match the home or away college for this match."
-          );
-        }
-      } catch (error) {
-        console.error("Error:", error);
+      } else {
+        console.warn(
+          `Your college (${user.college}) does not match home or away college for this match.`
+        );
         alert(
-          "An error occurred while processing your request. Please try again."
+          "Your college does not match the home or away college for this match."
         );
       }
-    };
+    } catch (error) {
+      console.error("Error:", error);
+      alert(
+        "An error occurred while processing your request. Please try again."
+      );
+    }
+  };
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
@@ -243,7 +244,11 @@ const SchedulePage: React.FC = () => {
             {/* ListView or No Matches Message */}
             <div className="lg:w-1/2 flex justify-center">
               {filteredMatches.length > 0 ? (
-                <ListView matches={filteredMatches} signUp={signUp} unregister={unregister}/>
+                <ListView
+                  matches={filteredMatches}
+                  signUp={signUp}
+                  unregister={unregister}
+                />
               ) : (
                 <div className="text-center mt-8 text-gray-600">
                   No matches found.

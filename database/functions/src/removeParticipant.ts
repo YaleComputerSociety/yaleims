@@ -84,7 +84,7 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
       });
 
       // Update the user's "matches" array in the "users" collection
-      const userDocRef = admin.firestore().collection("users").doc(user.email);
+      const userDocRef = db.collection("users").doc(user.email);
       const userDoc = await userDocRef.get();
 
       if (!userDoc.exists) {
