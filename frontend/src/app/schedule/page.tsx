@@ -256,7 +256,7 @@ const SchedulePage: React.FC = () => {
           {/* Filters */}
           <Filters filter={filter} updateFilter={updateFilter} />
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-8 lg:justify-center">
             {/* Calendar */}
             <Calendar onClickDay={handleDateClick} />
 
