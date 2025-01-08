@@ -152,7 +152,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           <div className="text-gray-500">{location}</div>
         </div>
 
-        <div className="flex">
+        <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-0">
           {/* Sign Up/Unregister Button */}
           <button
             onClick={() =>
