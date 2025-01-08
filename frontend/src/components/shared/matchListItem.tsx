@@ -37,6 +37,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       })
     : "Time TBD";
 
+  const isFutureMatch =
+    match.timestamp && new Date(match.timestamp) > new Date();
+
   const isUserTeam =
     user &&
     (match.home_college === user.college ||
@@ -52,7 +55,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   });
 
   return (
-    <li className="bg-white dark:bg-black shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-ou max-w-3xl">
+    <li className="bg-white dark:bg-black shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-out max-w-3xl">
       <div className="flex justify-between items-center">
         <div>
           <div className="text-2xl font-bold mb-1">
@@ -76,12 +79,24 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           )}
         </div>
         <div className="flex">
-          {isUserTeam && (
+          {isFutureMatch && isUserTeam && (
             <button
               onClick={() =>
                 !loading &&
                 (isSignedUp ? handleUnregister(match) : handleSignUp(match))
               }
+              onMouseEnter={(e) => {
+                if (isSignedUp) {
+                  e.currentTarget.classList.add("bg-red-600");
+                  e.currentTarget.classList.remove("bg-green-600");
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isSignedUp) {
+                  e.currentTarget.classList.add("bg-green-600");
+                  e.currentTarget.classList.remove("bg-red-600");
+                }
+              }}
               className={`ml-5 w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
                 loading
                   ? "bg-gray-400 cursor-not-allowed"
@@ -91,7 +106,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
               }`}
               disabled={loading}
             >
-              {loading ? "Loading..." : isSignedUp ? "Playing" : "Sign Up"}
+              {loading ? "Loading..." : isSignedUp ? "Playing!" : "Sign Up"}
             </button>
           )}
           <button

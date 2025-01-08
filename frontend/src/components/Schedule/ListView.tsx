@@ -4,12 +4,6 @@ import MatchListItem from "../shared/matchListItem";
 import { Match } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
 
-interface CalendarMatchListProps {
-  matches: Match[];
-  signUp: (match: Match) => void;
-  unregister: (match: Match) => void;
-}
-
 const ListView: React.FC<CalendarMatchListProps> = ({
   matches,
   signUp,
@@ -45,20 +39,20 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     if (user) fetchSignedUpMatches();
   }, [user, signUpTriggered]);
 
-  // Get all unique dates between the first and last match
   const getAllDates = () => {
     if (matches.length === 0) return [];
 
-    const dates = [];
+    const datesSet = new Set<string>();
     const startDate = new Date(matches[0].timestamp);
     const endDate = new Date(matches[matches.length - 1].timestamp);
 
     let currentDate = startDate;
     while (currentDate <= endDate) {
-      dates.push(currentDate);
+      datesSet.add(currentDate.toISOString());
       currentDate = addDays(currentDate, 1);
     }
-    return dates;
+
+    return Array.from(datesSet).map((isoDate) => new Date(isoDate));
   };
 
   const allDates = getAllDates();
@@ -70,9 +64,9 @@ const ListView: React.FC<CalendarMatchListProps> = ({
           No future matches found.
         </div>
       ) : (
-        <ul className="space-y-4">
+        <div className="space-y-4">
           {!user && (
-            <li
+            <div
               className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
                 hover:shadow-lg hover:scale-110 transition-transform duration-300 ease-in-out text-center"
               onClick={signIn}
@@ -80,19 +74,22 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               <span className="text-white dark:text-gray-200 font-medium">
                 Sign in with Google to sign up for matches!
               </span>
-            </li>
+            </div>
           )}
 
           {allDates.map((date) => {
-            const dateMatches = matches.filter((match) =>
+            const dateMatches = matches.filter((match: Match) =>
               isSameDay(new Date(match.timestamp), date)
             );
 
             return (
-              <li key={date.toISOString()} className="space-y-2">
+              <div
+                key={`date-${date.toISOString()}`}
+                className="space-y-2 list-none"
+              >
                 {/* Date Heading */}
                 <div
-                  className={`ml-4 text-xl font-semibold  ${
+                  className={`ml-4 text-xl font-semibold ${
                     dateMatches.length === 0
                       ? "text-gray-400 text-xs"
                       : "text-black dark:text-white"
@@ -103,7 +100,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
 
                 {/* Matches for the Date */}
                 {dateMatches.length > 0
-                  ? dateMatches.map((match) => (
+                  ? dateMatches.map((match: Match) => (
                       <MatchListItem
                         key={match.id}
                         match={match}
@@ -128,10 +125,10 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                       />
                     ))
                   : null}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

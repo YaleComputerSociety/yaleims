@@ -35,8 +35,6 @@ const SchedulePage: React.FC = () => {
     setChunksLoaded(0);
   };
 
-  console.log("hello");
-
   useEffect(() => {
     document.title = "Schedule";
   }, []);
