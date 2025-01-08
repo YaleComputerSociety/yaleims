@@ -4,6 +4,11 @@ import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
+import { FaCaretDown } from "react-icons/fa";
+import { FaCaretUp } from "react-icons/fa";
+import { TbCaretLeftRightFilled } from "react-icons/tb";
+import CPodium from "./Podium3";
+import Title from "./Title";
 
 const Leaderboard: React.FC = () => {
   const router = useRouter();
@@ -30,6 +35,7 @@ const Leaderboard: React.FC = () => {
 
         const data = await response.json();
         const sorted = data.sort((a: any, b: any) => b.points - a.points);
+        console.log(data)
         setSortedColleges(() => sorted);
       } catch (error) {
         console.error("Failed to fetch leaderboard:", error);
@@ -50,85 +56,6 @@ const Leaderboard: React.FC = () => {
     router.push("/scores");
   };
 
-  const renderPodium = (topColleges: any) => {
-    const podiumItems = [
-      {
-        place: "second",
-        college: topColleges[1],
-        size: "small",
-        offset: "translate-y-6",
-      },
-      {
-        place: "first",
-        college: topColleges[0],
-        size: "large",
-        offset: "translate-y-0",
-      },
-      {
-        place: "third",
-        college: topColleges[2],
-        size: "small",
-        offset: "translate-y-6",
-      },
-    ];
-
-    const mobilePodiumItems = [
-      {
-        place: "first",
-        college: topColleges[0],
-        size: "large",
-        offset: "translate-y-0",
-      },
-    ];
-
-    return (
-      <div className="flex flex-row justify-center md:gap-10 items-end space-x-6">
-        {podiumItems.map(({ place, college, size, offset }, index) =>
-          college ? (
-            <div
-              key={index}
-              onClick={() => handleCollegeClick(college.name)}
-              className={`flex flex-col items-center ${offset}text-center mb-3 cursor-pointer`}
-            >
-              <div
-                className={`relative ${size === "large" ? "w-52 h-52" : "w-24 h-24"
-                  } flex items-center justify-center mb-4`}
-              >
-                {/* Main College Flag */}
-                <Image
-                  src={`/college_flags/${college.name.replace(
-                    /\s+/g,
-                    " "
-                  )}.png`}
-                  alt={college.name}
-                  width={size === "large" ? 160 : 96}
-                  height={size === "large" ? 160 : 96}
-                  className="object-contain p-3"
-                />
-
-                {/* Overlay Image */}
-                <Image
-                  src={`/college_flags/${place}.png`}
-                  alt={`${place} Place Overlay`}
-                  width={size === "large" ? 400 : 50}
-                  height={size === "large" ? 400 : 50}
-                  layout="fixed"
-                  className={`absolute ${place === "first" ? "top-10" : "top-20"
-                    }`}
-                />
-              </div>
-
-              <h3 className="font-semibold text-sm mt-10 text-center">
-                {college.name}
-              </h3>
-              <p className="text-sm text-gray-500">Points: {college.points}</p>
-            </div>
-          ) : null
-        )}
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -140,38 +67,110 @@ const Leaderboard: React.FC = () => {
   return (
     <div className="rounded-lg overflow-hidden max-w-4xl mx-auto">
       {/* Podium */}
-      <div className="py-6">{renderPodium(sortedColleges.slice(0, 3))}</div>
+      <Title />
+      <div className="flex justify-center gap-x-12 items-end md:max-w-[80%] max-w-[60%] mx-auto">
+        <CPodium
+          posHeight="mg:h-48 h-32"
+          imgSrc={`/college_flags/${sortedColleges[2].name}.png`}
+          overlaySrc="/college_flags/bronze_overlay.png"
+          imgsConfig="mg:h-[170px] h-[150px]"
+          overlayHeight={160}
+          overlayWidth={160}
+          overlayConfig="mg:h-[190px] mg:w-[165px] h-[150px] w-[120px]"
+          college={sortedColleges[2]}
+          onSelect={handleCollegeClick}
+        />
+        <CPodium
+          posHeight="mg:h-64 h-44 w-44"
+          imgSrc={`/college_flags/${sortedColleges[0].name}.png`}
+          overlaySrc="/college_flags/gold_overlay.png"
+          imgsConfig="mg:h-[170px] h-[150px]"
+          overlayHeight={400}
+          overlayWidth={400}
+          overlayConfig="mg:h-[190px] mg:w-[210px] h-[150px] w-[170px]"
+          college={sortedColleges[0]}
+          onSelect={handleCollegeClick}
+        />
+        <CPodium
+          posHeight="mg:h-52 h-36 "
+          imgSrc={`/college_flags/${sortedColleges[1].name}.png`}
+          overlaySrc="/college_flags/silver_overlay.png"
+          imgsConfig="mg:h-[160px] h-[140px]"
+          overlayHeight={160}
+          overlayWidth={160}
+          overlayConfig="mg:h-[190px] mg:w-[165px] h-[150px] w-[120px]"
+          college={sortedColleges[1]}
+          onSelect={handleCollegeClick}
+        />
+      </div>
 
       {/* Full Leaderboard */}
       <div className="overflow-x-auto">
-        <table className="w-full max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200 mt-4">
+        <table className="w-full md:max-w-[90%] max-w-[80%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200">
           <thead className="bg-white dark:bg-[#132750]">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
-                Rank
+            <tr className="hidden md:table-row">
+              <th className="px-6 py-3 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                RANK
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
-                College
+              <th className="px-6 py-3 text-leftCAM text-xs font-medium border border-gray-300 dark:border-gray-600">
+                COLLEGE
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
-                Change?
+              <th className="px-6 py-3 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                WINS
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
-                Points
+              <th className="px-6 py-3 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                TIES
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                LOSSES
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                FORFEITS
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                TOTAL PTS
+              </th>
+            </tr>
+            <tr className="md:hidden">
+              <th className="xs:px-5 px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                R
+              </th>
+              <th className="xs:px-5 px-2 py-2 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
+                COLLEGE
+              </th>
+              <th className="xs:px-5 px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                W
+              </th>
+              <th className="xs:px-5 px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                T
+              </th>
+              <th className="xs:px-5 px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                L
+              </th>
+              <th className="xs:px-5 px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                F
+              </th>
+              <th className="xs:px-5 px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
+                PTS
               </th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-[#132750] divide-y divide-gray-200">
-            {sortedColleges.slice(3).map((college, index) => (
+            {sortedColleges.slice(1).map((college, index) => (
               <tr
                 key={college.id}
                 onClick={() => handleCollegeClick(college.name)}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                className={`hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${college.rank > 1 && college.rank < 4 ? 'md:hidden' : ''}`}
               >
-                <td className="w-[50px] text-sm font-medium border border-gray-300 dark:border-gray-600 text-center">
-                  {index + 4}
+                <td className={`md:w-[50px] w-[40px] mg:text-sm text-xs font-medium border border-gray-300 dark:border-gray-600 text-center`}>
+                  <div className="flex flex-col items-center">
+                    {(college.prevRank - college.rank > 0) && <FaCaretUp style={{ color: '00C707' }} />}
+                    {college.rank}
+                    {(college.prevRank - college.rank < 0) && <FaCaretDown style={{ color: 'DF2C2C' }} />}
+                    {/* maybe can display this for draw? {(college.prevRank - college.rank === 0) && <TbCaretLeftRightFilled style={{ color: 'ash' }} />} */}
+                  </div>
                 </td>
-                <td className="px-6 py-4 text-sm border border-gray-300 dark:border-gray-600">
+                <td className="md:w-[120px] w-30px mg:text-sm text-xs border border-gray-300 dark:border-gray-600">
                   <div className="flex items-center">
                     <Image
                       src={`/college_flags/${college.name.replace(
@@ -181,17 +180,26 @@ const Leaderboard: React.FC = () => {
                       alt={college.name}
                       width={24}
                       height={24}
-                      className="mr-2 object-contain"
+                      className="mr-2 object-contain md:h-[24px] md:w-[24px] h-6 w-6"
                       unoptimized
                     />
                     {college.name}
                   </div>
                 </td>
-                <td className="w-[75px] text-sm text-center border border-gray-300 dark:border-gray-600">
-                  {college.dayChange}
+                <td className="md:w-[75px] w-[20px] mg:text-sm text-xs text-center border border-gray-300 dark:border-gray-600">
+                  {college.wins}
                 </td>
-                <td className="w-[150px] px-6 py-4 text-sm border border-gray-300 dark:border-gray-600">
-                  {college.points} points
+                <td className="md:w-[75px] w-[20px] mg:text-sm text-xs text-center border border-gray-300 dark:border-gray-600">
+                  {college.ties}
+                </td>
+                <td className="md:w-[75px] w-[20px]  mg:text-sm text-xs text-center border border-gray-300 dark:border-gray-600">
+                  {college.losses}
+                </td>
+                <td className="md:w-[75px] w-[20px]  mg:text-sm text-xs text-center border border-gray-300 dark:border-gray-600">
+                  {college.forfeits}
+                </td>
+                <td className="md:w-[150px] w-50px md:px-6 md:py-4 px-2 py-2 mg:text-sm text-xs text-center border border-gray-300 dark:border-gray-600">
+                  {college.points}
                 </td>
               </tr>
             ))}

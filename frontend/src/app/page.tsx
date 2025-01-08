@@ -22,12 +22,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen">
       <br />
-      <div className="xs:hidden">
-        <LeaderboardMobile />
-      </div>
-      <div className="hidden xs:block">
-        <Leaderboard />
-      </div>
+      <Leaderboard />
     </div>
   );
 };
