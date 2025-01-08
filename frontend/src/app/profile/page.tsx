@@ -243,7 +243,7 @@ const Profile = () => {
         <div className="max-w-6xl mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:flex-row lg:space-y-0 lg:space-x-6">
           {/* Right Side: Stats */}
           <div className="flex justify-center items-center flex-col space-y-6 lg:w-1/2 order-1 lg:order-2">
-            <div className="p-6 border bg-white dark:bg-black border-black dark:border-white rounded-lg space-y-4 flex justify-center items-center flex-col">
+            <div className="p-6  bg-white dark:bg-black shadow-lg rounded-lg space-y-4 flex justify-center items-center flex-col">
               <h2 className="text-2xl font-semibold">Your 2025 Stats Box!</h2>
               <div className="flex items-center space-x-4">
                 <Image
