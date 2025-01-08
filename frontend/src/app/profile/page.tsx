@@ -106,7 +106,7 @@ const Profile = () => {
     <div className="flex flex-col min-h-[80vh]">
       <div className="flex-grow m-3">
         <h2 className="text-2xl font-semibold text-center mt-10">
-          Hey, {user.name}!
+          Hey {user.name.split(" ")[0]}, play some IMs today!
         </h2>
         <div className="mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:items-start lg:flex-row lg:space-y-0 lg:space-x-6">
           {/* Right Side: Stats */}
