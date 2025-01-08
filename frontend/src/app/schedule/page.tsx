@@ -250,24 +250,44 @@ const SchedulePage: React.FC = () => {
       {isFirstLoad ? (
         <LoadingScreen />
       ) : (
-        <div className="min-h-screen p-8">
+        <div className="min-h-screen p-8 flex flex-col items-center">
           <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
 
-          {/* Filters */}
-          <Filters filter={filter} updateFilter={updateFilter} />
+          {/* Main Layout */}
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl">
+            {/* Filters and Calendar Section */}
+            <div className="flex flex-col items-center lg:w-2/5">
+              <Filters filter={filter} updateFilter={updateFilter} />
+              <div className="sm:mt-6 w-full">
+                <Calendar onClickDay={handleDateClick} />
+              </div>
+            </div>
 
-          <div className="flex flex-col lg:flex-row gap-8 lg:justify-center">
-            {/* Calendar */}
-            <Calendar onClickDay={handleDateClick} />
+            {/* ListView Section */}
+            <div className="lg:w-3/5 flex flex-col items-center">
+              {/* Title with Selected Date */}
+              {filteredMatches.length > 0 && (
+                <h2 className="text-2xl font-semibold mb-4">
+                  <span>
+                    {filter.date.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </h2>
+              )}
 
-            {/* ListView or No Matches Message */}
-            <div className="lg:w-1/2 flex-col justify-center">
+              {/* Scrollable ListView or No Matches Message */}
               {filteredMatches.length > 0 ? (
-                <ListView
-                  matches={filteredMatches}
-                  signUp={signUp}
-                  unregister={unregister}
-                />
+                <div className="max-h-[700px] w-full overflow-y-auto p-4 rounded-lg">
+                  <ListView
+                    matches={filteredMatches}
+                    signUp={signUp}
+                    unregister={unregister}
+                  />
+                </div>
               ) : (
                 !isLoadingMore && (
                   <div className="text-center mt-8 text-gray-600">
@@ -275,6 +295,8 @@ const SchedulePage: React.FC = () => {
                   </div>
                 )
               )}
+
+              {/* Load More Button */}
               {hasMoreMatches && (
                 <div className="w-full flex justify-center mt-4">
                   {!isLoadingMore ? (

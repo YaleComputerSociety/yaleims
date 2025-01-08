@@ -52,7 +52,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   });
 
   return (
-    <li className="bg-white dark:bg-black shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-ou max-w-2xl">
+    <li className="bg-white dark:bg-black shadow-lg p-6 rounded-lg hover:shadow-xl transition duration-300 ease-in-ou max-w-3xl">
       <div className="flex justify-between items-center">
         <div>
           <div className="text-2xl font-bold mb-1">

@@ -39,25 +39,31 @@ const Calendar: React.FC<MyCalendarProps> = ({ onClickDay }) => {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   return (
-    <div className="p-6 bg-white dark:bg-black rounded-lg shadow-md w-96 h-[350px] mx-auto">
+    <div className="p-6 bg-white dark:bg-black rounded-lg shadow-md w-[500px] max-w-full mx-auto aspect-square pt-10">
       {/* Header with Month Navigation */}
-      <div className="flex justify-between items-center mb-4">
-        <button onClick={prevMonth} className="text-blue-500">
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={prevMonth}
+          className="text-blue-500 text-sm xs:text-lg"
+        >
           &lt; Prev
         </button>
-        <h2 className="text-lg font-bold">
+        <h2 className="text-sm xs:text-xl font-bold">
           {format(currentDate, "MMMM yyyy")}
         </h2>
-        <button onClick={nextMonth} className="text-blue-500">
+        <button
+          onClick={nextMonth}
+          className="text-blue-500 text-sm xs:text-lg"
+        >
           Next &gt;
         </button>
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-4">
         {/* Weekday Labels */}
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="text-center font-bold">
+          <div key={day} className="text-center font-bold text-sm xs:text-lg">
             {day}
           </div>
         ))}
@@ -67,7 +73,7 @@ const Calendar: React.FC<MyCalendarProps> = ({ onClickDay }) => {
           <div
             key={day.toISOString()}
             onClick={() => handleClickDay(day)}
-            className={`text-center p-2 rounded-full cursor-pointer ${
+            className={`text-center aspect-square flex items-center justify-center rounded-full cursor-pointer text-sm xs:text-lg ${
               format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
                 ? "bg-blue-500 text-white" // Highlight today's date
                 : selectedDate &&
