@@ -265,20 +265,6 @@ const SchedulePage: React.FC = () => {
 
             {/* ListView Section */}
             <div className="lg:w-3/5 flex flex-col items-center">
-              {/* Title with Selected Date */}
-              {filteredMatches.length > 0 && (
-                <h2 className="text-2xl font-semibold mb-4">
-                  <span>
-                    {filter.date.toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
-                </h2>
-              )}
-
               {/* Scrollable ListView or No Matches Message */}
               {filteredMatches.length > 0 ? (
                 <div className="max-h-[700px] w-full overflow-y-auto p-4 rounded-lg">

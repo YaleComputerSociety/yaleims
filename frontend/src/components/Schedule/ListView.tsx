@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
 import MatchListItem from "../shared/matchListItem";
 import { Match } from "@src/types/components";
+import { format, addDays, isSameDay } from "date-fns";
 
 interface CalendarMatchListProps {
   matches: Match[];
@@ -44,6 +45,24 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     if (user) fetchSignedUpMatches();
   }, [user, signUpTriggered]);
 
+  // Get all unique dates between the first and last match
+  const getAllDates = () => {
+    if (matches.length === 0) return [];
+
+    const dates = [];
+    const startDate = new Date(matches[0].timestamp);
+    const endDate = new Date(matches[matches.length - 1].timestamp);
+
+    let currentDate = startDate;
+    while (currentDate <= endDate) {
+      dates.push(currentDate);
+      currentDate = addDays(currentDate, 1);
+    }
+    return dates;
+  };
+
+  const allDates = getAllDates();
+
   return (
     <div>
       {matches.length === 0 ? (
@@ -63,30 +82,55 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               </span>
             </li>
           )}
-          {matches.map((match) => (
-            <MatchListItem
-              key={match.id}
-              match={match}
-              user={user}
-              signedUpMatches={signedUpMatches}
-              loading={loading}
-              handleSignUp={(m) => {
-                setLoading(true);
-                signUp(m).finally(() => {
-                  setSignUpTriggered((prev) => !prev);
-                  setLoading(false);
-                });
-              }}
-              handleUnregister={(m) => {
-                setLoading(true);
-                unregister(m).finally(() => {
-                  setSignUpTriggered((prev) => !prev);
-                  setLoading(false);
-                });
-              }}
-              handleAddToGCal={handleAddToGCal}
-            />
-          ))}
+
+          {allDates.map((date) => {
+            const dateMatches = matches.filter((match) =>
+              isSameDay(new Date(match.timestamp), date)
+            );
+
+            return (
+              <li key={date.toISOString()} className="space-y-2">
+                {/* Date Heading */}
+                <div
+                  className={`ml-4 text-xl font-semibold  ${
+                    dateMatches.length === 0
+                      ? "text-gray-400 text-xs"
+                      : "text-black"
+                  }`}
+                >
+                  {format(date, "EEEE, MMMM d, yyyy")}
+                </div>
+
+                {/* Matches for the Date */}
+                {dateMatches.length > 0
+                  ? dateMatches.map((match) => (
+                      <MatchListItem
+                        key={match.id}
+                        match={match}
+                        user={user}
+                        signedUpMatches={signedUpMatches}
+                        loading={loading}
+                        handleSignUp={(m) => {
+                          setLoading(true);
+                          signUp(m).finally(() => {
+                            setSignUpTriggered((prev) => !prev);
+                            setLoading(false);
+                          });
+                        }}
+                        handleUnregister={(m) => {
+                          setLoading(true);
+                          unregister(m).finally(() => {
+                            setSignUpTriggered((prev) => !prev);
+                            setLoading(false);
+                          });
+                        }}
+                        handleAddToGCal={handleAddToGCal}
+                      />
+                    ))
+                  : null}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
