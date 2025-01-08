@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
-import MatchListItem from "../shared/matchListItem";
+import MatchListItem from "./MatchListItem";
 import { Match, CalendarMatchListProps } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
 
