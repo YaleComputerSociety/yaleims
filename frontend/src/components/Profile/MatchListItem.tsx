@@ -127,7 +127,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
     <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out">
       <div className="flex items-center">
         {/* Sport Emoji */}
-        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-3xl">
+        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-3xl mr-4 hidden xs:block">
           {emojiMap[match.sport]}
         </div>
 
@@ -147,14 +147,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex-shrink-0 flex flex-row items-end space-y-2 gap-3">
+        <div className="flex-shrink-0 flex flex-col sm:flex-row items-end space-y-2 gap-3 items-center">
           <button
             onClick={() =>
               isSignedUpState ? handleUnregister() : handleSignUp()
             }
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
+            className={`w-24 xs:w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
               isLoading || !isUserTeam
                 ? "bg-gray-400 cursor-not-allowed"
                 : isSignedUpState
