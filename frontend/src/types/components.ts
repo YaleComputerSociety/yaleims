@@ -110,6 +110,7 @@ export interface CalendarViewProps {
 export interface CalendarMatchListProps {
   matches: Match[];
   signUp: (match: Match) => void;
+  unregister: (match: Match) => void;
 }
 
 export interface MatchSignUpProps {

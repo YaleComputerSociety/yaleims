@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
 import MatchListItem from "../shared/matchListItem";
-import { Match } from "@src/types/components";
+import { Match, CalendarMatchListProps } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
+import { generateGoogleCalendarLink } from "@src/utils/helpers";
 
 const ListView: React.FC<CalendarMatchListProps> = ({
   matches,
