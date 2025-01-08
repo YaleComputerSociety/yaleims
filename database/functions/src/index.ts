@@ -6,6 +6,8 @@ import { fetchOrAddUser } from "./fetchOrAddUser.js";
 import { getCollege } from "./getCollege.js";
 import { getMatchesPaginated } from "./getMatchesPaginated.js";
 import { getUnscoredMatches } from "./getUnscoredMatches.js";
+import { getMatches } from "./getMatches.js";
+import { getSchedulePaginated } from "./getSchedulePaginated.js";
 
 export {
   getLeaderboard,
@@ -16,4 +18,6 @@ export {
   getMatchesPaginated,
   getUnscoredMatches,
   fetchOrAddUser,
+  getMatches,
+  getSchedulePaginated,
 };
