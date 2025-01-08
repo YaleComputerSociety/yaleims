@@ -3,42 +3,36 @@ import { useUser } from "@src/context/UserContext";
 import MatchListItem from "../shared/matchListItem";
 import { Match, CalendarMatchListProps } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
-import { generateGoogleCalendarLink } from "@src/utils/helpers";
 
-const ListView: React.FC<CalendarMatchListProps> = ({
-  matches,
-  signUp,
-  unregister,
-}) => {
+const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
   const { user, signIn } = useUser();
-  const [signedUpMatches, setSignedUpMatches] = useState<Match[]>([]);
-  const [signUpTriggered, setSignUpTriggered] = useState(false);
+  const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchSignedUpMatches = async () => {
+  const getUserMatches = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       const response = await fetch(
-        `https://us-central1-yims-125a2.cloudfunctions.net/getUserMatches?userId=${user.email}`
+        `https://getusermatches-65477nrg6a-uc.a.run.app?userId=${user.email}`
       );
-      if (!response.ok) throw new Error("Failed to fetch signed-up matches");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user matches");
+      }
       const data = await response.json();
-      setSignedUpMatches(data);
+      setUserMatches(data);
+      console.log(data);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching user matches:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddToGCal = (match: Match) => {
-    const link = generateGoogleCalendarLink(match);
-    window.open(link, "_blank");
-  };
-
   useEffect(() => {
-    if (user) fetchSignedUpMatches();
-  }, [user, signUpTriggered]);
+    getUserMatches();
+  }, [user]);
 
   const getAllDates = () => {
     if (matches.length === 0) return [];
@@ -58,6 +52,14 @@ const ListView: React.FC<CalendarMatchListProps> = ({
 
   const allDates = getAllDates();
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full mt-6 h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {matches.length === 0 ? (
@@ -72,7 +74,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                 hover:shadow-lg hover:scale-110 transition-transform duration-300 ease-in-out text-center"
               onClick={signIn}
             >
-              <span className="text-white dark:text-gray-200 font-medium">
+              <span className="text-white dark:text-gray-200 font-medium rounded-lg">
                 Sign in with Google to sign up for matches!
               </span>
             </div>
@@ -101,30 +103,25 @@ const ListView: React.FC<CalendarMatchListProps> = ({
 
                 {/* Matches for the Date */}
                 {dateMatches.length > 0
-                  ? dateMatches.map((match: Match) => (
-                      <MatchListItem
-                        key={match.id}
-                        match={match}
-                        user={user}
-                        signedUpMatches={signedUpMatches}
-                        loading={loading}
-                        handleSignUp={(m) => {
-                          setLoading(true);
-                          signUp(m).finally(() => {
-                            setSignUpTriggered((prev) => !prev);
-                            setLoading(false);
-                          });
-                        }}
-                        handleUnregister={(m) => {
-                          setLoading(true);
-                          unregister(m).finally(() => {
-                            setSignUpTriggered((prev) => !prev);
-                            setLoading(false);
-                          });
-                        }}
-                        handleAddToGCal={handleAddToGCal}
-                      />
-                    ))
+                  ? dateMatches.map((match: Match) => {
+                      console.log(userMatches, match.timestamp);
+                      const isSignedUp = userMatches.some((userMatch) => {
+                        console.log(userMatch.timestamp, match.timestamp);
+                        return (
+                          new Date(userMatch.timestamp).getTime() ===
+                          new Date(match.timestamp).getTime()
+                        );
+                      });
+
+                      return (
+                        <MatchListItem
+                          key={match.id}
+                          match={match}
+                          user={user}
+                          isSignedUp={isSignedUp}
+                        />
+                      );
+                    })
                   : null}
               </div>
             );

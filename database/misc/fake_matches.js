@@ -24,7 +24,7 @@ const fake_matches = [
   {
     forfeit: false,
     home_college: "JE",
-    away_college: "MC",
+    away_college: "BF",
     home_college_participants: [],
     away_college_participants: [],
     home_college_score: null,
@@ -36,7 +36,7 @@ const fake_matches = [
   },
   {
     forfeit: false,
-    home_college: "SY",
+    home_college: "BF",
     away_college: "MY",
     home_college_participants: [],
     away_college_participants: [],

@@ -109,14 +109,10 @@ export interface CalendarViewProps {
 
 export interface CalendarMatchListProps {
   matches: Match[];
-  signUp: (match: Match) => void;
-  unregister: (match: Match) => void;
 }
 
 export interface MatchSignUpProps {
   match: Match;
-  onConfirm: () => void;
-  onCancel: () => void;
 }
 
 export interface CalendarFiltersProps {
