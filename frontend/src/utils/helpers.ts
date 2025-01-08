@@ -43,7 +43,7 @@ export const sports: Sport[] = [
     id: "3",
     name: "Spikeball",
     points_for_win: 6,
-    emoji: "🤾",
+    emoji: "💥",
     season: { "2024-2025": "Fall" },
   },
   {
@@ -80,7 +80,7 @@ export const sportsMap: SportMap = {
 
 export const emojiMap: EmojiMap = {
   "Flag Football": "🏈",
-  Spikeball: "🤾",
+  Spikeball: "💥",
   Cornhole: "🌽",
   Pickleball: "🥒",
   "Table Tennis": "🏓",

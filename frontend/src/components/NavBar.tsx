@@ -104,9 +104,7 @@ const NavBar: React.FC = () => {
       </div>
       <div
         className={`${
-          isClick
-            ? "bg-white dark:bg-gray-700 pt-4 rounded-lg"
-            : "bg-transparent"
+          isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
         } -mt-2 md:hidden flex items-center justify-between`}
       >
         <button onClick={toggleNavbar} className="pl-4">
@@ -149,7 +147,7 @@ const NavBar: React.FC = () => {
           <div className="flex justify-between items-center">
             {!isClick ? (
               loading ? (
-                <div className="animate-pulse text-gray-800 dark:text-gray-300">
+                <div className="animate-pulse text-gray-800 dark:text-gray-300 py-1 px-3">
                   Loading...
                 </div>
               ) : user ? (
@@ -173,7 +171,7 @@ const NavBar: React.FC = () => {
         </div>
       </div>
       {isClick && (
-        <div className="md:hidden -mt-4 bg-white dark:bg-gray-700 flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
+        <div className="md:hidden -mt-4 bg-white dark:bg-black flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
           {links.map((link, index) => (
             <Link
               key={index + "-second"}

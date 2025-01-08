@@ -133,17 +133,21 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
 
         {/* Match Details */}
         <div className="flex-grow flex flex-col space-y-1">
-          <div className="text-lg font-bold">
+          <div className="text-sm sm:text-lg font-bold">
             {toCollegeName[match.home_college || "TBD"]} vs{" "}
             {toCollegeName[match.away_college || "TBD"]}
           </div>
-          <div className="text-sm text-gray-600 font-semibold">
-            {match.sport}
+          <div className="flex flex-row">
+            <div className="text-xs sm:text-sm text-gray-600 font-semibold">
+              {match.sport}
+            </div>
+            <div className="ml-1 xs:hidden text-xs">{emojiMap[match.sport]}</div>
           </div>
-          <div className="text-sm text-gray-500">
+
+          <div className="text-xs sm:text-sm text-gray-500">
             {matchDate} at {matchTime}
           </div>
-          <div className="text-sm text-gray-500">{location}</div>
+          <div className="text-xs sm:text-sm text-gray-500">{location}</div>
         </div>
 
         {/* Action Buttons */}
@@ -154,7 +158,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
             }
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`w-24 xs:w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
+            className={`w-24 xs:w-36 h-8 sm:h-10 text-xs sm:text-sm text-white rounded-lg shadow transition duration-200 ease-in-out ${
               isLoading || !isUserTeam
                 ? "bg-gray-400 cursor-not-allowed"
                 : isSignedUpState
@@ -173,7 +177,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
           </button>
           <button
             onClick={handleAddToGCal}
-            className="w-10 h-10 flex items-center justify-center p-2 rounded-full hover:text-gray-500 transition duration-200 ease-in-out"
+            className="w-8 h-8 sm-q-10 sm-h-10 flex items-center justify-center p-2 rounded-full hover:text-gray-500 transition duration-200 ease-in-out"
           >
             <FaCalendar />
           </button>

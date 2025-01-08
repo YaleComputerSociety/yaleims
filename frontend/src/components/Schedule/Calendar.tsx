@@ -39,7 +39,7 @@ const Calendar: React.FC<MyCalendarProps> = ({ onClickDay }) => {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   return (
-    <div className="p-6 bg-white dark:bg-black rounded-lg shadow-md w-[500px] max-w-full mx-auto aspect-square pt-10">
+    <div className="p-6 bg-white dark:bg-black rounded-lg shadow-md w-[500px] max-w-full mx-auto aspect-square xs:pt-10">
       {/* Header with Month Navigation */}
       <div className="flex justify-between items-center mb-6">
         <button

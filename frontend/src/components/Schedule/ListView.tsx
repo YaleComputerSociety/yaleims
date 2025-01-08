@@ -10,7 +10,10 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
   const [loading, setLoading] = useState(true);
 
   const getUserMatches = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -22,7 +25,6 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
       }
       const data = await response.json();
       setUserMatches(data);
-      console.log(data);
     } catch (error) {
       console.error("Error fetching user matches:", error);
     } finally {
@@ -71,7 +73,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
           {!user && (
             <div
               className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
-                hover:shadow-lg hover:scale-110 transition-transform duration-300 ease-in-out text-center"
+                hover:shadow-lg hover:scale-105 hover:rounded-lg transition-transform duration-300 ease-in-out text-center"
               onClick={signIn}
             >
               <span className="text-white dark:text-gray-200 font-medium rounded-lg">
@@ -85,44 +87,31 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
               isSameDay(new Date(match.timestamp), date)
             );
 
+            if (dateMatches.length === 0) return null;
+
             return (
               <div
-                key={`date-${date.toISOString()}`}
+                key={format(date, "yyyy-MM-dd")}
                 className="space-y-2 list-none"
               >
-                {/* Date Heading */}
-                <div
-                  className={`ml-4 text-xl font-semibold ${
-                    dateMatches.length === 0
-                      ? "text-gray-400 text-xs"
-                      : "text-black dark:text-white"
-                  }`}
-                >
+                <div className="ml-4 text-xl font-semibold text-black dark:text-white">
                   {format(date, "EEEE, MMMM d, yyyy")}
                 </div>
-
-                {/* Matches for the Date */}
-                {dateMatches.length > 0
-                  ? dateMatches.map((match: Match) => {
-                      console.log(userMatches, match.timestamp);
-                      const isSignedUp = userMatches.some((userMatch) => {
-                        console.log(userMatch.timestamp, match.timestamp);
-                        return (
-                          new Date(userMatch.timestamp).getTime() ===
-                          new Date(match.timestamp).getTime()
-                        );
-                      });
-
-                      return (
-                        <MatchListItem
-                          key={match.id}
-                          match={match}
-                          user={user}
-                          isSignedUp={isSignedUp}
-                        />
-                      );
-                    })
-                  : null}
+                {dateMatches.map((match: Match) => {
+                  const isSignedUp = userMatches.some(
+                    (userMatch) =>
+                      new Date(userMatch.timestamp).getTime() ===
+                      new Date(match.timestamp).getTime()
+                  );
+                  return (
+                    <MatchListItem
+                      key={`${match.home_college}-${match.away_college}-${match.timestamp}`}
+                      match={match}
+                      user={user}
+                      isSignedUp={isSignedUp}
+                    />
+                  );
+                })}
               </div>
             );
           })}

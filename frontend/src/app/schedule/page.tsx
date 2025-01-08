@@ -7,7 +7,6 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
-import { Match } from "@src/types/components";
 import Calendar from "@src/components/schedule/Calendar";
 import { FaSpinner } from "react-icons/fa"; // Example using Font Awesome spinner
 
@@ -72,14 +71,7 @@ const SchedulePage: React.FC = () => {
         }
 
         const data = await response.json();
-
-        setFilteredMatches((prevMatches) => {
-          const matchIds = new Set(prevMatches.map((match) => match.id));
-          const uniqueMatches = data.matches.filter(
-            (match: Match) => !matchIds.has(match.id)
-          );
-          return [...prevMatches, ...uniqueMatches];
-        });
+        setFilteredMatches((prevMatches) => [...prevMatches, ...data.matches]); // append new matches to existing matches
         setLastVisible(data.lastVisible);
         setHasMoreMatches(data.hasMoreMatches);
       } catch (error) {
@@ -112,8 +104,8 @@ const SchedulePage: React.FC = () => {
       {isFirstLoad ? (
         <LoadingScreen />
       ) : (
-        <div className="min-h-screen p-8 flex flex-col items-center">
-          <h1 className="text-4xl font-bold text-center mb-8">Schedule</h1>
+        <div className="p-4 flex flex-col items-center">
+          <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 xs:mb-8">Schedule</h1>
 
           {/* Main Layout */}
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl">
@@ -130,9 +122,7 @@ const SchedulePage: React.FC = () => {
               {/* Scrollable ListView or No Matches Message */}
               {filteredMatches.length > 0 ? (
                 <div className="max-h-[700px] w-full overflow-y-auto p-4 rounded-lg">
-                  <ListView
-                    matches={filteredMatches}
-                  />
+                  <ListView matches={filteredMatches} />
                 </div>
               ) : (
                 !isLoadingMore && (
@@ -164,6 +154,7 @@ const SchedulePage: React.FC = () => {
           </div>
         </div>
       )}
+      <br></br>
     </div>
   );
 };

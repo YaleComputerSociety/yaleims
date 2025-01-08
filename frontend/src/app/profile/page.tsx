@@ -7,7 +7,6 @@ import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this impor
 import { Match, Participant } from "@src/types/components";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
-import Footer from "@src/components/Footer";
 
 const Profile = () => {
   const { user, loading, signOut } = useUser();
@@ -77,9 +76,11 @@ const Profile = () => {
 
     return (
       !homeParticipants.some(
-        (participant) => participant.email === user?.email
+        (participant: Participant) => participant.email === user?.email
       ) &&
-      !awayParticipants.some((participant) => participant.email === user?.email)
+      !awayParticipants.some(
+        (participant: Participant) => participant.email === user?.email
+      )
     );
   });
 
@@ -104,16 +105,18 @@ const Profile = () => {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col max-w-[1500px] mx-auto">
       <div className="flex-grow m-3 ">
-        <h2 className="text-2xl font-semibold text-center mt-10">
+        <h2 className="text-lg sm:text-2xl font-semibold text-center mt-10">
           Hey {user.name.split(" ")[0]}, play some IMs today!
         </h2>
         <div className="mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:items-start lg:flex-row lg:space-y-0 lg:space-x-6 justify-center lg:ml-10">
           {/* Right Side: Stats */}
           <div className="flex justify-center items-center flex-col space-y-6 lg:w-2/5 order-1 lg:order-2">
             <div className="p-6  bg-white dark:bg-black shadow-lg rounded-lg space-y-4 flex justify-center flex-col">
-              <h2 className="text-2xl font-semibold">Your 2025 Stats Box!</h2>
+              <h2 className="text-lg sm:text-2xl font-semibold text-center">
+                Your 2025 Stats Box!
+              </h2>
               <div className="flex justify-center items-center space-x-4">
                 <Image
                   src={`/college_flags/${user.college}.png`}
@@ -123,7 +126,7 @@ const Profile = () => {
                   className="rounded-md object-contain"
                 />
               </div>
-              <div className="space-y-2 flex items-center flex-col space-y-2">
+              <div className="flex items-center flex-col">
                 <p className="text-md font-bold">
                   Games Played: {user.matches_played || 0}
                 </p>
@@ -131,12 +134,14 @@ const Profile = () => {
               </div>
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="mt-6 py-2 px-4 bg-red-500 text-white rounded-md"
-            >
-              Log Out
-            </button>
+            <div className="hidden sm:block">
+              <button
+                onClick={handleLogout}
+                className="mt-6 py-2 px-4 bg-red-500 text-white rounded-md"
+              >
+                Log Out
+              </button>
+            </div>
           </div>
 
           {/* Left Side */}
@@ -171,7 +176,17 @@ const Profile = () => {
           </div>
         </div>
       </div>
-      <Footer />
+      <div className="sm:hidden text-center">
+        <button
+          onClick={handleLogout}
+          className="mt-6 py-2 px-4 bg-red-500 text-white rounded-md"
+        >
+          Log Out
+        </button>
+      </div>
+      <br></br>
+      <br></br>
+      <br></br>
     </div>
   );
 };

@@ -14,6 +14,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
+  console.log(filtersContext);
   const { filter, setFilter } = filtersContext;
 
   // State for matches
@@ -70,21 +71,21 @@ const ScoresPage: React.FC = () => {
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
-  const getParams = () => {
-    if (queryType === "index") {
-      return paramsIndex;
-    } else if (queryType === "next") {
-      return paramsNext;
-    } else if (queryType === "prev") {
-      return paramsPrev;
-    } else {
-      console.error("Invalid query type");
-      return "";
-    }
-  };
-
   // fetch matches with pagination
   useEffect(() => {
+    const getParams = () => {
+      if (queryType === "index") {
+        return paramsIndex;
+      } else if (queryType === "next") {
+        return paramsNext;
+      } else if (queryType === "prev") {
+        return paramsPrev;
+      } else {
+        console.error("Invalid query type");
+        return "";
+      }
+    };
+
     const fetchMatches = async () => {
       setIsLoading(true);
       try {
@@ -98,6 +99,8 @@ const ScoresPage: React.FC = () => {
 
         const data = await response.json();
 
+        console.log(data);
+
         setFilteredMatches(data.matches);
         setFirstVisible(data.firstVisible);
         setLastVisible(data.lastVisible);
@@ -109,9 +112,9 @@ const ScoresPage: React.FC = () => {
       }
     };
 
-    window.scrollTo(0, 0); // scroll to top of page when data changes
+    window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder]); // Re-fetch matches when page or query type changes
+  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder]);
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
@@ -170,8 +173,8 @@ const ScoresPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-8 flex-col items-center">
-      <h1 className="md:text-4xl text-xl font-bold text-center mb-8 pt-8">
+    <div className="p-4 flex flex-col justify-center max-w-[1500px] mx-auto">
+      <h1 className="md:text-4xl text-xl font-bold text-center xs:mb-4 pt-8">
         Scores and Rankings
       </h1>
 
@@ -192,7 +195,7 @@ const ScoresPage: React.FC = () => {
         </>
       )}
 
-      <div className="min-w-full flex-col items-center md:px-20">
+      <div className="min-w-full flex-col md:px-20">
         <TableHeader
           handleFilterChange={handleFilterChange}
           filter={filter}
@@ -202,6 +205,7 @@ const ScoresPage: React.FC = () => {
         {filteredMatches.length == 0 ? (
           <div className="text-center mt-10">
             <h1>No matches found!</h1>
+            <br></br>
           </div>
         ) : (
           <>

@@ -22,6 +22,11 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Check if match is in the past
+  const isPastMatch = match.timestamp
+    ? new Date(match.timestamp) < new Date()
+    : false;
+
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
@@ -126,67 +131,82 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     (toCollegeName[match.home_college] === user.college ||
       toCollegeName[match.away_college] === user.college);
 
-  console.log(isSignedUpState);
-
   return (
     <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out max-w-3xl">
       <div className="flex justify-between items-center">
         <div>
           {/* Match Teams */}
-          <div className="text-2xl font-bold mb-1">
+          <div className="text-sm sm:text-2xl font-bold mb-1">
             {toCollegeName[match.home_college || "TBD"]} vs{" "}
             {toCollegeName[match.away_college || "TBD"]}
           </div>
 
           {/* Match Sport */}
-          <div className="text-gray-600 font-semibold">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-semibold">
             {match.sport} {emojiMap[match.sport]}
           </div>
 
           {/* Match Date and Time */}
-          <div className="text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500">
             {matchDate} at {matchTime}
           </div>
 
           {/* Match Location */}
-          <div className="text-gray-500">{location}</div>
+          <div className="text-gray-500 text-xs sm:text-sm">{location}</div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-0">
-          {/* Sign Up/Unregister Button */}
-          <button
-            onClick={() =>
-              isSignedUpState ? handleUnregister() : handleSignUp()
-            }
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className={`ml-5 w-36 h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
-              isLoading || !isUserTeam
-                ? "bg-gray-400 cursor-not-allowed"
-                : isSignedUpState
-                ? "bg-green-600 hover:bg-red-600"
-                : "bg-blue-600 hover:scale-110"
-            }`}
-            disabled={isLoading || !isUserTeam}
-          >
-            {isLoading
-              ? "Loading..."
-              : !isUserTeam
-              ? "Not Your College"
-              : isSignedUpState
-              ? isHovered
-                ? "Unregister"
-                : "Playing!"
-              : "Sign Up"}
-          </button>
+          {isPastMatch ? (
+            // Show score for past matches
+            <div className="text-sm sm:text-2xl font-bold ml-5">
+              {match.home_college_score !== undefined &&
+              match.away_college_score !== undefined ? (
+                <span>
+                  {match.home_college_score} - {match.away_college_score}
+                </span>
+              ) : (
+                <span className="text-gray-500 text-sm sm:text-md">
+                  Score Pending
+                </span>
+              )}
+            </div>
+          ) : (
+            // Show signup and calendar buttons for future matches
+            <>
+              <button
+                onClick={() =>
+                  isSignedUpState ? handleUnregister() : handleSignUp()
+                }
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                className={`ml-5 w-20 sm:w-36 text-xs sm:text-sm h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
+                  isLoading || !isUserTeam
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : isSignedUpState
+                    ? "bg-green-600 hover:bg-red-600"
+                    : "bg-blue-600 hover:scale-110"
+                }`}
+                disabled={isLoading || !isUserTeam}
+              >
+                {isLoading
+                  ? "Loading..."
+                  : !isUserTeam
+                  ? "Not Your College"
+                  : isSignedUpState
+                  ? isHovered
+                    ? "Unregister"
+                    : "Playing!"
+                  : "Sign Up"}
+              </button>
 
-          {/* Add to Calendar Button */}
-          <button
-            onClick={handleAddToGCal}
-            className="ml-4 rounded-full p-2 text-gray-500 hover:text-gray-800 transition duration-200 ease-in-out"
-          >
-            <FaCalendar />
-          </button>
+              <button
+                onClick={handleAddToGCal}
+                className="ml-4 rounded-full p-2 text-gray-500 hover:text-gray-800 transition duration-200 ease-in-out"
+              >
+                <FaCalendar />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </li>

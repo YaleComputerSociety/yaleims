@@ -28,12 +28,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
 }) => (
   <div className="flex flex-wrap px-2 py-2 rounded-md justify-center justify-self-center">
     {/* Date/Time Column with Dropdown Filter */}
-    <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
+    <div className="py-1 px-1 text-sm font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
       <div>
         <select
           name="date"
           onChange={handleFilterChange}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+          className="text-sm  rounded-md py-1 px-1 bg-white dark:bg-black"
         >
           <option value="All">All Past Games</option>
           <option value="today">Today</option>
@@ -46,12 +46,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
     </div>
 
     {/* Colleges Column with Dropdown Filter */}
-    <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
+    <div className="py-1 px-1 text-sm font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
       <div>
         <select
           name="college"
           onChange={handleFilterChange}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+          className="text-sm  rounded-md py-1 px-1 bg-white dark:bg-black"
           value={filter.college}
         >
           {collegeOptions}
@@ -60,12 +60,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
     </div>
 
     {/* Sport Column with Dropdown Filter */}
-    <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
+    <div className="py-1 px-1 text-sm font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
       <div>
         <select
           name="sport"
           onChange={handleFilterChange}
-          className="text-xs md:text-sm rounded-md py-1 px-1 dark:bg-black"
+          className="text-sm  rounded-md py-1 px-1 bg-white dark:bg-black"
           value={filter.sport}
         >
           <option value="">All Sports</option>
@@ -86,7 +86,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
     </div>
 
     {/* Sort By Asc/Desc Filter */}
-    <div className="pl-2 text-xs font-medium rounded-md">
+    <div className="pl-2 text-sm font-medium rounded-md">
       <fieldset>
         <div className="flex items-center space-x-4 mt-2">
           <label className="flex items-center">
@@ -96,9 +96,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({
               value="desc"
               checked={sortOrder === "desc"}
               onChange={(e) => handleSortOrderChange(e.target.value)}
-              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-black"
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 bg-white dark:bg-black"
             />
-            <span className="ml-2 text-xs md:text-sm">desc</span>
+            <span className="ml-2 text-sm ">desc</span>
           </label>
           <label className="flex items-center">
             <input
@@ -107,9 +107,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({
               value="asc"
               checked={sortOrder === "asc"}
               onChange={(e) => handleSortOrderChange(e.target.value)}
-              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 dark:bg-black"
+              className="form-radio h-4 w-4 text-yellow-400 border-gray-300 bg-white dark:bg-black"
             />
-            <span className="ml-2 text-xs md:text-sm">asc</span>
+            <span className="ml-2 text-sm">asc</span>
           </label>
         </div>
       </fieldset>

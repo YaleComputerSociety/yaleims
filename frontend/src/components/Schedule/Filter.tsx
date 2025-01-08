@@ -9,7 +9,7 @@ const Filters: React.FC<CalendarFiltersProps> = ({ filter, updateFilter }) => (
       <select
         value={filter.college}
         onChange={(e) => updateFilter("college", e.target.value)}
-        className="text-sm md:text-md rounded-md py-1 px-1 dark:bg-black"
+        className="text-sm md:text-md rounded-md py-1 px-1 bg-white dark:bg-black"
       >
         <option value="">All Colleges</option>
         {Object.values(colleges).map((college) => (
@@ -23,7 +23,7 @@ const Filters: React.FC<CalendarFiltersProps> = ({ filter, updateFilter }) => (
       <select
         value={filter.sport}
         onChange={(e) => updateFilter("sport", e.target.value)}
-        className="text-sm md:text-md rounded-md py-1 px-1 dark:bg-black"
+        className="text-sm md:text-md rounded-md py-1 px-1 bg-white dark:bg-black"
       >
         <option value="">All Sports</option>
         {Object.values(sports).map((sport) => (

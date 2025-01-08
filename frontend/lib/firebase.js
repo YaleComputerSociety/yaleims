@@ -14,13 +14,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+
 // Conditionally initialize Firebase Analytics
 let analytics = null;
 if (typeof window !== "undefined") {
   isSupported().then((supported) => {
     if (supported) {
       analytics = getAnalytics(app);
-      console.log("Firebase Analytics initialized");
+
+      // Customize gtag with cookie_flags
+      window.gtag =
+        window.gtag ||
+        function () {
+          window.dataLayer.push(arguments);
+        };
+      window.dataLayer = window.dataLayer || [];
+
+      window.gtag("config", process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, {
+        cookie_flags: "SameSite=None; Secure",
+      });
     } else {
       console.warn("Firebase Analytics is not supported in this environment");
     }

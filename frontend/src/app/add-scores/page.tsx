@@ -70,5 +70,7 @@ const AddScoresPage: React.FC = () => {
   );
 };
 
+AddScoresPage.displayName = "AddScoresPage";
+
 // withProtectedRoute handles auth check and redirects to home page if not logged in or not admin
 export default withProtectedRoute(AddScoresPage);

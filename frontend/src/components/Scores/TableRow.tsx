@@ -19,7 +19,7 @@ const TableRow: React.FC<TableRowProps> = ({
   `;
   return (
     <div className={rowClasses}>
-      <div className="md:px-6 pl-2 md:pr-10 py-4 text-xs md:text-sm text-gray-500">
+      <div className="md:px-6 pl-2 md:pr-10 py-4 text-xs xs:text-sm  text-gray-500">
         {new Date(match.timestamp).toLocaleString("en-US", {
           hour: "2-digit", // "04"
           minute: "2-digit", // "00"
@@ -28,12 +28,12 @@ const TableRow: React.FC<TableRowProps> = ({
       </div>
 
       {/* Combine Colleges and Scores into one column */}
-      <div className="text-left md:px-6 py-4 px-3 text-sm grid md:grid-cols-[0.6fr_0.4fr_0.6fr] md:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
+      <div className="text-left md:px-6 py-4 px-3 text-xs xs:text-sm grid md:grid-cols-[0.6fr_0.4fr_0.6fr] md:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
         {/* Determine the winner and loser */}
         {match.home_college_score > match.away_college_score ? (
           // Home college wins
           <>
-            <div className="items-start text-xs md:text-sm dark:text-white">
+            <div className="items-start text-xs xs:text-sm  dark:text-white">
               <strong
                 className="cursor-pointer flex items-center"
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
@@ -49,7 +49,7 @@ const TableRow: React.FC<TableRowProps> = ({
                   unoptimized
                 />
                 {toCollegeName[match.home_college]}
-                <span className="text-yellow-500 text-xs">
+                <span className="text-yellow-500 text-xs xs:text-sm">
                   +{sportsMap[match.sport]}pts
                 </span>
               </strong>
@@ -67,7 +67,7 @@ const TableRow: React.FC<TableRowProps> = ({
               <div
                 className={`${
                   match.away_college === "" ? "hidden" : "block"
-                } items-start text-xs md:text-sm`}
+                } items-start text-xs xs:text-sm `}
               >
                 <strong
                   className="cursor-pointer flex items-center text-gray-400"
@@ -89,12 +89,12 @@ const TableRow: React.FC<TableRowProps> = ({
             ) : (
               <div className="pl-7 font-bold">BYE</div>
             )}
-            <div className="text-right md:hidden text-xs">
+            <div className="text-right md:hidden text-xs xs:text-sm">
               <strong>
                 {match.home_college_score ? match.home_college_score : 0}
               </strong>
             </div>
-            <div className="text-right md:hidden text-xs">
+            <div className="text-right md:hidden text-xs xs:text-sm">
               <strong className="text-gray-400">
                 {match.away_college_score ? match.away_college_score : 0}
               </strong>
@@ -103,7 +103,7 @@ const TableRow: React.FC<TableRowProps> = ({
         ) : match.home_college_score < match.away_college_score ? (
           // Away college wins
           <>
-            <div className="items-start text-xs md:text-sm">
+            <div className="items-start text-xs xs:text-sm ">
               <strong
                 className="cursor-pointer text-gray-400 flex items-center"
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
@@ -133,7 +133,7 @@ const TableRow: React.FC<TableRowProps> = ({
             <div
               className={`${
                 match.away_college === "" ? "hidden" : "block"
-              } text-xs md:text-sm `}
+              } text-xs xs:text-sm  `}
             >
               <strong
                 className="cursor-pointer flex items-center"
@@ -150,17 +150,17 @@ const TableRow: React.FC<TableRowProps> = ({
                   unoptimized
                 />
                 {toCollegeName[match.away_college]}
-                <span className="text-yellow-500 text-xs">
+                <span className="text-yellow-500 text-xs xs:text-sm">
                   +{sportsMap[match.sport]}pts
                 </span>
               </strong>
             </div>
-            <div className="text-right md:hidden text-xs">
+            <div className="text-right md:hidden text-xs xs:text-sm">
               <strong className="text-gray-400">
                 {match.home_college_score ? match.home_college_score : 0}
               </strong>
             </div>
-            <div className="text-right md:hidden text-xs">
+            <div className="text-right md:hidden text-xs xs:text-sm">
               <strong>
                 {match.away_college_score ? match.away_college_score : 0}
               </strong>
@@ -169,7 +169,7 @@ const TableRow: React.FC<TableRowProps> = ({
         ) : (
           // Draw
           <>
-            <div className="items-start text-xs md:text-sm">
+            <div className="items-start text-xs xs:text-sm ">
               <strong
                 className="cursor-pointer text-gray-400 flex items-center"
                 onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
@@ -185,7 +185,7 @@ const TableRow: React.FC<TableRowProps> = ({
                   unoptimized
                 />
                 {toCollegeName[match.home_college]}
-                <span className="text-yellow-500 text-xs">
+                <span className="text-yellow-500 text-xs xs:text-sm">
                   +{sportsMap[match.sport] / 2}pts
                 </span>
               </strong>
@@ -199,7 +199,7 @@ const TableRow: React.FC<TableRowProps> = ({
                 {match.away_college_score ? match.away_college_score : 0}
               </strong>
             </div>
-            <div className="items-start text-xs md:text-sm">
+            <div className="items-start text-xs xs:text-sm ">
               <strong
                 className="cursor-pointer text-gray-400 flex items-center"
                 onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
@@ -215,17 +215,17 @@ const TableRow: React.FC<TableRowProps> = ({
                   unoptimized
                 />
                 {toCollegeName[match.away_college]}
-                <span className="text-yellow-500 text-xs">
+                <span className="text-yellow-500 text-xs xs:text-sm">
                   +{sportsMap[match.sport] / 2}pts
                 </span>
               </strong>
             </div>
-            <div className="text-right md:hidden text-xs">
+            <div className="text-right md:hidden text-xs xs:text-sm">
               <strong className="text-gray-400">
                 {match.home_college_score ? match.home_college_score : 0}
               </strong>
             </div>
-            <div className="text-right md:hidden text-xs">
+            <div className="text-right md:hidden text-xs xs:text-sm">
               <strong className="text-gray-400">
                 {match.home_college_score ? match.home_college_score : 0}
               </strong>
@@ -243,7 +243,7 @@ const TableRow: React.FC<TableRowProps> = ({
         <div>{emojiMap[match.sport]}</div>
 
         {/* Hidden sport name (visible on hover) */}
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs text-blue-600 bg-blue-100 border border-blue-600 dark:bg-black dark:text-white dark:border-black rounded opacity-0 group-hover:opacity-100">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs xs:text-sm text-blue-600 bg-blue-100 border border-blue-600 dark:bg-black dark:text-white dark:border-black rounded opacity-0 group-hover:opacity-100">
           {match.sport}
         </div>
       </div>

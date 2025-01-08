@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class', // Ensure this is set to 'class'
+  darkMode: "class", // Ensure this is set to 'class'
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,13 +9,17 @@ module.exports = {
   theme: {
     extend: {
       screens: {
-        xs: '480px',
-        mg: '915px'
-      }, 
+        xs: "569px",
+        mg: "915px",
+      },
       colors: {
         primary_light: "#8DB8EA",
         podium_light: "#7FA9DB",
-      }
+        primary_lightest: "#d0e4fb",
+      },
+      fontFamily: {
+        sans: ['Inter var', 'sans-serif'],
+      },
     },
   },
   plugins: [],

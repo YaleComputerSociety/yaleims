@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useEffect } from "react";
-import PersonCard from "@src/components/about/PersonCard";
+import PersonCard from "@src/components/About/PersonCard";
 import Link from "next/link";
 
 const AboutUsPage: React.FC = () => {
@@ -20,7 +20,7 @@ const AboutUsPage: React.FC = () => {
       image: "/dev_images/Anna_Xu.jpeg",
       github: "https://github.com/annaxu9",
       linkedin: "https://www.linkedin.com/in/anna-wenxin-xu/",
-      portfolio: "https://www.anna-xu.com/",
+      portfolio: "",
     },
     {
       name: "Ephraim Akai-Nettey",
@@ -56,7 +56,7 @@ const AboutUsPage: React.FC = () => {
     },
     {
       name: "Lily Lin",
-      roles: ["Lead Designer"],
+      roles: ["UI/UX Designer"],
       image: "/dev_images/Lily_Lin.jpeg",
       github: undefined,
       linkedin: undefined,
@@ -74,9 +74,9 @@ const AboutUsPage: React.FC = () => {
       name: "Asya Tarabar",
       roles: ["UI/UX Designer"],
       image: "/dev_images/Asya_Tarabar.jpeg",
-      github: undefined,
+      github: "https://www.linkedin.com/in/asya-tarabar/",
       linkedin: undefined,
-      portfolio: undefined,
+      portfolio: "https://asyatarabar.com/",
     },
   ];
 
@@ -132,17 +132,43 @@ const AboutUsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen p-8 flex flex-col items-center w-4/5 justify-center m-auto">
-      <h1 className=" text-4xl font-bold text-center mb-8 pt-5 lg:-ml-6">
+    <div className="min-h-screen p-2 xs:p-8 flex flex-col items-center w-11/12 sm:w-4/5 justify-center max-w-[1500px] mx-auto">
+      <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 sm:mb-8 pt-5 lg:-ml-6">
         About Us
       </h1>
-      <p>Every year Yale’s 14 colleges compete in various intramural sports. Read more about how it all works <Link className="text-blue-600 dark:text-blue-300" href="/about-ims">here.</Link> The college with the most points at the end of Spring Semester wins the famous Tyng Cup. As sports players and enthusiasts ourselves, we know the joy and stress relief that comes from playing games and being part of a team. However, despite the incredible opportunities IMs offer, participation has always been a challenge.</p>
-      <br></br>
-      <p>The core issue is logistics. It’s hard to know who’s attending games, where your college stands in the Tyng Cup rankings, or even when and where matches are happening. Organizing IMs across 14 colleges is no small feat. Previous attempts to tackle these challenges with apps have fallen short. The complexity of the rules, ever-changing schedules, and the sheer number of moving parts make it difficult to create a system that truly works for everyone.</p>
-      <br></br>
-      <p>That’s where YaleIMs comes in. What began as a small project two years ago has grown into a dedicated effort to transform how IMs are organized and experienced. With input from IM secretaries, referees, and players, we’ve designed a platform that simplifies scheduling, enhances communication, and helps reduce forfeits. Our goal is simple: to make intramurals more accessible, enjoyable, and rewarding for everyone. By addressing the logistical hurdles, we hope this app will unlock the full potential of IMs as one of the best traditions at Yale.</p>
+      <p>
+        Yale’s 14 colleges compete annually in intramural sports for the Tyng
+        Cup. Learn more about how it all works{" "}
+        <Link className="text-blue-600 dark:text-blue-300" href="/about-ims">
+          here
+        </Link>
+        . As sports players and enthusiasts, we know how fun and rewarding
+        sports and friendly competition can be, but we also understand how
+        confusing logistics and poor organization can take away from the
+        experience.
+      </p>
+      <br />
+      <p>
+        That’s why we, a small team of{" "}
+        <Link
+          target="_blank"
+          className="text-blue-600 dark:text-blue-300"
+          href={"https://yalecomputersociety.org/"}
+        >
+          y/cs (Yale Computer Society)
+        </Link>{" "}
+        developers, created YaleIMs—a platform designed to simplify scheduling,
+        enhance communication, and reduce forfeits. With input from IM
+        secretaries, referees, and players, our goal is to make intramurals more
+        accessible and enjoyable for everyone. Have more questions? Check out
+        our{" "}
+        <Link className="text-blue-600 dark:text-blue-300" href="/faq">
+          FAQ.
+        </Link>
+      </p>
+      <br />
       <div className="mb-8 p-5 rounded-lg ">
-        <p className="text-3xl font-semibold pb-5 text-center md:-ml-6">
+        <p className="text-lg sm:text-3xl font-semibold pb-5 text-center md:-ml-6">
           Our Team
         </p>
         <div className="flex justify-center">
@@ -162,12 +188,12 @@ const AboutUsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="mb-8 p-5 rounded-lg w-4/5">
-        <p className="text-3xl font-semibold pb-5 md:-ml-6 text-center">
+      <div className="mb-8 p-5 rounded-lg">
+        <p className="text-lg sm:text-3xl font-semibold pb-5 md:-ml-6 text-center">
           Special Thanks
         </p>
         <div className="flex justify-center">
-          <div className="grid lg:grid-cols-6 md:grid-cols-4 sm:grid-cols-2 xs:grid-cols-2 gap-4">
+          <div className="grid lg:grid-cols-6 md:grid-cols-4 grid-cols-2 xs:grid-cols-2 gap-4 sm:gap-8">
             {specialThanks.map((member, index) => (
               <PersonCard
                 key={index}

@@ -25,12 +25,16 @@ export default function RootLayout({
           <GoogleOAuthProvider clientId={CLIENT_ID}>
             <html lang="en">
               <head>
+                <title>Yale IMs</title>
                 <link rel="icon" href="/favicon.ico" />
+                <meta property="og:title" content="Yale IMs" />
               </head>
+
               <body className={`${inter.className} min-h-screen`}>
                 <NavBar />
                 <div className="mb-10"></div>
                 {children}
+                <Footer />
               </body>
             </html>
           </GoogleOAuthProvider>
