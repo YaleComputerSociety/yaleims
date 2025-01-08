@@ -147,7 +147,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex-shrink-0 flex flex-row items-end space-y-2">
+        <div className="flex-shrink-0 flex flex-row items-end space-y-2 gap-3">
           <button
             onClick={() =>
               isSignedUpState ? handleUnregister() : handleSignUp()
