@@ -237,6 +237,9 @@ const Profile = () => {
   return (
     <div className="flex flex-col min-h-[80vh]">
       <div className="flex-grow m-3">
+        <h2 className="text-2xl font-semibold text-center mt-10">
+          Hey, {user.name}!
+        </h2>
         <div className="max-w-6xl mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:flex-row lg:space-y-0 lg:space-x-6">
           {/* Right Side: Stats */}
           <div className="flex justify-center items-center flex-col space-y-6 lg:w-1/2 order-1 lg:order-2">
@@ -251,10 +254,9 @@ const Profile = () => {
                   className="rounded-md object-contain"
                 />
               </div>
-              <h2 className="text-2xl font-semibold">{user.name}</h2>
               <div className="space-y-2 flex items-center flex-col space-y-2">
                 <p className="text-md font-bold">
-                  Games Played: {user.matches_played}
+                  Games Played: {user.matches_played || 0}
                 </p>
                 <p className="text-md font-bold">Coins: {user.points}</p>
               </div>
