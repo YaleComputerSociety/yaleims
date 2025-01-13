@@ -113,7 +113,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
       </div>
 
       {/* Match Card */}
-      <div className="grid md:grid-cols-5 grid-cols-4 bg-white justify-between items-center py-4 px-2 md:px-8">
+      <div className="grid md:grid-cols-5 grid-cols-4 bg-white  dark:bg-black justify-between items-center py-4 px-2 md:px-8">
         <div className="flex flex-col md:flex-row items-center pr-1 lg:pr-8 h-full py-1 justify-between md:justify-around">
           <p>{formattedTime}</p>
           <p>{emojiMap[match.sport]}</p>

@@ -9,9 +9,18 @@ const db = admin.firestore();
 // gets unscored matches (winner is null) that have already occurred (timestamp is in the past)
 export const getUnscoredMatches = functions.https.onRequest(
   async (req, res) => {
+    console.log("function invoked");
     return corsHandler(req, res, async () => {
       try {
-        const currentDate = new Date();
+        const currentDate = admin.firestore.Timestamp.now();
+
+        console.log(currentDate);
+
+        const test = await db
+          .collection("matches")
+          .where("timestamp", "<", currentDate);
+
+        console.log(test);
 
         const snapshot = await db
           .collection("matches")

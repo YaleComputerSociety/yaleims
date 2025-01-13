@@ -135,8 +135,8 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       // doc refs
       const matchRef = db.collection("matches").doc(matchId);
-      const awayCollegeRef = db.collection("colleges_testing").doc(awayTeam); // change to colleges
-      const homeCollegeRef = db.collection("colleges_testing").doc(homeTeam); // change to colleges
+      const awayCollegeRef = db.collection("colleges").doc(awayTeam); // change to colleges
+      const homeCollegeRef = db.collection("colleges").doc(homeTeam); // change to colleges
 
       // batch write
       const batch = db.batch();
@@ -148,7 +148,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       await batch.commit();
 
       // update ranks -- may be a good idea to have a separate function for this as well, scheduled to run every so often, to protect against failures (if this section doesn't run properly for some reason)
-      const collegesSnapshot = await db.collection("colleges_testing").get();
+      const collegesSnapshot = await db.collection("colleges").get();
       const colleges: { id: string; points: number; wins: number }[] = [];
 
       collegesSnapshot.forEach((doc) => {
@@ -175,7 +175,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       for (const [index, college] of colleges.entries()) {
         const collegeDoc = await db
-          .collection("colleges_testing")
+          .collection("colleges")
           .doc(college.id)
           .get();
         const newRank = index + 1;
@@ -184,13 +184,13 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
           formattedCurrentDate !== collegeDoc.data()?.today;
 
         if (isDateDifferent) {
-          rankBatch.update(db.collection("colleges_testing").doc(college.id), {
+          rankBatch.update(db.collection("colleges").doc(college.id), {
             today: formattedCurrentDate,
             prevRank: collegeDoc.data()?.rank,
             rank: newRank,
           });
         } else {
-          rankBatch.update(db.collection("colleges_testing").doc(college.id), {
+          rankBatch.update(db.collection("colleges").doc(college.id), {
             rank: newRank,
           });
         }
