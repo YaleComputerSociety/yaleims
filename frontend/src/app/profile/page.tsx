@@ -130,7 +130,7 @@ const Profile = () => {
                 <p className="text-md font-bold">
                   Games Played: {user.matches_played || 0}
                 </p>
-                <p className="text-md font-bold">Coins: {user.points}</p>
+                <p className="text-md font-bold">Coins: {user.points || 0}</p>
               </div>
             </div>
 

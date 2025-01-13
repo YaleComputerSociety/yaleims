@@ -31,10 +31,6 @@ export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
       const homeMatchesSnapshot = await homeMatchesQuery.get();
       const awayMatchesSnapshot = await awayMatchesQuery.get();
 
-      // Log the results of both queries to see how many matches are being returned
-      // console.log("Home Matches Snapshot:", homeMatchesSnapshot.docs.length);
-      // console.log("Away Matches Snapshot:", awayMatchesSnapshot.docs.length);
-
       // Combine the results from both queries and ensure data is valid
       const allMatches = [
         ...homeMatchesSnapshot.docs

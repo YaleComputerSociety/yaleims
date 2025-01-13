@@ -76,6 +76,7 @@ export const getSchedulePaginated = functions.https.onRequest(
             home_college_score: data.home_college_score,
             away_college_score: data.away_college_score,
             winner: data.winner,
+            location: data.location,
             timestamp:
               data.timestamp && data.timestamp.toDate
                 ? data.timestamp.toDate().toISOString()
