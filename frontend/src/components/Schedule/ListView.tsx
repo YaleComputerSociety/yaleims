@@ -64,59 +64,53 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
 
   return (
     <div>
-      {matches.length === 0 ? (
-        <div className="text-center text-gray-500">
-          No future matches found.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {!user && (
-            <div
-              className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
+      <div className="space-y-4">
+        {!user && (
+          <div
+            className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
                 hover:shadow-lg hover:scale-105 hover:rounded-lg transition-transform duration-300 ease-in-out text-center"
-              onClick={signIn}
+            onClick={signIn}
+          >
+            <span className="text-white dark:text-gray-200 font-medium rounded-lg">
+              Sign in with Google to sign up for matches!
+            </span>
+          </div>
+        )}
+
+        {allDates.map((date) => {
+          const dateMatches = matches.filter((match: Match) =>
+            isSameDay(new Date(match.timestamp), date)
+          );
+
+          if (dateMatches.length === 0) return null;
+
+          return (
+            <div
+              key={format(date, "yyyy-MM-dd")}
+              className="space-y-2 list-none"
             >
-              <span className="text-white dark:text-gray-200 font-medium rounded-lg">
-                Sign in with Google to sign up for matches!
-              </span>
-            </div>
-          )}
-
-          {allDates.map((date) => {
-            const dateMatches = matches.filter((match: Match) =>
-              isSameDay(new Date(match.timestamp), date)
-            );
-
-            if (dateMatches.length === 0) return null;
-
-            return (
-              <div
-                key={format(date, "yyyy-MM-dd")}
-                className="space-y-2 list-none"
-              >
-                <div className="ml-4 text-xl font-semibold text-black dark:text-white">
-                  {format(date, "EEEE, MMMM d, yyyy")}
-                </div>
-                {dateMatches.map((match: Match) => {
-                  const isSignedUp = userMatches.some(
-                    (userMatch) =>
-                      new Date(userMatch.timestamp).getTime() ===
-                      new Date(match.timestamp).getTime()
-                  );
-                  return (
-                    <MatchListItem
-                      key={`${match.home_college}-${match.away_college}-${match.timestamp}`}
-                      match={match}
-                      user={user}
-                      isSignedUp={isSignedUp}
-                    />
-                  );
-                })}
+              <div className="ml-4 text-xl font-semibold text-black dark:text-white">
+                {format(date, "EEEE, MMMM d, yyyy")}
               </div>
-            );
-          })}
-        </div>
-      )}
+              {dateMatches.map((match: Match) => {
+                const isSignedUp = userMatches.some(
+                  (userMatch) =>
+                    new Date(userMatch.timestamp).getTime() ===
+                    new Date(match.timestamp).getTime()
+                );
+                return (
+                  <MatchListItem
+                    key={`${match.home_college}-${match.away_college}-${match.timestamp}`}
+                    match={match}
+                    user={user}
+                    isSignedUp={isSignedUp}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

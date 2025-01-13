@@ -105,7 +105,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
   return (
     <div className="w-full text-xs md:text-sm mb-4">
       {/* Header Row */}
-      <div className="grid md:grid-cols-5 grid-cols-4 items-center font-semibold text-black mb-2 px-2 md:px-8">
+      <div className="grid md:grid-cols-5 grid-cols-4 items-center font-semibold text-black dark:text-white mb-2 px-2 md:px-8">
         <div className="col-span-2">{formattedDate}</div>{" "}
         <div className="text-center">Forfeit?</div>
         <div className="text-center">Score</div>

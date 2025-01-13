@@ -132,13 +132,17 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       toCollegeName[match.away_college] === user.college);
 
   return (
-    <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out max-w-3xl">
+    <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out max-w-4xl mx-auto">
       <div className="flex justify-between items-center">
         <div>
           {/* Match Teams */}
           <div className="text-sm sm:text-2xl font-bold mb-1">
-            {toCollegeName[match.home_college || "TBD"]} vs{" "}
-            {toCollegeName[match.away_college || "TBD"]}
+            {toCollegeName[match.home_college || "TBD"]}{" "}
+            {match.away_college != "Bye" ? (
+              <>vs {toCollegeName[match.away_college]}</>
+            ) : (
+              <>(BYE)</>
+            )}
           </div>
 
           {/* Match Sport */}

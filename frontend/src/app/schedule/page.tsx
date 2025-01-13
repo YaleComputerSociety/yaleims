@@ -105,7 +105,9 @@ const SchedulePage: React.FC = () => {
         <LoadingScreen />
       ) : (
         <div className="p-4 flex flex-col items-center">
-          <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 xs:mb-8">Schedule</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 xs:mb-8">
+            Schedule
+          </h1>
 
           {/* Main Layout */}
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl">
@@ -127,7 +129,7 @@ const SchedulePage: React.FC = () => {
               ) : (
                 !isLoadingMore && (
                   <div className="text-center mt-8 text-gray-600">
-                    No matches found.
+                    No future matches found.
                   </div>
                 )
               )}
