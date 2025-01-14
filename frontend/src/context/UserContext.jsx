@@ -39,6 +39,23 @@ export const UserProvider = ({ children }) => {
     deleteCookie("user", { path: "/" });
   };
 
+  const wrappedSetUser = (updatedUser) => {
+    if (updatedUser && typeof updatedUser === "object") {
+      setUser(updatedUser); // Update the state
+      const token = getCookie("token"); // Get the existing token from cookies
+      if (token) {
+        saveUserToCookies(updatedUser, token); // Sync to cookies only if token exists
+      } else {
+        console.error("Token is missing. Cannot save user to cookies.");
+      }
+    } else if (!updatedUser) {
+      setUser(null); // Clear the user state
+      clearUserCookies(); // Clear cookies if the user is null
+    } else {
+      console.error("Invalid user object provided:", updatedUser);
+    }
+  };
+
   const signIn = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
@@ -100,7 +117,9 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, signIn, setUser, signOut, loading }}>
+    <UserContext.Provider
+      value={{ user, signIn, setUser: wrappedSetUser, signOut, loading }}
+    >
       {children}
     </UserContext.Provider>
   );

@@ -23,10 +23,33 @@ export const updateUsername = functions.https.onRequest(async (req, res) => {
 
       const trimmedUsername = newUsername.trim();
 
+      // Additional validation
+      const maxLength = 20; // Maximum length for the username
+      const minLength = 3; // Minimum length for the username
+      const validFormat = /^[a-zA-Z0-9_]+$/; // Allow only letters, numbers, and underscores
+
       if (trimmedUsername === "") {
         return res.status(400).send("Username cannot be empty");
       }
 
+      if (
+        trimmedUsername.length < minLength ||
+        trimmedUsername.length > maxLength
+      ) {
+        return res
+          .status(400)
+          .send(
+            `Username must be between ${minLength} and ${maxLength} characters long`
+          );
+      }
+
+      if (!validFormat.test(trimmedUsername)) {
+        return res
+          .status(400)
+          .send(
+            "Username can only contain letters, numbers, and underscores, and no spaces"
+          );
+      }
       // Check if the new username is already taken
       const usernameDoc = db.collection("usernames").doc(trimmedUsername);
       const usernameSnapshot = await usernameDoc.get();

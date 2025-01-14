@@ -114,10 +114,10 @@ const Profile = () => {
         if (data.success) {
           console.log("Username updated successfully:", data.username);
           // Update the user context
-          setUser((prevUser: any) => ({
-            ...prevUser,
-            username: data.username,
-          }));
+          setUser({
+            ...user,
+            username: data.username, // Update the username only
+          });
           setIsEditing(false); // Close the popup
         } else {
           setError("Failed to update username. Please try again.");
