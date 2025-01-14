@@ -53,7 +53,7 @@ export const UserProvider = ({ children }) => {
       const userData = {
         name: signedInUser.displayName,
         email: signedInUser.email,
-        matches: data.user.matches,
+        username: data.user.username,
         college: data.user.college,
         points: data.user.points,
         role: data.user.role,
@@ -100,7 +100,7 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, signIn, signOut, loading }}>
+    <UserContext.Provider value={{ user, signIn, setUser, signOut, loading }}>
       {children}
     </UserContext.Provider>
   );

@@ -10,6 +10,7 @@ import { getCollegeMatches } from "./getCollegeMatches.js";
 import { removeParticipant } from "./removeParticipant.js";
 import { getMatches } from "./getMatches.js";
 import { getSchedulePaginated } from "./getSchedulePaginated.js";
+import { updateUsername } from "./updateUsername.js";
 
 export {
   getLeaderboard,
@@ -24,4 +25,5 @@ export {
   removeParticipant,
   getMatches,
   getSchedulePaginated,
+  updateUsername,
 };

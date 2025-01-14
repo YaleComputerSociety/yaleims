@@ -33,6 +33,7 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
           college: fullData?.college,
           role: fullData?.role,
           matches_played: fullData?.matches_played,
+          username: fullData?.username,
         };
 
         res.status(200).json({

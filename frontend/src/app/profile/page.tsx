@@ -7,11 +7,16 @@ import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this impor
 import { Match, Participant } from "@src/types/components";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
+import { MdModeEditOutline } from "react-icons/md";
 
 const Profile = () => {
-  const { user, loading, signOut } = useUser();
+  const { user, loading, signOut, setUser } = useUser();
   const [matches, setMatches] = useState<Match[]>([]);
   const [fetching, setFetching] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newUsername, setNewUsername] = useState(user?.username || "");
+  const [error, setError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   const cloudFunctionUrl = "https://getcollegematches-65477nrg6a-uc.a.run.app";
 
@@ -84,6 +89,51 @@ const Profile = () => {
     );
   });
 
+  const handleEditUsername = async () => {
+    setEditLoading(true);
+    setError("");
+
+    try {
+      console.log(user, user.username, newUsername);
+      const response = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user?.email,
+            newUsername: newUsername.trim(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          console.log("Username updated successfully:", data.username);
+          // Update the user context
+          setUser((prevUser: any) => ({
+            ...prevUser,
+            username: data.username,
+          }));
+          setIsEditing(false); // Close the popup
+        } else {
+          setError("Failed to update username. Please try again.");
+        }
+      } else {
+        const errorMessage = await response.text();
+        setError(errorMessage || "An unexpected error occurred.");
+      }
+    } catch (error) {
+      console.error("Error updating username:", error);
+      setError("Failed to update username. Please try again.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -127,6 +177,14 @@ const Profile = () => {
                 />
               </div>
               <div className="flex items-center flex-col">
+                <p className="text-md font-bold flex items-center">
+                  Yodds Username: {user.username || "Anonymous"}
+                  <MdModeEditOutline
+                    className="ml-2 cursor-pointer hover:text-blue-700"
+                    onClick={() => setIsEditing(true)}
+                  />
+                </p>
+
                 <p className="text-md font-bold">
                   Games Played: {user.matches_played || 0}
                 </p>
@@ -184,6 +242,41 @@ const Profile = () => {
           Log Out
         </button>
       </div>
+      {isEditing && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+            <h2 className="text-lg font-bold mb-4">Edit Username</h2>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded-md p-2 mb-4"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              placeholder="Enter new username"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleEditUsername(); // Trigger the function on Enter key press
+                }
+              }}
+            />
+            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            <div className="flex justify-end space-x-4">
+              <button
+                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                onClick={handleEditUsername}
+                disabled={editLoading}
+              >
+                {editLoading ? "Saving..." : "Save"}
+              </button>
+              <button
+                className="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <br></br>
       <br></br>
       <br></br>
