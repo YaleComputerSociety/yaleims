@@ -39,11 +39,12 @@ const NavBar: React.FC = () => {
     { href: "/about-us", text: "About" },
     { href: "/scores", text: "Scores" },
     { href: "/schedule", text: "Schedule" },
+    { href: "https://yaleims.canny.io", text: "Feedback" }
   ];
 
   return (
     <nav className="p-3 pb-4 items-center w-full fixed top-0 z-50 transition-colors duration-300 pr-5">
-      <div className="md:flex md:block justify-between items-center hidden">
+      <div className="mg:flex mg:block justify-between items-center hidden">
         <div className="hover:text-slate-500 text-xl pl-10">
           <Link href={links[0].href} onClick={resetFilters}>
             <Image src="/LOGO.png" width={130} height={130} alt="YALE IMS" />
@@ -56,6 +57,7 @@ const NavBar: React.FC = () => {
               href={link.href}
               className="hover:text-slate-600 dark:hover:text-blue-400 flex justify-between items-center pl-4 pr-4 last:text-4xl last:pr-10"
               onClick={resetFilters}
+              target={link.text === "Feedback" ? "_blank" : ""}
             >
               <div className="mt-2">{link.text}</div>
             </Link>
@@ -90,11 +92,10 @@ const NavBar: React.FC = () => {
             ) : (
               <button
                 onClick={signIn}
-                className={`py-1 px-3 rounded border ${
-                  theme === "light"
-                    ? "border-black hover:border-gray-400 hover:text-gray-400"
-                    : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
-                }`}
+                className={`py-1 px-3 rounded border ${theme === "light"
+                  ? "border-black hover:border-gray-400 hover:text-gray-400"
+                  : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
+                  }`}
               >
                 Sign in with Google
               </button>
@@ -103,9 +104,8 @@ const NavBar: React.FC = () => {
         </div>
       </div>
       <div
-        className={`${
-          isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
-        } -mt-2 md:hidden flex items-center justify-between`}
+        className={`${isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
+          } -mt-2 mg:hidden flex items-center justify-between`}
       >
         <button onClick={toggleNavbar} className="pl-4">
           {isClick ? (
@@ -155,11 +155,10 @@ const NavBar: React.FC = () => {
               ) : (
                 <button
                   onClick={signIn}
-                  className={`py-1 px-3 rounded border mt-3 ${
-                    theme === "light"
-                      ? "border-black hover:border-gray-400 hover:text-gray-400"
-                      : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
-                  }`}
+                  className={`py-1 px-3 rounded border mt-3 ${theme === "light"
+                    ? "border-black hover:border-gray-400 hover:text-gray-400"
+                    : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
+                    }`}
                 >
                   Sign in with Google
                 </button>
@@ -171,7 +170,7 @@ const NavBar: React.FC = () => {
         </div>
       </div>
       {isClick && (
-        <div className="md:hidden -mt-4 bg-white dark:bg-black flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
+        <div className="mg:hidden -mt-4 bg-white dark:bg-black flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
           {links.map((link, index) => (
             <Link
               key={index + "-second"}

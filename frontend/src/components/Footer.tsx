@@ -68,9 +68,9 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:underline">
+                  <Link href="https://yaleims.canny.io" className="hover:underline" target="_blank">
                     Feedback
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
