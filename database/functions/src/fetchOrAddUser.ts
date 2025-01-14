@@ -73,6 +73,21 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
       const yaliesInfo: any = yaliesData[0];
       const { first_name, last_name, college } = yaliesInfo;
 
+      // Generate a unique username
+      const count = await incrementCounter();
+      let generatedUsername = generateUsername(count);
+
+      const usernameRef = db.collection("usernames").doc(generatedUsername);
+      const usernameDoc = await usernameRef.get();
+
+      if (!usernameDoc.exists) {
+        await usernameRef.set({
+          email,
+        });
+      } else {
+        generatedUsername = "Anonymous";
+      }
+
       const newUser = {
         email: email,
         firstname: first_name,
@@ -81,6 +96,7 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         points: 0,
         college: college || null,
         role: "user", // default role; otherwise "admin" can be set in firestore
+        username: generatedUsername,
       };
 
       await userRef.set(newUser);
@@ -93,3 +109,143 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+// Increment the counter without transactions
+async function incrementCounter() {
+  const counterRef = db.collection("counters").doc("usernames");
+
+  // Use Firestore's atomic increment
+  await counterRef.set(
+    { count: admin.firestore.FieldValue.increment(1) },
+    { merge: true }
+  );
+
+  // Retrieve the updated count
+  const snapshot = await counterRef.get();
+  return snapshot.exists ? snapshot.data()?.count || 0 : 0;
+}
+
+// Generate a username based on count
+function generateUsername(count: any) {
+  const adjectives = [
+    "Swift",
+    "Bold",
+    "Clever",
+    "Happy",
+    "Brave",
+    "Fierce",
+    "Gentle",
+    "Mighty",
+    "Charming",
+    "Lucky",
+    "Fearless",
+    "Noble",
+    "Playful",
+    "Quick",
+    "Witty",
+    "Serene",
+    "Vivid",
+    "Graceful",
+    "Bright",
+    "Silent",
+    "Eager",
+    "Calm",
+    "Dynamic",
+    "Friendly",
+    "Humble",
+    "Jolly",
+    "Keen",
+    "Loyal",
+    "Patient",
+    "Powerful",
+    "Radiant",
+    "Sharp",
+    "Sturdy",
+    "Valiant",
+    "Wise",
+    "Zealous",
+    "Agile",
+    "Cheerful",
+    "Daring",
+    "Elegant",
+    "Fearsome",
+    "Gleeful",
+    "Heroic",
+    "Joyful",
+    "Kind",
+    "Lively",
+    "Modest",
+    "Peaceful",
+    "Resilient",
+    "Spirited",
+    "Strong",
+    "Thoughtful",
+    "Vibrant",
+    "Warm",
+    "Zesty",
+  ];
+
+  const nouns = [
+    "Tiger",
+    "Cloud",
+    "Eagle",
+    "Phoenix",
+    "Wave",
+    "Lion",
+    "Bear",
+    "Falcon",
+    "River",
+    "Mountain",
+    "Sky",
+    "Wolf",
+    "Sun",
+    "Moon",
+    "Star",
+    "Forest",
+    "Ocean",
+    "Hawk",
+    "Falcon",
+    "Stream",
+    "Glacier",
+    "Thunder",
+    "Comet",
+    "Dolphin",
+    "Breeze",
+    "Shadow",
+    "Flame",
+    "Blaze",
+    "Meadow",
+    "Canyon",
+    "Galaxy",
+    "Pebble",
+    "Raven",
+    "Snow",
+    "Storm",
+    "Tornado",
+    "Valley",
+    "Whale",
+    "Zephyr",
+    "Aurora",
+    "Brook",
+    "Falcon",
+    "Lynx",
+    "Meteor",
+    "Puma",
+    "Quasar",
+    "Rain",
+    "Sand",
+    "Tide",
+    "Vortex",
+    "Wind",
+    "Zenith",
+    "Orca",
+    "Jaguar",
+    "Dragonfly",
+  ];
+
+  const randomAdjective =
+    adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+
+  return `${randomAdjective}${randomNoun}${count}`;
+}
