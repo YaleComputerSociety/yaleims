@@ -15,10 +15,9 @@ const ListView: React.FC<ListViewProps> = ({ matches, isSignedUp }) => {
       ) : (
         <ul>
           {matches.map((match) => {
-            const matchId = `${match.home_college}-${match.away_college}-${match.timestamp}`;
             return (
               <MatchListItem
-                key={matchId}
+                key={match.id}
                 match={match}
                 user={null} // Replace with actual user if needed
                 isSignedUp={isSignedUp}

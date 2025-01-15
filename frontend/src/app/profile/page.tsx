@@ -30,7 +30,7 @@ const Profile = () => {
           toCollegeAbbreviation[user.college] || user.college;
 
         const response = await fetch(
-          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future`,
+          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc`,
           {
             method: "GET",
             headers: {
@@ -45,12 +45,7 @@ const Profile = () => {
 
         const fetchedMatches: Match[] = await response.json();
 
-        const futureMatches = fetchedMatches.filter((match) => {
-          const matchDate = new Date(match.timestamp);
-          return matchDate > new Date();
-        });
-
-        setMatches(futureMatches);
+        setMatches(fetchedMatches);
       } catch (error) {
         console.error("Error fetching user matches:", error);
       } finally {
@@ -227,7 +222,7 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="text-center mt-8 text-gray-600">
-                  No available games to sign up for.
+                  No available games to sign up for this week.
                 </div>
               )}
             </div>

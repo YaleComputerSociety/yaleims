@@ -21,49 +21,51 @@ export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
         query = query.where("timestamp", ">", currentDate); // Get future matches
       }
 
-      query = query.orderBy("timestamp", sortOrder as "asc" | "desc");
+      // Add orderBy to the base query
+      const baseQuery = query.orderBy("timestamp", sortOrder as "asc" | "desc");
 
-      // Fetch the matches for home_college
-      let homeMatchesQuery = query.where("home_college", "==", college);
-      let awayMatchesQuery = query.where("away_college", "==", college);
+      // Fetch the matches for home_college and away_college
+      const homeMatchesQuery = baseQuery.where("home_college", "==", college);
+      const awayMatchesQuery = baseQuery.where("away_college", "==", college);
 
-      // Execute both queries and merge the results
-      const homeMatchesSnapshot = await homeMatchesQuery.get();
-      const awayMatchesSnapshot = await awayMatchesQuery.get();
+      // Execute both queries
+      const [homeMatchesSnapshot, awayMatchesSnapshot] = await Promise.all([
+        homeMatchesQuery.get(),
+        awayMatchesQuery.get(),
+      ]);
 
-      // Combine the results from both queries and ensure data is valid
+      // Combine the results from both queries
       const allMatches = [
-        ...homeMatchesSnapshot.docs
-          .map((doc) => doc.data())
-          .filter((data) => data !== undefined), // Filter out undefined data
-        ...awayMatchesSnapshot.docs
-          .map((doc) => doc.data())
-          .filter((data) => data !== undefined), // Filter out undefined data
+        ...homeMatchesSnapshot.docs.map((doc) => doc.data()),
+        ...awayMatchesSnapshot.docs.map((doc) => doc.data()),
       ];
 
-      // Log all matches before returning
-      // console.log("All Matches:", allMatches);
+      // Re-sort the combined results
+      const sortedMatches = allMatches.sort((a, b) => {
+        const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
+        const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      });
 
       // Process and format the results
-      const matches = allMatches
-        .map((data) => {
-          if (!data) return null; // Ensure that data is defined
-          return {
-            home_college: data.home_college,
-            away_college: data.away_college,
-            sport: data.sport,
-            home_college_score: data.home_college_score,
-            away_college_score: data.away_college_score,
-            home_college_participants: data.home_college_participants,
-            away_college_participants: data.away_college_participants,
-            winner: data.winner,
-            timestamp:
-              data.timestamp && data.timestamp.toDate
-                ? data.timestamp.toDate().toISOString()
-                : null, // Fallback if timestamp is missing or invalid
-          };
-        })
-        .filter((match) => match !== null); // Filter out null matches
+      const matches = sortedMatches.map((data) => ({
+        id: data.id,
+        home_college: data.home_college,
+        away_college: data.away_college,
+        sport: data.sport,
+        home_college_score: data.home_college_score,
+        away_college_score: data.away_college_score,
+        home_college_participants: data.home_college_participants,
+        away_college_participants: data.away_college_participants,
+        location: data.location,
+        location_extra: data.location_extra,
+        winner: data.winner,
+        type: data.type,
+        timestamp:
+          data.timestamp && data.timestamp.toDate
+            ? data.timestamp.toDate().toISOString()
+            : null, // Fallback if timestamp is missing or invalid
+      }));
 
       // Return the matches as a JSON response
       return res.status(200).json(matches);

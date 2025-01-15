@@ -39,6 +39,7 @@ export const getMatches = functions.https.onRequest(async (req, res) => {
       const matches = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
+          id: data.id,
           home_college: data.home_college,
           away_college: data.away_college,
           sport: data.sport,

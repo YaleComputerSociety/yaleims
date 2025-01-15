@@ -67,6 +67,55 @@ export const sports: Sport[] = [
     emoji: "🏓",
     season: { "2024-2025": "Fall" },
   },
+  {
+    id: "7",
+    name: "Broomball",
+    points_for_win: 6,
+    emoji: "🧹",
+    season: { "2024-2025": "Winter" },
+  },
+  {
+    id: "8",
+    name: "CHoops",
+    points_for_win: 5,
+    emoji: "🏀",
+    season: { "2024-2025": "Winter" },
+  },
+  {
+    id: "9",
+    name: "MHoops",
+    points_for_win: 5,
+    emoji: "🏀",
+    season: { "2024-2025": "Winter" },
+  },
+  {
+    id: "10",
+    name: "WHoops",
+    points_for_win: 5,
+    emoji: "🏀",
+    season: { "2024-2025": "Winter" },
+  },
+  {
+    id: "11",
+    name: "Dodgeball",
+    points_for_win: 8,
+    emoji: "🤾‍♂️",
+    season: { "2024-2025": "Winter" },
+  },
+  {
+    id: "12",
+    name: "Volleyball",
+    points_for_win: 6,
+    emoji: "🏐",
+    season: { "2024-2025": "Spring" },
+  },
+  {
+    id: "13",
+    name: "Netball",
+    points_for_win: 7,
+    emoji: "🥅",
+    season: { "2024-2025": "Spring" },
+  },
 ];
 
 export const sportsMap: SportMap = {
@@ -85,6 +134,14 @@ export const emojiMap: EmojiMap = {
   Pickleball: "🥒",
   "Table Tennis": "🏓",
   Soccer: "⚽",
+  Broomball: "🧹",
+  MHoops: "🏀",
+  CHoops: "🏀",
+  WHoops: "🏀",
+  Dodgeball: "🤾‍♂️",
+  "Indoor Soccer": "⚽",
+  Volleyball: "🏐",
+  Netball: "🥅",
 };
 
 // College abbreviations mapped to full college names (fixed keys)
@@ -220,7 +277,9 @@ export function generateGoogleCalendarLink(match: Match): string {
     details: `Intramural ${match.sport} match between ${
       toCollegeName[match.home_college]
     } and ${toCollegeName[match.away_college]}.`,
-    location: match.location || "",
+    location: `${match.location}${
+      match.location_extra ? " " + match.location_extra : ""
+    }`,
     dates: formatDateTime(start) + "/" + formatDateTime(end),
   });
 

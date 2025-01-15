@@ -100,7 +100,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
                 );
                 return (
                   <MatchListItem
-                    key={`${match.home_college}-${match.away_college}-${match.timestamp}`}
+                    key={match.id}
                     match={match}
                     user={user}
                     isSignedUp={isSignedUp}

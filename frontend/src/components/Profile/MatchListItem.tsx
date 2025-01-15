@@ -31,9 +31,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: `${match.home_college}-${match.away_college}-${new Date(
-              match.timestamp
-            ).toISOString()}`,
+            matchId: match.id,
             participantType:
               user.college === match.home_college
                 ? "home_college_participants"
@@ -68,7 +66,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: `${match.home_college}-${match.away_college}-${match.timestamp}`,
+            matchId: match.id,
             participantType:
               user.college === match.home_college
                 ? "home_college_participants"
@@ -127,7 +125,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
     <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out">
       <div className="flex items-center">
         {/* Sport Emoji */}
-        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-3xl mr-4 hidden xs:block">
+        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-3xl mr-1 hidden xs:block">
           {emojiMap[match.sport]}
         </div>
 
@@ -139,15 +137,22 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
           </div>
           <div className="flex flex-row">
             <div className="text-xs sm:text-sm text-gray-600 font-semibold">
-              {match.sport}
+              {match.sport}{" "}
+              {match.type == "Regular"
+                ? "Regular Season Match"
+                : `${match.type} Round`}
             </div>
-            <div className="ml-1 xs:hidden text-xs">{emojiMap[match.sport]}</div>
+            <div className="ml-1 xs:hidden text-xs">
+              {emojiMap[match.sport]}
+            </div>
           </div>
 
           <div className="text-xs sm:text-sm text-gray-500">
             {matchDate} at {matchTime}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500">{location}</div>
+          <div className="text-xs sm:text-sm text-gray-500">
+            {location} {match.location_extra ? match.location_extra : ""}
+          </div>
         </div>
 
         {/* Action Buttons */}

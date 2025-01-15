@@ -29,6 +29,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const handleSignUp = async () => {
     setIsLoading(true);
+    console.log(match);
     try {
       const response = await fetch(
         "https://addparticipant-65477nrg6a-uc.a.run.app",
@@ -38,9 +39,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: `${match.home_college}-${match.away_college}-${new Date(
-              match.timestamp
-            ).toISOString()}`,
+            matchId: match.id,
             participantType:
               user.college === match.home_college
                 ? "home_college_participants"
@@ -76,7 +75,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: `${match.home_college}-${match.away_college}-${match.timestamp}`,
+            matchId: match.id,
             participantType:
               user.college === match.home_college
                 ? "home_college_participants"
@@ -136,18 +135,23 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       <div className="flex justify-between items-center">
         <div>
           {/* Match Teams */}
-          <div className="text-sm sm:text-2xl font-bold mb-1">
+          <div className="text-sm sm:text-lg font-bold">
             {toCollegeName[match.home_college || "TBD"]}{" "}
             {match.away_college != "Bye" ? (
-              <>vs {toCollegeName[match.away_college]}</>
+              <>
+                vs {toCollegeName[match.away_college]} {emojiMap[match.sport]}
+              </>
             ) : (
               <>(BYE)</>
             )}
           </div>
 
           {/* Match Sport */}
-          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-semibold">
-            {match.sport} {emojiMap[match.sport]}
+          <div className="text-sm sm:text-md text-gray-600 dark:text-gray-400 font-semibold">
+            {match.sport}{" "}
+            {match.type == "Regular"
+              ? "Regular Season Match"
+              : `${match.type} Round`}
           </div>
 
           {/* Match Date and Time */}
@@ -156,7 +160,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           </div>
 
           {/* Match Location */}
-          <div className="text-gray-500 text-xs sm:text-sm">{location}</div>
+          <div className="text-gray-500 text-xs sm:text-sm">
+            {location} {match.location_extra ? match.location_extra : null}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-0">

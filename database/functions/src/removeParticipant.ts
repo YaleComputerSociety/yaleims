@@ -34,7 +34,7 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
       const matchDoc = await admin
         .firestore()
         .collection("matches")
-        .doc(matchId)
+        .doc(matchId.toString())
         .get();
 
       if (!matchDoc.exists) {

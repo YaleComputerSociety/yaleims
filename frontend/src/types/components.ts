@@ -26,6 +26,9 @@ export type Match = {
   sport: string; // The sport played in the match (e.g., "Flag Football")
   timestamp: string; // Date and time of the match, in ISO format or UNIX timestamp
   location: string; // The location where the match was played (optional)
+  location_extra: string;
+  type: string;
+  division: string;
   winner: string | null; // Determines the winner, or if it's a draw
   forfeit: boolean;
 };

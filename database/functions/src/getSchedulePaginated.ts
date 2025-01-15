@@ -70,6 +70,7 @@ export const getSchedulePaginated = functions.https.onRequest(
         const matches = snapshot.docs.slice(0, pageSizeNum).map((doc) => {
           const data = doc.data();
           return {
+            id: data.id,
             home_college: data.home_college,
             away_college: data.away_college,
             sport: data.sport,
@@ -77,6 +78,7 @@ export const getSchedulePaginated = functions.https.onRequest(
             away_college_score: data.away_college_score,
             winner: data.winner,
             location: data.location,
+            type: data.type,
             timestamp:
               data.timestamp && data.timestamp.toDate
                 ? data.timestamp.toDate().toISOString()

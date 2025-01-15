@@ -1,0 +1,42 @@
+Date,Time,Home College,Away College,Sport,Court,Type,Location
+1/21,8:00 PM,MY,TC,WHoops,Court 1,Regular,Lanman Center
+1/21,8:00 PM,SM,BK,WHoops,Court 2,Regular,Lanman Center
+1/21,8:00 PM,BR,BF,WHoops,Court 3,Regular,Lanman Center
+1/21,9:00 PM,ES,GH,WHoops,Court 1,Regular,Lanman Center
+1/21,9:00 PM,MC,DC,WHoops,Court 2,Regular,Lanman Center
+1/21,9:00 PM,TD,JE,WHoops,Court 3,Regular,Lanman Center
+1/23,9:00 PM,BR,SY,WHoops,,Regular,Lanman Center
+1/23,9:00 PM,MY,SM,WHoops,,Regular,Lanman Center
+1/23,9:00 PM,TC,BK,WHoops,,Regular,Lanman Center
+1/23,10:00 PM,TD,PC,WHoops,,Regular,Lanman Center
+1/23,10:00 PM,ES,MC,WHoops,,Regular,Lanman Center
+1/23,10:00 PM,GH,DC,WHoops,,Regular,Lanman Center
+1/28,8:00 PM,GH,JE,WHoops,Court 1,Regular,Lanman Center
+1/28,8:00 PM,MC,PC,WHoops,Court 2,Regular,Lanman Center
+1/28,8:00 PM,ES,DC,WHoops,Court 3,Regular,Lanman Center
+1/29,9:00 PM,TC,BF,WHoops,Court 2,Regular,Lanman Center
+1/29,10:00 PM,SM,SY,WHoops,Court 1,Regular,Lanman Center
+2/3,8:00 PM,MY,BR,WHoops,Court 1,Regular,Lanman Center
+2/3,8:00 PM,TC,SY,WHoops,Court 2,Regular,Lanman Center
+2/3,9:00 PM,SM,BF,WHoops,Court 1,Regular,Lanman Center
+2/3,9:00 PM,ES,TD,WHoops,Court 2,Regular,Lanman Center
+2/3,10:00 PM,GH,PC,WHoops,Court 1,Regular,Lanman Center
+2/3,10:00 PM,MC,JE,WHoops,Court 2,Regular,Lanman Center
+2/5,8:00 PM,BK,SY,WHoops,Court 1,Regular,Lanman Center
+2/5,8:00 PM,MY,BF,WHoops,Court 2,Regular,Lanman Center
+2/5,9:00 PM,TC,BR,WHoops,Court 1,Regular,Lanman Center
+2/6,8:00 PM,DC,PC,WHoops,,Regular,Lanman Center
+2/6,8:00 PM,ES,JE,WHoops,,Regular,Lanman Center
+2/6,8:00 PM,GH,TD,WHoops,,Regular,Lanman Center
+2/11,9:00 PM,SM,BR,WHoops,Court 1,Regular,Lanman Center
+2/11,9:00 PM,BK,BF,WHoops,Court 2,Regular,Lanman Center
+2/11,9:00 PM,MY,SY,WHoops,Court 3,Regular,Lanman Center
+2/11,10:00 PM,MC,TD,WHoops,Court 1,Regular,Lanman Center
+2/11,10:00 PM,DC,JE,WHoops,Court 2,Regular,Lanman Center
+2/11,10:00 PM,ES,PC,WHoops,Court 3,Regular,Lanman Center
+2/13,9:00 PM,GH,MC,WHoops,,Regular,Lanman Center
+2/13,9:00 PM,DC,TD,WHoops,,Regular,Lanman Center
+2/13,9:00 PM,JE,PC,WHoops,,Regular,Lanman Center
+2/13,10:00 PM,TC,SM,WHoops,,Regular,Lanman Center
+2/13,10:00 PM,BK,BR,WHoops,,Regular,Lanman Center
+2/13,10:00 PM,BF,SY,WHoops,,Regular,Lanman Center

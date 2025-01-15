@@ -21,8 +21,8 @@ const TableRow: React.FC<TableRowProps> = ({
     <div className={rowClasses}>
       <div className="md:px-6 pl-2 md:pr-10 py-4 text-xs xs:text-sm  text-gray-500">
         {new Date(match.timestamp).toLocaleString("en-US", {
-          hour: "2-digit", // "04"
-          minute: "2-digit", // "00"
+          hour: "numeric", // Avoids leading zero in the hour
+          minute: "2-digit", // Keeps leading zero for minutes
           hour12: true, // "AM/PM"
         })}
       </div>

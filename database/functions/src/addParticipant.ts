@@ -31,7 +31,10 @@ export const addParticipant = functions.https.onRequest((req, res) => {
       }
 
       // Query Firestore to find the match document by its ID
-      const matchDoc = await db.collection("matches").doc(matchId).get();
+      const matchDoc = await db
+        .collection("matches")
+        .doc(matchId.toString())
+        .get();
 
       if (!matchDoc.exists) {
         console.error("Match not found for matchId:", matchId);
@@ -93,23 +96,18 @@ export const addParticipant = functions.https.onRequest((req, res) => {
 
       const userData = userDoc.data();
       const userMatches = userData?.matches || [];
-      const matchesPlayed = userData?.matches_played; // TEST
-
       // Check if the match is already in the user's matches array
       const isMatchDuplicate = userMatches.some(
-        (match: any) => match.matchId === matchId
+        (match: any) => match.id === matchId
       );
 
       if (isMatchDuplicate) {
         console.warn(`Match ${matchId} is already in your matches`);
       } else {
         userMatches.push({ matchId, ...selectedMatch });
-
-        await userDocRef.update({
-          matches: userMatches,
-          matches_played: matchesPlayed + 1, // Increment matches_played by 1
-        });
       }
+
+      await userDocRef.update({ matches: userMatches });
 
       res.status(200).json({
         message: `Successfully signed up and updated your matches!`,
