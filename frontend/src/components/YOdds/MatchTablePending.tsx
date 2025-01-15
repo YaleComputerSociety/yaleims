@@ -6,7 +6,7 @@ import { MatchesTableProps } from "@src/types/components";
 
 // Main MatchesTable Component
 const MatchesTable: React.FC<MatchesTableProps> = ({ pendingBets }) => {
-  const test = groupBetByDate(pendingBets);
+  const test = groupByDate(pendingBets);
 
   return (
     <>

@@ -4,6 +4,7 @@ import { TableRowProps } from "@src/types/components";
 import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
+import Link from "next/link";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,
@@ -180,10 +181,22 @@ const TableRow: React.FC<TableRowProps> = ({
         </div>
       </div>
       {isOpen ? (
-        <div className="text-center pb-5 italic">
-          No Yodds data available for this match
+        <div className="text-center text-xs italic transition-[height] duration-300 ease-out h-10 overflow-hidden">
+          No Yodds data available for this match. Predict game outcomes{" "}
+          <Link href={"/yodds"} className="text-blue-400">
+            here.
+          </Link>
         </div>
-      ) : null}
+      ) : (
+        <div className="transition-[height] duration-300 ease-out h-0 overflow-hidden">
+          <div className="text-center text-xs pb-5 italic">
+            No Yodds data available for this match. Predict game outcomes{" "}
+            <Link href={"/yodds"} className="text-blue-400">
+              here.
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

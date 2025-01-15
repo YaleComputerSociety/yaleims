@@ -11,6 +11,9 @@ import { removeParticipant } from "./removeParticipant.js";
 import { getMatches } from "./getMatches.js";
 import { getSchedulePaginated } from "./getSchedulePaginated.js";
 import { updateUsername } from "./updateUsername.js";
+import { addBet } from "./addBet.js";
+import { deleteBet } from "./deleteBet.js";
+import { getPendingBets } from "./getPendingBets.js";
 
 export {
   getLeaderboard,
@@ -26,4 +29,7 @@ export {
   getMatches,
   getSchedulePaginated,
   updateUsername,
+  addBet,
+  deleteBet,
+  getPendingBets,
 };

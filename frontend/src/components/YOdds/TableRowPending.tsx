@@ -87,14 +87,12 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
     }
   }, [reloadNow]);
 
+  console.log(bet.createdAt);
+
   return (
     <div className="bg-white grid grid-cols-[auto_1fr_auto] items-center">
       <div className="md:px-6 pl-2 py-4 text-xs md:text-sm text-gray-500">
-        {new Date(bet.timestamp).toLocaleString("en-US", {
-          hour: "2-digit", // "04"
-          minute: "2-digit", // "00"
-          hour12: true, // "AM/PM"
-        })}
+        {/* {new Date(bet.createdAt)} */}
       </div>
 
       {/* Combine Colleges and Scores into one column */}
@@ -147,9 +145,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
               <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
             </div>
             <div className="text-left hidden md:block">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+              <strong>{(bet.betAmount * 2).toFixed(2)} coins to win</strong>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"

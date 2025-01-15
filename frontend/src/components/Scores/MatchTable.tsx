@@ -22,7 +22,14 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
       {Object.entries(test).map(([date, items]) => (
         <div key={date} className="min-w-full rounded-lg mb-4">
           <div>
-            <div className="text-left p-2 bg-black-100 border-none">{date}</div>
+            <div className="text-left p-2 bg-black-100 border-none">
+              {new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
           </div>
           <div>
             {items.map((match, index) => (

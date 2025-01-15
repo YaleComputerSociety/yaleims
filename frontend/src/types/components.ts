@@ -55,8 +55,8 @@ export interface MatchCardProps {
 
 export interface MatchesTableProps {
   filteredMatches: Match[]; // Type the filteredMatches prop as an array of Match
-  handleCollegeClick: (college: string) => void;
-  handleSportClick: (sport: string) => void;
+  handleCollegeClick?: (college: string) => void;
+  handleSportClick?: (sport: string) => void;
   availablePoints?: number;
 }
 

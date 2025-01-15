@@ -99,8 +99,6 @@ const ScoresPage: React.FC = () => {
 
         const data = await response.json();
 
-        console.log(data);
-
         setFilteredMatches(data.matches);
         setFirstVisible(data.firstVisible);
         setLastVisible(data.lastVisible);

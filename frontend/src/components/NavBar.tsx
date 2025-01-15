@@ -38,6 +38,7 @@ const NavBar: React.FC = () => {
     { href: "/", text: "YALE IMS", text_mobile: "Home" },
     { href: "/scores", text: "Scores" },
     { href: "/schedule", text: "Schedule" },
+    { href: "/yodds", text: "Yodds" },
     { href: "/about-us", text: "About" },
     { href: "https://yaleims.canny.io", text: "Feedback" },
   ];

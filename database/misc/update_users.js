@@ -1,0 +1,73 @@
+import { initializeApp } from "firebase/app";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  writeBatch,
+  doc,
+  deleteField, // Add this import
+} from "firebase/firestore";
+
+// Your Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB4ja4JXughIwxLPEt42mNClHH53sN0D6Q",
+  authDomain: "yims-125a2.firebaseapp.com",
+  projectId: "yims-125a2",
+  storageBucket: "yims-125a2.appspot.com",
+  messagingSenderId: "846558223250",
+  appId: "1:846558223250:web:38c418708cc6f04e003f4b",
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app);
+
+// Function to migrate bet array to a bet subcollection
+async function migrateBetArrayToSubcollection() {
+  const usersRef = collection(firestore, "users");
+  const snapshot = await getDocs(usersRef);
+
+  if (snapshot.empty) {
+    console.log("No user documents found.");
+    return;
+  }
+
+  console.log(
+    `Found ${snapshot.size} user documents. Migrating "bet" array to subcollection...`
+  );
+
+  for (const docSnapshot of snapshot.docs) {
+    const userId = docSnapshot.id;
+    const userData = docSnapshot.data();
+
+    if (userData.bet && Array.isArray(userData.bet)) {
+      console.log(`Migrating bets for user: ${userId}`);
+
+      // Create a subcollection for bets
+      const betsRef = collection(firestore, `users/${userId}/bet`);
+
+      const batch = writeBatch(firestore);
+
+      userData.bet.forEach((bet, index) => {
+        const betDocRef = doc(betsRef, `bet_${index + 1}`);
+        batch.set(betDocRef, bet);
+      });
+
+      // Remove the "bet" array from the user document
+      const userRef = doc(usersRef, userId);
+      batch.update(userRef, { bet: deleteField() });
+
+      try {
+        await batch.commit();
+        console.log(`Bets migrated to subcollection for user: ${userId}`);
+      } catch (error) {
+        console.error(`Error migrating bets for user ${userId}:`, error);
+      }
+    }
+  }
+
+  console.log("Migration of bets to subcollections completed.");
+}
+
+// Call the function
+migrateBetArrayToSubcollection();

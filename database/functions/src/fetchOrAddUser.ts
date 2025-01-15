@@ -34,6 +34,7 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
           role: fullData?.role,
           matches_played: fullData?.matches_played,
           username: fullData?.username,
+          points: fullData?.points,
         };
 
         res.status(200).json({
@@ -94,7 +95,8 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         firstname: first_name,
         lastname: last_name,
         matches: [],
-        points: 0,
+        bets: [],
+        points: 500,
         college: college || null,
         role: "user", // default role; otherwise "admin" can be set in firestore
         username: generatedUsername,

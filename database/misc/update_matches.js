@@ -4,6 +4,7 @@ import {
   collection,
   getDocs,
   writeBatch,
+  doc,
 } from "firebase/firestore";
 
 // Your Firebase configuration
@@ -21,40 +22,44 @@ const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
 // Function to add new volume fields to all matches
-async function addVolumeFields() {
-  try {
-    console.log("Fetching all matches...");
+// Function to update location for Flag Football matches
+async function updateFlagFootballLocations() {
+  const matchesRef = collection(firestore, "matches");
+  const snapshot = await getDocs(matchesRef);
 
-    // Reference to the matches collection
-    const matchesRef = collection(firestore, "matches");
-    const querySnapshot = await getDocs(matchesRef);
+  if (snapshot.empty) {
+    console.log("No matches found.");
+    return;
+  }
 
-    if (querySnapshot.empty) {
-      console.log("No matches found.");
-      return;
-    }
+  console.log(
+    `Found ${snapshot.size} matches. Updating locations for Flag Football games...`
+  );
 
-    // Create a batch to update documents
-    const batch = writeBatch(firestore);
+  const batch = writeBatch(firestore);
 
-    querySnapshot.forEach((doc) => {
-      console.log(`Adding volume fields to document ID: ${doc.id}`);
+  snapshot.forEach((docSnapshot) => {
+    const matchData = docSnapshot.data();
 
-      batch.update(doc.ref, {
-        home_volume: 0, // Default value for home_volume
-        away_volume: 0, // Default value for away_volume
-        draw_volume: 0, // Default value for draw_volume
-        default_volume: 0, // Default value for default_volume
+    if (matchData.sport === "Flag Football") {
+      const matchRef = doc(matchesRef, docSnapshot.id);
+      batch.update(matchRef, {
+        location: "Yale Bowl",
+        location_extra: "D South 1-3",
       });
-    });
+      console.log(
+        `Updated location for Flag Football match: ${docSnapshot.id}`
+      );
+    }
+  });
 
-    // Commit the batch
+  try {
     await batch.commit();
-    console.log("All matches have been updated with new volume fields.");
+    console.log("Locations for Flag Football matches updated successfully.");
   } catch (error) {
-    console.error("Error adding volume fields:", error);
+    console.error("Error updating Flag Football match locations:", error);
   }
 }
 
-// Call the function
-addVolumeFields();
+// Call the functions
+updateFlagFootballLocations();

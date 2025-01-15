@@ -21,7 +21,7 @@ export const getMatchesPaginated = functions.https.onRequest(
         const sortOrder = (req.query.sortOrder as string) || "desc";
         const date = req.query.date as string;
 
-        if (!college || !pageSize) {
+        if (!pageSize) {
           return res.status(400).send("Missing required parameters");
         }
 
@@ -37,7 +37,9 @@ export const getMatchesPaginated = functions.https.onRequest(
           | "yesterday"
           | "last7days"
           | "last30days"
-          | "last60days";
+          | "last60days"
+          | "future";
+
         const dateFilters: Record<DateFilterKey, Date> = {
           today: new Date(
             currentDate.getFullYear(),
@@ -64,18 +66,15 @@ export const getMatchesPaginated = functions.https.onRequest(
             currentDate.getMonth(),
             currentDate.getDate() - 60
           ),
+          future: currentDate,
         };
-
-        if (!["asc", "desc"].includes(sortOrder)) {
-          return res.status(400).send("Invalid 'sortOrder' parameter");
-        }
 
         const sortOrderValidated = sortOrder as OrderByDirection;
         let query = db
           .collection("matches")
           .orderBy("timestamp", sortOrderValidated);
 
-        if (college !== "All") {
+        if (college && college !== "All") {
           query = query.where(
             Filter.or(
               Filter.where("home_college", "==", college),
@@ -84,9 +83,17 @@ export const getMatchesPaginated = functions.https.onRequest(
           );
         }
 
-        if (sport && sport !== "All") query = query.where("sport", "==", sport);
+        if (sport && sport !== "All") {
+          query = query.where("sport", "==", sport);
+        }
 
-        if (date && date !== "All") {
+        // Handle different date filters
+        if (date === "future") {
+          // Future matches: timestamp >= current date, no winner yet
+          query = query
+            .where("timestamp", ">=", currentDate)
+            .where("winner", "==", null);
+        } else if (date && date !== "All") {
           if (!(date in dateFilters)) {
             return res.status(400).send("Invalid date filter");
           }
@@ -96,6 +103,7 @@ export const getMatchesPaginated = functions.https.onRequest(
             .where("timestamp", ">=", startDate)
             .where("winner", "!=", null);
         } else {
+          // Default: past matches with winners
           query = query
             .where("timestamp", "<", currentDate)
             .where("winner", "!=", null);
@@ -104,6 +112,7 @@ export const getMatchesPaginated = functions.https.onRequest(
         const totalResults = (await query.count().get()).data().count;
         const totalPages = Math.ceil(totalResults / pageSizeNum);
 
+        // Handle pagination based on type
         if (type === "next" && lastVisible) {
           const lastVisibleDoc = await db
             .collection("matches")

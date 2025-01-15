@@ -11,7 +11,6 @@ interface DelBetRequestBody {
   matchId: string;
   sport: string;
   betAmount: string;
-  betOdds: string;
   betOption: string;
 }
 
@@ -27,7 +26,6 @@ function isDelBetRequestBody(query: any): query is DelBetRequestBody {
 }
 
 export const deleteBet = functions.https.onRequest(async (req, res) => {
-  // TODO: fix this. There is no ID attached to a bet; they are in an array. It should iterate through all bets to check for common elements. Check that MatchID, betAmount, betOption, betOdds all match
   corsHandler(req, res, async () => {
     if (!isDelBetRequestBody(req.query)) {
       return res
@@ -35,107 +33,80 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
         .send("Required parameters are missing or incorrect.");
     }
 
-    const {
-      email,
-      matchId,
-      sport,
-      betAmount,
-      betOdds,
-      betOption,
-    }: DelBetRequestBody = req.query;
-    // const { email, matchId, sport, betAmount, betOdds, betOption }: DelBetRequestBody = req.query as DelBetRequestBody;
+    const { email, matchId, sport, betAmount, betOption }: DelBetRequestBody =
+      req.query;
 
     const betAmountNumber = parseFloat(betAmount);
-    const betOddsNumber = parseFloat(betOdds);
-
-    // Validation
-    // if (!email || !matchId || !sport || !betAmount || !betOdds || !betOption) {
-    // return res.status(400).send("Required parameters are missing");
-    // }
 
     try {
-      const userRef = db.collection("users_dha_testing").doc(email);
-      // const userRef = db.collection("users").doc(email);
+      const userRef = db.collection("users").doc(email);
       const userDoc = await userRef.get();
+
       if (!userDoc.exists) {
         return res.status(404).send("User not found");
       }
-      const userData = userDoc.data();
 
-      if (!userData || !Array.isArray(userData.bets)) {
-        return res.status(404).send("No bets found for this user");
-      }
-
-      const matchRef = db.collection("matches_dha_testing").doc(matchId);
-      // const matchRef = db.collection("matches").doc(matchId);
+      const matchRef = db.collection("matches").doc(matchId);
       const matchDoc = await matchRef.get();
       if (!matchDoc.exists) {
         return res.status(404).send("Match not found");
       }
 
-      // 1. Update the match's betting volume
-      const bet = userData.bets.find(
-        (bet: any) =>
-          bet.matchId === matchId &&
-          // bet.betAmount === betAmount &&
-          bet.betAmount === betAmountNumber &&
-          // bet.betOdds === betOdds &&
-          bet.betOdds === betOddsNumber &&
-          bet.betOption === betOption &&
-          bet.sport === sport
-      );
+      // Query the user's bets subcollection to find the bet
+      const betsRef = userRef.collection("bets");
+      const betSnapshot = await betsRef
+        .where("matchId", "==", matchId)
+        .where("betAmount", "==", betAmountNumber)
+        .where("betOption", "==", betOption)
+        .where("sport", "==", sport)
+        .limit(1)
+        .get();
 
-      if (!bet) {
+      if (betSnapshot.empty) {
         return res
           .status(404)
           .send("Bet not found with the specified parameters");
       }
 
-      // const bet = userData.bets.find((bet: any) => bet.matchId === matchId);
-      if (bet.betOption == "Forfeit") {
-        matchRef.update({
-          forfeit_volume: admin.firestore.FieldValue.increment(bet.betAmount),
-        });
-      } else if (bet.betOption == "Draw") {
-        matchRef.update({
-          draw_volume: admin.firestore.FieldValue.increment(bet.betAmount),
-        });
-      } else if (bet.betOption == bet.away_college) {
-        matchRef.update({
-          away_college_volume: admin.firestore.FieldValue.increment(
-            bet.betAmount
-          ),
-        });
-      } else if (bet.betOption == bet.home_college) {
-        matchRef.update({
-          home_college_volume: admin.firestore.FieldValue.increment(
-            bet.betAmount
-          ),
-        });
-      } else {
-        console.error("betOption doesn't exist");
-      }
+      const betDoc = betSnapshot.docs[0]; // Assuming only one match
+      const betData = betDoc.data();
 
-      // 2. Find the bet and remove it
-      const updatedBets = userData.bets.filter(
-        (bet: any) =>
-          !(
-            bet.matchId === matchId &&
-            // bet.betAmount === betAmount &&
-            bet.betAmount === betAmountNumber &&
-            // bet.betOdds === betOdds &&
-            bet.betOdds === betOddsNumber &&
-            bet.betOption === betOption &&
-            bet.sport === sport
-          )
-      );
-      // const updatedBets = (userData?.bets || []).filter(
-      // (bet: any) => bet.matchId !== matchId
-      // );
+      // Start a transaction to return points and delete the bet
+      await db.runTransaction(async (transaction) => {
+        // Return points to user
+        transaction.update(userRef, {
+          points: admin.firestore.FieldValue.increment(betAmountNumber),
+        });
 
-      // 3. Update user's bets
-      await userRef.update({
-        bets: updatedBets,
+        // Delete the bet document
+        transaction.delete(betsRef.doc(betDoc.id));
+
+        // Update match volumes
+        if (betData.betOption === "Default") {
+          transaction.update(matchRef, {
+            default_volume: admin.firestore.FieldValue.increment(
+              -betAmountNumber
+            ),
+          });
+        } else if (betData.betOption === "Draw") {
+          transaction.update(matchRef, {
+            draw_volume: admin.firestore.FieldValue.increment(-betAmountNumber),
+          });
+        } else if (betData.betOption === betData.away_college) {
+          transaction.update(matchRef, {
+            away_college_volume: admin.firestore.FieldValue.increment(
+              -betAmountNumber
+            ),
+          });
+        } else if (betData.betOption === betData.home_college) {
+          transaction.update(matchRef, {
+            home_college_volume: admin.firestore.FieldValue.increment(
+              -betAmountNumber
+            ),
+          });
+        } else {
+          throw new Error("Invalid betOption");
+        }
       });
 
       return res.status(200).send("Bet deleted successfully");

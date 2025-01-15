@@ -5,17 +5,14 @@ import cors from "cors";
 const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
-
 interface AddBetRequestBody {
   email: string;
   matchId: string;
   betAmount: number;
   betOption: string;
-  betOdds: number;
   away_college: string;
   home_college: string;
   sport: string;
-  timestamp: string;
 }
 
 export const addBet = functions.https.onRequest(async (req, res) => {
@@ -25,11 +22,9 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       matchId,
       betAmount,
       betOption,
-      betOdds,
       away_college,
       home_college,
       sport,
-      timestamp,
     }: AddBetRequestBody = req.body;
 
     // Validation
@@ -40,10 +35,17 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       !betOption ||
       !away_college ||
       !home_college ||
-      !sport ||
-      !timestamp
+      !sport
     ) {
       return res.status(400).send("Missing required fields");
+    }
+
+    if (typeof email !== "string" || email.trim() === "") {
+      return res.status(400).send("Invalid email");
+    }
+
+    if (typeof matchId !== "string" || matchId.trim() === "") {
+      return res.status(400).send("Invalid matchId");
     }
 
     if (betAmount <= 0) {
@@ -51,64 +53,75 @@ export const addBet = functions.https.onRequest(async (req, res) => {
     }
 
     try {
-      // 1. Check if user exists
-      const userRef = db.collection("users_dha_testing").doc(email);
-      // const userRef = db.collection("users").doc(email);
+      // 1. Check if user exists and has enough points
+      const userRef = db.collection("users").doc(email);
       const userDoc = await userRef.get();
+
       if (!userDoc.exists) {
         return res.status(404).send("User not found");
       }
 
+      const userData = userDoc.data();
+      const currentPoints = userData?.points || 0;
+
+      if (currentPoints < betAmount) {
+        return res.status(400).send("Insufficient points for this bet");
+      }
+
       // 2. Check if match exists
-      const matchRef = db.collection("matches_dha_testing").doc(matchId);
-      // const matchRef = db.collection("matches").doc(matchId);
+      const matchRef = db.collection("matches").doc(matchId);
       const matchDoc = await matchRef.get();
       if (!matchDoc.exists) {
         return res.status(404).send("Match not found");
       }
 
-      console.log("Request body:", req.body);
-      console.log("User document data:", userDoc.data());
-      console.log("Match document data:", matchDoc.data());
+      // 4. Start a transaction to update points and add bet
+      await db.runTransaction(async (transaction) => {
+        // Add the bet to a subcollection
+        const userRef = db.collection("users").doc(email); // Parent document
+        const betRef = userRef.collection("bets").doc(); // Subcollection and auto-generated ID
 
-      // 3. Create the bet
-      const bet = {
-        matchId,
-        betAmount,
-        betOption,
-        betOdds,
-        away_college,
-        home_college,
-        sport,
-        timestamp,
-        // createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
+        const bet = {
+          matchId,
+          betAmount,
+          betOption,
+          away_college,
+          home_college,
+          sport,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
 
-      // 4. Update the user's bets
-      await userRef.update({
-        bets: admin.firestore.FieldValue.arrayUnion(bet),
+        // Deduct points from the user
+        transaction.update(userRef, {
+          points: admin.firestore.FieldValue.increment(-betAmount),
+        });
+
+        // Add bet to the subcollection
+        transaction.set(betRef, bet);
+
+        // Update match volumes
+        if (betOption === "Default") {
+          transaction.update(matchRef, {
+            default_volume: admin.firestore.FieldValue.increment(betAmount),
+          });
+        } else if (betOption === "Draw") {
+          transaction.update(matchRef, {
+            draw_volume: admin.firestore.FieldValue.increment(betAmount),
+          });
+        } else if (betOption === away_college) {
+          transaction.update(matchRef, {
+            away_college_volume:
+              admin.firestore.FieldValue.increment(betAmount),
+          });
+        } else if (betOption === home_college) {
+          transaction.update(matchRef, {
+            home_college_volume:
+              admin.firestore.FieldValue.increment(betAmount),
+          });
+        } else {
+          throw new Error("Invalid betOption");
+        }
       });
-
-      // 5. Update the match's betting volume
-      if (betOption == "Forfeit") {
-        matchRef.update({
-          forfeit_volume: admin.firestore.FieldValue.increment(betAmount),
-        });
-      } else if (betOption == "Draw") {
-        matchRef.update({
-          draw_volume: admin.firestore.FieldValue.increment(betAmount),
-        });
-      } else if (betOption == away_college) {
-        matchRef.update({
-          away_college_volume: admin.firestore.FieldValue.increment(betAmount),
-        });
-      } else if (betOption == home_college) {
-        matchRef.update({
-          home_college_volume: admin.firestore.FieldValue.increment(betAmount),
-        });
-      } else {
-        console.error("betOption doesn't exist");
-      }
 
       return res.status(200).send("Bet added successfully");
     } catch (error) {
