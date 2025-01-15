@@ -10,10 +10,6 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
   handleCollegeClick,
   handleSportClick,
 }) => {
-  const onShowParticipants = (match: Match) => {
-    // This could trigger a modal, display a dropdown, or anything else
-    console.log("TODO");
-  };
 
   const test = groupByDate(filteredMatches);
 
@@ -36,9 +32,9 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
               <TableRow
                 key={index}
                 match={match}
-                handleCollegeClick={handleCollegeClick}
                 isFirst={index === 0} // Check if it's the first row
                 isLast={index === items.length - 1} // Check if it's the last row
+                handleCollegeClick={handleCollegeClick}
                 handleSportClick={handleSportClick}
               />
             ))}

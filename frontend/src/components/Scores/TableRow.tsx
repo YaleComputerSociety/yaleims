@@ -32,7 +32,7 @@ const TableRow: React.FC<TableRowProps> = ({
     });
   };
 
-  const CollegeDisplay = ({ college, score, isWinner, points = 0 }) => (
+  const CollegeDisplay = ({ college, score, isWinner, points = 0 }: any) => (
     <div className="items-start text-xs xs:text-sm">
       <strong
         className={`cursor-pointer flex items-center ${

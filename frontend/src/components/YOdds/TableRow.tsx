@@ -1,10 +1,10 @@
 import Image from "next/image";
 import { toCollegeName, emojiMap } from "@src/utils/helpers";
-import { TableRowProps } from "@src/types/components";
+import { YoddsTableRowProps } from "@src/types/components";
 import { useState } from "react";
 import { useUser } from "../../context/UserContext.jsx";
 
-const TableRow: React.FC<TableRowProps> = ({ match, isFirst, isLast }) => {
+const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
   const { home_college, away_college, sport, timestamp, type } = match;
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [coins, setCoins] = useState<number>(0);

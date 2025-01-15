@@ -7,7 +7,7 @@ import { FiltersContext } from "@src/context/FiltersContext";
 import Pagination from "@src/components/scores/Pagination";
 import MatchesTable from "@src/components/YOdds/MatchTable";
 import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
-import { Match, CollegeStats, Bet } from "@src/types/components";
+import { Match, Bet } from "@src/types/components";
 import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -178,6 +178,10 @@ const YoddsPage: React.FC = () => {
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Upcoming Games
+      </p>
+
+      <p className="text-sm text-center text-gray-500 ">
+        Note: Odds are currently not accurate and under construction.
       </p>
 
       <div className="min-w-full flex-col items-center md:px-20">

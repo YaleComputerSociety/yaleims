@@ -1,11 +1,11 @@
 import { groupBetByDate } from "@src/utils/helpers";
 
-import TableRow from "./TableRowPending";
+import TableRowPending from "./TableRowPending";
 
-import { MatchesTableProps } from "@src/types/components";
+import { PendingMatchesTableProps } from "@src/types/components";
 
 // Main MatchesTable Component
-const MatchesTable: React.FC<MatchesTableProps> = ({ pendingBets }) => {
+const MatchesTable: React.FC<PendingMatchesTableProps> = ({ pendingBets }) => {
   const test = groupBetByDate(pendingBets);
 
   return (
@@ -26,7 +26,7 @@ const MatchesTable: React.FC<MatchesTableProps> = ({ pendingBets }) => {
             </div>
             <div>
               {items.map((bet, index) => (
-                <TableRow
+                <TableRowPending
                   key={index}
                   bet={bet}
                   isFirst={index === 0}

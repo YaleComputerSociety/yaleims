@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { toCollegeName, sportsMap, emojiMap } from "@src/utils/helpers";
+import { toCollegeName, emojiMap } from "@src/utils/helpers";
 
-import { TableRowProps, Match } from "@src/types/components";
+import { TablePendingRowProps } from "@src/types/components";
 import { useUser } from "../../context/UserContext.jsx";
 
 //TableRow Component
-const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
-
+const TableRowPending: React.FC<TablePendingRowProps> = ({
+  bet,
+  isFirst,
+  isLast,
+}) => {
   const getTimeString = (timestamp: string) => {
     return new Date(timestamp).toLocaleString("en-US", {
       hour: "numeric",
@@ -44,7 +47,6 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
       const data = await response.text();
       // const data = await response.json();
       setReloadNow(true);
-      console.log("Deleted successfully:", data.message);
     } catch (error) {
       console.error("Failed to delete bet:", error);
     }
@@ -56,10 +58,13 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
     }
   }, [reloadNow]);
 
-
   return (
-    <div className={`bg-white dark:bg-black grid grid-cols-[auto_1fr_auto] items-center ${isFirst ? "rounded-t-lg" : ""} 
-    ${isLast ? "rounded-b-lg" : ""}`}>
+    <div
+      className={`bg-white dark:bg-black grid grid-cols-[auto_1fr_auto] items-center ${
+        isFirst ? "rounded-t-lg" : ""
+      } 
+    ${isLast ? "rounded-b-lg" : ""}`}
+    >
       <div className="md:px-6 pl-2 py-4 text-xs  text-gray-500">
         {getTimeString(bet.matchTimestamp)}
       </div>
@@ -72,9 +77,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
           // EXAMPLE: home college bet
           <>
             <div className="items-start text-xs ">
-              <p
-                className="text-black flex items-center bg-green-300 p-2 rounded-xl"
-              >
+              <p className="text-black flex items-center bg-green-300 p-2 rounded-xl">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
                   alt={bet.home_college}
@@ -106,7 +109,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center hidden md:block">
-              <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -122,7 +127,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center md:hidden text-xs">
-              <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -158,9 +165,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
                 bet.away_college === "" ? "hidden" : "block"
               } items-start text-xs `}
             >
-              <p
-                className="text-black flex items-center bg-green-300 p-2 rounded-xl"
-              >
+              <p className="text-black flex items-center bg-green-300 p-2 rounded-xl">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
                   alt={bet.away_college}
@@ -175,7 +180,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center hidden md:block">
-            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -191,8 +198,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center md:hidden text-xs">
-            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
-
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -211,10 +219,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
           // EXAMPLE: draw
           <>
             <div className="items-start text-xs ">
-              <p
-                className="text-black flex items-center bg-blue-300 p-2 rounded-xl"
-
-              >
+              <p className="text-black flex items-center bg-blue-300 p-2 rounded-xl">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
                   alt={bet.home_college}
@@ -231,9 +236,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
                 bet.away_college === "" ? "hidden" : "block"
               } items-start text-xs `}
             >
-              <p
-                className="text-black flex items-center bg-blue-300 p-2 rounded-xl"
-              >
+              <p className="text-black flex items-center bg-blue-300 p-2 rounded-xl">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
                   alt={bet.away_college}
@@ -247,8 +250,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
               </p>
             </div>
             <div className="text-center hidden md:block">
-            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
-
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -264,8 +268,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center md:hidden text-xs">
-            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
-
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -284,9 +289,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
           // EXAMPLE: forfeit
           <>
             <div className="items-start text-xs ">
-              <p
-                className="text-black flex items-center bg-gray-300 p-2 rounded-xl"
-              >
+              <p className="text-black flex items-center bg-gray-300 p-2 rounded-xl">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
                   alt={bet.home_college}
@@ -303,9 +306,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
                 bet.away_college === "" ? "hidden" : "block"
               } items-start text-xs `}
             >
-              <p
-                className="text-black flex items-center bg-gray-300 p-2 rounded-xl"
-              >
+              <p className="text-black flex items-center bg-gray-300 p-2 rounded-xl">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
                   alt={bet.away_college}
@@ -320,8 +321,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center hidden md:block">
-            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
-
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -337,8 +339,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
             </div>
 
             <div className="text-center md:hidden text-xs">
-            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
-
+              <p>
+                {bet.betAmount} -&gt; {bet.betAmount * 2} coins
+              </p>
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -361,4 +364,4 @@ const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
   );
 };
 
-export default TableRow;
+export default TableRowPending;

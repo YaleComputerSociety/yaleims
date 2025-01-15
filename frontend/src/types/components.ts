@@ -60,18 +60,39 @@ export interface MatchesTableProps {
   availablePoints?: number;
 }
 
+export interface PendingMatchesTableProps {
+  pendingBets: Bet[];
+}
+
 export interface TableHeaderProps {
   handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   filter: Filters;
   sortOrder: string;
   handleSortOrderChange: (newSortOrder: string) => void;
 }
+
 export interface TableRowProps {
+  key?: number;
   match: Match; // `match` prop remains typed as `Match`
-  handleCollegeClick: (college: string) => void; // Function to handle college clicks
+  handleCollegeClick: any; // Function to handle college clicks
   isFirst?: boolean; // Optional prop to indicate if this is the first row
   isLast?: boolean; // Optional prop to indicate if this is the last row
-  handleSportClick: (sport: string) => void; // Function to handle sport clicks
+  handleSportClick: any; // Function to handle sport clicks
+  availablePoints?: number;
+}
+export interface YoddsTableRowProps {
+  key?: number;
+  match: Match; // `match` prop remains typed as `Match`
+  isFirst?: boolean; // Optional prop to indicate if this is the first row
+  isLast?: boolean; // Optional prop to indicate if this is the last row
+  availablePoints?: number;
+}
+
+export interface TablePendingRowProps {
+  key?: number;
+  bet: Bet; // `match` prop remains typed as `Match`
+  isFirst?: boolean; // Optional prop to indicate if this is the first row
+  isLast?: boolean; // Optional prop to indicate if this is the last row
   availablePoints?: number;
 }
 
@@ -132,4 +153,15 @@ export interface Participant {
   email: string;
   name: string;
   // Add other fields as needed
+}
+
+export interface Bet {
+  away_college: string;
+  betAmount: number;
+  betOdds: number;
+  betOption: string;
+  home_college: string;
+  matchId: string;
+  sport: string;
+  matchTimestamp: string;
 }
