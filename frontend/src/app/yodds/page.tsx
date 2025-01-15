@@ -29,7 +29,7 @@ const YoddsPage: React.FC = () => {
   const [pendingBets, setPendingBets] = useState<Bet[]>([]);
   const [availablePoints, setAvailablePoints] = useState<number>(0);
 
-  const { user } = useUser();
+  const { user, signIn } = useUser();
   const userEmail = user ? user.email : null;
 
   // Construct URL parameters for different query types
@@ -135,8 +135,17 @@ const YoddsPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="text-center">
-        To see your yodds, you must be logged in
+      <div className="text-center h-48 mt-40 w-2/5 mx-auto">
+        {" "}
+        <div
+          className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
+          hover:shadow-lg hover:scale-105 hover:rounded-lg transition-transform duration-300 ease-in-out text-center"
+          onClick={signIn}
+        >
+          <span className="text-white dark:text-gray-200 font-medium rounded-lg">
+            Sign in with Google to view your yodds
+          </span>
+        </div>
       </div>
     );
   }
