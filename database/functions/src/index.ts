@@ -14,6 +14,7 @@ import { updateUsername } from "./updateUsername.js";
 import { addBet } from "./addBet.js";
 import { deleteBet } from "./deleteBet.js";
 import { getPendingBets } from "./getPendingBets.js";
+import { getMyAvailablePoints } from "./getMyAvailablePoints.js";
 
 export {
   getLeaderboard,
@@ -32,4 +33,5 @@ export {
   addBet,
   deleteBet,
   getPendingBets,
+  getMyAvailablePoints,
 };

@@ -155,7 +155,7 @@ export default function FAQ() {
         {
           question: "What are YObols?",
           answer:
-            "YObols are virtual coins used in YOdds. Each user starts with 500 YObols to place bets on intramural games. Winnings depend on your predictions and the odds of the match.",
+            "YCoins are virtual coins used in YOdds. Each user starts with 500 YObols to place bets on intramural games. Winnings depend on your predictions and the odds of the match.",
         },
         {
           question: "How does YOdds work?",

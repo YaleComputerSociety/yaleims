@@ -6,7 +6,15 @@ import { TableRowProps, Match } from "@src/types/components";
 import { useUser } from "../../context/UserContext.jsx";
 
 //TableRow Component
-const TableRow: React.FC<TableRowProps> = ({ bet }) => {
+const TableRow: React.FC<TableRowProps> = ({ bet, isFirst, isLast }) => {
+
+  const getTimeString = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
   // something
   // const [isBetDeleted, setIsBetDeleted] = useState(false);
   const [reloadNow, setReloadNow] = useState(false);
@@ -42,57 +50,18 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
     }
   };
 
-  {
-    /*
-  useEffect(() => {
-    if (!userEmail) return;
-
-    const deleteBet = async () => {
-      try {
-        const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/deleteBet?email=${userEmail}&matchId=${bet.matchId}&sport=${bet.sport}&betAmount=${bet.betAmount}&betOdds=${bet.betOdds}&betOption=${bet.betOption}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error deleting bet: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setReloadNow(true);
-        console.log("Deleted successfully:", data.message);
-      } catch (error) {
-        console.error("Failed to delete bet:", error);
-      }
-    };
-
-    deleteBet();
-  }, [isBetDeleted]);
-
-  const handleDeleteBet = () => {
-    console.log('Delete bet clicked');
-    setIsBetDeleted(true);
-  }
-*/
-  }
-
   useEffect(() => {
     if (reloadNow) {
       window.location.reload();
     }
   }, [reloadNow]);
 
-  console.log(bet.createdAt);
 
   return (
-    <div className="bg-white grid grid-cols-[auto_1fr_auto] items-center">
-      <div className="md:px-6 pl-2 py-4 text-xs md:text-sm text-gray-500">
-        {/* {new Date(bet.createdAt)} */}
+    <div className={`bg-white dark:bg-black grid grid-cols-[auto_1fr_auto] items-center ${isFirst ? "rounded-t-lg" : ""} 
+    ${isLast ? "rounded-b-lg" : ""}`}>
+      <div className="md:px-6 pl-2 py-4 text-xs  text-gray-500">
+        {getTimeString(bet.matchTimestamp)}
       </div>
 
       {/* Combine Colleges and Scores into one column */}
@@ -102,14 +71,9 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
         {bet.betOption == bet.home_college ? (
           // EXAMPLE: home college bet
           <>
-            <div className="items-start text-xs md:text-sm">
-              <strong
-                className="text-black flex items-center"
-                style={{
-                  background: "#D7FFEA",
-                  border: "6px solid #D7FFEA",
-                  borderRadius: "10px",
-                }}
+            <div className="items-start text-xs ">
+              <p
+                className="text-black flex items-center bg-green-300 p-2 rounded-xl"
               >
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
@@ -120,14 +84,14 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                   unoptimized
                 />
                 {toCollegeName[bet.home_college]}
-              </strong>
+              </p>
             </div>
             <div
               className={`${
                 bet.away_college === "" ? "hidden" : "block"
-              } items-start text-xs md:text-sm`}
+              } items-start text-xs `}
             >
-              <strong className="text-black flex items-center">
+              <p className="text-black dark:text-white flex items-center">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
                   alt={bet.away_college}
@@ -138,14 +102,11 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 />
 
                 {toCollegeName[bet.away_college]}
-              </strong>
+              </p>
             </div>
 
-            <div className="text-left hidden md:block">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong>{(bet.betAmount * 2).toFixed(2)} coins to win</strong>
+            <div className="text-center hidden md:block">
+              <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -157,16 +118,11 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
 
-            <div className="text-right md:hidden text-xs">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-right md:hidden text-xs">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center md:hidden text-xs">
+              <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -178,14 +134,14 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
           </>
         ) : bet.betOption == bet.away_college ? (
           // EXAMPLE: away college bet
           <>
-            <div className="items-start text-xs md:text-sm">
-              <strong className="text-black flex items-center">
+            <div className="items-start text-xs ">
+              <p className="text-black dark:text-white flex items-center">
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
                   alt={bet.home_college}
@@ -195,20 +151,15 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                   unoptimized
                 />
                 {toCollegeName[bet.home_college]}
-              </strong>
+              </p>
             </div>
             <div
               className={`${
                 bet.away_college === "" ? "hidden" : "block"
-              } items-start text-xs md:text-sm`}
+              } items-start text-xs `}
             >
-              <strong
-                className="text-black flex items-center"
-                style={{
-                  background: "#D7FFEA",
-                  border: "6px solid #D7FFEA",
-                  borderRadius: "10px",
-                }}
+              <p
+                className="text-black flex items-center bg-green-300 p-2 rounded-xl"
               >
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
@@ -220,16 +171,11 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 />
 
                 {toCollegeName[bet.away_college]}
-              </strong>
+              </p>
             </div>
 
-            <div className="text-left hidden md:block">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center hidden md:block">
+            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -241,16 +187,12 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
 
-            <div className="text-right md:hidden text-xs">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-right md:hidden text-xs">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center md:hidden text-xs">
+            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -262,20 +204,16 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
           </>
         ) : bet.betOption == "Draw" ? (
           // EXAMPLE: draw
           <>
-            <div className="items-start text-xs md:text-sm">
-              <strong
-                className="text-black flex items-center"
-                style={{
-                  background: "#CFF6FF",
-                  border: "6px solid #CFF6FF",
-                  borderRadius: "10px",
-                }}
+            <div className="items-start text-xs ">
+              <p
+                className="text-black flex items-center bg-blue-300 p-2 rounded-xl"
+
               >
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
@@ -286,20 +224,15 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                   unoptimized
                 />
                 {toCollegeName[bet.home_college]}
-              </strong>
+              </p>
             </div>
             <div
               className={`${
                 bet.away_college === "" ? "hidden" : "block"
-              } items-start text-xs md:text-sm`}
+              } items-start text-xs `}
             >
-              <strong
-                className="text-black flex items-center"
-                style={{
-                  background: "#CFF6FF",
-                  border: "6px solid #CFF6FF",
-                  borderRadius: "10px",
-                }}
+              <p
+                className="text-black flex items-center bg-blue-300 p-2 rounded-xl"
               >
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
@@ -311,15 +244,11 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 />
 
                 {toCollegeName[bet.away_college]}
-              </strong>
+              </p>
             </div>
-            <div className="text-left hidden md:block">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center hidden md:block">
+            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -331,16 +260,12 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
 
-            <div className="text-right md:hidden text-xs">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-right md:hidden text-xs">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center md:hidden text-xs">
+            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -352,20 +277,15 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
           </>
         ) : (
           // EXAMPLE: forfeit
           <>
-            <div className="items-start text-xs md:text-sm">
-              <strong
-                className="text-black flex items-center"
-                style={{
-                  background: "#E4E4E4",
-                  border: "6px solid #E4E4E4",
-                  borderRadius: "10px",
-                }}
+            <div className="items-start text-xs ">
+              <p
+                className="text-black flex items-center bg-gray-300 p-2 rounded-xl"
               >
                 <Image
                   src={`/college_flags/${toCollegeName[bet.home_college]}.png`}
@@ -376,20 +296,15 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                   unoptimized
                 />
                 {toCollegeName[bet.home_college]}
-              </strong>
+              </p>
             </div>
             <div
               className={`${
                 bet.away_college === "" ? "hidden" : "block"
-              } items-start text-xs md:text-sm`}
+              } items-start text-xs `}
             >
-              <strong
-                className="text-black flex items-center"
-                style={{
-                  background: "#E4E4E4",
-                  border: "6px solid #E4E4E4",
-                  borderRadius: "10px",
-                }}
+              <p
+                className="text-black flex items-center bg-gray-300 p-2 rounded-xl"
               >
                 <Image
                   src={`/college_flags/${toCollegeName[bet.away_college]}.png`}
@@ -401,16 +316,12 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 />
 
                 {toCollegeName[bet.away_college]}
-              </strong>
+              </p>
             </div>
 
-            <div className="text-left hidden md:block">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center hidden md:block">
+            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+
             </div>
             <div
               className="cursor-pointer text-center hidden md:block"
@@ -422,16 +333,12 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
 
-            <div className="text-right md:hidden text-xs">
-              <strong>{bet.betAmount.toFixed(2)} coins wagered</strong>
-            </div>
-            <div className="text-right md:hidden text-xs">
-              <strong>
-                {(bet.betAmount * bet.betOdds).toFixed(2)} coins to win
-              </strong>
+            <div className="text-center md:hidden text-xs">
+            <p>{bet.betAmount} -> {bet.betAmount * 2} coins</p>
+
             </div>
             <div
               className="cursor-pointer text-center md:hidden text-xs"
@@ -443,7 +350,7 @@ const TableRow: React.FC<TableRowProps> = ({ bet }) => {
                 borderRadius: "10px",
               }}
             >
-              <strong>Cancel</strong>
+              <p>Cancel</p>
             </div>
           </>
         )}

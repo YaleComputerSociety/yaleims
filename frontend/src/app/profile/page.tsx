@@ -17,6 +17,9 @@ const Profile = () => {
   const [newUsername, setNewUsername] = useState(user?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+  const [availablePoints, setAvailablePoints] = useState(0);
+
+  const userEmail = user ? user.email : null;
 
   const cloudFunctionUrl = "https://getcollegematches-65477nrg6a-uc.a.run.app";
 
@@ -55,6 +58,27 @@ const Profile = () => {
 
     fetchUserMatches();
   }, [user, matches.length]);
+
+  // Fetch user points
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const fetchMyPoints = async () => {
+      try {
+        const response = await fetch(
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`
+        );
+        if (!response.ok)
+          throw new Error(`Error fetching points: ${response.statusText}`);
+        const data = await response.json();
+        setAvailablePoints(data.points);
+      } catch (error) {
+        console.error("Failed to fetch points:", error);
+      }
+    };
+
+    fetchMyPoints();
+  }, [userEmail]);
 
   const signedUpMatches = matches.filter((match) => {
     const homeParticipants = match.home_college_participants || [];
@@ -183,7 +207,9 @@ const Profile = () => {
                 <p className="text-md font-bold">
                   Games Played: {user.matches_played || 0}
                 </p>
-                <p className="text-md font-bold">Coins: {user.points || 0}</p>
+                <p className="text-md font-bold">
+                  YCoins: {availablePoints || 0}
+                </p>
               </div>
             </div>
 

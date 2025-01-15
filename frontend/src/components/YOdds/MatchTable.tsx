@@ -18,7 +18,7 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
         .map(([date, items]) => (
           <div key={date} className="min-w-full rounded-lg mb-4">
             <div>
-              <div className="text-left text-gray-700 p-2 bg-black-100 border-none">
+              <div className="text-left text-gray-700 p-2 bg-black-100 border-none  dark:text-gray-300">
                 {new Date(date).toLocaleDateString("en-US", {
                   weekday: "long", // e.g., Monday
                   month: "long", // e.g., January

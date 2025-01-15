@@ -86,7 +86,7 @@ const TableRow: React.FC<TableRowProps> = ({ match, isFirst, isLast }) => {
     const availablePoints = user.points || 0;
 
     if (availablePoints < 1) {
-      alert("You don't have enough Ycoins");
+      alert("You don't have enough YCoins");
       return;
     } else if (betAmount < 1 || betAmount > Math.min(250, availablePoints)) {
       alert(`Value must be between 1 and ${Math.min(250, availablePoints)}.`);
@@ -212,7 +212,7 @@ const TableRow: React.FC<TableRowProps> = ({ match, isFirst, isLast }) => {
                   value={coins || ""}
                   onChange={(e) => handleCoinChange(e.target.value)}
                   disabled={isSubmitted}
-                  placeholder="Enter coins"
+                  placeholder="Enter YCoins"
                   className="w-full md:w-32 px-2 py-1.5 text-xs mg:text-mg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-900"
                 />
               </div>

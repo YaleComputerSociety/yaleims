@@ -95,8 +95,6 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
 
       const userData = userDoc.data();
       const userMatches = userData?.matches || [];
-      const userMatchesPlayed = userData?.matches_played;
-
       // Remove the match from the user's matches array
       const matchIndex = userMatches.findIndex(
         (match: any) => match.matchId === matchId
@@ -107,7 +105,6 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
 
         await userDocRef.update({
           matches: userMatches,
-          matches_played: userMatchesPlayed - 1,
         });
       }
 

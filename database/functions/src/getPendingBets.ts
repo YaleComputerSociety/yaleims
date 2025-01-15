@@ -31,17 +31,10 @@ export const getPendingBets = functions.https.onRequest(async (req, res) => {
         return res.status(404).send("No bets found for this user");
       }
 
-      // Prepare an array to hold bets without a winner
-      const betsWithoutWinner = [];
+      const betsWithTimestamps = [];
 
-      // Iterate over the user's bets to check the corresponding match's winner
       for (const betDoc of betsSnapshot.docs) {
         const bet = betDoc.data();
-
-        // Convert createdAt Firestore Timestamp to ISO string
-        if (bet.createdAt && bet.createdAt.toDate) {
-          bet.createdAt = bet.createdAt.toDate().toISOString();
-        }
 
         // Fetch the match document using the matchId
         const matchRef = db.collection("matches").doc(bet.matchId);
@@ -54,19 +47,23 @@ export const getPendingBets = functions.https.onRequest(async (req, res) => {
 
         const matchData = matchDoc.data();
 
-        // If the match does not have a winner attribute, add this bet to the result list
+        // If the match does not have a winner, add the bet with the match timestamp
         if (
           !matchData ||
           matchData.winner === undefined ||
           matchData.winner === null ||
           matchData.winner === ""
         ) {
-          betsWithoutWinner.push(bet);
+          betsWithTimestamps.push({
+            ...bet,
+            matchTimestamp:
+              matchData?.timestamp?.toDate()?.toISOString() || null,
+          });
         }
       }
 
-      // Return the filtered list of bets
-      return res.status(200).json(betsWithoutWinner);
+      // Return the filtered list of bets with match timestamps
+      return res.status(200).json(betsWithTimestamps);
     } catch (error) {
       console.error("Error fetching pending bets:", error);
       return res.status(500).send("Internal Server Error");

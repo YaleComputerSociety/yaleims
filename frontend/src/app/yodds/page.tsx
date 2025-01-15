@@ -120,7 +120,6 @@ const YoddsPage: React.FC = () => {
             `Error fetching pending bets: ${response.statusText}`
           );
         const data = await response.json();
-        console.log(data);
         setPendingBets(data);
       } catch (error) {
         console.error("Failed to fetch pending bets:", error);

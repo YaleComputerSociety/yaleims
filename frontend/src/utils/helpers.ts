@@ -286,15 +286,18 @@ export function generateGoogleCalendarLink(match: Match): string {
   return `${baseUrl}&${params.toString()}`;
 }
 
-export const groupBetByDate = (allBets: Bet[]) => {
-  const groupedData: { [key: string]: Bet[] } = {};
+export const groupBetByDate = (allBets: any[]) => {
+  const groupedData: { [key: string]: any[] } = {};
 
   allBets.forEach((item) => {
-    const date: string = new Date(item.timestamp).toLocaleDateString("en-CA", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
+    const date: string = new Date(item.matchTimestamp).toLocaleDateString(
+      "en-CA",
+      {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }
+    );
     // console.log(date)
     if (!groupedData[date]) {
       groupedData[date] = [];
