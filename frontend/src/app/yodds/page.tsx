@@ -181,7 +181,7 @@ const YoddsPage: React.FC = () => {
       </p>
 
       <p className="text-sm text-center text-gray-500 ">
-        Note: Odds are currently not accurate and under construction.
+        Note: Odds are currently under construction.
       </p>
 
       <div className="min-w-full flex-col items-center md:px-20">

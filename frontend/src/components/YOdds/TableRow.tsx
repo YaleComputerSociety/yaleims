@@ -186,19 +186,19 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
               <RadioOption
                 value={home_college}
                 college={home_college}
-                label={`${toCollegeName[home_college]} Wins (25% odds)`}
+                label={`${toCollegeName[home_college]}`}
               />
               <RadioOption
                 value={away_college}
                 college={away_college}
-                label={`${toCollegeName[away_college]} Wins (25% odds)`}
+                label={`${toCollegeName[away_college]}`}
               />
             </div>
 
             {/* Draw and Default options */}
             <div className="space-y-3 md:space-y-4 ">
-              <RadioOption value="Draw" label="Draw (25% odds)" />
-              <RadioOption value="Default" label="Default (25% odds)" />
+              <RadioOption value="Draw" label="Draw" />
+              <RadioOption value="Default" label="Default" />
             </div>
 
             {/* Coin input and submit button column */}
