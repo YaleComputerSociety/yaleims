@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { toCollegeName, sportsMap, emojiMap } from "@src/utils/helpers";
-
 import { TableRowProps } from "@src/types/components";
+import { SlArrowRight } from "react-icons/sl";
+import { SlArrowDown } from "react-icons/sl";
+import { useState } from "react";
 
-//TableRow Component
 const TableRow: React.FC<TableRowProps> = ({
   match,
   handleCollegeClick,
@@ -11,242 +12,178 @@ const TableRow: React.FC<TableRowProps> = ({
   isLast,
   handleSportClick,
 }) => {
-  // Combine base and conditional classes
-  const rowClasses = `
-    bg-white dark:bg-black grid grid-cols-[auto_1fr_auto] items-center 
-    ${isFirst ? "rounded-t-lg" : ""} 
-    ${isLast ? "rounded-b-lg" : ""}
-  `;
-  return (
-    <div className={rowClasses}>
-      <div className="md:px-6 pl-2 md:pr-10 py-4 text-xs xs:text-sm  text-gray-500">
-        {new Date(match.timestamp).toLocaleString("en-US", {
-          hour: "numeric", // Avoids leading zero in the hour
-          minute: "2-digit", // Keeps leading zero for minutes
-          hour12: true, // "AM/PM"
-        })}
-      </div>
+  const {
+    home_college,
+    away_college,
+    home_college_score,
+    away_college_score,
+    sport,
+    timestamp,
+  } = match;
 
-      {/* Combine Colleges and Scores into one column */}
-      <div className="text-left md:px-6 py-4 px-3 text-xs xs:text-sm grid md:grid-cols-[0.6fr_0.4fr_0.6fr] md:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
-        {/* Determine the winner and loser */}
-        {match.home_college_score > match.away_college_score ? (
-          // Home college wins
-          <>
-            <div className="items-start text-xs xs:text-sm  dark:text-white">
-              <strong
-                className="cursor-pointer flex items-center"
-                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
-              >
-                <Image
-                  src={`/college_flags/${
-                    toCollegeName[match.home_college]
-                  }.png`}
-                  alt={match.home_college}
-                  width={20}
-                  height={20}
-                  className="mr-2 object-contain"
-                  unoptimized
-                />
-                {toCollegeName[match.home_college]}
-                <span className="text-yellow-500 text-xs xs:text-sm">
-                  +{sportsMap[match.sport]}pts
-                </span>
-              </strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong>
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-              -
-              <strong className="text-gray-400">
-                {match.away_college_score ? match.away_college_score : 0}
-              </strong>
-            </div>
-            {match.away_college != "Bye" ? (
-              <div
-                className={`${
-                  match.away_college === "" ? "hidden" : "block"
-                } items-start text-xs xs:text-sm `}
-              >
-                <strong
-                  className="cursor-pointer flex items-center text-gray-400"
-                  onClick={() => handleCollegeClick(match.away_college)}
-                >
-                  <Image
-                    src={`/college_flags/${
-                      toCollegeName[match.away_college]
-                    }.png`}
-                    alt={match.away_college}
-                    width={20}
-                    height={20}
-                    className="mr-2 object-contain"
-                    unoptimized
-                  />
-                  {toCollegeName[match.away_college]}
-                </strong>
-              </div>
-            ) : (
-              <div className="pl-7 font-bold">BYE</div>
-            )}
-            <div className="text-right md:hidden text-xs xs:text-sm">
-              <strong>
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-            </div>
-            <div className="text-right md:hidden text-xs xs:text-sm">
-              <strong className="text-gray-400">
-                {match.away_college_score ? match.away_college_score : 0}
-              </strong>
-            </div>
-          </>
-        ) : match.home_college_score < match.away_college_score ? (
-          // Away college wins
-          <>
-            <div className="items-start text-xs xs:text-sm ">
-              <strong
-                className="cursor-pointer text-gray-400 flex items-center"
-                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
-              >
-                <Image
-                  src={`/college_flags/${
-                    toCollegeName[match.home_college]
-                  }.png`}
-                  alt={match.home_college}
-                  width={20}
-                  height={20}
-                  className="mr-2 object-contain"
-                  unoptimized
-                />
-                {toCollegeName[match.home_college]}
-              </strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong className="text-gray-400">
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-              -
-              <strong>
-                {match.away_college_score ? match.away_college_score : 0}
-              </strong>
-            </div>
-            <div
-              className={`${
-                match.away_college === "" ? "hidden" : "block"
-              } text-xs xs:text-sm  `}
-            >
-              <strong
-                className="cursor-pointer flex items-center"
-                onClick={() => handleCollegeClick(match.away_college)}
-              >
-                <Image
-                  src={`/college_flags/${
-                    toCollegeName[match.away_college]
-                  }.png`}
-                  alt={match.away_college}
-                  width={20}
-                  height={20}
-                  className="mr-2 object-contain"
-                  unoptimized
-                />
-                {toCollegeName[match.away_college]}
-                <span className="text-yellow-500 text-xs xs:text-sm">
-                  +{sportsMap[match.sport]}pts
-                </span>
-              </strong>
-            </div>
-            <div className="text-right md:hidden text-xs xs:text-sm">
-              <strong className="text-gray-400">
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-            </div>
-            <div className="text-right md:hidden text-xs xs:text-sm">
-              <strong>
-                {match.away_college_score ? match.away_college_score : 0}
-              </strong>
-            </div>
-          </>
-        ) : (
-          // Draw
-          <>
-            <div className="items-start text-xs xs:text-sm ">
-              <strong
-                className="cursor-pointer text-gray-400 flex items-center"
-                onClick={() => handleCollegeClick(match.home_college)} // Replace with your function
-              >
-                <Image
-                  src={`/college_flags/${
-                    toCollegeName[match.home_college]
-                  }.png`}
-                  alt={match.home_college}
-                  width={20}
-                  height={20}
-                  className="mr-2 object-contain"
-                  unoptimized
-                />
-                {toCollegeName[match.home_college]}
-                <span className="text-yellow-500 text-xs xs:text-sm">
-                  +{sportsMap[match.sport] / 2}pts
-                </span>
-              </strong>
-            </div>
-            <div className="text-left hidden md:block">
-              <strong className="text-gray-400">
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-              -
-              <strong className="text-gray-400">
-                {match.away_college_score ? match.away_college_score : 0}
-              </strong>
-            </div>
-            <div className="items-start text-xs xs:text-sm ">
-              <strong
-                className="cursor-pointer text-gray-400 flex items-center"
-                onClick={() => handleCollegeClick(match.away_college)} // Replace with your function
-              >
-                <Image
-                  src={`/college_flags/${
-                    toCollegeName[match.away_college]
-                  }.png`}
-                  alt={match.away_college}
-                  width={20}
-                  height={20}
-                  className="mr-2 object-contain"
-                  unoptimized
-                />
-                {toCollegeName[match.away_college]}
-                <span className="text-yellow-500 text-xs xs:text-sm">
-                  +{sportsMap[match.sport] / 2}pts
-                </span>
-              </strong>
-            </div>
-            <div className="text-right md:hidden text-xs xs:text-sm">
-              <strong className="text-gray-400">
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-            </div>
-            <div className="text-right md:hidden text-xs xs:text-sm">
-              <strong className="text-gray-400">
-                {match.home_college_score ? match.home_college_score : 0}
-              </strong>
-            </div>
-          </>
-        )}
-      </div>
+  const [isOpen, setIsOpen] = useState(false);
 
-      <div
-        className="text-center px-2 py-1 relative group hover:cursor-pointer"
-        title={match.sport} // Tooltip with the sport name
-        onClick={() => handleSportClick(match.sport)}
+  const getTimeString = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const CollegeDisplay = ({ college, score, isWinner, points = 0 }) => (
+    <div className="items-start text-xs xs:text-sm">
+      <strong
+        className={`cursor-pointer flex items-center ${
+          !isWinner ? "text-gray-400" : ""
+        }`}
+        onClick={() => handleCollegeClick(college)}
       >
-        {/* Display the emoji */}
-        <div>{emojiMap[match.sport]}</div>
+        <Image
+          src={`/college_flags/${toCollegeName[college]}.png`}
+          alt={college}
+          width={20}
+          height={20}
+          className="mr-2 object-contain"
+          unoptimized
+        />
+        {toCollegeName[college]}
+        {points > 0 && (
+          <span className="text-yellow-500 text-xs xs:text-sm">
+            +{points}pts
+          </span>
+        )}
+      </strong>
+    </div>
+  );
 
-        {/* Hidden sport name (visible on hover) */}
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs xs:text-sm text-blue-600 bg-blue-100 border border-blue-600 dark:bg-black dark:text-white dark:border-black rounded opacity-0 group-hover:opacity-100">
-          {match.sport}
+  const ScoreDisplay = ({
+    homeScore,
+    awayScore,
+    type,
+    isMobile = false,
+  }: any) => {
+    if (isMobile) {
+      // Mobile view: show single score
+      const score = type === "first" ? homeScore : awayScore;
+      const isWinning =
+        type === "first" ? homeScore > awayScore : awayScore > homeScore;
+
+      return (
+        <div className="text-right">
+          <strong className={!isWinning ? "text-gray-400" : ""}>
+            {score || 0}
+          </strong>
+        </div>
+      );
+    }
+    // Desktop view: show score comparison
+    return (
+      <div className="text-left hidden lg:block">
+        <strong className={awayScore > homeScore ? "text-gray-400" : ""}>
+          {homeScore || 0}
+        </strong>
+        {" - "}
+        <strong className={homeScore > awayScore ? "text-gray-400" : ""}>
+          {awayScore || 0}
+        </strong>
+      </div>
+    );
+  };
+
+  const isDraw = home_college_score === away_college_score;
+  const homeWins = home_college_score > away_college_score;
+  const points = isDraw ? sportsMap[sport] / 2 : sportsMap[sport];
+
+  return (
+    <div
+      className={`bg-white dark:bg-black ${isFirst ? "rounded-t-lg" : ""} 
+    ${isLast ? "rounded-b-lg" : ""}`}
+    >
+      <div className="block sm:hidden -mb-6">
+        <div className="pr-3 py-2 pb-4 text-xs font-extralight text-gray-900 w-full flex justify-between">
+          <span className="ml-11">{getTimeString(timestamp)}</span>
+          <span>
+            {match.type} {match.type == "Regular" ? "Season" : "Round"}
+          </span>
         </div>
       </div>
+      <div className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_auto_1fr_auto_auto] items-center">
+        <div className="pl-4">
+          {!isOpen ? (
+            <SlArrowRight onClick={() => setIsOpen(!isOpen)} />
+          ) : (
+            <SlArrowDown onClick={() => setIsOpen(!isOpen)} />
+          )}
+        </div>
+        <div className="hidden sm:block lg:px-6 pl-2 lg:pr-10 py-4 text-xs xs:text-sm text-gray-500">
+          {getTimeString(timestamp)}
+        </div>
+
+        <div className="text-left lg:px-6 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
+          <CollegeDisplay
+            college={home_college}
+            score={home_college_score}
+            isWinner={homeWins || isDraw}
+            points={homeWins || isDraw ? points : 0}
+          />
+          {/* Desktop score display */}
+          <ScoreDisplay
+            homeScore={home_college_score}
+            awayScore={away_college_score}
+            isMobile={false}
+          />
+          {away_college !== "Bye" ? (
+            <div>
+              <CollegeDisplay
+                college={away_college}
+                score={away_college_score}
+                isWinner={!homeWins || isDraw}
+                points={!homeWins || isDraw ? points : 0}
+              />
+            </div>
+          ) : (
+            <div className="pl-7 font-bold">BYE</div>
+          )}
+          {/* Mobile score displays */}
+          <div className="display lg:hidden">
+            <ScoreDisplay
+              homeScore={home_college_score}
+              awayScore={away_college_score}
+              isMobile={true}
+              type="first"
+            />
+          </div>
+          <div className="display lg:hidden">
+            <ScoreDisplay
+              homeScore={home_college_score}
+              awayScore={away_college_score}
+              isMobile={true}
+              type="second"
+            />
+          </div>
+        </div>
+
+        <div
+          className="text-center px-2 py-1 relative group hover:cursor-pointer"
+          title={sport}
+          onClick={() => handleSportClick(sport)}
+        >
+          <div>{emojiMap[sport]}</div>
+          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs xs:text-sm text-blue-600 bg-blue-100 border border-blue-600 dark:bg-black dark:text-white dark:border-black rounded opacity-0 group-hover:opacity-100">
+            {sport}
+          </div>
+        </div>
+        <div className="hidden sm:block text-center text-xs px-2 py-1 w-[100px] flex flex-col">
+          <div>{match.type}</div>
+          {match.type == "Regular" ? "Season" : "Round"}
+        </div>
+      </div>
+      {isOpen ? (
+        <div className="text-center pb-5 italic">
+          No Yodds data available for this match
+        </div>
+      ) : null}
     </div>
   );
 };

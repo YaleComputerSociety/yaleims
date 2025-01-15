@@ -57,6 +57,7 @@ export interface MatchesTableProps {
   filteredMatches: Match[]; // Type the filteredMatches prop as an array of Match
   handleCollegeClick: (college: string) => void;
   handleSportClick: (sport: string) => void;
+  availablePoints?: number;
 }
 
 export interface TableHeaderProps {
@@ -71,6 +72,7 @@ export interface TableRowProps {
   isFirst?: boolean; // Optional prop to indicate if this is the first row
   isLast?: boolean; // Optional prop to indicate if this is the last row
   handleSportClick: (sport: string) => void; // Function to handle sport clicks
+  availablePoints?: number;
 }
 
 export type Sport = {

@@ -4,7 +4,6 @@ import {
   collection,
   getDocs,
   writeBatch,
-  deleteField,
 } from "firebase/firestore";
 
 // Your Firebase configuration
@@ -21,10 +20,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
-// Function to update sport to "WHoops" for documents with ID >= 451
-async function updateSportForWHoops() {
+// Function to add new volume fields to all matches
+async function addVolumeFields() {
   try {
-    console.log("Fetching matches with ID >= 451...");
+    console.log("Fetching all matches...");
 
     // Reference to the matches collection
     const matchesRef = collection(firestore, "matches");
@@ -39,23 +38,23 @@ async function updateSportForWHoops() {
     const batch = writeBatch(firestore);
 
     querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const docId = parseInt(doc.id, 10);
+      console.log(`Adding volume fields to document ID: ${doc.id}`);
 
-      // Check if the document ID is >= 451
-      if (docId >= 451) {
-        console.log(`Updating "sport" to "WHoops" for document ID: ${doc.id}`);
-        batch.update(doc.ref, { sport: "WHoops" });
-      }
+      batch.update(doc.ref, {
+        home_volume: 0, // Default value for home_volume
+        away_volume: 0, // Default value for away_volume
+        draw_volume: 0, // Default value for draw_volume
+        default_volume: 0, // Default value for default_volume
+      });
     });
 
     // Commit the batch
     await batch.commit();
-    console.log("All documents with ID >= 451 have been updated to WHoops");
+    console.log("All matches have been updated with new volume fields.");
   } catch (error) {
-    console.error("Error updating sport field:", error);
+    console.error("Error adding volume fields:", error);
   }
 }
 
-// Call the functions
-updateSportForWHoops();
+// Call the function
+addVolumeFields();
