@@ -14,8 +14,8 @@ const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
         <div className="flex justify-between items-center mb-4">
           <Skeleton circle={true} height={64} width={64} />
           <div className="pr-4 flex flex-col justify-between h-full">
-            <Skeleton height={24} width={200} />
-            <Skeleton height={20} width={150} />
+            <Skeleton height={24} width={150} />
+            <Skeleton height={20} width={100} />
           </div>
         </div>
         <div className="flex flex-row items-center h-12">

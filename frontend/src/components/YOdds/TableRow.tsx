@@ -85,6 +85,8 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     const betAmount = coins;
     const availablePoints = user.points || 0;
 
+    console.log(availablePoints)
+
     if (availablePoints < 1) {
       alert("You don't have enough YCoins");
       return;

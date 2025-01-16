@@ -89,8 +89,8 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     return (
       <div className="text-xs xs:text-sm w-40 sm:w-52">
         <p
-          className={`flex items-center p-2 ${bgColor} ${
-            bgColor ? "rounded-xl" : ""
+          className={`flex items-center  p-2 ${bgColor} ${
+            bgColor ? "rounded-xl dark:text-black" : ""
           }`}
         >
           <Image
@@ -109,7 +109,7 @@ const TableRowPending: FC<TableRowPendingProps> = ({
 
   const TimeDisplay = () => (
     <div className="-mb-6">
-      <div className="flex justify-between w-full pr-3 py-2 pb-4 text-xs font-extralight text-gray-900">
+      <div className="flex justify-between w-full pr-3 py-2 pb-4 text-xs font-extralight text-gray-900 dark:text-white">
         <span className="ml-5">{getTimeString(bet.matchTimestamp)}</span>
         <span>
           {bet.sport}
@@ -122,7 +122,7 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   const BetDetails = () => (
     <div className="grid sm:grid-cols-2 gap-2 items-center mt-3 text-xs xs:text-sm mr-5">
       <div className="text-right sm:text-center">
-        <p>Potential: {bet.betAmount * 2} coins</p>
+        <p>Potential: {bet.betAmount * 2} YCoins</p>
       </div>
       <div className="text-right">
         <button

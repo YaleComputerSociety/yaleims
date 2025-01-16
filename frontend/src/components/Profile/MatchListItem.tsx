@@ -131,7 +131,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
 
         {/* Match Details */}
         <div className="flex-grow flex flex-col space-y-1">
-          <div className="text-sm sm:text-lg font-bold">
+          <div className="flex text-xs sm:text-lg font-bold">
             {toCollegeName[match.home_college || "TBD"]} vs{" "}
             {toCollegeName[match.away_college || "TBD"]}
           </div>
@@ -141,9 +141,6 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
               {match.type == "Regular"
                 ? "Regular Season Match"
                 : `${match.type} Round`}
-            </div>
-            <div className="ml-1 xs:hidden text-xs">
-              {emojiMap[match.sport]}
             </div>
           </div>
 
