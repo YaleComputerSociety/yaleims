@@ -102,7 +102,7 @@ const TableRow: React.FC<TableRowProps> = ({
     ${isLast ? "rounded-b-lg" : ""}`}
     >
       <div className="block sm:hidden -mb-6">
-        <div className="pr-3 py-2 pb-4 text-xs font-extralight text-gray-900 w-full flex justify-between">
+        <div className="pr-3 py-2 pb-4 text-xs font-extralight dark:text-gray-300 text-gray-900 w-full flex justify-between">
           <span className="ml-11">{getTimeString(timestamp)}</span>
           <span>
             {match.type} {match.type == "Regular" ? "Season" : "Round"}

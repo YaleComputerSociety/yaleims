@@ -123,7 +123,7 @@ const SchedulePage: React.FC = () => {
             <div className="lg:w-3/5 flex flex-col items-center">
               {/* Scrollable ListView or No Matches Message */}
               {filteredMatches.length > 0 ? (
-                <div className="max-h-[700px] w-full overflow-y-auto p-4 rounded-lg">
+                <div className="sm:max-h-[700px] w-full sm:overflow-y-auto p-4 rounded-lg">
                   <ListView matches={filteredMatches} />
                 </div>
               ) : (
