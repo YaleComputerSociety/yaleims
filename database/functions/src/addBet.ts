@@ -9,6 +9,7 @@ interface AddBetRequestBody {
   email: string;
   matchId: string;
   betAmount: number;
+  betOdds: number;
   betOption: string;
   away_college: string;
   home_college: string;
@@ -21,6 +22,7 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       email,
       matchId,
       betAmount,
+      betOdds,
       betOption,
       away_college,
       home_college,
@@ -33,6 +35,7 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       !matchId ||
       !betAmount ||
       !betOption ||
+      !betOdds ||
       !away_college ||
       !home_college ||
       !sport
@@ -85,6 +88,7 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           matchId,
           betAmount,
           betOption,
+          betOdds,
           away_college,
           home_college,
           sport,

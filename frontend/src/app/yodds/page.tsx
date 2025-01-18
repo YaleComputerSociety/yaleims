@@ -159,7 +159,7 @@ const YoddsPage: React.FC = () => {
         >
           <p className="text-center">My YCoins:</p>
           <p className="text-center text-3xl">
-            {availablePoints !== null ? availablePoints : "0"}
+            {availablePoints.toFixed(0) !== null ? availablePoints : "0"}
           </p>
         </div>
       </div>
