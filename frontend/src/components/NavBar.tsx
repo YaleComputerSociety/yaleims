@@ -39,6 +39,7 @@ const NavBar: React.FC = () => {
     { href: "/scores", text: "Scores" },
     { href: "/schedule", text: "Schedule" },
     { href: "/about-us", text: "About" },
+    { href: "/yodds", text: "Yodds" },
     { href: "https://yaleims.canny.io", text: "Feedback" },
   ];
 

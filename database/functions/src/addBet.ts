@@ -110,12 +110,12 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           });
         } else if (betOption === away_college) {
           transaction.update(matchRef, {
-            away_college_volume:
+            away_volume:
               admin.firestore.FieldValue.increment(betAmount),
           });
         } else if (betOption === home_college) {
           transaction.update(matchRef, {
-            home_college_volume:
+            home_volume:
               admin.firestore.FieldValue.increment(betAmount),
           });
         } else {

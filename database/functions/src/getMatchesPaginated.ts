@@ -2,10 +2,95 @@ import { Filter, OrderByDirection } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+// import { oddsCalculator } from "./yodds_helpers"
 
 const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
+
+interface Odds {
+  team1Win: number;
+  team2Win: number;
+  draw: number;
+  forfeit: number;
+}
+
+// Function to calculate odds
+// we have each team's rates for wins, losses, draws and forfeits
+// we also have the betting volume for each of the four categories
+function oddsCalculator(
+  team1WinPercentage: number, // Team 1's win percentage from past games (0 to 1)
+  team2WinPercentage: number, // Team 2's win percentage from past games (0 to 1)
+  bettingVolume: { team1: number; team2: number; draw: number; forfeit: number }, // Betting volume for each outcome
+  team1ForfeitRate: number, // Team 1's forfeit rate (0 to 1)
+  team2ForfeitRate: number, // Team 2's forfeit rate (0 to 1)
+): Odds {
+  const defaultOdds = { team1Win: 0.35, team2Win: 0.35, draw: 0.1, forfeit: 0.2 };
+
+  const totalBettingVolume =
+    bettingVolume.team1 + bettingVolume.team2 + bettingVolume.draw + bettingVolume.forfeit;
+
+  const bettingWeight = totalBettingVolume > 0 ? 1 : 0;
+
+  const team1BettingShare = totalBettingVolume > 0 ? bettingVolume.team1 / totalBettingVolume : 0.35;
+  const team2BettingShare = totalBettingVolume > 0 ? bettingVolume.team2 / totalBettingVolume : 0.35;
+  const drawBettingShare = totalBettingVolume > 0 ? bettingVolume.draw / totalBettingVolume : 0.1;
+  const forfeitBettingShare = totalBettingVolume > 0 ? bettingVolume.forfeit / totalBettingVolume : 0.2;
+
+  const pastGamesWeight = 5;
+
+  // Calculate the draw probability based on remaining probability
+  const rawDrawProbability = 1 - team1WinPercentage - team2WinPercentage;
+
+  // Softmax win and draw probabilities
+  const expTeam1 = Math.exp(team1WinPercentage);
+  const expTeam2 = Math.exp(team2WinPercentage);
+  const expDraw = Math.exp(rawDrawProbability);
+
+  const totalExp = expTeam1 + expTeam2 + expDraw;
+
+  const normalizedTeam1Performance = expTeam1 / totalExp;
+  const normalizedTeam2Performance = expTeam2 / totalExp;
+  const normalizedDrawPerformance = expDraw / totalExp;
+
+  const team1Forfeit = team1ForfeitRate;
+  const team2Forfeit = team2ForfeitRate;
+
+  const remainingForfeitProbability = Math.max(
+    0.05,
+    1 - normalizedTeam1Performance - normalizedTeam2Performance - normalizedDrawPerformance
+  );
+
+  const normalizedForfeitPerformance = Math.max(
+    0.05,
+    remainingForfeitProbability - team1Forfeit - team2Forfeit
+  );
+
+  const team1Win =
+    (normalizedTeam1Performance * pastGamesWeight + team1BettingShare * bettingWeight) /
+    (pastGamesWeight + bettingWeight || 1);
+
+  const team2Win =
+    (normalizedTeam2Performance * pastGamesWeight + team2BettingShare * bettingWeight) /
+    (pastGamesWeight + bettingWeight || 1);
+
+  const draw =
+    (normalizedDrawPerformance * pastGamesWeight + drawBettingShare * bettingWeight) /
+    (pastGamesWeight + bettingWeight || 1);
+
+  const forfeit =
+    (normalizedForfeitPerformance * pastGamesWeight + forfeitBettingShare * bettingWeight) /
+    (pastGamesWeight + bettingWeight || 1);
+
+  const totalOdds = team1Win + team2Win + draw + forfeit;
+
+  return {
+    team1Win: totalOdds > 0 ? team1Win / totalOdds : defaultOdds.team1Win,
+    team2Win: totalOdds > 0 ? team2Win / totalOdds : defaultOdds.team2Win,
+    draw: totalOdds > 0 ? draw / totalOdds : defaultOdds.draw,
+    forfeit: totalOdds > 0 ? forfeit / totalOdds : defaultOdds.forfeit,
+  };
+}
 
 export const getMatchesPaginated = functions.https.onRequest(
   async (req, res) => {
@@ -147,11 +232,57 @@ export const getMatchesPaginated = functions.https.onRequest(
           });
         }
 
-        const matches = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate?.()?.toISOString() || null,
-        }));
+        // Save all college stats in a map for faster access (from abbreviation to college data)
+        const collegeStatsMap = new Map<string, any>();
+
+        // Preload all colleges' data into memory to avoid repeated Firestore calls
+        const collegeDocs = await db.collection("colleges").get();
+        collegeDocs.forEach(collegeDoc => {
+          const collegeData = collegeDoc.data();
+          if (collegeData) {
+            collegeStatsMap.set(collegeData.abbreviation, collegeData); // Store college data by abbreviation
+          }
+        });
+
+        const matches = snapshot.docs.map((doc) => {
+        // const matches = snapshot.docs.map((doc) => ({
+          const data = doc.data()
+
+          const homeCollegeStats = collegeStatsMap.get(data.home_college);
+          const awayCollegeStats = collegeStatsMap.get(data.away_college);
+
+          // Check if the college data exists
+          if (!homeCollegeStats || !awayCollegeStats) {
+            console.error(`College data not found for ${data.home_college} or ${data.away_college}`);
+            return null; // or handle the error appropriately
+          } else {
+            console.log(`College data found for ${data.home_college} and ${data.away_college}`);
+          }
+          const bettingVolume = {
+            team1: data.home_volume,
+            team2: data.away_volume,
+            draw: data.draw_volume,
+            forfeit: data.default_volume,
+          };
+          const odds = oddsCalculator(
+            homeCollegeStats.wins / homeCollegeStats.games,
+            awayCollegeStats.wins / awayCollegeStats.games,
+            bettingVolume,
+            homeCollegeStats.forfeits / homeCollegeStats.games,
+            awayCollegeStats.forfeits / awayCollegeStats.games
+          );
+	  console.log("oddsCalculator called")
+          return {
+            id: doc.id,
+            ...data,
+            default_odds: odds.forfeit,
+            home_college_odds: odds.team1Win,
+            away_college_odds: odds.team2Win,
+            draw_odds: odds.draw,
+            timestamp: doc.data().timestamp?.toDate?.()?.toISOString() || null,
+          };
+        });
+        // }));
 
         return res.status(200).json({
           matches,

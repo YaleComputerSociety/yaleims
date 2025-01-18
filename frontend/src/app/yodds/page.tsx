@@ -168,9 +168,11 @@ const YoddsPage: React.FC = () => {
         Pending Predictions
       </p>
 
+      {/*
       <p className="text-sm text-center text-gray-500 mb-8">
         Predictions may only be canceled 24 hours or more before the game.
       </p>
+      */}
 
       <div className="min-w-full flex-col items-center md:px-20">
         <MatchesTablePending pendingBets={pendingBets} />
