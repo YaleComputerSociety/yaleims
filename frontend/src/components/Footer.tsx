@@ -41,7 +41,7 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/schedules" className="hover:underline">
+                  <Link href="/schedule" className="hover:underline">
                     Schedules
                   </Link>
                 </li>
@@ -68,7 +68,11 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://yaleims.canny.io" className="hover:underline" target="_blank">
+                  <Link
+                    href="https://yaleims.canny.io"
+                    className="hover:underline"
+                    target="_blank"
+                  >
                     Feedback
                   </Link>
                 </li>
