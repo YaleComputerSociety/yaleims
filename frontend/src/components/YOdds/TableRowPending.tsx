@@ -122,7 +122,8 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   const BetDetails = () => (
     <div className="grid sm:grid-cols-2 gap-2 items-center mt-3 text-xs xs:text-sm mr-5">
       <div className="text-right sm:text-center">
-        <p>Potential: {bet.betAmount * 2} YCoins</p>
+        <p>Initial Amount: {bet.betAmount} YCoins</p>
+        <p>Potential: {(bet.betAmount * (1 + (1-bet.betOdds)/bet.betOdds)).toFixed(2)} YCoins</p>
       </div>
       <div className="text-right">
         <button

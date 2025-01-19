@@ -6,7 +6,9 @@ import { useUser } from "../../context/UserContext.jsx";
 
 const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
   const { home_college, away_college, sport, timestamp, type } = match;
-  const [selectedOption, setSelectedOption] = useState<string>("");
+  // const [selectedOption, setSelectedOption] = useState<string>("");
+  const [selectedOption, setSelectedOption] = useState<{ option: string; odds: number }>({ option: "", odds: 0 });
+  const [selectedOdds, setSelectedOdds] = useState<number>(0);
   const [coins, setCoins] = useState<number>(0);
   const { user } = useUser();
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -26,6 +28,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     matchId,
     betAmount,
     betOption,
+    betOdds,
     away_college,
     home_college,
     sport,
@@ -33,6 +36,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     email: string;
     matchId: string;
     betAmount: number;
+    betOdds: number;
     betOption: string;
     away_college: string;
     home_college: string;
@@ -51,6 +55,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
             email,
             matchId,
             betAmount,
+            betOdds,
             betOption,
             away_college,
             home_college,
@@ -82,10 +87,15 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
       return;
     }
 
+    if (!selectedOption.option || selectedOption.odds <= 0) {
+      alert("Please select a valid option.");
+      return;
+    }
+
     const betAmount = coins;
     const availablePoints = user.points || 0;
 
-    console.log(availablePoints)
+    console.log(selectedOption.odds)
 
     if (availablePoints < 1) {
       alert("You don't have enough YCoins");
@@ -100,7 +110,10 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
         email: user.email,
         matchId: match.id.toString(),
         betAmount,
-        betOption: selectedOption,
+        betOdds: selectedOption.odds,
+        betOption: selectedOption.option,
+        // betOdds: selectedOdds,
+        // betOption: selectedOption,
         away_college: match.away_college,
         home_college: match.home_college,
         sport: match.sport,
@@ -115,7 +128,8 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     setCoins(Math.max(0, Math.min(numValue, 1000))); // Limit to 0-1000 coins
   };
 
-  const RadioOption = ({ value, college = null, label }: any) => (
+  // const RadioOption = ({ value, college = null, label }: any) => (
+  const RadioOption = ({ value, college = null, label, odds }: { value: string; label: string; odds: number }) => (
     <label
       className={`relative flex items-center space-x-3 cursor-pointer group ${
         college ? "w-72" : "w-40"
@@ -126,9 +140,12 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
           type="radio"
           name={`prediction-${match.id}`}
           value={value}
-          checked={selectedOption === value}
+          checked={selectedOption.option === value}
           onChange={(e) => {
-            setSelectedOption(e.target.value);
+            // setSelectedOption(e.target.value);
+            setSelectedOption({ option: e.target.value, odds }); // Update both the option and odds
+            // setSelectedOption(e.target.value.option);
+            // setSelectedOdds(e.target.value.odds);
           }}
           className="peer hidden"
           disabled={isSubmitted}
@@ -187,20 +204,32 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
             <div className="space-y-3 md:space-y-4">
               <RadioOption
                 value={home_college}
+                odds={match.home_college_odds}
+                // value={JSON.stringify({ option: home_college, odds: match.home_college_odds })}
                 college={home_college}
-                label={`${toCollegeName[home_college]}`}
+                label={`${toCollegeName[home_college]} - ${(100 * match.home_college_odds).toFixed(1)}% likely`}
               />
               <RadioOption
                 value={away_college}
+                odds={match.away_college_odds}
+                // value={JSON.stringify({ option: away_college, odds: match.away_college_odds })}
                 college={away_college}
-                label={`${toCollegeName[away_college]}`}
+                label={`${toCollegeName[away_college]} - ${(100 * match.away_college_odds).toFixed(1)}% likely`}
               />
             </div>
 
             {/* Draw and Default options */}
             <div className="space-y-3 md:space-y-4 ">
-              <RadioOption value="Draw" label="Draw" />
-              <RadioOption value="Default" label="Default" />
+              <RadioOption
+                value="Draw"
+                odds={match.draw_odds}
+                // value={JSON.stringify({ option: "Draw", odds: match.draw_odds })}
+                label={`Draw - ${(100 * match.draw_odds).toFixed(1)}% likely`} />
+              <RadioOption
+                value="Default"
+                odds={match.default_odds}
+                // value={JSON.stringify({ option: "Default", odds: match.default_odds })}
+                label={`Default - ${(100 * match.default_odds).toFixed(1)}% likely`} />
             </div>
 
             {/* Coin input and submit button column */}
