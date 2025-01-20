@@ -8,7 +8,9 @@ export default function Footer() {
         <div className="flex gap-5 flex-col sm:flex-row ">
           {/* Logo Section */}
           <div className="basis-1/3 text-white">
-            <Image src={"LOGO.png"} width={150} height={150} alt="YALE IMS" />
+            <Link href="/">
+              <Image src={"LOGO.png"} width={150} height={150} alt="YALE IMS" />
+            </Link>
             <h2 className="text-xs mt-3">
               a{" "}
               <a
