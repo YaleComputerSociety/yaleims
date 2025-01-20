@@ -238,7 +238,10 @@ export const getRatioAsString = (
 export const groupByDate = (allMatches: Match[]) => {
   const groupedData: { [key: string]: Match[] } = {};
 
-  allMatches.forEach((item) => {
+  // Filter out null matches
+  const validMatches = allMatches.filter((item) => item !== null);
+
+  validMatches.forEach((item) => {
     const date: string = new Date(item.timestamp).toLocaleDateString("en-CA", {
       year: "numeric",
       month: "2-digit",

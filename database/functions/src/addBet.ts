@@ -78,16 +78,18 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
-        const betsUpdate = {
+        // Update predictions map for the match
+        const predictionsUpdate = {
           [`predictions.${email}`]: { betOption, betAmount, betOdds },
         };
+
+        transaction.update(matchRef, predictionsUpdate);
 
         transaction.update(userRef, {
           points: admin.firestore.FieldValue.increment(-betAmount),
         });
 
         transaction.set(userRef.collection("bets").doc(), bet);
-        transaction.set(matchRef, betsUpdate, { merge: true });
 
         if (betOption === "Default") {
           transaction.update(matchRef, {
