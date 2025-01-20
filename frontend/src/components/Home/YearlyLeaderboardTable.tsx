@@ -101,7 +101,7 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
               onClick={() => onCollegeClick(college.name)}
               className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer h-12"
             >
-              <td className="md:w-[50px] w-[40px] text-xs font-medium border border-gray-300 dark:border-gray-600 text-center">
+              <td className="md:w-[50px] w-[20px] text-xs font-medium border border-gray-300 dark:border-gray-600 text-center">
                 <div className="flex flex-col items-center">
                   {college.prevRank - college.rank > 0 && (
                     <FaCaretUp style={{ color: "00C707" }} />
@@ -120,27 +120,27 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
                       " "
                     )}.png`}
                     alt={college.name}
-                    width={24}
-                    height={24}
+                    width={20}
+                    height={20}
                     className="mr-2 object-contain"
                     unoptimized
                   />
                   {college.name}
                 </div>
               </td>
-              <td className="md:w-[75px] w-[20px] text-xs text-center border border-gray-300 dark:border-gray-600">
+              <td className="md:w-[75px] w-[15px] text-xs text-center border border-gray-300 dark:border-gray-600">
                 {college.wins}
               </td>
-              <td className="md:w-[75px] w-[20px] text-xs text-center border border-gray-300 dark:border-gray-600">
+              <td className="md:w-[75px] w-[15px] text-xs text-center border border-gray-300 dark:border-gray-600">
                 {college.ties}
               </td>
-              <td className="md:w-[75px] w-[20px] text-xs text-center border border-gray-300 dark:border-gray-600">
+              <td className="md:w-[75px] w-[15px] text-xs text-center border border-gray-300 dark:border-gray-600">
                 {college.losses}
               </td>
-              <td className="md:w-[75px] w-[20px] text-xs text-center border border-gray-300 dark:border-gray-600">
+              <td className="md:w-[75px] w-[15px] text-xs text-center border border-gray-300 dark:border-gray-600">
                 {college.forfeits}
               </td>
-              <td className="md:w-[150px] w-[50px] text-xs text-center border border-gray-300 dark:border-gray-600">
+              <td className="md:w-[150px] w-[40px] text-xs text-center border border-gray-300 dark:border-gray-600">
                 {college.points}
               </td>
             </tr>

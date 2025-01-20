@@ -58,6 +58,7 @@ const Title: React.FC<TitleProps> = ({ selected, onFilterChange }) => {
             Every point, every game, <br /> every play matters.
           </h2>
         </div>
+        <br></br>
       </div>
     </div>
   );

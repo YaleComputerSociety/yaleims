@@ -42,7 +42,6 @@ export const getUserLeaderboard = functions.https.onRequest((req, res) => {
         } as User);
       });
 
-      console.log("Leaderboard data retrieved successfully:", leaderboard);
       res.status(200).json(leaderboard);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);

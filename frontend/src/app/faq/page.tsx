@@ -135,40 +135,25 @@ export default function FAQ() {
       ],
     },
     {
-      title: "About YOdds",
+      title: "Predicting Game Outcomes",
       faqs: [
         {
-          question: "What is YOdds?",
+          question: "How do predictions work?",
           answer:
-            "YOdds is a fun game of speculation where you can place virtual bets on Yale intramural games using YObols, showcasing your prediction skills and college spirit.",
+            "Odds is a fun game of speculation where you can place virtual predictions on Yale intramural games using Ycoins, showcasing your prediction skills and college spirit. Odds determine your potential winnings based on the likelihood of the outcome.",
         },
         {
-          question: "Is YOdds sports betting?",
+          question: "What are YCoins?",
           answer:
-            "No, YOdds is not sports betting. It involves no real money and is purely for entertainment and competition among Yale students.",
+            "YCoins are virtual coins used in YaleIMs. Each user starts with 500 YCoins to place predictions on intramural games. Winnings depend on your predictions and the odds of the match.",
         },
         {
-          question: "Is YOdds gambling?",
+          question: "How do YCoins work? Can I lose all my YCoins?",
           answer:
-            "No, YOdds is not gambling. It is a speculative game with no real money involved and is intended purely for entertainment and fostering college spirit.",
+            "Each week, you receive 500 YCoins to place predictions on intramural games. If your predictions are incorrect, you can lose your YCoins, but the game is designed to be fun and not financially impactful.",
         },
         {
-          question: "What are YObols?",
-          answer:
-            "YCoins are virtual coins used in YOdds. Each user starts with 500 YObols to place bets on intramural games. Winnings depend on your predictions and the odds of the match.",
-        },
-        {
-          question: "How does YOdds work?",
-          answer:
-            "YOdds allows you to predict the outcomes of intramural games. Using Moneyline bets, you wager YObols on who will win, draw, or forfeit. Odds determine your potential winnings based on the likelihood of the outcome.",
-        },
-        {
-          question: "How do YObols work?",
-          answer:
-            "Each week, you receive 500 YObols to place virtual bets on intramural games. If your predictions are incorrect, you can lose your YObols, but the game is designed to be fun and not financially impactful.",
-        },
-        {
-          question: "How are odds determined in YOdds?",
+          question: "How are odds determined?",
           answer:
             "Odds are calculated using an algorithm that considers team performance, such as frequent winners versus underdogs. This affects your potential winnings from bets.",
         },
@@ -191,7 +176,9 @@ export default function FAQ() {
         </p>
         {sections.map((section, index) => (
           <div key={index} className="mb-8">
-            <h2 className="text-lg sm:text-2xl font-semibold mb-4">{section.title}</h2>
+            <h2 className="text-lg sm:text-2xl font-semibold mb-4">
+              {section.title}
+            </h2>
             <div className="space-y-4 ml-5">
               {section.faqs.map((faq, i) => (
                 <Dropdown

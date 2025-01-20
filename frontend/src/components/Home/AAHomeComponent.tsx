@@ -14,13 +14,14 @@ import PredictionLeaderboard from "./PredictionLeaderboard";
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingUsers, setLoadingUsers] = useState<boolean>(false); // Track user leaderboard loading
   const [sortedColleges, setSortedColleges] = useState<any[]>([]);
   const [sortedUsers, setSortedUsers] = useState<any[]>([]);
   const { setFilter } = useContext(FiltersContext);
   const [selected, setSelected] = useState<string>("2024-2025");
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
+    const fetchCollegesLeaderboard = async () => {
       try {
         const response = await fetch(
           "https://us-central1-yims-125a2.cloudfunctions.net/getLeaderboard",
@@ -33,50 +34,51 @@ const AAHomeComponent: React.FC = () => {
         );
 
         if (!response.ok) {
-          throw new Error(`Error fetching leaderboard: ${response.statusText}`);
+          throw new Error(
+            `Error fetching colleges leaderboard: ${response.statusText}`
+          );
         }
 
         const data = await response.json();
         const sorted = data.sort((a: any, b: any) => b.points - a.points);
         setSortedColleges(() => sorted);
       } catch (error) {
-        console.error("Failed to fetch leaderboard:", error);
+        console.error("Failed to fetch colleges leaderboard:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLeaderboard();
+    fetchCollegesLeaderboard();
   }, []);
 
-  useEffect(() => {
-    const fetchUserLeaderboard = async () => {
-      try {
-        const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error fetching leaderboard: ${response.statusText}`);
+  const fetchUserLeaderboard = async () => {
+    setLoadingUsers(true);
+    try {
+      const response = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
+      );
 
-        const data = await response.json();
-        setSortedUsers(() => data); // Directly set the leaderboard data
-      } catch (error) {
-        console.error("Failed to fetch leaderboard:", error);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(
+          `Error fetching users leaderboard: ${response.statusText}`
+        );
       }
-    };
 
-    fetchUserLeaderboard();
-  }, []);
+      const data = await response.json();
+      setSortedUsers(() => data);
+    } catch (error) {
+      console.error("Failed to fetch users leaderboard:", error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const handleCollegeClick = (collegeName: string) => {
     setFilter({
@@ -87,6 +89,15 @@ const AAHomeComponent: React.FC = () => {
     router.push("/scores");
   };
 
+  const handleSelectedChange = (filter: string) => {
+    setSelected(filter);
+
+    if (filter === "Prediction" && sortedUsers.length === 0) {
+      // Only fetch user leaderboard if not already loaded
+      fetchUserLeaderboard();
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -94,12 +105,6 @@ const AAHomeComponent: React.FC = () => {
       </div>
     );
   }
-
-  const handleSelectedChange = (filter: string) => {
-    setSelected(filter);
-  };
-
-  console.log(sortedUsers);
 
   return (
     <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto">
@@ -120,10 +125,16 @@ const AAHomeComponent: React.FC = () => {
         </div>
       ) : selected === "Prediction" ? (
         <div className="px-5">
-          <PredictionPodiums users={sortedUsers.slice(0, 3)} />
-          <PredictionLeaderboard
-            users={sortedUsers} // Slice to show 10 additional entries
-          />
+          {loadingUsers ? (
+            <div className="text-center py-10">
+              <LoadingScreen />
+            </div>
+          ) : (
+            <>
+              <PredictionPodiums users={sortedUsers.slice(0, 3)} />
+              <PredictionLeaderboard users={sortedUsers} />
+            </>
+          )}
         </div>
       ) : (
         <div>

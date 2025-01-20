@@ -204,12 +204,18 @@ const Profile = () => {
                   />
                 </p>
 
-                <p className="text-md font-bold">
-                  Games Played: {user.matches_played || 0}
-                </p>
-                <p className="text-md font-bold">
-                  YCoins: {availablePoints || 0}
-                </p>
+                <div className="flex flex-row items-center space-x-2">
+                  <p className="text-md font-bold">
+                    YCoins: {availablePoints || 0}
+                  </p>
+                  <Image
+                    src="/YCoin.png"
+                    alt="YCoin"
+                    height={25} // Retains the specified height
+                    width={25} // Retains the specified width
+                    style={{ objectFit: "contain" }} // Proper usage of objectFit
+                  />
+                </div>
               </div>
             </div>
 

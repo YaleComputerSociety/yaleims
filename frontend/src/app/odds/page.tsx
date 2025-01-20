@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image.js";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
 import Pagination from "@src/components/scores/Pagination";
@@ -154,13 +154,24 @@ const YoddsPage: React.FC = () => {
     <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
       <div className="flex justify-center items-center mb-4 pt-10">
         <div
-          className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+          className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg "
           style={{ maxWidth: "250px", minWidth: "200px" }}
         >
-          <p className="text-center">My YCoins:</p>
-          <p className="text-center text-3xl">
-            {availablePoints.toFixed(0) !== null ? availablePoints : "0"}
+          <p className="text-center">
+            <span className="text-yellow-300">{user.username}</span> YCoins:
           </p>
+          <div className="flex flex-row justify-center items-center gap-1">
+            <p className="text-center text-3xl">
+              {availablePoints.toFixed(0) !== null ? availablePoints : "0"}
+            </p>
+            <Image
+              src="/YCoin.png"
+              alt="YCoin"
+              height={35} // Retains the specified height
+              width={35} // Retains the specified width
+              style={{ objectFit: "contain" }} // Proper usage of objectFit
+            />
+          </div>
         </div>
       </div>
 
@@ -168,11 +179,9 @@ const YoddsPage: React.FC = () => {
         Pending Predictions
       </p>
 
-      {/*
-      <p className="text-sm text-center text-gray-500 mb-8">
+      <p className="text-xs text-center text-gray-500">
         Predictions may only be canceled 24 hours or more before the game.
       </p>
-      */}
 
       <div className="min-w-full flex-col items-center md:px-20">
         <MatchesTablePending pendingBets={pendingBets} />
@@ -182,8 +191,11 @@ const YoddsPage: React.FC = () => {
         Upcoming Games
       </p>
 
-      <p className="text-sm text-center text-gray-500 ">
-        Note: Odds are currently under construction.
+      <p className="text-xs text-center text-gray-500 ">
+        Predict game outcomes and see how your predictions stack against other
+        Yalies! <br></br>Odds are determined by an internal algorithm and affect
+        potential earnings.
+        <br></br>
       </p>
 
       <div className="min-w-full flex-col items-center md:px-20">

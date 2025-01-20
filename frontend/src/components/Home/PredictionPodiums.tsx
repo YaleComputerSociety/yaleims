@@ -66,9 +66,7 @@ const PredictionPodiums: React.FC<PredictionPodiumsProps> = ({ users }) => {
           ycoins={user.points}
           correctPredictions={user.correctPredictions}
           college={user.college}
-          imgSrc={`/college_flags/${user.college
-            .replace(/\s+/g, "_")
-            .toLowerCase()}.png`}
+          imgSrc={`/college_flags/${user.college}.png`}
           overlaySrc={overlaySources[index]}
           posHeight={positions[index].posHeight}
           imgsConfig={positions[index].imgsConfig}

@@ -36,26 +36,27 @@ const PredictionLeaderboard: React.FC<PredictionLeaderboardProps> = ({
       <table className="w-11/12 xs:max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200">
         <thead className="bg-white dark:bg-[#132750]">
           <tr>
-            <th className="xs:hidden px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
-              R
+            <th className=" px-2 py-3 text-center font-medium border border-gray-300 dark:border-gray-600">
+              <span className="hidden xs:inline p-3 text-sm">RANK</span>
+              <span className="xs:hidden text-xs">R</span>
             </th>
-            <th className="hidden xs:block px-2 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
-              RANK
+            <th className="px-2 py-3 text-left  font-medium border border-gray-300 dark:border-gray-600">
+              <span className="hidden xs:inline p-3 text-sm">USERNAME</span>
+              <span className="xs:hidden text-xs">USER</span>
             </th>
-            <th className="px-4 py-2 text-left text-xs font-medium border border-gray-300 dark:border-gray-600">
-              USERNAME
+            <th className=" px-2 py-3 text-center  font-medium border border-gray-300 dark:border-gray-600">
+              <span className="hidden xs:inline p-3 text-sm">YCOINS</span>
+              <span className="xs:hidden text-sm">YC</span>
             </th>
-            <th className="px-4 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
-              YCOINS
-            </th>
-            <th className="px-4 py-2 text-center text-xs font-medium border border-gray-300 dark:border-gray-600">
-              PREDICTIONS
+            <th className=" px-2 py-3 text-center font-medium border border-gray-300 dark:border-gray-600">
+              <span className="hidden xs:inline p-3 text-sm">CORRECT</span>
+              <span className="xs:hidden text-xs">C</span>
             </th>
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-[#132750] divide-y divide-gray-200">
           {displayedUsers.map((user, index) => (
-            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <tr key={index}>
               <td className="text-xs text-center px-2 py-3 border border-gray-300 dark:border-gray-600">
                 {isSmallScreen ? index + 2 : index + 4}
               </td>
