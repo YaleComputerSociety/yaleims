@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AAHomeComponent from "../components/home/AAHomeComponent";
+import AAHomeComponent from "../components/Home/AAHomeComponent";
 
 const HomePage: React.FC = () => {
   const [theme, setTheme] = useState("light");

@@ -81,12 +81,17 @@ const AAHomeComponent: React.FC = () => {
   };
 
   const handleCollegeClick = (collegeName: string) => {
+    console.log("College clicked:", collegeName);
     setFilter({
       college: toCollegeAbbreviation[collegeName],
       sport: "",
       date: "",
     });
-    router.push("/scores");
+    //router.push("/scores");
+     // Ensure the navigation happens after setting the filter
+    setTimeout(() => {
+      router.push("/scores");
+    }, 0);
   };
 
   const handleSelectedChange = (filter: string) => {

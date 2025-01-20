@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import LoadingScreen from "@src/components/LoadingScreen";
-import Filters from "../../components/schedule/Filter";
-import ListView from "../../components/schedule/ListView";
+import Filters from "../../components/Schedule/Filter";
+import ListView from "../../components/Schedule/ListView";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
-import Calendar from "@src/components/schedule/Calendar";
+import Calendar from "@src/components/Schedule/Calendar";
 import { FaSpinner } from "react-icons/fa"; // Example using Font Awesome spinner
 
 const PAGE_SIZE = "10";

@@ -118,7 +118,7 @@ export default function Footer() {
       </div>
       <br></br>
       <div className="text-center text-xs w-4/5 mx-auto text-blue-100 dark:text-blue-500">
-        Yale is a registered trademark of Yale University. This website is
+        TEST Yale is a registered trademark of Yale University. This website is
         student run and is maintained, hosted, and operated independently of
         Yale University. The activities on this website are not supervised or
         endorsed by Yale and information contained on this website does not
