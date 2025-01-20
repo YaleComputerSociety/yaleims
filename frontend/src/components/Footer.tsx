@@ -46,6 +46,11 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/odds" className="hover:underline">
+                    Odds
+                  </Link>
+                </li>
+                <li>
                   <Link href="/profile" className="hover:underline">
                     Profile
                   </Link>
@@ -122,4 +127,3 @@ export default function Footer() {
     </footer>
   );
 }
-

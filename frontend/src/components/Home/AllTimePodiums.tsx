@@ -28,7 +28,7 @@ const positions = [
     overlayHeight: 160,
     overlayWidth: 160,
     overlayConfig: "mg:h-[190px] mg:w-[165px] h-[150px] w-[120px]",
-    rank: 2
+    rank: 2,
   }, // 2nd
 ];
 
@@ -46,8 +46,8 @@ export const AllTimePodiums: React.FC = () => {
         <AllTimePodium
           key={college}
           rank={positions[index].rank}
-          tyngWins={tyngWins}
-          college={college}
+          tyngWins={Number(tyngWins)} // Ensure tyngWins is a number
+          college={String(college)}
           imgSrc={`/college_flags/${college}.png`}
           overlaySrc={overlaySources[index]}
           posHeight={positions[index].posHeight}

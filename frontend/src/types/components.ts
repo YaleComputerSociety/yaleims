@@ -31,6 +31,14 @@ export type Match = {
   division: string;
   winner: string | null; // Determines the winner, or if it's a draw
   forfeit: boolean;
+  home_college_odds?: number | undefined;
+  away_college_odds?: number | undefined;
+  draw_odds?: number | undefined;
+  default_odds?: number | undefined;
+  home_college_volume?: number | undefined;
+  away_college_volume?: number | undefined;
+  draw_volume?: number | undefined;
+  default_volume?: number | undefined;
 };
 
 export type Matchv2 = {

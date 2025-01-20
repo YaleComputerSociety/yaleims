@@ -29,7 +29,8 @@ const AllTimePodium: React.FC<AllTimePodiumProps> = ({
   return (
     <div
       className={`flex flex-col w-full items-center relative text-center ${
-        rank != 1 ? "hidden xs:block" : ""}
+        rank != 1 ? "hidden xs:block" : ""
+      }
       }`}
     >
       <div className={`relative ${imgsConfig} w-full -mb-10`}>
@@ -62,7 +63,7 @@ const AllTimePodium: React.FC<AllTimePodiumProps> = ({
           </sup>
         </h1>
         <p className="text-md font-medium">
-          {tyngWins} Tyng Cup Win{tyngWins > 1 ? "s" : ""}
+          {tyngWins as number} Tyng Cup Win{(tyngWins as number) > 1 ? "s" : ""}
         </p>
       </div>
     </div>

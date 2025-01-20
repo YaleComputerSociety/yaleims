@@ -7,7 +7,10 @@ import { useUser } from "../../context/UserContext.jsx";
 const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
   const { home_college, away_college, sport, timestamp, type } = match;
   // const [selectedOption, setSelectedOption] = useState<string>("");
-  const [selectedOption, setSelectedOption] = useState<{ option: string; odds: number }>({ option: "", odds: 0 });
+  const [selectedOption, setSelectedOption] = useState<{
+    option: string;
+    odds: number;
+  }>({ option: "", odds: 0 });
   const [selectedOdds, setSelectedOdds] = useState<number>(0);
   const [coins, setCoins] = useState<number>(0);
   const { user } = useUser();
@@ -95,7 +98,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     const betAmount = coins;
     const availablePoints = user.points || 0;
 
-    console.log(selectedOption.odds)
+    console.log(selectedOption.odds);
 
     if (availablePoints < 1) {
       alert("You don't have enough YCoins");
@@ -129,7 +132,17 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
   };
 
   // const RadioOption = ({ value, college = null, label }: any) => (
-  const RadioOption = ({ value, college = null, label, odds }: { value: string; label: string; odds: number }) => (
+  const RadioOption = ({
+    value,
+    college = null,
+    label,
+    odds,
+  }: {
+    value: string;
+    college: string | null;
+    label: string;
+    odds: number;
+  }) => (
     <label
       className={`relative flex items-center space-x-3 cursor-pointer group ${
         college ? "w-72" : "w-40"
@@ -204,32 +217,52 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
             <div className="space-y-3 md:space-y-4">
               <RadioOption
                 value={home_college}
-                odds={match.home_college_odds}
+                odds={match.home_college_odds ?? 0} // Provide a fallback value if undefined
                 // value={JSON.stringify({ option: home_college, odds: match.home_college_odds })}
                 college={home_college}
-                label={`${toCollegeName[home_college]} - ${(100 * match.home_college_odds).toFixed(1)}% likely`}
+                label={`${toCollegeName[home_college]} - ${
+                  match.home_college_odds !== undefined
+                    ? `${(100 * match.home_college_odds).toFixed(1)}% likely`
+                    : "Unknown odds"
+                }`}
               />
               <RadioOption
                 value={away_college}
-                odds={match.away_college_odds}
+                odds={match.home_college_odds ?? 0} // Provide a fallback value if undefined
                 // value={JSON.stringify({ option: away_college, odds: match.away_college_odds })}
                 college={away_college}
-                label={`${toCollegeName[away_college]} - ${(100 * match.away_college_odds).toFixed(1)}% likely`}
+                label={`${toCollegeName[away_college]} - ${
+                  match.away_college_odds !== undefined
+                    ? `${(100 * match.away_college_odds).toFixed(1)}% likely`
+                    : "Unknown odds"
+                }`}
               />
             </div>
 
             {/* Draw and Default options */}
             <div className="space-y-3 md:space-y-4 ">
               <RadioOption
+                college={null}
                 value="Draw"
-                odds={match.draw_odds}
+                odds={match.draw_odds ?? 0}
                 // value={JSON.stringify({ option: "Draw", odds: match.draw_odds })}
-                label={`Draw - ${(100 * match.draw_odds).toFixed(1)}% likely`} />
+                label={`Draw - ${
+                  match.draw_odds !== undefined
+                    ? `${(100 * match.draw_odds).toFixed(1)}% likely`
+                    : "Unknown odds"
+                }`}
+              />
               <RadioOption
+                college={null}
                 value="Default"
-                odds={match.default_odds}
+                odds={match.default_odds ?? 0}
                 // value={JSON.stringify({ option: "Default", odds: match.default_odds })}
-                label={`Default - ${(100 * match.default_odds).toFixed(1)}% likely`} />
+                label={`Default - ${
+                  match.default_odds !== undefined
+                    ? `${(100 * match.default_odds).toFixed(1)}% likely`
+                    : "Unknown odds"
+                }`}
+              />
             </div>
 
             {/* Coin input and submit button column */}

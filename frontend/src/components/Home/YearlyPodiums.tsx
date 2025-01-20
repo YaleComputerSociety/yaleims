@@ -1,24 +1,15 @@
 import React from "react";
 import CPodium from "./YearlyPodium";
 
-interface College {
-  name: string;
-}
-
 interface YearlyPodiumsProps {
-  colleges: College[];
-  onCollegeSelect: (college: College) => void;
+  colleges: any;
+  onCollegeClick: any;
 }
 
 export const YearlyPodiums: React.FC<YearlyPodiumsProps> = ({
   colleges,
-  onCollegeSelect,
+  onCollegeClick,
 }) => {
-  if (!colleges || colleges.length !== 3) {
-    console.error("YearlyPodiums requires an array of exactly 3 colleges.");
-    return null;
-  }
-
   const overlaySources = [
     "/college_flags/bronze_overlay.png", // 3rd place
     "/college_flags/gold_overlay.png", // 1st place
@@ -62,7 +53,7 @@ export const YearlyPodiums: React.FC<YearlyPodiumsProps> = ({
           overlayWidth={positions[index].overlayWidth}
           overlayConfig={positions[index].overlayConfig}
           college={college}
-          onSelect={onCollegeSelect}
+          onSelect={onCollegeClick}
         />
       ))}
     </div>
