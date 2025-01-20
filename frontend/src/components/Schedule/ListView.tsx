@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@src/context/UserContext";
-import MatchListItem from "./MatchListItem";
+import MatchListItem from "../Schedule/MatchListItem";
 import { Match, CalendarMatchListProps } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
 
@@ -9,7 +9,8 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
   const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getUserMatches = async () => {
+  const getUserMatches = useCallback( 
+    async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -30,11 +31,13 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
     } finally {
       setLoading(false);
     }
-  };
+  },
+  [user]
+);
 
   useEffect(() => {
     getUserMatches();
-  }, [user]);
+  }, [user, getUserMatches]);
 
   const getAllDates = () => {
     if (matches.length === 0) return [];

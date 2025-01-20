@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
-import Pagination from "@src/components/scores/Pagination";
+import Pagination from "@src/components/Scores/Pagination";
 import MatchesTable from "@src/components/YOdds/MatchTable";
 import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
 import { Match, Bet } from "@src/types/components";
@@ -33,7 +33,10 @@ const YoddsPage: React.FC = () => {
   const userEmail = user ? user.email : null;
 
   // Construct URL parameters for different query types
-  const getQueryParams = (type: string) => {
+  // Memoize getQueryParams function to prevent unnecessary re-renders
+  const getQueryParams = useCallback(
+
+   (type: string) => {
     const baseParams = {
       type: "index",
       pageSize: "20",
@@ -53,7 +56,9 @@ const YoddsPage: React.FC = () => {
     }
 
     return baseParams;
-  };
+  },
+  [page, firstVisible, lastVisible]
+);
 
   // Fetch matches with pagination
   useEffect(() => {
@@ -83,7 +88,7 @@ const YoddsPage: React.FC = () => {
 
     window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType]);
+  }, [page, queryType, getQueryParams]);
 
   // Fetch user points
   useEffect(() => {
@@ -127,7 +132,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchPendingBets();
-  }, [availablePoints]);
+  }, [availablePoints, userEmail]);
 
   const handleCollegeClick = (collegeName: string) => {
     // Implementation for betting functionality

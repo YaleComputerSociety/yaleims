@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Leaderboard from "../components/home/Leaderboard";
+import Leaderboard from "../components/Home/Leaderboard";
 
 const HomePage: React.FC = () => {
   const [theme, setTheme] = useState("light");

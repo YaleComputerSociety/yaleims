@@ -4,10 +4,10 @@ import "react-calendar/dist/Calendar.css";
 import { useState, useEffect } from "react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import LoadingScreen from "@src/components/LoadingScreen";
-import Filters from "../../components/schedule/Filter";
-import ListView from "../../components/schedule/ListView";
+import Filters from "../../components/Schedule/Filter";
+import ListView from "../../components/Schedule/ListView";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
-import Calendar from "@src/components/schedule/Calendar";
+import Calendar from "@src/components/Schedule/Calendar";
 import { FaSpinner } from "react-icons/fa"; // Example using Font Awesome spinner
 
 const PAGE_SIZE = "10";
@@ -83,7 +83,7 @@ const SchedulePage: React.FC = () => {
     };
 
     fetchMoreMatches();
-  }, [filter.college, filter.date, filter.sport, chunksLoaded]);
+  }, [filter.college, filter.date, filter.sport, chunksLoaded, hasMoreMatches, lastVisible]);
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
