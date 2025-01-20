@@ -120,15 +120,41 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   );
 
   const BetDetails = () => (
-    <div className="grid sm:grid-cols-2 gap-2 items-center mt-3 text-xs xs:text-sm mr-5">
+    <div className="xs:grid sm:grid-cols-2 gap-2 items-center text-xs mr-5">
       <div className="text-right sm:text-center">
-        <p>Initial Amount: {bet.betAmount} YCoins</p>
-        <p>Potential: {(bet.betAmount * (1 + (1-bet.betOdds)/bet.betOdds)).toFixed(2)} YCoins</p>
+        <div className="flex flex-row">
+          <p>Intial Amount:</p>
+          <div className="flex flex-row justify-end">
+            <p>{bet.betAmount}</p>
+            <Image
+              src="/YCoin.png"
+              alt="YCoin"
+              height={17} // Retains the specified height
+              width={17} // Retains the specified width
+              style={{ objectFit: "contain" }} // Proper usage of objectFit
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-row justify-end">
+          <p>
+            Potential:{" "}
+            {(bet.betAmount * (1 + (1 - bet.betOdds) / bet.betOdds)).toFixed(2)}{" "}
+          </p>
+          <Image
+            src="/YCoin.png"
+            alt="YCoin"
+            height={17} // Retains the specified height
+            width={17} // Retains the specified width
+            style={{ objectFit: "contain" }} // Proper usage of objectFit
+          />
+        </div>
       </div>
+
       <div className="text-right">
         <button
           onClick={handleDeleteBet}
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors"
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors mt-1"
         >
           Cancel
         </button>
@@ -146,8 +172,9 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     <div className={containerClasses}>
       <TimeDisplay />
 
-      <div className="flex justify-between items-center">
-        <div className="grid lg:grid-cols-[auto_auto] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center text-left px-3 lg:px-6 py-4 text-xs xs:text-sm">
+      <div className="flex flex-wrap justify-between items-center">
+        {/* Grid container for colleges */}
+        <div className="sm:grid lg:grid-cols-[auto_auto] xl:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center text-left px-3 lg:px-6 py-4 text-xs xs:text-sm">
           <CollegeDisplay
             college={bet.home_college}
             isSelected={bet.betOption === bet.home_college}
@@ -164,7 +191,8 @@ const TableRowPending: FC<TableRowPendingProps> = ({
           )}
         </div>
 
-        <div className="col-span-2">
+        {/* Ensure this div is pushed to the end */}
+        <div className="col-span-2 ml-auto mb-3 -mt-2 xl:mt-0">
           <BetDetails />
         </div>
       </div>

@@ -13,9 +13,6 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
 
 const YoddsPage: React.FC = () => {
-  const filtersContext = useContext(FiltersContext);
-  const { filter, setFilter } = filtersContext;
-
   // Pagination state
   const [page, setPage] = useState<number>(1);
   const [firstVisible, setFirstVisible] = useState<string>("");
@@ -143,6 +140,10 @@ const YoddsPage: React.FC = () => {
     // Implementation for betting functionality
   };
 
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
   if (!user) {
     return (
       <div className="text-center h-48 mt-40 w-2/5 mx-auto">
@@ -234,7 +235,6 @@ const YoddsPage: React.FC = () => {
         )}
       </div>
 
-      {isLoading && <LoadingScreen />}
       <br></br>
     </div>
   );

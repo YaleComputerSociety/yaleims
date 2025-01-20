@@ -97,7 +97,6 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     const betAmount = coins;
     const availablePoints = user.points || 0;
 
-
     if (availablePoints < 1) {
       alert("You don't have enough YCoins");
       return;
@@ -143,7 +142,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
   }) => (
     <label
       className={`relative flex items-center space-x-3 cursor-pointer group ${
-        college ? "w-72" : "w-40"
+        college ? "w-60" : "w-40"
       }`}
     >
       <div className="flex items-center space-x-4">
@@ -210,7 +209,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
         {/* Radio options and submit button container */}
         <div className="flex flex-col space-y-4">
           {/* Radio options */}
-          <div className="flex flex-col md:flex-row gap-2 justify-between">
+          <div className="flex flex-col md:flex-row justify-between">
             {/* Team options */}
             <div className="space-y-3 md:space-y-4">
               <RadioOption
@@ -238,7 +237,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
             </div>
 
             {/* Draw and Default options */}
-            <div className="space-y-3 md:space-y-4 ">
+            <div className="space-y-3 md:space-y-4 mt-4 md:mt-0">
               <RadioOption
                 college={null}
                 value="Draw"
@@ -264,7 +263,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
             </div>
 
             {/* Coin input and submit button column */}
-            <div className="flex flex-col md:justify-start sm:-mt-2">
+            <div className="flex flex-col md:justify-start md:-mt-2 md:ml-4 mt-3">
               {/* Coin input field */}
               <div className="w-full md:w-48">
                 <input
