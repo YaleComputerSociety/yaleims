@@ -136,6 +136,18 @@ const YoddsPage: React.FC = () => {
     fetchPendingBets();
   }, [availablePoints]);
 
+  useEffect(() => {
+    if (!pendingBets.length) return;
+
+    setFilteredMatches((prevMatches) => {
+      const filtered = prevMatches.filter((match) => {
+        // Check if there is a prediction for the current match
+        return !pendingBets.some((bet) => bet.matchId == match.id);
+      });
+      return filtered;
+    });
+  }, [pendingBets]);
+
   const handleCollegeClick = (collegeName: string) => {
     // Implementation for betting functionality
   };
