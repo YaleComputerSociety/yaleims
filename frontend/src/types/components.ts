@@ -165,3 +165,19 @@ export interface Bet {
   sport: string;
   matchTimestamp: string;
 }
+
+export interface SportModalProps {
+  sport: string | null;
+  setSport: (sport: string | null) => void;
+}
+
+export interface SportInfo {
+  points: number;
+  description: string;
+  players: number;
+}
+
+export interface SportCardProps {
+  sport: string;
+  handleClick: (sport: string) => void;
+}
