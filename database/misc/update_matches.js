@@ -21,9 +21,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
-// Function to add new volume fields to all matches
-// Function to update location for Flag Football matches
-async function updateFlagFootballLocations() {
+// Function to add a predictions map to all matches
+async function addPredictionsMap() {
   const matchesRef = collection(firestore, "matches");
   const snapshot = await getDocs(matchesRef);
 
@@ -32,34 +31,27 @@ async function updateFlagFootballLocations() {
     return;
   }
 
-  console.log(
-    `Found ${snapshot.size} matches. Updating locations for Flag Football games...`
-  );
+  console.log(`Found ${snapshot.size} matches. Adding predictions map...`);
 
   const batch = writeBatch(firestore);
 
   snapshot.forEach((docSnapshot) => {
     const matchData = docSnapshot.data();
 
-    if (matchData.sport === "Flag Football") {
+    if (!matchData.predictions) {
       const matchRef = doc(matchesRef, docSnapshot.id);
-      batch.update(matchRef, {
-        location: "Yale Bowl",
-        location_extra: "D South 1-3",
-      });
-      console.log(
-        `Updated location for Flag Football match: ${docSnapshot.id}`
-      );
+      batch.update(matchRef, { predictions: {} });
+      console.log(`Added predictions map to match: ${docSnapshot.id}`);
     }
   });
 
   try {
     await batch.commit();
-    console.log("Locations for Flag Football matches updated successfully.");
+    console.log("Predictions map added to all matches successfully.");
   } catch (error) {
-    console.error("Error updating Flag Football match locations:", error);
+    console.error("Error adding predictions map to matches:", error);
   }
 }
 
-// Call the functions
-updateFlagFootballLocations();
+// Call the function
+addPredictionsMap();

@@ -29,7 +29,6 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       sport,
     }: AddBetRequestBody = req.body;
 
-    // Validation
     if (
       !email ||
       !matchId ||
@@ -43,20 +42,11 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       return res.status(400).send("Missing required fields");
     }
 
-    if (typeof email !== "string" || email.trim() === "") {
-      return res.status(400).send("Invalid email");
-    }
-
-    if (typeof matchId !== "string" || matchId.trim() === "") {
-      return res.status(400).send("Invalid matchId");
-    }
-
     if (betAmount <= 0) {
       return res.status(400).send("Bet amount must be greater than 0");
     }
 
     try {
-      // 1. Check if user exists and has enough points
       const userRef = db.collection("users").doc(email);
       const userDoc = await userRef.get();
 
@@ -64,26 +54,19 @@ export const addBet = functions.https.onRequest(async (req, res) => {
         return res.status(404).send("User not found");
       }
 
-      const userData = userDoc.data();
-      const currentPoints = userData?.points || 0;
+      const currentPoints = userDoc.data()?.points || 0;
 
       if (currentPoints < betAmount) {
         return res.status(400).send("Insufficient points for this bet");
       }
 
-      // 2. Check if match exists
       const matchRef = db.collection("matches").doc(matchId);
       const matchDoc = await matchRef.get();
       if (!matchDoc.exists) {
         return res.status(404).send("Match not found");
       }
 
-      // 4. Start a transaction to update points and add bet
       await db.runTransaction(async (transaction) => {
-        // Add the bet to a subcollection
-        const userRef = db.collection("users").doc(email); // Parent document
-        const betRef = userRef.collection("bets").doc(); // Subcollection and auto-generated ID
-
         const bet = {
           matchId,
           betAmount,
@@ -95,15 +78,17 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
-        // Deduct points from the user
+        const betsUpdate = {
+          [`predictions.${email}`]: { betOption, betAmount, betOdds },
+        };
+
         transaction.update(userRef, {
           points: admin.firestore.FieldValue.increment(-betAmount),
         });
 
-        // Add bet to the subcollection
-        transaction.set(betRef, bet);
+        transaction.set(userRef.collection("bets").doc(), bet);
+        transaction.set(matchRef, betsUpdate, { merge: true });
 
-        // Update match volumes
         if (betOption === "Default") {
           transaction.update(matchRef, {
             default_volume: admin.firestore.FieldValue.increment(betAmount),
@@ -114,13 +99,11 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           });
         } else if (betOption === away_college) {
           transaction.update(matchRef, {
-            away_volume:
-              admin.firestore.FieldValue.increment(betAmount),
+            away_volume: admin.firestore.FieldValue.increment(betAmount),
           });
         } else if (betOption === home_college) {
           transaction.update(matchRef, {
-            home_volume:
-              admin.firestore.FieldValue.increment(betAmount),
+            home_volume: admin.firestore.FieldValue.increment(betAmount),
           });
         } else {
           throw new Error("Invalid betOption");

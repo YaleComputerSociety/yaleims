@@ -52,6 +52,19 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
         return res.status(404).send("Match not found");
       }
 
+      const matchData = matchDoc.data();
+      const matchTime = matchData?.timestamp?.toDate(); // Assuming `scheduledTime` is a Firestore Timestamp
+      const now = new Date();
+
+      if (
+        !matchTime ||
+        now > new Date(matchTime.getTime() - 24 * 60 * 60 * 1000)
+      ) {
+        return res
+          .status(400)
+          .send("Bets cannot be deleted within 24 hours of a match.");
+      }
+
       // Query the user's bets subcollection to find the bet
       const betsRef = userRef.collection("bets");
       const betSnapshot = await betsRef
@@ -68,10 +81,10 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
           .send("Bet not found with the specified parameters");
       }
 
-      const betDoc = betSnapshot.docs[0]; // Assuming only one match
+      const betDoc = betSnapshot.docs[0];
       const betData = betDoc.data();
 
-      // Start a transaction to return points and delete the bet
+      // Start a transaction to return points, delete the bet, and update the bets map
       await db.runTransaction(async (transaction) => {
         // Return points to user
         transaction.update(userRef, {
@@ -94,19 +107,20 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
           });
         } else if (betData.betOption === betData.away_college) {
           transaction.update(matchRef, {
-            away_college_volume: admin.firestore.FieldValue.increment(
-              -betAmountNumber
-            ),
+            away_volume: admin.firestore.FieldValue.increment(-betAmountNumber),
           });
         } else if (betData.betOption === betData.home_college) {
           transaction.update(matchRef, {
-            home_college_volume: admin.firestore.FieldValue.increment(
-              -betAmountNumber
-            ),
+            home_volume: admin.firestore.FieldValue.increment(-betAmountNumber),
           });
         } else {
           throw new Error("Invalid betOption");
         }
+
+        // Remove the user from the bets map
+        transaction.update(matchRef, {
+          [`predictions.${email}`]: admin.firestore.FieldValue.delete(),
+        });
       });
 
       return res.status(200).send("Bet deleted successfully");

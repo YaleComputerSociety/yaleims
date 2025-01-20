@@ -7,6 +7,16 @@ const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
 
+interface Prediction {
+  betOption: string;
+  betAmount: number;
+  betOdds: number;
+}
+
+interface PredictionsMap {
+  [email: string]: Prediction;
+}
+
 export const scoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
@@ -198,6 +208,23 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await rankBatch.commit();
 
+      const matchData = await db.collection("matches").doc(matchId).get();
+      const predictions =
+        (matchData.data()?.predictions as PredictionsMap) || {};
+
+      const rewardBatch = db.batch();
+      const rewardAmount = 100;
+
+      for (const [email, prediction] of Object.entries(predictions)) {
+        if (prediction.betOption === winningTeam) {
+          const userRef = db.collection("users").doc(email);
+          rewardBatch.update(userRef, {
+            points: admin.firestore.FieldValue.increment(rewardAmount),
+          });
+        }
+      }
+
+      await rewardBatch.commit();
       // return success response
       return res
         .status(200)

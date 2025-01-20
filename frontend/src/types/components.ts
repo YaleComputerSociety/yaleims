@@ -93,7 +93,7 @@ export interface YoddsTableRowProps {
   match: Match; // `match` prop remains typed as `Match`
   isFirst?: boolean; // Optional prop to indicate if this is the first row
   isLast?: boolean; // Optional prop to indicate if this is the last row
-  availablePoints: number;
+  availablePoints: number | undefined;
 }
 
 export interface TablePendingRowProps {
@@ -101,7 +101,7 @@ export interface TablePendingRowProps {
   bet: Bet; // `match` prop remains typed as `Match`
   isFirst?: boolean; // Optional prop to indicate if this is the first row
   isLast?: boolean; // Optional prop to indicate if this is the last row
-  availablePoints?: number;
+  availablePoints?: number | undefined;
 }
 
 export type Sport = {
