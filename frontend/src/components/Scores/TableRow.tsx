@@ -247,7 +247,7 @@ const TableRow: React.FC<TableRowProps> = ({
         </div>
       ) : (
         <div className="transition-[height] duration-300 ease-out h-0 overflow-hidden">
-          <div className="text-center text-xs pb-5 italic">
+          <div className="text-center text-xs pb-5 italic px-1">
             No prediction data available for this match. Predict game outcomes{" "}
             <Link href={"/yodds"} className="text-blue-400">
               here.

@@ -10,6 +10,7 @@ import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
 import { Match, Bet } from "@src/types/components";
 import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
+import { FaSpinner } from "react-icons/fa";
 
 const YoddsPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
@@ -26,6 +27,9 @@ const YoddsPage: React.FC = () => {
   // Data state
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [coinsLoading, setCoinsLoading] = useState(true);
+  const [pendingLoading, setPendingLoading] = useState(true);
+
   const [pendingBets, setPendingBets] = useState<Bet[]>([]);
   const [availablePoints, setAvailablePoints] = useState<number>(0);
 
@@ -90,6 +94,7 @@ const YoddsPage: React.FC = () => {
     if (!userEmail) return;
 
     const fetchMyPoints = async () => {
+      setCoinsLoading(true);
       try {
         const response = await fetch(
           `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`
@@ -100,6 +105,8 @@ const YoddsPage: React.FC = () => {
         setAvailablePoints(data.points);
       } catch (error) {
         console.error("Failed to fetch points:", error);
+      } finally {
+        setCoinsLoading(false);
       }
     };
 
@@ -112,6 +119,7 @@ const YoddsPage: React.FC = () => {
 
     const fetchPendingBets = async () => {
       try {
+        setPendingLoading(true);
         const response = await fetch(
           `https://us-central1-yims-125a2.cloudfunctions.net/getPendingBets?email=${userEmail}`
         );
@@ -123,6 +131,8 @@ const YoddsPage: React.FC = () => {
         setPendingBets(data);
       } catch (error) {
         console.error("Failed to fetch pending bets:", error);
+      } finally {
+        setPendingLoading(false);
       }
     };
 
@@ -161,9 +171,13 @@ const YoddsPage: React.FC = () => {
             <span className="text-yellow-300">{user.username}</span> YCoins:
           </p>
           <div className="flex flex-row justify-center items-center gap-1">
-            <p className="text-center text-3xl">
-              {availablePoints.toFixed(0) !== null ? availablePoints : "0"}
-            </p>
+            {coinsLoading ? (
+              <FaSpinner className="animate-spin" />
+            ) : (
+              <p className="text-center text-3xl">
+                {availablePoints.toFixed(0) !== null ? availablePoints : "0"}
+              </p>
+            )}
             <Image
               src="/YCoin.png"
               alt="YCoin"
@@ -183,9 +197,15 @@ const YoddsPage: React.FC = () => {
         Predictions may only be canceled 24 hours or more before the game.
       </p>
 
-      <div className="min-w-full flex-col items-center md:px-20">
-        <MatchesTablePending pendingBets={pendingBets} />
-      </div>
+      {pendingLoading ? (
+        <div className="flex justify-center items-center mt-4">
+          <FaSpinner className="animate-spin" />
+        </div>
+      ) : (
+        <div className="min-w-full flex-col items-center md:px-20">
+          <MatchesTablePending pendingBets={pendingBets} />
+        </div>
+      )}
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Upcoming Games
