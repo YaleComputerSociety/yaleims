@@ -51,7 +51,7 @@ export default function PrivacyPage() {
               Assign you to your residential college team.
             </li>
             <li className="pl-10">
-              isplay schedules, scores, and other relevant content.
+              Display schedules, scores, and other relevant content.
             </li>
             <li className="pl-10">
               Ensure the app functions as intended and improve user experience.
