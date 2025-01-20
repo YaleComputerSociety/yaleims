@@ -244,7 +244,6 @@ export const groupByDate = (allMatches: Match[]) => {
       month: "2-digit",
       day: "2-digit",
     });
-    // console.log(date)
     if (!groupedData[date]) {
       groupedData[date] = [];
     }
@@ -298,7 +297,6 @@ export const groupBetByDate = (allBets: any[]) => {
         day: "2-digit",
       }
     );
-    // console.log(date)
     if (!groupedData[date]) {
       groupedData[date] = [];
     }

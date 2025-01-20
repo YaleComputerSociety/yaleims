@@ -113,7 +113,7 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
                 </div>
               </td>
               <td className=" md:w-[120px] w-[30px] text-xs border border-gray-300 dark:border-gray-600">
-                <div className="ml-2 flex items-center whitespace-normal break-words">
+                <div className="ml-1 xs:ml-2 flex items-center whitespace-normal break-words">
                   <Image
                     src={`/college_flags/${college.name.replace(
                       /\s+/g,
@@ -122,7 +122,7 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
                     alt={college.name}
                     width={20}
                     height={20}
-                    className="mr-2 object-contain"
+                    className="mr-1 xs:mr-2 object-contain"
                     unoptimized
                   />
                   {college.name}

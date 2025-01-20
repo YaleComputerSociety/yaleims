@@ -85,7 +85,6 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
       }
 
       setIsSignedUp(false);
-      console.log("Successfully unregistered from match:", match);
     } catch (error) {
       console.error("Error unregistering:", error);
     } finally {

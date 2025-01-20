@@ -5,6 +5,7 @@ import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import Link from "next/link";
+import "chart.js/auto";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,
@@ -20,9 +21,41 @@ const TableRow: React.FC<TableRowProps> = ({
     away_college_score,
     sport,
     timestamp,
+    home_volume,
+    away_volume,
+    draw_volume,
+    default_volume,
+    winner,
   } = match;
 
   const [isOpen, setIsOpen] = useState(false);
+
+  // Check if prediction data exists
+  const hasPredictionData =
+    home_volume !== 0 ||
+    away_volume !== 0 ||
+    draw_volume !== 0 ||
+    default_volume !== 0;
+
+  // Calculate correct and incorrect predictions
+  const totalPredicted =
+    (home_volume ?? 0) +
+    (away_volume ?? 0) +
+    (draw_volume ?? 0) +
+    (default_volume ?? 0);
+
+  const correctPredicted =
+    (home_college_score > away_college_score ? home_volume ?? 0 : 0) +
+    (away_college_score > home_college_score ? away_volume ?? 0 : 0) +
+    (winner === "Tie" ? draw_volume ?? 0 : 0) +
+    (winner === "Default" ? default_volume ?? 0 : 0);
+
+  const incorrectPredicted = totalPredicted - correctPredicted;
+
+  // Calculate bar widths
+  const correctPercentage =
+    totalPredicted > 0 ? (correctPredicted / totalPredicted) * 100 : 0;
+  const incorrectPercentage = 100 - correctPercentage;
 
   const getTimeString = (timestamp: string) => {
     return new Date(timestamp).toLocaleString("en-US", {
@@ -180,7 +213,32 @@ const TableRow: React.FC<TableRowProps> = ({
           {match.type == "Regular" ? "Season" : "Round"}
         </div>
       </div>
-      {isOpen ? (
+      {/* Bar Graph for Predictions */}
+      {hasPredictionData && isOpen && (
+        <div className="px-4 sm:px-8 py-2 mb-3">
+          <h3 className="text-sm font-semibold mb-2 ml-2">
+            Prediction Results
+          </h3>
+          <div className="flex items-center">
+            <div
+              className="h-2 bg-green-500 rounded-l-lg"
+              style={{ width: `${correctPercentage}` }}
+              title={`${correctPredicted} Correct`}
+            ></div>
+            <div
+              className="h-2 bg-gray-200 dark:bg-gray-800 rounded-r-lg"
+              style={{ width: `${incorrectPercentage}` }}
+              title={`${incorrectPredicted} Incorrect`}
+            ></div>
+          </div>
+          <div className="text-xs mt-1 ml-2">
+            Correct: {correctPredicted} YCoins, Incorrect: {incorrectPredicted}{" "}
+            YCoins
+          </div>
+        </div>
+      )}
+
+      {!hasPredictionData && isOpen ? (
         <div className="text-center text-xs italic transition-[height] duration-300 ease-out h-10 overflow-hidden">
           No prediction data available for this match. Predict game outcomes{" "}
           <Link href={"/yodds"} className="text-blue-400">

@@ -11,7 +11,6 @@ type PredictionPodiumsProps = {
 };
 
 const PredictionPodiums: React.FC<PredictionPodiumsProps> = ({ users }) => {
-  console.log(users);
   if (!users || users.length < 3) {
     console.error("PredictionPodiums requires at least 3 users.");
     return null;
@@ -19,8 +18,6 @@ const PredictionPodiums: React.FC<PredictionPodiumsProps> = ({ users }) => {
 
   // Reorder to show 3rd, 1st, and 2nd in the podium
   const reorderedUsers = [users[2], users[0], users[1]];
-
-  console.log(reorderedUsers);
 
   // Overlay and position configurations
   const overlaySources = [

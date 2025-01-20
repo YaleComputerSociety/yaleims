@@ -113,7 +113,6 @@ const Profile = () => {
     setError("");
 
     try {
-      console.log(user, user.username, newUsername);
       const response = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
         {
@@ -131,7 +130,6 @@ const Profile = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          console.log("Username updated successfully:", data.username);
           // Update the user context
           setUser({
             ...user,

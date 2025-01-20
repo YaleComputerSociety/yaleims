@@ -73,7 +73,6 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
         throw new Error(`Failed to add bet: ${errorBody}`);
       }
 
-      console.log("Bet added successfully!");
       setIsBetAdded(true);
       setIsSubmitted(true);
     } catch (error) {
@@ -98,7 +97,6 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     const betAmount = coins;
     const availablePoints = user.points || 0;
 
-    console.log(selectedOption.odds);
 
     if (availablePoints < 1) {
       alert("You don't have enough YCoins");

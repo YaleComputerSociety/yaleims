@@ -46,7 +46,7 @@ const PredictionLeaderboard: React.FC<PredictionLeaderboardProps> = ({
             </th>
             <th className=" px-2 py-3 text-center  font-medium border border-gray-300 dark:border-gray-600">
               <span className="hidden xs:inline p-3 text-sm">YCOINS</span>
-              <span className="xs:hidden text-sm">YC</span>
+              <span className="xs:hidden text-xs">YC</span>
             </th>
             <th className=" px-2 py-3 text-center font-medium border border-gray-300 dark:border-gray-600">
               <span className="hidden xs:inline p-3 text-sm">CORRECT</span>

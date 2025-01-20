@@ -47,7 +47,6 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
   };
 
   const handleSubmit = async () => {
-    console.log("submitting scores");
     setLoading(true);
 
     try {
@@ -75,7 +74,6 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
         const errorText = await response.text();
         throw new Error(`Error: ${response.status} - ${errorText}`);
       }
-      console.log("successfully submitted score");
     } catch (error) {
       console.error("Failed to submit score:", error);
     } finally {

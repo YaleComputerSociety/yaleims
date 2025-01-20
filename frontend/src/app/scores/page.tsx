@@ -14,7 +14,6 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
-  // console.log(filtersContext);
   const { filter, setFilter } = filtersContext;
 
   // State for matches

@@ -30,7 +30,6 @@ const PredictionPodium: React.FC<PredictionPodiumProps> = ({
   posHeight,
   imgsConfig,
 }) => {
-  console.log(imgSrc);
   return (
     <div
       className={`flex flex-col w-full items-center relative text-center ${

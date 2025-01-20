@@ -13,7 +13,6 @@ const withProtectedRoute = <P extends {}>(
     const router = useRouter();
 
     useEffect(() => {
-      console.log(user);
       if (!loading && (!user || user?.role !== "admin")) {
         router.push("/");
         return;

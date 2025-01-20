@@ -29,7 +29,6 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const handleSignUp = async () => {
     setIsLoading(true);
-    console.log(match);
     try {
       const response = await fetch(
         "https://addparticipant-65477nrg6a-uc.a.run.app",
@@ -56,7 +55,6 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       }
 
       setIsSignedUp(true);
-      console.log("Successfully signed up for match:", match);
     } catch (error) {
       console.error("Error signing up:", error);
     } finally {
@@ -94,7 +92,6 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       }
 
       setIsSignedUp(false);
-      console.log("Successfully unregistered from match:", match);
     } catch (error) {
       console.error("Error unregistering:", error);
     } finally {
