@@ -2,7 +2,7 @@ import { groupByDate } from "@src/utils/helpers";
 
 import TableRow from "./TableRow";
 
-import { MatchesTableProps, Match } from "@src/types/components";
+import { MatchesTableProps } from "@src/types/components";
 
 // Main MatchesTable Component
 const MatchesTable: React.FC<MatchesTableProps> = ({

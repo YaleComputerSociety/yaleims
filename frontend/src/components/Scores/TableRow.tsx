@@ -5,7 +5,6 @@ import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import Link from "next/link";
-import "chart.js/auto";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,

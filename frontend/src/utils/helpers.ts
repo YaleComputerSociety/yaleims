@@ -285,18 +285,40 @@ export function generateGoogleCalendarLink(match: Match): string {
   return `${baseUrl}&${params.toString()}`;
 }
 
+// export const groupBetByDate = (allBets: any[]) => {
+//   const groupedData: { [key: string]: any[] } = {};
+
+//   allBets.forEach((item) => {
+//     const date: string = new Date(item.matchTimestamp).toLocaleDateString(
+//       "en-CA",
+//       {
+//         year: "numeric",
+//         month: "2-digit",
+//         day: "2-digit",
+//       }
+//     );
+//     if (!groupedData[date]) {
+//       groupedData[date] = [];
+//     }
+//     groupedData[date].push(item);
+//   });
+
+//   return groupedData;
+// };
+
 export const groupBetByDate = (allBets: any[]) => {
   const groupedData: { [key: string]: any[] } = {};
 
   allBets.forEach((item) => {
-    const date: string = new Date(item.matchTimestamp).toLocaleDateString(
-      "en-CA",
-      {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }
+    const timestamp = new Date(item.matchTimestamp);
+
+    // Convert to EST (UTC-5) — adjust based on daylight saving time if needed
+    const estTimestamp = new Date(
+      timestamp.getTime() - 5 * 60 * 60 * 1000 // Subtract 5 hours
     );
+
+    // Format to a date string in EST
+    const date = estTimestamp.toISOString().split("T")[0];
     if (!groupedData[date]) {
       groupedData[date] = [];
     }

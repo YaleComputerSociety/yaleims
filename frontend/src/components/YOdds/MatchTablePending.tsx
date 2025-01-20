@@ -8,6 +8,8 @@ import { PendingMatchesTableProps } from "@src/types/components";
 const MatchesTable: React.FC<PendingMatchesTableProps> = ({ pendingBets }) => {
   const test = groupBetByDate(pendingBets);
 
+  console.log(test);
+
   return (
     <>
       {Object.entries(test)
@@ -16,11 +18,11 @@ const MatchesTable: React.FC<PendingMatchesTableProps> = ({ pendingBets }) => {
           <div key={date} className="min-w-full rounded-lg mb-4">
             <div>
               <div className="text-left text-gray-700 p-2 bg-black-100 border-none dark:text-gray-300">
-                {new Date(date).toLocaleDateString("en-US", {
-                  weekday: "long", // e.g., Monday
-                  month: "long", // e.g., January
-                  day: "numeric", // e.g., 20
-                  year: "numeric", // e.g., 2025
+                {new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
                 })}
               </div>
             </div>

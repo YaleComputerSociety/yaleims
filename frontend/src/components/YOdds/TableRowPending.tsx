@@ -123,7 +123,7 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     <div className="xs:grid sm:grid-cols-2 gap-2 items-center text-xs mr-5">
       <div className="text-right sm:text-center">
         <div className="flex flex-row">
-          <p>Intial Amount:</p>
+          <p>Intial Amount: </p>
           <div className="flex flex-row justify-end">
             <p>{bet.betAmount}</p>
             <Image

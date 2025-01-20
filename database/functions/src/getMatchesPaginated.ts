@@ -21,21 +21,38 @@ interface Odds {
 function oddsCalculator(
   team1WinPercentage: number, // Team 1's win percentage from past games (0 to 1)
   team2WinPercentage: number, // Team 2's win percentage from past games (0 to 1)
-  bettingVolume: { team1: number; team2: number; draw: number; forfeit: number }, // Betting volume for each outcome
+  bettingVolume: {
+    team1: number;
+    team2: number;
+    draw: number;
+    forfeit: number;
+  }, // Betting volume for each outcome
   team1ForfeitRate: number, // Team 1's forfeit rate (0 to 1)
-  team2ForfeitRate: number, // Team 2's forfeit rate (0 to 1)
+  team2ForfeitRate: number // Team 2's forfeit rate (0 to 1)
 ): Odds {
-  const defaultOdds = { team1Win: 0.35, team2Win: 0.35, draw: 0.1, forfeit: 0.2 };
+  const defaultOdds = {
+    team1Win: 0.35,
+    team2Win: 0.35,
+    draw: 0.1,
+    forfeit: 0.2,
+  };
 
   const totalBettingVolume =
-    bettingVolume.team1 + bettingVolume.team2 + bettingVolume.draw + bettingVolume.forfeit;
+    bettingVolume.team1 +
+    bettingVolume.team2 +
+    bettingVolume.draw +
+    bettingVolume.forfeit;
 
   const bettingWeight = totalBettingVolume > 0 ? 1 : 0;
 
-  const team1BettingShare = totalBettingVolume > 0 ? bettingVolume.team1 / totalBettingVolume : 0.35;
-  const team2BettingShare = totalBettingVolume > 0 ? bettingVolume.team2 / totalBettingVolume : 0.35;
-  const drawBettingShare = totalBettingVolume > 0 ? bettingVolume.draw / totalBettingVolume : 0.1;
-  const forfeitBettingShare = totalBettingVolume > 0 ? bettingVolume.forfeit / totalBettingVolume : 0.2;
+  const team1BettingShare =
+    totalBettingVolume > 0 ? bettingVolume.team1 / totalBettingVolume : 0.35;
+  const team2BettingShare =
+    totalBettingVolume > 0 ? bettingVolume.team2 / totalBettingVolume : 0.35;
+  const drawBettingShare =
+    totalBettingVolume > 0 ? bettingVolume.draw / totalBettingVolume : 0.1;
+  const forfeitBettingShare =
+    totalBettingVolume > 0 ? bettingVolume.forfeit / totalBettingVolume : 0.2;
 
   const pastGamesWeight = 5;
 
@@ -58,7 +75,10 @@ function oddsCalculator(
 
   const remainingForfeitProbability = Math.max(
     0.05,
-    1 - normalizedTeam1Performance - normalizedTeam2Performance - normalizedDrawPerformance
+    1 -
+      normalizedTeam1Performance -
+      normalizedTeam2Performance -
+      normalizedDrawPerformance
   );
 
   const normalizedForfeitPerformance = Math.max(
@@ -67,19 +87,23 @@ function oddsCalculator(
   );
 
   const team1Win =
-    (normalizedTeam1Performance * pastGamesWeight + team1BettingShare * bettingWeight) /
+    (normalizedTeam1Performance * pastGamesWeight +
+      team1BettingShare * bettingWeight) /
     (pastGamesWeight + bettingWeight || 1);
 
   const team2Win =
-    (normalizedTeam2Performance * pastGamesWeight + team2BettingShare * bettingWeight) /
+    (normalizedTeam2Performance * pastGamesWeight +
+      team2BettingShare * bettingWeight) /
     (pastGamesWeight + bettingWeight || 1);
 
   const draw =
-    (normalizedDrawPerformance * pastGamesWeight + drawBettingShare * bettingWeight) /
+    (normalizedDrawPerformance * pastGamesWeight +
+      drawBettingShare * bettingWeight) /
     (pastGamesWeight + bettingWeight || 1);
 
   const forfeit =
-    (normalizedForfeitPerformance * pastGamesWeight + forfeitBettingShare * bettingWeight) /
+    (normalizedForfeitPerformance * pastGamesWeight +
+      forfeitBettingShare * bettingWeight) /
     (pastGamesWeight + bettingWeight || 1);
 
   const totalOdds = team1Win + team2Win + draw + forfeit;
@@ -117,6 +141,13 @@ export const getMatchesPaginated = functions.https.onRequest(
         }
 
         const currentDate = new Date();
+        const currentDateUTC = new Date(
+          Date.UTC(
+            currentDate.getUTCFullYear(),
+            currentDate.getUTCMonth(),
+            currentDate.getUTCDate()
+          )
+        );
         type DateFilterKey =
           | "today"
           | "yesterday"
@@ -151,7 +182,7 @@ export const getMatchesPaginated = functions.https.onRequest(
             currentDate.getMonth(),
             currentDate.getDate() - 60
           ),
-          future: currentDate,
+          future: currentDateUTC,
         };
 
         const sortOrderValidated = sortOrder as OrderByDirection;
@@ -237,7 +268,7 @@ export const getMatchesPaginated = functions.https.onRequest(
 
         // Preload all colleges' data into memory to avoid repeated Firestore calls
         const collegeDocs = await db.collection("colleges").get();
-        collegeDocs.forEach(collegeDoc => {
+        collegeDocs.forEach((collegeDoc) => {
           const collegeData = collegeDoc.data();
           if (collegeData) {
             collegeStatsMap.set(collegeData.abbreviation, collegeData); // Store college data by abbreviation
@@ -245,18 +276,22 @@ export const getMatchesPaginated = functions.https.onRequest(
         });
 
         const matches = snapshot.docs.map((doc) => {
-        // const matches = snapshot.docs.map((doc) => ({
-          const data = doc.data()
+          // const matches = snapshot.docs.map((doc) => ({
+          const data = doc.data();
 
           const homeCollegeStats = collegeStatsMap.get(data.home_college);
           const awayCollegeStats = collegeStatsMap.get(data.away_college);
 
           // Check if the college data exists
           if (!homeCollegeStats || !awayCollegeStats) {
-            console.error(`College data not found for ${data.home_college} or ${data.away_college}`);
+            console.error(
+              `College data not found for ${data.home_college} or ${data.away_college}`
+            );
             return null; // or handle the error appropriately
           } else {
-            console.log(`College data found for ${data.home_college} and ${data.away_college}`);
+            console.log(
+              `College data found for ${data.home_college} and ${data.away_college}`
+            );
           }
           const bettingVolume = {
             team1: data.home_volume,
@@ -271,7 +306,7 @@ export const getMatchesPaginated = functions.https.onRequest(
             homeCollegeStats.forfeits / homeCollegeStats.games,
             awayCollegeStats.forfeits / awayCollegeStats.games
           );
-	  console.log("oddsCalculator called")
+          console.log("oddsCalculator called");
           return {
             id: doc.id,
             ...data,

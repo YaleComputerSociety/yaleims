@@ -4,7 +4,12 @@ import { YoddsTableRowProps } from "@src/types/components";
 import { useState } from "react";
 import { useUser } from "../../context/UserContext.jsx";
 
-const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
+const TableRow: React.FC<YoddsTableRowProps> = ({
+  match,
+  isFirst,
+  isLast,
+  availablePoints,
+}) => {
   const { home_college, away_college, sport, timestamp, type } = match;
   // const [selectedOption, setSelectedOption] = useState<string>("");
   const [selectedOption, setSelectedOption] = useState<{
@@ -95,7 +100,6 @@ const TableRow: React.FC<YoddsTableRowProps> = ({ match, isFirst, isLast }) => {
     }
 
     const betAmount = coins;
-    const availablePoints = user.points || 0;
 
     if (availablePoints < 1) {
       alert("You don't have enough YCoins");

@@ -1,8 +1,6 @@
 "use client";
 
-import "react-calendar/dist/Calendar.css";
 import { useState, useEffect } from "react";
-import "react-big-calendar/lib/css/react-big-calendar.css";
 import LoadingScreen from "@src/components/LoadingScreen";
 import Filters from "../../components/schedule/Filter";
 import ListView from "../../components/schedule/ListView";
