@@ -182,7 +182,7 @@ const TableRow: React.FC<TableRowProps> = ({
       </div>
       {isOpen ? (
         <div className="text-center text-xs italic transition-[height] duration-300 ease-out h-10 overflow-hidden">
-          No Yodds data available for this match. Predict game outcomes{" "}
+          No prediction data available for this match. Predict game outcomes{" "}
           <Link href={"/yodds"} className="text-blue-400">
             here.
           </Link>
@@ -190,7 +190,7 @@ const TableRow: React.FC<TableRowProps> = ({
       ) : (
         <div className="transition-[height] duration-300 ease-out h-0 overflow-hidden">
           <div className="text-center text-xs pb-5 italic">
-            No Yodds data available for this match. Predict game outcomes{" "}
+            No prediction data available for this match. Predict game outcomes{" "}
             <Link href={"/yodds"} className="text-blue-400">
               here.
             </Link>

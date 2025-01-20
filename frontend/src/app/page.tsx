@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Leaderboard from "../components/home/Leaderboard";
+import AAHomeComponent from "../components/home/AAHomeComponent";
 
 const HomePage: React.FC = () => {
   const [theme, setTheme] = useState("light");
@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen">
       <br />
-      <Leaderboard />
+      <AAHomeComponent />
       <br />
       <br />
       <br />

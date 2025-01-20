@@ -5,7 +5,6 @@ import {
   getDocs,
   writeBatch,
   doc,
-  deleteField, // Add this import
 } from "firebase/firestore";
 
 // Your Firebase configuration
@@ -22,8 +21,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
-// Function to migrate bet array to a bet subcollection
-async function migrateBetArrayToSubcollection() {
+// Function to add "correctPredictions" attribute to all user documents
+async function addCorrectPredictionsToUsers() {
   const usersRef = collection(firestore, "users");
   const snapshot = await getDocs(usersRef);
 
@@ -33,41 +32,28 @@ async function migrateBetArrayToSubcollection() {
   }
 
   console.log(
-    `Found ${snapshot.size} user documents. Migrating "bet" array to subcollection...`
+    `Found ${snapshot.size} user documents. Adding 'correctPredictions' attribute...`
   );
 
-  for (const docSnapshot of snapshot.docs) {
+  const batch = writeBatch(firestore);
+
+  snapshot.docs.forEach((docSnapshot) => {
     const userId = docSnapshot.id;
-    const userData = docSnapshot.data();
+    const userRef = doc(usersRef, userId);
 
-    if (userData.bet && Array.isArray(userData.bet)) {
-      console.log(`Migrating bets for user: ${userId}`);
+    // Add "correctPredictions" attribute with an initial value of 0
+    batch.update(userRef, { correctPredictions: 0 });
+  });
 
-      // Create a subcollection for bets
-      const betsRef = collection(firestore, `users/${userId}/bet`);
-
-      const batch = writeBatch(firestore);
-
-      userData.bet.forEach((bet, index) => {
-        const betDocRef = doc(betsRef, `bet_${index + 1}`);
-        batch.set(betDocRef, bet);
-      });
-
-      // Remove the "bet" array from the user document
-      const userRef = doc(usersRef, userId);
-      batch.update(userRef, { bet: deleteField() });
-
-      try {
-        await batch.commit();
-        console.log(`Bets migrated to subcollection for user: ${userId}`);
-      } catch (error) {
-        console.error(`Error migrating bets for user ${userId}:`, error);
-      }
-    }
+  try {
+    await batch.commit();
+    console.log(
+      "Successfully added 'correctPredictions' attribute to all user documents."
+    );
+  } catch (error) {
+    console.error("Error adding 'correctPredictions' attribute:", error);
   }
-
-  console.log("Migration of bets to subcollections completed.");
 }
 
 // Call the function
-migrateBetArrayToSubcollection();
+addCorrectPredictionsToUsers();

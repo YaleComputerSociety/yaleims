@@ -111,31 +111,15 @@ export default function Footer() {
           <p className="text-md">YaleIMs © 2025</p>
         </div>
       </div>
+      <br></br>
+      <div className="text-center text-xs w-4/5 mx-auto text-blue-100 dark:text-blue-500">
+        Yale is a registered trademark of Yale University. This website is
+        student run and is maintained, hosted, and operated independently of
+        Yale University. The activities on this website are not supervised or
+        endorsed by Yale and information contained on this website does not
+        necessarily reflect the opinions or official positions of the University
+      </div>
     </footer>
   );
 }
 
-// ymeets footer
-
-// const Footer = () => {
-//   return (
-//     <footer className="hidden sm:block fixed bottom-0 left-0 w-full bg-white dark:bg-[#0e265c] py-4 text-lg  z-10">
-//       <div className="flex flex-row justify-center gap-6">
-//         <Link
-//           href="https://yalecomputersociety.org/"
-//           target="_blank"
-//           className="font-bold hover:text-blue-500"
-//         >
-//           © 2024 – A y/cs product
-//         </Link>
-//         <Link href="/privacy-policy">
-//           <div className="hover:text-gray-400 font-light">
-//             Privacy Policy + Limited Use Agreement
-//           </div>
-//         </Link>
-//       </div>
-//     </footer>
-//   );
-// };
-
-// export default Footer;

@@ -1,4 +1,5 @@
 import { getLeaderboard } from "./getLeaderboard.js";
+import { getUserLeaderboard } from "./getUserLeaderboard.js";
 import { getUserMatches } from "./getUserMatches.js";
 import { scoreMatch } from "./scoreMatch.js";
 import { addParticipant } from "./addParticipant.js";
@@ -34,4 +35,5 @@ export {
   deleteBet,
   getPendingBets,
   getMyAvailablePoints,
+  getUserLeaderboard,
 };

@@ -11,7 +11,9 @@ const ListView: React.FC<ListViewProps> = ({ matches, isSignedUp }) => {
   return (
     <div className="rounded-lg overflow-hidden shadow-lg bg-white dark:bg-black">
       {matches.length === 0 ? (
-        <div className="text-center text-gray-500 p-6">No matches found.</div>
+        <div className="text-center text-gray-500 dark:text-gray-200 p-6">
+          No matches found.
+        </div>
       ) : (
         <ul>
           {matches.map((match) => {

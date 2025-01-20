@@ -136,7 +136,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
             {toCollegeName[match.away_college || "TBD"]}
           </div>
           <div className="flex flex-row">
-            <div className="text-xs sm:text-sm text-gray-600 font-semibold">
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold">
               {match.sport}{" "}
               {match.type == "Regular"
                 ? "Regular Season Match"
@@ -144,10 +144,10 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
             </div>
           </div>
 
-          <div className="text-xs sm:text-sm text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {matchDate} at {matchTime}
           </div>
-          <div className="text-xs sm:text-sm text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {location} {match.location_extra ? match.location_extra : ""}
           </div>
         </div>
