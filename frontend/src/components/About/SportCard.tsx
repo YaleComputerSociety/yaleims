@@ -24,7 +24,7 @@ const sportColors: ColorMap = {
 };
 
 const sportDisplayName: ColorMap = {
-  Cornhole: "Cornhold",
+  Cornhole: "Cornhole",
   Soccer: "Soccer",
   Spikeball: "Spikeball",
   Pickleball: "Pickleball",
@@ -34,7 +34,7 @@ const sportDisplayName: ColorMap = {
   CHoops: "Coed\nBasketball",
   MHoops: "Men's\nBasketball",
   WHoops: "Women's\nBasketball",
-  Dodgeball: "Dogeball",
+  Dodgeball: "Dodgeball",
   "Indoor Soccer": "Indoor\nSoccer",
   Volleyball: "Volleyball",
   Netball: "Netball",
