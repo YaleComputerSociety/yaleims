@@ -124,6 +124,7 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
               .doc(sanitizedEmail.replace(/_/g, "."));
             rewardBatch.update(userRef, {
               points: admin.firestore.FieldValue.increment(-rewardAmount),
+              correctPredictions: admin.firestore.FieldValue.increment(-1), // Increment correctPredictions field
             });
           }
         }
