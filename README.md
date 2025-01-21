@@ -83,11 +83,12 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
    npm install
    ```
 
-3. Set up environment variables in `.env.local` for the frontend (you can skip this for now!):
+3. Set up environment variables in `.env.local` for the frontend:
 
    ```bash
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   ...
    ```
 
 4. Run the development server:
@@ -95,7 +96,7 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
    npm run dev
    ```
 
-## Contributers
+## Main Contributers
 
 - Anna Xu ('24.5)
 - Daniel Morales ('27)
