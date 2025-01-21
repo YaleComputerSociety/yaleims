@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext.jsx";
 import Image from "next/image";
 import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";
+import { resolve } from "path";
 
 interface TableRowPendingProps {
   bet: {
@@ -57,7 +58,9 @@ const TableRowPending: FC<TableRowPendingProps> = ({
       );
 
       if (!response.ok) {
-        throw new Error(`Error deleting bet: ${response.statusText}`);
+        return response.text().then((message) => {
+          alert(message);
+        });
       }
 
       await response.text();

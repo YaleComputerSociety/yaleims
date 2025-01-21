@@ -62,7 +62,7 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
       ) {
         return res
           .status(400)
-          .send("Bets cannot be deleted within 24 hours of a match.");
+          .send("Predictions cannot be deleted within 24 hours of a match.");
       }
 
       // Query the user's bets subcollection to find the bet

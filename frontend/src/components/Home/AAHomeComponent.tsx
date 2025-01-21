@@ -84,6 +84,7 @@ const AAHomeComponent: React.FC = () => {
 
   const handleCollegeClick = (collegeName: string) => {
     const collegeAbbreviation = toCollegeAbbreviation[collegeName];
+    console.log(`/schedules?college=${collegeAbbreviation}`);
     router.push(`/schedules?college=${collegeAbbreviation}`);
   };
 

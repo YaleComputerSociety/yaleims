@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import { sports } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -16,6 +15,25 @@ interface Prediction {
 interface PredictionsMap {
   [email: string]: Prediction;
 }
+
+const getPointsForWinBySportName = async (sportName: string) => {
+  // Query Firestore for the document where the "name" field matches the sport name
+  const sportsRef = db.collection("sports");
+  const querySnapshot = await sportsRef.where("name", "==", sportName).get();
+
+  if (querySnapshot.empty) {
+    throw new Error(`No sport found with the name: ${sportName}`);
+  }
+
+  // Since names are unique, get the first document
+  const sportDoc = querySnapshot.docs[0];
+  const sportData = sportDoc.data();
+
+  // Retrieve points_for_win from the document
+  const pointsForWin = sportData.points_for_win;
+
+  return pointsForWin || 0; // Return 0 if points_for_win is undefined
+};
 
 export const scoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
@@ -75,7 +93,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       // update college stats
       const collegeUpdateData: any = {};
-      const pointsForWin = sports[sport].points; // evetually change this to get from firestore - but right now the data is stored weird; change id to string of the sport name rather than a number
+      const pointsForWin = await getPointsForWinBySportName(sport); // evetually change this to get from firestore - but right now the data is stored weird; change id to string of the sport name rather than a number
 
       // all cases for updating college stats of win, loss, tie, forfeit, points (all cases increment games played)
       // this code is veryyy lengthy, but i'm unsure if there's a more concise way since there are just a lot of cases to manage
@@ -213,10 +231,16 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         (matchData.data()?.predictions as PredictionsMap) || {};
 
       const rewardBatch = db.batch();
-      const rewardAmount = 100;
 
       for (const [sanitizedEmail, prediction] of Object.entries(predictions)) {
         if (prediction.betOption === winningTeam) {
+          const rewardAmount = parseFloat(
+            (
+              prediction.betAmount *
+              (1 + (1 - prediction.betOdds) / prediction.betOdds)
+            ).toFixed(2)
+          );
+
           const userRef = db
             .collection("users")
             .doc(sanitizedEmail.replace(/_/g, "."));
