@@ -36,10 +36,6 @@ const SchedulePage: React.FC = () => {
     }
   }, []); // Runs only once when the component mounts
 
-  useEffect(() => {
-    console.log("Updated filter:", filter);
-  }, [filter]);
-
   const resetPaginationState = () => {
     setFilteredMatches([]);
     setHasMoreMatches(true);
