@@ -194,14 +194,16 @@ const Profile = () => {
                 />
               </div>
               <div className="flex items-center flex-col">
-                <p className="text-md font-bold flex items-center">
+                <p className="text-md font-bold flex items-center mb-3">
                   Yodds Username: {user.username || "Anonymous"}
-                  <MdModeEditOutline
-                    className="ml-2 cursor-pointer hover:text-blue-700"
-                    onClick={() => setIsEditing(true)}
-                  />
+                  <span className="ml-2 flex items-center">
+                    <MdModeEditOutline
+                      style={{ fontSize: "24px" }} // Ensures a fixed size
+                      className="cursor-pointer hover:text-blue-700"
+                      onClick={() => setIsEditing(true)}
+                    />
+                  </span>
                 </p>
-
                 <div className="flex flex-row items-center space-x-2">
                   <p className="text-md font-bold">
                     YCoins: {availablePoints || 0}
@@ -269,11 +271,11 @@ const Profile = () => {
       </div>
       {isEditing && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+          <div className="bg-white dark:bg-black p-6 rounded-lg shadow-lg w-80">
             <h2 className="text-lg font-bold mb-4">Edit Username</h2>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md p-2 mb-4"
+              className="w-full border border-gray-300 rounded-md p-2 mb-4 dark:bg-black"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               placeholder="Enter new username"
@@ -293,7 +295,7 @@ const Profile = () => {
                 {editLoading ? "Saving..." : "Save"}
               </button>
               <button
-                className="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+                className="bg-gray-300 dark:bg-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
                 onClick={() => setIsEditing(false)}
               >
                 Cancel

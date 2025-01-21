@@ -95,7 +95,7 @@ export default function FAQ() {
         {
           question: "What are the sports?",
           answer: "Read more information about sports and their rules here.",
-          links: [{ label: "here", url: "/sports-info" }],
+          links: [{ label: "here", url: "/about-sports" }],
         },
         {
           question: "How does the point system work?",

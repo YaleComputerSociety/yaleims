@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "../LoadingScreen";
@@ -81,12 +83,8 @@ const AAHomeComponent: React.FC = () => {
   };
 
   const handleCollegeClick = (collegeName: string) => {
-    setFilter({
-      college: toCollegeAbbreviation[collegeName],
-      sport: "",
-      date: "",
-    });
-    router.push("/scores");
+    const collegeAbbreviation = toCollegeAbbreviation[collegeName];
+    router.push(`/schedules?college=${collegeAbbreviation}`);
   };
 
   const handleSelectedChange = (filter: string) => {

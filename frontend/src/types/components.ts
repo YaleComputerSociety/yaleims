@@ -150,7 +150,7 @@ export interface MatchSignUpProps {
 }
 
 export interface CalendarFiltersProps {
-  filter: { college: string; sport: string; date: Date | null };
+  filter: { college: string; sport: string; date: Date };
   updateFilter: (
     key: keyof CalendarFiltersProps["filter"],
     value: string

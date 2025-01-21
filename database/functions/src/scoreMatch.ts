@@ -215,9 +215,11 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       const rewardBatch = db.batch();
       const rewardAmount = 100;
 
-      for (const [email, prediction] of Object.entries(predictions)) {
+      for (const [sanitizedEmail, prediction] of Object.entries(predictions)) {
         if (prediction.betOption === winningTeam) {
-          const userRef = db.collection("users").doc(email);
+          const userRef = db
+            .collection("users")
+            .doc(sanitizedEmail.replace(/_/g, "."));
           rewardBatch.update(userRef, {
             points: admin.firestore.FieldValue.increment(rewardAmount),
           });
