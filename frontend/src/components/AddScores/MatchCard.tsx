@@ -58,7 +58,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: match.id,
+            matchId: match.id.toString(),
             homeScore: homeScore === "" ? null : parseInt(homeScore),
             awayScore: awayScore === "" ? null : parseInt(awayScore),
             homeForfeit: homeForfeit,
@@ -78,7 +78,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
       console.error("Failed to submit score:", error);
     } finally {
       setLoading(false);
-      window.location.reload(); // to refresh page and show updated list of matches
+      // window.location.reload(); // to refresh page and show updated list of matches
     }
   };
 
@@ -114,7 +114,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
       <div className="grid md:grid-cols-5 grid-cols-4 bg-white  dark:bg-black justify-between items-center py-4 px-2 md:px-8">
         <div className="flex flex-col md:flex-row items-center pr-1 lg:pr-8 h-full py-1 justify-between md:justify-around">
           <p>{formattedTime}</p>
-          <p>{emojiMap[match.sport]}</p>
+          <p>
+            {match.sport} {emojiMap[match.sport]}
+          </p>
         </div>
         <div className="flex flex-col justify-between items-start gap-4 sm:pl-4 xl:pl-16 lg:pl-10">
           <div className="flex items-center">

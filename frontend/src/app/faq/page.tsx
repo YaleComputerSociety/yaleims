@@ -1,6 +1,8 @@
 "use client";
 
 import Dropdown from "@src/components/faq/Dropdown";
+import { LiaJenkins } from "react-icons/lia";
+import Link from "next/link";
 
 export default function FAQ() {
   const sections = [
@@ -155,7 +157,7 @@ export default function FAQ() {
         {
           question: "How are odds determined?",
           answer:
-            "Odds are calculated using an algorithm that considers team performance, such as frequent winners versus underdogs. This affects your potential winnings from bets.",
+            "Odds are calculated using an algorithm that considers team performance, such as frequent winners versus underdogs. This affects your potential winnings from predictions.",
         },
       ],
     },
@@ -169,9 +171,13 @@ export default function FAQ() {
         </h1>
         <p className="text-center mb-3">
           Have another question?{" "}
-          <a className="text-blue-500" href="#">
+          <Link
+            className="text-blue-500"
+            href="https://yaleims.canny.io"
+            target="_blank"
+          >
             Contact us
-          </a>
+          </Link>
           .
         </p>
         {sections.map((section, index) => (

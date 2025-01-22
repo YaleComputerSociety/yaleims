@@ -129,7 +129,6 @@ export default function ReleaseNotes() {
             developed cloud functions for adding, canceling, and viewing
             predictions, while <strong>Anna Xu</strong> created the prediction
             leaderboard and username functionality. Collaborative support from{" "}
-            <strong>Ethan Mathieu</strong> helped refine the feature.
           </p>
         </section>
         <br></br>

@@ -52,9 +52,12 @@ const TableRow: React.FC<TableRowProps> = ({
   const incorrectPredicted = totalPredicted - correctPredicted;
 
   // Calculate bar widths
-  const correctPercentage =
-    totalPredicted > 0 ? (correctPredicted / totalPredicted) * 100 : 0;
-  const incorrectPercentage = 100 - correctPercentage;
+  const correctPercentage: string =
+    totalPredicted > 0
+      ? ((correctPredicted / totalPredicted) * 100).toFixed(2)
+      : "0.00";
+  const incorrectPercentage =
+    totalPredicted > 0 ? (100 - Number(correctPercentage)).toFixed(2) : "0.00";
 
   const getTimeString = (timestamp: string) => {
     return new Date(timestamp).toLocaleString("en-US", {
@@ -127,6 +130,8 @@ const TableRow: React.FC<TableRowProps> = ({
   const isDraw = home_college_score === away_college_score;
   const homeWins = home_college_score > away_college_score;
   const points = isDraw ? sportsMap[sport] / 2 : sportsMap[sport];
+
+  // console.log(correctPercentage, incorrectPercentage);
 
   return (
     <div
@@ -221,12 +226,12 @@ const TableRow: React.FC<TableRowProps> = ({
           <div className="flex items-center">
             <div
               className="h-2 bg-green-500 rounded-l-lg"
-              style={{ width: `${correctPercentage}` }}
+              style={{ width: `${correctPercentage}%` }}
               title={`${correctPredicted} Correct`}
             ></div>
             <div
               className="h-2 bg-gray-200 dark:bg-gray-800 rounded-r-lg"
-              style={{ width: `${incorrectPercentage}` }}
+              style={{ width: `${incorrectPercentage}%` }}
               title={`${incorrectPredicted} Incorrect`}
             ></div>
           </div>
