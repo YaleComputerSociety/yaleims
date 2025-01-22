@@ -134,7 +134,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchPendingBets();
-  }, [availablePoints]);
+  }, [userEmail]);
 
   useEffect(() => {
     if (!pendingBets.length) return;
