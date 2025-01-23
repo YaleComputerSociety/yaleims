@@ -218,8 +218,8 @@ const TableRow: React.FC<TableRowProps> = ({
         </div>
       </div>
       {/* Bar Graph for Predictions */}
-      {hasPredictionData && isOpen && (
-        <div className="px-4 sm:px-8 py-2 mb-3">
+      {hasPredictionData && isOpen ? (
+        <div className="px-4 sm:px-8 py-2 mb-3 transition-[height] duration-300 ease-out h-20 overflow-hidden">
           <h3 className="text-sm font-semibold mb-2 ml-2">
             Prediction Results
           </h3>
@@ -240,6 +240,8 @@ const TableRow: React.FC<TableRowProps> = ({
             YCoins
           </div>
         </div>
+      ) : (
+        <div className="transition-[height] duration-300 ease-out h-0 overflow-hidden"></div>
       )}
 
       {!hasPredictionData && isOpen ? (

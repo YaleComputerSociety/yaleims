@@ -67,6 +67,19 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         return res.status(400).send("Error with parameters");
       }
 
+      // Check if the match has already been scored
+      const matchRef = db.collection("matches").doc(matchId);
+      const matchDoc = await matchRef.get();
+
+      if (!matchDoc.exists) {
+        return res.status(404).send("Match not found.");
+      }
+
+      const existingMatchData = matchDoc.data();
+      if (existingMatchData?.winner) {
+        return res.status(400).send("This match has already been scored.");
+      }
+
       let winningTeam: string;
       const doubleForfeit = homeForfeit && awayForfeit;
 
@@ -162,7 +175,6 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       }
 
       // doc refs
-      const matchRef = db.collection("matches").doc(matchId);
       const awayCollegeRef = db.collection("colleges").doc(awayTeam); // change to colleges
       const homeCollegeRef = db.collection("colleges").doc(homeTeam); // change to colleges
 

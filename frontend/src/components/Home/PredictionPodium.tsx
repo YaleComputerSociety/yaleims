@@ -68,7 +68,7 @@ const PredictionPodium: React.FC<PredictionPodiumProps> = ({
           </sup>
         </h1>
         <h1 className="mb-2 text-xs font-bold">{username}</h1>
-        <p className="text-sm">YCoins: {ycoins}</p>
+        <p className="text-sm">YCoins: {ycoins.toFixed(2)}</p>
         <p className="text-sm">Correct: {correctPredictions}</p>
       </div>
     </div>

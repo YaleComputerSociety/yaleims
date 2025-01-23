@@ -64,7 +64,7 @@ const PredictionLeaderboard: React.FC<PredictionLeaderboardProps> = ({
                 {user.username}
               </td>
               <td className="text-xs text-center px-3 py-3 border border-gray-300 dark:border-gray-600">
-                {user.points}
+                {user.points.toFixed(2)}
               </td>
               <td className="text-xs text-center px-3 py-3 border border-gray-300 dark:border-gray-600">
                 {user.correctPredictions}

@@ -33,6 +33,8 @@ const YoddsPage: React.FC = () => {
   const { user, signIn } = useUser();
   const userEmail = user ? user.email : null;
 
+  const [newUsername, setUsername] = useState("Anonymous");
+
   // Construct URL parameters for different query types
   const getQueryParams = (type: string) => {
     const baseParams = {
@@ -100,6 +102,7 @@ const YoddsPage: React.FC = () => {
           throw new Error(`Error fetching points: ${response.statusText}`);
         const data = await response.json();
         setAvailablePoints(data.points);
+        setUsername(data.username);
       } catch (error) {
         console.error("Failed to fetch points:", error);
       } finally {
@@ -181,14 +184,14 @@ const YoddsPage: React.FC = () => {
           style={{ maxWidth: "250px", minWidth: "200px" }}
         >
           <p className="text-center">
-            <span className="text-yellow-300">{user.username}</span> YCoins:
+            <span className="text-yellow-300">{newUsername}</span> YCoins:
           </p>
           <div className="flex flex-row justify-center items-center gap-1">
             {coinsLoading ? (
               <FaSpinner className="animate-spin" />
             ) : (
               <p className="text-center text-3xl">
-                {availablePoints.toFixed(0) !== null ? availablePoints : "0"}
+                {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
               </p>
             )}
             <Image

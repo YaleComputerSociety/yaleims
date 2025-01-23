@@ -18,6 +18,7 @@ const Profile = () => {
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [availablePoints, setAvailablePoints] = useState(0);
+  const [correctPrediction, setCorrectPredictions] = useState(0);
 
   const userEmail = user ? user.email : null;
 
@@ -72,6 +73,8 @@ const Profile = () => {
           throw new Error(`Error fetching points: ${response.statusText}`);
         const data = await response.json();
         setAvailablePoints(data.points);
+        setCorrectPredictions(data.correctPredictions);
+        setNewUsername(data.username);
       } catch (error) {
         console.error("Failed to fetch points:", error);
       }
@@ -195,7 +198,7 @@ const Profile = () => {
               </div>
               <div className="flex items-center flex-col">
                 <p className="text-md font-bold flex items-center mb-3">
-                  Yodds Username: {user.username || "Anonymous"}
+                  Yodds Username: {newUsername || "Anonymous"}
                   <span className="ml-2 flex items-center">
                     <MdModeEditOutline
                       style={{ fontSize: "24px" }} // Ensures a fixed size
@@ -206,7 +209,7 @@ const Profile = () => {
                 </p>
                 <div className="flex flex-row items-center space-x-2">
                   <p className="text-md font-bold">
-                    YCoins: {availablePoints || 0}
+                    YCoins: {availablePoints.toFixed(2) || 0}
                   </p>
                   <Image
                     src="/YCoin.png"
@@ -216,6 +219,9 @@ const Profile = () => {
                     style={{ objectFit: "contain" }} // Proper usage of objectFit
                   />
                 </div>
+                <p className="text-md font-bold">
+                  Correct Predictions: {correctPrediction}
+                </p>
               </div>
             </div>
 

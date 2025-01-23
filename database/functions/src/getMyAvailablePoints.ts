@@ -27,7 +27,11 @@ export const getMyAvailablePoints = functions.https.onRequest(
         }
 
         const userData = userDoc.data();
-        return res.status(200).json({ points: userData?.points || 0 });
+        return res.status(200).json({
+          points: userData?.points || 0,
+          correctPredictions: userData?.correctPredictions || 0,
+          username: userData?.username || "Anonymous",
+        });
       } catch (error) {
         console.error("Error fetching user points:", error);
         return res.status(500).send("Internal Server Error");

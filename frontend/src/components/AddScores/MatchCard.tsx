@@ -78,7 +78,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
       console.error("Failed to submit score:", error);
     } finally {
       setLoading(false);
-      // window.location.reload(); // to refresh page and show updated list of matches
+      window.location.reload(); // to refresh page and show updated list of matches
     }
   };
 
@@ -159,14 +159,14 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
         <div className="flex flex-col items-center gap-4 h-full justify-between">
           <input
             type="text"
-            className="w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
+            className="dark:bg-black w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
             value={awayScore}
             onChange={(e) => handleAwayScoreChange(e)}
             disabled={awayForfeit}
           />
           <input
             type="text"
-            className="w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
+            className="dark:bg-black w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
             value={homeScore}
             onChange={(e) => handleHomeScoreChange(e)}
             disabled={homeForfeit}
