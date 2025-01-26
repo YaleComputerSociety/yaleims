@@ -21,7 +21,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
-
+  const [participantShow, setParticipantShow] = useState(false);
   // Check if match is in the past
   const isPastMatch = match.timestamp
     ? new Date(match.timestamp) < new Date()
@@ -40,7 +40,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           body: JSON.stringify({
             matchId: match.id,
             participantType:
-              user.college === match.home_college
+              toCollegeName[user.college] == toCollegeName[match.home_college]
                 ? "home_college_participants"
                 : "away_college_participants",
             user, // Pass the full user object
@@ -75,7 +75,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           body: JSON.stringify({
             matchId: match.id,
             participantType:
-              user.college === match.home_college
+              toCollegeAbbreviation[user.college] === match.home_college
                 ? "home_college_participants"
                 : "away_college_participants",
             user, // Pass the full user object
@@ -216,6 +216,27 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           )}
         </div>
       </div>
+      {participantShow ? (
+        <div
+          className="text-xs text-right underline"
+          onClick={() => {
+            setParticipantShow(!participantShow);
+          }}
+        >
+          Participants:
+          <div>{match.home_college_participants}</div>
+          <div>{match.away_college_participants}</div>
+        </div>
+      ) : (
+        <div
+          className="text-xs text-right underline"
+          onClick={() => {
+            setParticipantShow(!participantShow);
+          }}
+        >
+          Participants
+        </div>
+      )}
     </li>
   );
 };
