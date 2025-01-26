@@ -13,6 +13,8 @@ interface MatchListItemProps {
   isSignedUp: boolean; // Pass initial state from parent
 }
 
+import { Participant } from "@src/types/components";
+
 const MatchListItem: React.FC<MatchListItemProps> = ({
   match,
   user,
@@ -21,7 +23,12 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
-  const [participantShow, setParticipantShow] = useState(false);
+  const [participantsShow, setParticipantsShow] = useState(false);
+  const [participantionData, setParticipantionData] = useState({
+    home_college_participants: match.home_college_participants,
+    away_college_participants: match.away_college_participants,
+  });
+
   // Check if match is in the past
   const isPastMatch = match.timestamp
     ? new Date(match.timestamp) < new Date()
@@ -29,6 +36,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const handleSignUp = async () => {
     setIsLoading(true);
+
     try {
       const response = await fetch(
         "https://addparticipant-65477nrg6a-uc.a.run.app",
@@ -55,10 +63,42 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       }
 
       setIsSignedUp(true);
+      if (participantsShow) {
+        const participant_data = await getMatchParticipants(
+          match.id.toString()
+        );
+        setParticipantionData(participant_data);
+      }
     } catch (error) {
       console.error("Error signing up:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getMatchParticipants = async (matchId: string) => {
+    try {
+      const response = await fetch(
+        `https://getmatchparticipants-65477nrg6a-uc.a.run.app?matchId=${matchId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Check if the response is OK (status code 200-299)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Parse the response as JSON
+      const data = await response.json();
+      // Return the data if needed
+      return data;
+    } catch (error) {
+      console.error("Error fetching match participants:", error);
     }
   };
 
@@ -75,7 +115,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           body: JSON.stringify({
             matchId: match.id,
             participantType:
-              toCollegeAbbreviation[user.college] === match.home_college
+              toCollegeName[user.college] === toCollegeName[match.home_college]
                 ? "home_college_participants"
                 : "away_college_participants",
             user, // Pass the full user object
@@ -92,6 +132,12 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       }
 
       setIsSignedUp(false);
+      if (participantsShow) {
+        const participant_data = await getMatchParticipants(
+          match.id.toString()
+        );
+        setParticipantionData(participant_data);
+      }
     } catch (error) {
       console.error("Error unregistering:", error);
     } finally {
@@ -216,27 +262,72 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           )}
         </div>
       </div>
-      {participantShow ? (
-        <div
-          className="text-xs text-right underline"
-          onClick={() => {
-            setParticipantShow(!participantShow);
-          }}
-        >
-          Participants:
-          <div>{match.home_college_participants}</div>
-          <div>{match.away_college_participants}</div>
-        </div>
-      ) : (
-        <div
-          className="text-xs text-right underline"
-          onClick={() => {
-            setParticipantShow(!participantShow);
+      <div className="text-right text-xs text-gray-500 dark:text-gray-600">
+        <button
+          className="underline"
+          onClick={async () => {
+            if (!participantsShow) {
+              const participant_data = await getMatchParticipants(
+                match.id.toString()
+              );
+              setParticipantionData(participant_data);
+            }
+            setParticipantsShow(!participantsShow);
           }}
         >
           Participants
+        </button>
+        <div
+          className={`transition-all duration-300 ${
+            participantsShow ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          } overflow-hidden`}
+        >
+          <div>
+            <span className="text-black dark:text-gray-400 font-semibold text-animate h-20">
+              {toCollegeName[match.home_college]}:
+            </span>{" "}
+            {participantionData?.home_college_participants?.length > 0 ? (
+              participantionData.home_college_participants.map(
+                (p: Participant, index: number) => (
+                  <span key={index}>
+                    {p.firstname && p.firstname.trim() !== ""
+                      ? `${p.firstname} ${p.lastname}`.trim()
+                      : p.name || ""}
+                    {index <
+                    participantionData.home_college_participants.length - 1
+                      ? ", "
+                      : ""}
+                  </span>
+                )
+              )
+            ) : (
+              <span className="text-gray-500">None</span>
+            )}
+          </div>
+          <div>
+            <span className="text-black dark:text-gray-400 font-semibold">
+              {toCollegeName[match.away_college]}:
+            </span>{" "}
+            {participantionData?.away_college_participants?.length > 0 ? (
+              participantionData.away_college_participants.map(
+                (p: Participant, index: number) => (
+                  <span key={index}>
+                    {p.firstname && p.firstname.trim() !== ""
+                      ? `${p.firstname} ${p.lastname}`.trim()
+                      : p.name || ""}
+                    {index <
+                    participantionData.away_college_participants.length - 1
+                      ? ", "
+                      : ""}
+                  </span>
+                )
+              )
+            ) : (
+              <span className="text-gray-500">None</span>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </li>
   );
 };

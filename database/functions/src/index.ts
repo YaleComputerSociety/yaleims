@@ -17,6 +17,7 @@ import { deleteBet } from "./deleteBet.js";
 import { getPendingBets } from "./getPendingBets.js";
 import { getMyAvailablePoints } from "./getMyAvailablePoints.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
+import { getMatchParticipants } from "./getMatchParticipants.js";
 
 export {
   getLeaderboard,
@@ -38,4 +39,5 @@ export {
   getMyAvailablePoints,
   getUserLeaderboard,
   undoScoreMatch,
+  getMatchParticipants,
 };

@@ -159,7 +159,9 @@ export interface CalendarFiltersProps {
 
 export interface Participant {
   email: string;
-  name: string;
+  firstname?: string;
+  lastname?: string;
+  name?: string;
   // Add other fields as needed
 }
 

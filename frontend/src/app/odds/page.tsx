@@ -204,6 +204,9 @@ const YoddsPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <p className="text-center text-xs text-gray-500">
+        500 YCoins added every week!
+      </p>
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Pending Predictions
