@@ -8,6 +8,7 @@ import { Match, Participant } from "@src/types/components";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
+import Link from "next/link";
 
 const Profile = () => {
   const { user, loading, signOut, setUser } = useUser();
@@ -21,6 +22,7 @@ const Profile = () => {
   const [correctPrediction, setCorrectPredictions] = useState(0);
 
   const userEmail = user ? user.email : null;
+  const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
 
   const cloudFunctionUrl = "https://getcollegematches-65477nrg6a-uc.a.run.app";
 
@@ -34,7 +36,7 @@ const Profile = () => {
           toCollegeAbbreviation[user.college] || user.college;
 
         const response = await fetch(
-          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc`,
+          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc&limit=${matchesLimit}`,
           {
             method: "GET",
             headers: {
@@ -257,6 +259,14 @@ const Profile = () => {
               {availableMatches.length > 0 ? (
                 <div className="w-full">
                   <ListView matches={availableMatches} isSignedUp={false} />
+                  <div className="flex justify-center w pt-4">
+                    <Link
+                      href="/schedules"
+                      className="p-2 sm:p-4 text-white text-xs sm:text-sm rounded-lg shadow transition duration-200 ease-in-out bg-blue-600 hover:scale-110"
+                    >
+                      See More on the Schedules Page!
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center mt-8 text-gray-600">
