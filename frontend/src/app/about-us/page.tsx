@@ -55,7 +55,7 @@ const AboutUsPage: React.FC = () => {
       portfolio: undefined,
     },
     {
-      name: "Diego Apinwall",
+      name: "Diego Aspinwall",
       roles: ["Software Engineer"],
       image: "/dev_images/Diego_Aspinwall.png",
       github: undefined,
