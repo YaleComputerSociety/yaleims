@@ -21,6 +21,12 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
 - [Contributing](#contributing)
 - [License](#license)
 
+## Contribution Guide
+
+First, read this ReadMe in its entirety (you're off to a good start). Generally, people who contribute are part of the y/cs. If you have a contribution you want to make, but you are not part of the ymeets team within the y/cs, we welcome you to open a Pull Request. You can either solve an open issue that has not been assigned to someone, or contribute a new feature of your design. A successfully merged PR of significant contribution will earn you implicit membership in the org. You will be credited on the site.
+
+If you wish to design your own feature, we encourage you to reach out to the ymeets team first at yalecomputersociety@gmail.com, as we reserve the right to reject any contributions we are not consulted on.
+
 ## Tech Stack
 
 - **Frontend:** Next.js, React, Tailwind CSS
