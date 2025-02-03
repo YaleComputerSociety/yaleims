@@ -68,28 +68,26 @@ const TableRow: React.FC<TableRowProps> = ({
   };
 
   const CollegeDisplay = ({ college, score, isWinner, points = 0 }: any) => (
-    <div className="items-start text-xs xs:text-sm">
-      <strong
-        className={`cursor-pointer flex items-center ${
-          !isWinner ? "text-gray-400" : ""
-        }`}
-        onClick={() => handleCollegeClick(college)}
-      >
-        <Image
-          src={`/college_flags/${toCollegeName[college]}.png`}
-          alt={college}
-          width={20}
-          height={20}
-          className="mr-2 object-contain"
-          unoptimized
-        />
-        {toCollegeName[college]}
-        {points > 0 && (
-          <span className="text-yellow-500 text-xs xs:text-sm">
-            +{points}pts
-          </span>
-        )}
-      </strong>
+    <div
+      className={`cursor-pointer flex items-center flex-row${
+        !isWinner ? "text-gray-400" : ""
+      }`}
+      onClick={() => handleCollegeClick(college)}
+    >
+      <Image
+        src={`/college_flags/${toCollegeName[college]}.png`}
+        alt={college}
+        width={20}
+        height={20}
+        className="mr-2 object-contain flex-none"
+        unoptimized
+      />
+      <strong className="flex-shrink">{toCollegeName[college]} </strong>
+      {points > 0 && (
+        <div className="text-yellow-500 text-xs md:text-xs lg:text-xs font-bold items-center flex-grow">
+          +{points}pts
+        </div>
+      )}
     </div>
   );
 
@@ -158,7 +156,7 @@ const TableRow: React.FC<TableRowProps> = ({
           {getTimeString(timestamp)}
         </div>
 
-        <div className="text-left lg:px-6 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
+        <div className="text-left lg:px-0.5 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
           <CollegeDisplay
             college={home_college}
             score={home_college_score}
