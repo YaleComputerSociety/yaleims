@@ -13,6 +13,7 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
 
 ## Table of Contents
 
+- [Contribution Guide](#contribution-guide)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Installation](#installation)
@@ -101,6 +102,33 @@ If you wish to design your own feature, we encourage you to reach out to the yme
    ```bash
    npm run dev
    ```
+
+## Project Structure
+
+'./database/functions/src': Houses all our Firebase Functions that handle database querying and inputting. All functions are written in TypeScript('.ts' file ending)
+
+'yaleims/frontend/src': Houses all the React components for the different pages of the web app.
+
+'yaleims/frontend/src/app': Houses the routing for the general page layouts.
+
+The Web App is broken down into **8 general pages** with their supporting components stored under the corresponding folder in 'yaleims/frontend/src/components'. 
+
+   - [./About]
+   - [./AddScores] (Special page only visible to admin, achieved with 'withProtectedRoute.tsx')
+   - [./faq]
+   - [./Home]
+   - [./Profile]
+   - [./Schedule]
+   - [./Scores]
+   - [./YOdds]
+
+There are also additional typescript components ('Footer.tsx', 'LoadingScreen.tsx', and 'NavBar.tsx') that are used throughout the app
+
+'./src/context': Holds contexts that allow for themes to be maintained across renderings (Filtering, Themes, or Users Info)
+
+'./src/hooks': Holds GCal and CAS Login integration
+
+'./src/types' and './src/utils': Hold interfaces and types to used throughout the app
 
 ## Main Contributers
 
