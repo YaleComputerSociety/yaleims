@@ -167,7 +167,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     ? new Date(match.timestamp).toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
-      })
+      }) .replace(/^0/, "") // Remove leading zero if present
     : "Time TBD";
 
   const location = match.location || "Location TBD";
