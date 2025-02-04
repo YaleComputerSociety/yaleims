@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaCalendar } from "react-icons/fa";
+import { FaCalendar, FaSpinner } from "react-icons/fa";
 import {
   toCollegeName,
   emojiMap,
@@ -28,6 +28,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     home_college_participants: match.home_college_participants,
     away_college_participants: match.away_college_participants,
   });
+  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
 
   // Check if match is in the past
   const isPastMatch = match.timestamp
@@ -78,6 +79,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const getMatchParticipants = async (matchId: string) => {
     try {
+      setIsLoadingParticipants(true);
       const response = await fetch(
         `https://getmatchparticipants-65477nrg6a-uc.a.run.app?matchId=${matchId}`,
         {
@@ -99,6 +101,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       return data;
     } catch (error) {
       console.error("Error fetching match participants:", error);
+    } finally {
+      setIsLoadingParticipants(false);
     }
   };
 
@@ -277,6 +281,13 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         >
           Participants
         </button>
+        {isLoadingParticipants ? (
+          <div className="flex flex-row justify-end pt-3 w-full">
+            <FaSpinner className="animate-spin" />{" "}
+          </div>
+        ) : (
+          ""
+        )}
         <div
           className={`transition-all duration-300 ${
             participantsShow ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
