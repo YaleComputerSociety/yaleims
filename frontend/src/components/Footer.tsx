@@ -114,18 +114,24 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 text-right text-blue-700 dark:text-white">
-          <p className="text-md">YaleIMs © 2025</p>
+        <div className="flex flex-row justify-center md:justify-between items-center mt-8 text-right text-blue-700 dark:text-white">
+          <p className="text-center md:text-left text-xs w-4/5 text-blue-100 dark:text-blue-500">
+            Yale is a registered trademark of Yale University. This website is
+            student run and is maintained, hosted, and operated independently of
+            Yale University. The activities on this website are not supervised
+            or endorsed by Yale and information contained on this website does
+            not necessarily reflect the opinions or official positions of the
+            University
+          </p>
+          <p className="hidden md:block text-md text-blue-700 dark:text-white">
+            YaleIMs © 2025
+          </p>
         </div>
+        <p className="md:hidden block pt-4 text-center text-md text-blue-700 dark:text-white">
+          YaleIMs © 2025
+        </p>
       </div>
       <br></br>
-      <div className="text-center text-xs w-4/5 mx-auto text-blue-100 dark:text-blue-500">
-        Yale is a registered trademark of Yale University. This website is
-        student run and is maintained, hosted, and operated independently of
-        Yale University. The activities on this website are not supervised or
-        endorsed by Yale and information contained on this website does not
-        necessarily reflect the opinions or official positions of the University
-      </div>
     </footer>
   );
 }
