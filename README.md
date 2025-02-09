@@ -137,3 +137,4 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 - Ephraim Akai-Nettey ('27)
 - Kaitlyn Oikle ('27)
 - Brian Di Bassinga ('26)
+- Vojtech Kysilka ('28)
