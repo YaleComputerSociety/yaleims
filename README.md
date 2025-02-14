@@ -138,3 +138,4 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 - Kaitlyn Oikle ('27)
 - Brian Di Bassinga ('26)
 - Vojtech Kysilka ('28)
+- Ella White ('27)
