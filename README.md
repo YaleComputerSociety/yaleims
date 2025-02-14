@@ -139,3 +139,4 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 - Brian Di Bassinga ('26)
 - Vojtech Kysilka ('28)
 - Farhan Baig ('27)
+- Ella White ('27)
