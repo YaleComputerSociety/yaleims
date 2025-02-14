@@ -10,6 +10,12 @@ import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 
 const PAGE_SIZE = "10";
 
+// TODO: calendar focus changes on scroll
+// PLAN:
+//  - move the selected date state to this component, pass into calendar component
+//  - top element component in here, pass into ListView
+//  - IntersectionObserver to detect what the top element is in view; update selected date state
+
 const SchedulePage: React.FC = () => {
   const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
   const [filter, setFilter] = useState({
@@ -23,6 +29,9 @@ const SchedulePage: React.FC = () => {
   const [hasMoreMatches, setHasMoreMatches] = useState(true);
   const [chunksLoaded, setChunksLoaded] = useState(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // state for calendar focus circle
+  const [topDate, setTopDate] = useState(new Date());
 
   // Parse URL search parameters manually
   useEffect(() => {
@@ -109,12 +118,20 @@ const SchedulePage: React.FC = () => {
             {/* Filters and Calendar */}
             <div className="flex flex-col items-center lg:w-2/5">
               <Filters filter={filter} updateFilter={updateFilter} />
-              <Calendar onClickDay={handleDateClick} />
+              <Calendar
+                onClickDay={handleDateClick}
+                selectedDate={topDate}
+                setSelectedDate={setTopDate}
+              />
             </div>
             <div className="lg:w-3/5 flex flex-col items-center">
               {filteredMatches.length > 0 ? (
                 <div className="sm:max-h-[700px] w-full sm:overflow-y-auto p-4 rounded-lg">
-                  <ListView matches={filteredMatches} />
+                  <ListView
+                    matches={filteredMatches}
+                    topDate={topDate}
+                    setTopDate={setTopDate}
+                  />
                 </div>
               ) : (
                 <div className="text-center mt-8 text-gray-600">

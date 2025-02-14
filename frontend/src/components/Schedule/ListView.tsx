@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useUser } from "@src/context/UserContext";
 import MatchListItem from "./MatchListItem";
 import { Match, CalendarMatchListProps } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
 
-const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
+const ListView: React.FC<CalendarMatchListProps> = ({
+  matches,
+  topDate,
+  setTopDate,
+}) => {
   const { user, signIn } = useUser();
   const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const dateRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const getUserMatches = async () => {
     if (!user) {
@@ -54,6 +59,36 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
 
   const allDates = getAllDates();
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const date = entry.target.getAttribute("data-date");
+            if (date) {
+              setTopDate(new Date(date));
+            }
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    Object.values(dateRefs.current).forEach((ref) => {
+      if (ref) {
+        observer.observe(ref);
+      }
+    });
+
+    return () => {
+      Object.values(dateRefs.current).forEach((ref) => {
+        if (ref) {
+          observer.unobserve(ref);
+        }
+      });
+    };
+  }, [allDates]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -88,6 +123,10 @@ const ListView: React.FC<CalendarMatchListProps> = ({ matches }) => {
             <div
               key={format(date, "yyyy-MM-dd")}
               className="space-y-2 list-none"
+              data-date={date.toISOString()}
+              ref={(ref) => {
+                dateRefs.current[date.toISOString()] = ref;
+              }}
             >
               <div className="ml-4 text-xl font-semibold text-black dark:text-white">
                 {format(date, "EEEE, MMMM d, yyyy")}
