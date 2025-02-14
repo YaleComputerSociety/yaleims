@@ -152,11 +152,11 @@ const TableRow: React.FC<TableRowProps> = ({
             <SlArrowDown onClick={() => setIsOpen(!isOpen)} />
           )}
         </div>
-        <div className="hidden sm:block lg:px-6 pl-2 lg:pr-10 py-4 text-xs xs:text-sm text-gray-500">
+        <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700">
           {getTimeString(timestamp)}
         </div>
 
-        <div className="text-left lg:px-0.5 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
+        <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
           <CollegeDisplay
             college={home_college}
             score={home_college_score}
@@ -201,7 +201,7 @@ const TableRow: React.FC<TableRowProps> = ({
         </div>
 
         <div
-          className="text-center px-2 py-1 relative group hover:cursor-pointer"
+          className="text-center px-4 py-1 relative group hover:cursor-pointer"
           title={sport}
           onClick={() => handleSportClick(sport)}
         >
@@ -210,7 +210,7 @@ const TableRow: React.FC<TableRowProps> = ({
             {sport}
           </div>
         </div>
-        <div className="hidden sm:block text-center text-xs px-2 py-1 w-[100px] flex flex-col">
+        <div className="hidden sm:block text-center text-xs py-1 w-[100px] flex flex-col border-l border-gray-200 dark:border-gray-700">
           <div>{match.type}</div>
           {match.type == "Regular" ? "Season" : "Round"}
         </div>
