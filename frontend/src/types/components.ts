@@ -143,6 +143,8 @@ export interface CalendarViewProps {
 
 export interface CalendarMatchListProps {
   matches: Match[];
+  topDate: Date;
+  setTopDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 export interface MatchSignUpProps {
