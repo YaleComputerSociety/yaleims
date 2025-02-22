@@ -142,8 +142,13 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
       const awayCollegeRef = db.collection("colleges").doc(awayTeam);
 
       const batch = db.batch();
-      batch.update(homeCollegeRef, collegeUpdateData[homeTeam]);
-      batch.update(awayCollegeRef, collegeUpdateData[awayTeam]);
+      if (collegeUpdateData[homeTeam]) {
+        batch.update(homeCollegeRef, collegeUpdateData[homeTeam]);
+      }
+      if (collegeUpdateData[awayTeam]) {
+        batch.update(awayCollegeRef, collegeUpdateData[awayTeam]);
+      }
+
       await batch.commit();
 
       // Recalculate college ranks
