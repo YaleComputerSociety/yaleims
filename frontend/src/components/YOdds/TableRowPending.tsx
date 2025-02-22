@@ -111,15 +111,14 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   };
 
   const TimeDisplay = () => (
-    <div className="-mb-6">
-      <div className="flex justify-between w-full pr-3 py-2 pb-4 text-xs font-extralight text-gray-900 dark:text-white">
-        <span className="ml-5">{getTimeString(bet.matchTimestamp)}</span>
-        <span>
-          {bet.sport}
-          {emojiMap[bet.sport]}
-        </span>
+      <div className="flex items-center justify-between px-3 py-2 text-xs font-extralight text-gray-900 dark:text-gray-400 w-full">
+        <div className="flex items-center space-x-2">
+          <span>
+            {getTimeString(bet.matchTimestamp)} | {bet.sport}
+          </span>
+          <span className="text-lg">{emojiMap[bet.sport]}</span>
+        </div>
       </div>
-    </div>
   );
 
   const BetDetails = () => (
