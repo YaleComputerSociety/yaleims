@@ -30,6 +30,7 @@ const Profile = () => {
     const fetchUserMatches = async () => {
       if (!user || !user.email || matches.length > 0) return;
 
+      const userToken = sessionStorage.getItem("userToken")
       setFetching(true);
       try {
         const userCollegeAbbreviation =
@@ -41,6 +42,7 @@ const Profile = () => {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${userToken}`
             },
           }
         );
@@ -68,8 +70,13 @@ const Profile = () => {
 
     const fetchMyPoints = async () => {
       try {
+        const userToken = sessionStorage.getItem("userToken")
+
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`, 
+          {
+            headers: {Authorization: `Bearer ${userToken}`}
+          }
         );
         if (!response.ok)
           throw new Error(`Error fetching points: ${response.statusText}`);
@@ -118,12 +125,15 @@ const Profile = () => {
     setError("");
 
     try {
+      const userToken = sessionStorage.getItem("userToken")
+
       const response = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
           body: JSON.stringify({
             userId: user?.email,

@@ -47,12 +47,14 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     if (!userEmail) return;
 
     try {
+      const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
         `https://us-central1-yims-125a2.cloudfunctions.net/deleteBet?email=${userEmail}&matchId=${bet.matchId}&sport=${bet.sport}&betAmount=${bet.betAmount}&betOdds=${bet.betOdds}&betOption=${bet.betOption}`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
         }
       );
