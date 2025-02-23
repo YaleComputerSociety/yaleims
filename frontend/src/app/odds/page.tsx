@@ -37,6 +37,8 @@ const YoddsPage: React.FC = () => {
   const { setFilter } = useContext(FiltersContext);
   
 
+  const [newUsername, setUsername] = useState("Anonymous");
+
   // Construct URL parameters for different query types
   const getQueryParams = (type: string) => {
     const baseParams = {
@@ -104,6 +106,7 @@ const YoddsPage: React.FC = () => {
           throw new Error(`Error fetching points: ${response.statusText}`);
         const data = await response.json();
         setAvailablePoints(data.points);
+        setUsername(data.username);
       } catch (error) {
         console.error("Failed to fetch points:", error);
       } finally {
@@ -138,7 +141,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchPendingBets();
-  }, [availablePoints]);
+  }, [userEmail]);
 
   useEffect(() => {
     if (!pendingBets.length) return;
@@ -203,7 +206,7 @@ const YoddsPage: React.FC = () => {
           style={{ maxWidth: "250px", minWidth: "200px" }}
         >
           <p className="text-center">
-            <span className="text-yellow-300">{user.username}</span> YCoins:
+            <span className="text-yellow-300">{newUsername}</span> YCoins:
           </p>
           <div className="flex flex-row justify-center items-center gap-1">
             {coinsLoading ? (
@@ -223,6 +226,9 @@ const YoddsPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <p className="text-center text-xs text-gray-500">
+        500 YCoins added every week (Sunday)!
+      </p>
 
       <p className="text-center text-xs text-gray-500">
         500 YCoins added every week (Sunday)!

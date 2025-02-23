@@ -144,6 +144,8 @@ export interface CalendarViewProps {
 
 export interface CalendarMatchListProps {
   matches: Match[];
+  topDate: Date;
+  setTopDate: React.Dispatch<React.SetStateAction<Date>>;
 }
 
 export interface MatchSignUpProps {
@@ -151,7 +153,7 @@ export interface MatchSignUpProps {
 }
 
 export interface CalendarFiltersProps {
-  filter: { college: string; sport: string; date: Date | null };
+  filter: { college: string; sport: string; date: Date };
   updateFilter: (
     key: keyof CalendarFiltersProps["filter"],
     value: string
@@ -160,7 +162,9 @@ export interface CalendarFiltersProps {
 
 export interface Participant {
   email: string;
-  name: string;
+  firstname?: string;
+  lastname?: string;
+  name?: string;
   // Add other fields as needed
 }
 
@@ -173,4 +177,20 @@ export interface Bet {
   matchId: string;
   sport: string;
   matchTimestamp: string;
+}
+
+export interface SportModalProps {
+  sport: string | null;
+  setSport: (sport: string | null) => void;
+}
+
+export interface SportInfo {
+  points: number;
+  description: string;
+  players: number;
+}
+
+export interface SportCardProps {
+  sport: string;
+  handleClick: (sport: string) => void;
 }

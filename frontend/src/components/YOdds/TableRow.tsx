@@ -223,7 +223,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
                 college={home_college}
                 label={`${toCollegeName[home_college]} - ${
                   match.home_college_odds !== undefined
-                    ? `${(100 * match.home_college_odds).toFixed(1)}% likely`
+                    ? `${(100 * match.home_college_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.home_college_odds) / match.home_college_odds)).toFixed(2)}x returns`
                     : "Unknown odds"
                 }`}
               />
@@ -234,7 +234,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
                 college={away_college}
                 label={`${toCollegeName[away_college]} - ${
                   match.away_college_odds !== undefined
-                    ? `${(100 * match.away_college_odds).toFixed(1)}% likely`
+                    ? `${(100 * match.away_college_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.away_college_odds) / match.away_college_odds)).toFixed(2)}x returns`
                     : "Unknown odds"
                 }`}
               />
@@ -249,7 +249,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
                 // value={JSON.stringify({ option: "Draw", odds: match.draw_odds })}
                 label={`Draw - ${
                   match.draw_odds !== undefined
-                    ? `${(100 * match.draw_odds).toFixed(1)}% likely`
+                    ? `${(100 * match.draw_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.draw_odds) / match.draw_odds)).toFixed(2)}x returns`
                     : "Unknown odds"
                 }`}
               />
@@ -260,7 +260,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
                 // value={JSON.stringify({ option: "Default", odds: match.default_odds })}
                 label={`Default - ${
                   match.default_odds !== undefined
-                    ? `${(100 * match.default_odds).toFixed(1)}% likely`
+                    ? `${(100 * match.default_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.default_odds) / match.default_odds)).toFixed(2)}x returns`
                     : "Unknown odds"
                 }`}
               />

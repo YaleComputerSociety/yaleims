@@ -78,9 +78,12 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
+        // Replace dots in email with underscores to prevent nesting
+        const sanitizedEmail = email.replace(/\./g, "_");
+
         // Update predictions map for the match
         const predictionsUpdate = {
-          [`predictions.${email}`]: { betOption, betAmount, betOdds },
+          [`predictions.${sanitizedEmail}`]: { betOption, betAmount, betOdds },
         };
 
         transaction.update(matchRef, predictionsUpdate);

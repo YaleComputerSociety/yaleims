@@ -58,7 +58,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: match.id,
+            matchId: match.id.toString(),
             homeScore: homeScore === "" ? null : parseInt(homeScore),
             awayScore: awayScore === "" ? null : parseInt(awayScore),
             homeForfeit: homeForfeit,
@@ -114,7 +114,9 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
       <div className="grid md:grid-cols-5 grid-cols-4 bg-white  dark:bg-black justify-between items-center py-4 px-2 md:px-8">
         <div className="flex flex-col md:flex-row items-center pr-1 lg:pr-8 h-full py-1 justify-between md:justify-around">
           <p>{formattedTime}</p>
-          <p>{emojiMap[match.sport]}</p>
+          <p>
+            {match.sport} {emojiMap[match.sport]}
+          </p>
         </div>
         <div className="flex flex-col justify-between items-start gap-4 sm:pl-4 xl:pl-16 lg:pl-10">
           <div className="flex items-center">
@@ -157,14 +159,14 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
         <div className="flex flex-col items-center gap-4 h-full justify-between">
           <input
             type="text"
-            className="w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
+            className="dark:bg-black w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
             value={awayScore}
             onChange={(e) => handleAwayScoreChange(e)}
             disabled={awayForfeit}
           />
           <input
             type="text"
-            className="w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
+            className="dark:bg-black w-5 h-5 md:w-10 md:h-8 text-center border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:bg-gray-200 disabled:border-gray-200"
             value={homeScore}
             onChange={(e) => handleHomeScoreChange(e)}
             disabled={homeForfeit}

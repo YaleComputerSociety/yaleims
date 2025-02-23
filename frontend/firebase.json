@@ -1,14 +1,20 @@
 {
   "hosting": {
-    "public": "public", 
+    "public": "public",
     "rewrites": [
       {
         "source": "/**",
-        "function": "nextApp"  
+        "function": "nextApp"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.txt",
+        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
       }
     ]
   },
   "functions": {
-    "source": "functions"  
+    "source": "functions"
   }
 }

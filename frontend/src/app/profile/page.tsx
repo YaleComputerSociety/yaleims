@@ -8,6 +8,7 @@ import { Match, Participant } from "@src/types/components";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
+import Link from "next/link";
 
 const Profile = () => {
   const { user, loading, signOut, setUser } = useUser();
@@ -18,8 +19,10 @@ const Profile = () => {
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [availablePoints, setAvailablePoints] = useState(0);
+  const [correctPrediction, setCorrectPredictions] = useState(0);
 
   const userEmail = user ? user.email : null;
+  const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
 
   const cloudFunctionUrl = "https://getcollegematches-65477nrg6a-uc.a.run.app";
 
@@ -33,7 +36,7 @@ const Profile = () => {
           toCollegeAbbreviation[user.college] || user.college;
 
         const response = await fetch(
-          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc`,
+          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc&limit=${matchesLimit}`,
           {
             method: "GET",
             headers: {
@@ -72,6 +75,8 @@ const Profile = () => {
           throw new Error(`Error fetching points: ${response.statusText}`);
         const data = await response.json();
         setAvailablePoints(data.points);
+        setCorrectPredictions(data.correctPredictions);
+        setNewUsername(data.username);
       } catch (error) {
         console.error("Failed to fetch points:", error);
       }
@@ -194,17 +199,19 @@ const Profile = () => {
                 />
               </div>
               <div className="flex items-center flex-col">
-                <p className="text-md font-bold flex items-center">
-                  Yodds Username: {user.username || "Anonymous"}
-                  <MdModeEditOutline
-                    className="ml-2 cursor-pointer hover:text-blue-700"
-                    onClick={() => setIsEditing(true)}
-                  />
+                <p className="text-md font-bold flex items-center mb-3">
+                  Yodds Username: {newUsername || "Anonymous"}
+                  <span className="ml-2 flex items-center">
+                    <MdModeEditOutline
+                      style={{ fontSize: "24px" }} // Ensures a fixed size
+                      className="cursor-pointer hover:text-blue-700"
+                      onClick={() => setIsEditing(true)}
+                    />
+                  </span>
                 </p>
-
                 <div className="flex flex-row items-center space-x-2">
                   <p className="text-md font-bold">
-                    YCoins: {availablePoints || 0}
+                    YCoins: {availablePoints.toFixed(2) || 0}
                   </p>
                   <Image
                     src="/YCoin.png"
@@ -214,6 +221,9 @@ const Profile = () => {
                     style={{ objectFit: "contain" }} // Proper usage of objectFit
                   />
                 </div>
+                <p className="text-md font-bold">
+                  Correct Predictions: {correctPrediction}
+                </p>
               </div>
             </div>
 
@@ -249,6 +259,14 @@ const Profile = () => {
               {availableMatches.length > 0 ? (
                 <div className="w-full">
                   <ListView matches={availableMatches} isSignedUp={false} />
+                  <div className="flex justify-center w pt-4">
+                    <Link
+                      href="/schedules"
+                      className="p-2 sm:p-4 text-white text-xs sm:text-sm rounded-lg shadow transition duration-200 ease-in-out bg-blue-600 hover:scale-110"
+                    >
+                      See More on the Schedules Page!
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center mt-8 text-gray-600">
@@ -269,11 +287,11 @@ const Profile = () => {
       </div>
       {isEditing && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80">
+          <div className="bg-white dark:bg-black p-6 rounded-lg shadow-lg w-80">
             <h2 className="text-lg font-bold mb-4">Edit Username</h2>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md p-2 mb-4"
+              className="w-full border border-gray-300 rounded-md p-2 mb-4 dark:bg-black"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               placeholder="Enter new username"
@@ -293,7 +311,7 @@ const Profile = () => {
                 {editLoading ? "Saving..." : "Save"}
               </button>
               <button
-                className="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+                className="bg-gray-300 dark:bg-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
                 onClick={() => setIsEditing(false)}
               >
                 Cancel

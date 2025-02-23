@@ -10,7 +10,7 @@ const db = admin.firestore();
 export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const { type, sortOrder = "desc", college } = req.query; // Retrieve 'type', 'sortOrder', and 'college' query parameters
+      const { type, sortOrder = "desc", college, limit = -1 } = req.query; // Retrieve 'type', 'sortOrder', and 'college' query parameters
       const currentDate = new Date();
       let query: Query = db.collection("matches"); // Explicitly use Query type
 
@@ -28,10 +28,17 @@ export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
       const homeMatchesQuery = baseQuery.where("home_college", "==", college);
       const awayMatchesQuery = baseQuery.where("away_college", "==", college);
 
+      // Apply limit if specified
+      const queryLimit = Number(limit);
+      const limitedHomeMatchesQuery =
+        queryLimit > 0 ? homeMatchesQuery.limit(queryLimit) : homeMatchesQuery;
+      const limitedAwayMatchesQuery =
+        queryLimit > 0 ? awayMatchesQuery.limit(queryLimit) : awayMatchesQuery;
+
       // Execute both queries
       const [homeMatchesSnapshot, awayMatchesSnapshot] = await Promise.all([
-        homeMatchesQuery.get(),
-        awayMatchesQuery.get(),
+        limitedHomeMatchesQuery.get(),
+        limitedAwayMatchesQuery.get(),
       ]);
 
       // Combine the results from both queries

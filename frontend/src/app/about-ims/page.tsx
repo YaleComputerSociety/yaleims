@@ -72,7 +72,11 @@ const AboutIMSPage: React.FC = () => {
         competition within the Yale community. Teams are organized through the
         14 residential colleges, promoting community, sportsmanship, and fun.
         The ultimate prize of the program is the coveted Tyng Cup, awarded
-        annually to the college with the most points.
+        annually to the college with the most points. See more information about
+        the sports offered{" "}
+        <Link className="text-blue-500" href={"/about-sports"}>
+          here.
+        </Link>
       </p>
       <br />
       <div className="space-y-4">
@@ -87,7 +91,9 @@ const AboutIMSPage: React.FC = () => {
       </div>
       <div className="flex gap-1">
         <p>See more FAQs</p>
-        <Link className="text-blue-500" href={"/faq"}>here.</Link>
+        <Link className="text-blue-500" href={"/faq"}>
+          here.
+        </Link>
       </div>
 
       <br></br>

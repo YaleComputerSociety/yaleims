@@ -125,6 +125,11 @@ export const sportsMap: SportMap = {
   Pickleball: 6,
   "Table Tennis": 8,
   Soccer: 11,
+  MHoops: 5,
+  WHoops: 5,
+  CHoops: 5,
+  Dodgeball: 8,
+  Broomball: 6,
 };
 
 export const emojiMap: EmojiMap = {

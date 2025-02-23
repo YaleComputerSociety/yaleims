@@ -37,7 +37,7 @@ const NavBar: React.FC = () => {
   const links = [
     { href: "/", text: "YALE IMS", text_mobile: "Home" },
     { href: "/scores", text: "Scores" },
-    { href: "/schedule", text: "Schedule" },
+    { href: "/schedules", text: "Schedules" },
     { href: "/odds", text: "Odds" },
     { href: "/about-us", text: "About" },
     { href: "https://yaleims.canny.io", text: "Feedback" },

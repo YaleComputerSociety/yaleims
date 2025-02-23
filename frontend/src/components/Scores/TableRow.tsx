@@ -52,9 +52,12 @@ const TableRow: React.FC<TableRowProps> = ({
   const incorrectPredicted = totalPredicted - correctPredicted;
 
   // Calculate bar widths
-  const correctPercentage =
-    totalPredicted > 0 ? (correctPredicted / totalPredicted) * 100 : 0;
-  const incorrectPercentage = 100 - correctPercentage;
+  const correctPercentage: string =
+    totalPredicted > 0
+      ? ((correctPredicted / totalPredicted) * 100).toFixed(2)
+      : "0.00";
+  const incorrectPercentage =
+    totalPredicted > 0 ? (100 - Number(correctPercentage)).toFixed(2) : "0.00";
 
   const getTimeString = (timestamp: string) => {
     return new Date(timestamp).toLocaleString("en-US", {
@@ -65,28 +68,26 @@ const TableRow: React.FC<TableRowProps> = ({
   };
 
   const CollegeDisplay = ({ college, score, isWinner, points = 0 }: any) => (
-    <div className="items-start text-xs xs:text-sm">
-      <strong
-        className={`cursor-pointer flex items-center ${
-          !isWinner ? "text-gray-400" : ""
-        }`}
-        onClick={() => handleCollegeClick(college)}
-      >
-        <Image
-          src={`/college_flags/${toCollegeName[college]}.png`}
-          alt={college}
-          width={20}
-          height={20}
-          className="mr-2 object-contain"
-          unoptimized
-        />
-        {toCollegeName[college]}
-        {points > 0 && (
-          <span className="text-yellow-500 text-xs xs:text-sm">
-            +{points}pts
-          </span>
-        )}
-      </strong>
+    <div
+      className={`cursor-pointer flex items-center flex-row${
+        !isWinner ? "text-gray-400" : ""
+      }`}
+      onClick={() => handleCollegeClick(college)}
+    >
+      <Image
+        src={`/college_flags/${toCollegeName[college]}.png`}
+        alt={college}
+        width={20}
+        height={20}
+        className="mr-2 object-contain flex-none"
+        unoptimized
+      />
+      <strong className="flex-shrink">{toCollegeName[college]} </strong>
+      {points > 0 && (
+        <div className="text-yellow-500 text-xs md:text-xs lg:text-xs font-bold items-center flex-grow">
+          +{points}pts
+        </div>
+      )}
     </div>
   );
 
@@ -128,6 +129,8 @@ const TableRow: React.FC<TableRowProps> = ({
   const homeWins = home_college_score > away_college_score;
   const points = isDraw ? sportsMap[sport] / 2 : sportsMap[sport];
 
+  // console.log(correctPercentage, incorrectPercentage);
+
   return (
     <div
       className={`bg-white dark:bg-black ${isFirst ? "rounded-t-lg" : ""} 
@@ -149,11 +152,11 @@ const TableRow: React.FC<TableRowProps> = ({
             <SlArrowDown onClick={() => setIsOpen(!isOpen)} />
           )}
         </div>
-        <div className="hidden sm:block lg:px-6 pl-2 lg:pr-10 py-4 text-xs xs:text-sm text-gray-500">
-          {getTimeString(timestamp)}
+        <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700">
+          {getTimeString(timestamp).length < 8 ? <>&nbsp;{getTimeString(timestamp)}</> : getTimeString(timestamp)}
         </div>
 
-        <div className="text-left lg:px-6 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
+        <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
           <CollegeDisplay
             college={home_college}
             score={home_college_score}
@@ -198,7 +201,7 @@ const TableRow: React.FC<TableRowProps> = ({
         </div>
 
         <div
-          className="text-center px-2 py-1 relative group hover:cursor-pointer"
+          className="text-center px-4 py-1 relative group hover:cursor-pointer"
           title={sport}
           onClick={() => handleSportClick(sport)}
         >
@@ -207,26 +210,26 @@ const TableRow: React.FC<TableRowProps> = ({
             {sport}
           </div>
         </div>
-        <div className="hidden sm:block text-center text-xs px-2 py-1 w-[100px] flex flex-col">
+        <div className="hidden sm:block text-center text-xs py-1 w-[100px] flex flex-col border-l border-gray-200 dark:border-gray-700">
           <div>{match.type}</div>
           {match.type == "Regular" ? "Season" : "Round"}
         </div>
       </div>
       {/* Bar Graph for Predictions */}
-      {hasPredictionData && isOpen && (
-        <div className="px-4 sm:px-8 py-2 mb-3">
+      {hasPredictionData && isOpen ? (
+        <div className="px-4 sm:px-8 py-2 mb-3 transition-[height] duration-300 ease-out h-20 overflow-hidden">
           <h3 className="text-sm font-semibold mb-2 ml-2">
             Prediction Results
           </h3>
           <div className="flex items-center">
             <div
               className="h-2 bg-green-500 rounded-l-lg"
-              style={{ width: `${correctPercentage}` }}
+              style={{ width: `${correctPercentage}%` }}
               title={`${correctPredicted} Correct`}
             ></div>
             <div
               className="h-2 bg-gray-200 dark:bg-gray-800 rounded-r-lg"
-              style={{ width: `${incorrectPercentage}` }}
+              style={{ width: `${incorrectPercentage}%` }}
               title={`${incorrectPredicted} Incorrect`}
             ></div>
           </div>
@@ -235,12 +238,14 @@ const TableRow: React.FC<TableRowProps> = ({
             YCoins
           </div>
         </div>
+      ) : (
+        <div className="transition-[height] duration-300 ease-out h-0 overflow-hidden"></div>
       )}
 
       {!hasPredictionData && isOpen ? (
         <div className="text-center text-xs italic transition-[height] duration-300 ease-out h-10 overflow-hidden">
           No prediction data available for this match. Predict game outcomes{" "}
-          <Link href={"/yodds"} className="text-blue-400">
+          <Link href={"odds"} className="text-blue-400">
             here.
           </Link>
         </div>
@@ -248,7 +253,7 @@ const TableRow: React.FC<TableRowProps> = ({
         <div className="transition-[height] duration-300 ease-out h-0 overflow-hidden">
           <div className="text-center text-xs pb-5 italic px-1">
             No prediction data available for this match. Predict game outcomes{" "}
-            <Link href={"/yodds"} className="text-blue-400">
+            <Link href={"odds"} className="text-blue-400">
               here.
             </Link>
           </div>

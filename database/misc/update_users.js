@@ -21,8 +21,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
-// Function to add "correctPredictions" attribute to all user documents
-async function addCorrectPredictionsToUsers() {
+async function addPoints() {
   const usersRef = collection(firestore, "users");
   const snapshot = await getDocs(usersRef);
 
@@ -31,29 +30,25 @@ async function addCorrectPredictionsToUsers() {
     return;
   }
 
-  console.log(
-    `Found ${snapshot.size} user documents. Adding 'correctPredictions' attribute...`
-  );
-
   const batch = writeBatch(firestore);
+  const pointsToAdd = 500; // Define the points to add
 
   snapshot.docs.forEach((docSnapshot) => {
     const userId = docSnapshot.id;
-    const userRef = doc(usersRef, userId);
+    const userRef = doc(firestore, "users", userId);
 
-    // Add "correctPredictions" attribute with an initial value of 0
-    batch.update(userRef, { correctPredictions: 0 });
+    // Update points for each user
+    const currentPoints = docSnapshot.data().points || 0; // Default to 0 if undefined
+    batch.update(userRef, { points: currentPoints + pointsToAdd });
   });
 
   try {
     await batch.commit();
-    console.log(
-      "Successfully added 'correctPredictions' attribute to all user documents."
-    );
+    console.log("Successfully updated points for all user documents.");
   } catch (error) {
-    console.error("Error adding 'correctPredictions' attribute:", error);
+    console.error("Error updating points:", error);
   }
 }
 
 // Call the function
-addCorrectPredictionsToUsers();
+addPoints();

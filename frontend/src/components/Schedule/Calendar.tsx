@@ -10,11 +10,16 @@ import {
 
 type MyCalendarProps = {
   onClickDay: (value: Date) => void;
+  selectedDate: Date;
+  setSelectedDate: (value: Date) => void;
 };
 
-const Calendar: React.FC<MyCalendarProps> = ({ onClickDay }) => {
+const Calendar: React.FC<MyCalendarProps> = ({
+  onClickDay,
+  selectedDate,
+  setSelectedDate,
+}) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Start and end dates for the current month
   const startDate = startOfMonth(currentDate);

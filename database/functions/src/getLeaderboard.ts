@@ -2,7 +2,6 @@ import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
 
-
 // Enable CORS
 const corsHandler = cors({ origin: true });
 
@@ -12,7 +11,10 @@ export const getLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     try {
       const leaderboardRef = db.collection("colleges");
-      const snapshot = await leaderboardRef.orderBy("points", "desc").get();
+      const snapshot = await leaderboardRef
+        .orderBy("points", "desc")
+        .orderBy("wins", "desc")
+        .get();
 
       if (snapshot.empty) {
         res.status(404).send("No colleges found.");

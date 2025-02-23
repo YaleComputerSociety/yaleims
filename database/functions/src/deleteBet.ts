@@ -62,7 +62,7 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
       ) {
         return res
           .status(400)
-          .send("Bets cannot be deleted within 24 hours of a match.");
+          .send("Predictions cannot be deleted within 24 hours of a match.");
       }
 
       // Query the user's bets subcollection to find the bet
@@ -86,6 +86,7 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
 
       // Start a transaction to return points, delete the bet, and update the bets map
       await db.runTransaction(async (transaction) => {
+        const sanitizedEmail = email.replace(/\./g, "_");
         // Return points to user
         transaction.update(userRef, {
           points: admin.firestore.FieldValue.increment(betAmountNumber),
@@ -119,7 +120,8 @@ export const deleteBet = functions.https.onRequest(async (req, res) => {
 
         // Remove the user from the bets map
         transaction.update(matchRef, {
-          [`predictions.${email}`]: admin.firestore.FieldValue.delete(),
+          [`predictions.${sanitizedEmail}`]:
+            admin.firestore.FieldValue.delete(),
         });
       });
 

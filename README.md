@@ -13,6 +13,7 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
 
 ## Table of Contents
 
+- [Contribution Guide](#contribution-guide)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Installation](#installation)
@@ -20,6 +21,12 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
+
+## Contribution Guide
+
+First, read this ReadMe in its entirety (you're off to a good start). Generally, people who contribute are part of the y/cs. If you have a contribution you want to make, but you are not part of the ymeets team within the y/cs, we welcome you to open a Pull Request. You can either solve an open issue that has not been assigned to someone, or contribute a new feature of your design. A successfully merged PR of significant contribution will earn you implicit membership in the org. You will be credited on the site.
+
+If you wish to design your own feature, we encourage you to reach out to the ymeets team first at yalecomputersociety@gmail.com, as we reserve the right to reject any contributions we are not consulted on.
 
 ## Tech Stack
 
@@ -83,11 +90,12 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
    npm install
    ```
 
-3. Set up environment variables in `.env.local` for the frontend (you can skip this for now!):
+3. Set up environment variables in `.env.local` for the frontend:
 
    ```bash
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+   ...
    ```
 
 4. Run the development server:
@@ -95,10 +103,40 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
    npm run dev
    ```
 
-## Contributers
+## Project Structure
+
+'./database/functions/src': Houses all our Firebase Functions that handle database querying and inputting. All functions are written in TypeScript('.ts' file ending)
+
+'yaleims/frontend/src': Houses all the React components for the different pages of the web app.
+
+'yaleims/frontend/src/app': Houses the routing for the general page layouts.
+
+The Web App is broken down into **8 general pages** with their supporting components stored under the corresponding folder in 'yaleims/frontend/src/components'. 
+
+   - [./About]
+   - [./AddScores] (Special page only visible to admin, achieved with 'withProtectedRoute.tsx')
+   - [./faq]
+   - [./Home]
+   - [./Profile]
+   - [./Schedule]
+   - [./Scores]
+   - [./YOdds]
+
+There are also additional typescript components ('Footer.tsx', 'LoadingScreen.tsx', and 'NavBar.tsx') that are used throughout the app
+
+'./src/context': Holds contexts that allow for themes to be maintained across renderings (Filtering, Themes, or Users Info)
+
+'./src/hooks': Holds GCal and CAS Login integration
+
+'./src/types' and './src/utils': Hold interfaces and types to used throughout the app
+
+## Main Contributers
 
 - Anna Xu ('24.5)
 - Daniel Morales ('27)
 - Ephraim Akai-Nettey ('27)
 - Kaitlyn Oikle ('27)
 - Brian Di Bassinga ('26)
+- Vojtech Kysilka ('28)
+- Farhan Baig ('27)
+- Ella White ('27)

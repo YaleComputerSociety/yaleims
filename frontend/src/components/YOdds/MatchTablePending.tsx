@@ -8,8 +8,6 @@ import { PendingMatchesTableProps } from "@src/types/components";
 const MatchesTable: React.FC<PendingMatchesTableProps> = ({ pendingBets }) => {
   const test = groupBetByDate(pendingBets);
 
-  console.log(test);
-
   return (
     <>
       {Object.entries(test)

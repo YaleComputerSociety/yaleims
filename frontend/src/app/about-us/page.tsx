@@ -55,7 +55,7 @@ const AboutUsPage: React.FC = () => {
       portfolio: undefined,
     },
     {
-      name: "Diego Apinwall",
+      name: "Diego Aspinwall",
       roles: ["Software Engineer"],
       image: "/dev_images/Diego_Aspinwall.png",
       github: undefined,
@@ -161,8 +161,8 @@ const AboutUsPage: React.FC = () => {
         About Us
       </h1>
       <p>
-        Yale’s 14 colleges compete annually in intramural sports for the Tyng
-        Cup. Learn more about how it all works{" "}
+        Every school year Yale’s 14 colleges compete in intramural sports for
+        the Tyng Cup. Learn more about how it all works{" "}
         <Link className="text-blue-600 dark:text-blue-300" href="/about-ims">
           here
         </Link>

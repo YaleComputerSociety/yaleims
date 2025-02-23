@@ -66,7 +66,6 @@ const CPodium: React.FC<props> = ({
         className={`flex flex-col items-center justify-center rounded-t-2xl px-5 md:w-full ${posHeight} bg-blue-300 text-black dark:bg-black dark:text-white text-center`}
       >
         <h1 className="mg:mb-2 mg:text-lg text-sm font-bold">{college.name}</h1>
-        <p className="mb-1 text-sm ">{college.points} points</p>
         <div className="flex flex-row gap-3 mg:mb-1">
           {college.prevRank - college.rank > 0 && (
             <FaCaretUp size={32} style={{ color: "00C707" }} />
@@ -83,6 +82,7 @@ const CPodium: React.FC<props> = ({
             </sup>
           </h1>
         </div>
+        <p className="mb-1 text-sm ">{college.points} points</p>
         <p className="text-sm  ">
           {college.wins} Win{college.wins > 1 ? "s" : ""}, {college.ties} Tie
           {college.ties > 1 ? "s" : ""},{" "}
