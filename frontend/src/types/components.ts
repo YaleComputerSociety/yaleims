@@ -117,6 +117,7 @@ export interface Filters {
   college: string;
   sport: string;
   date: string;
+  selected: string;
 }
 
 export interface FiltersContextType {
