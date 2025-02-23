@@ -52,12 +52,14 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
   }) => {
     try {
       setIsLoading(true);
+      const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/addBet",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
           body: JSON.stringify({
             email,

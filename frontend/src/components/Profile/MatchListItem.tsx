@@ -23,12 +23,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
+      const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
         "https://addparticipant-65477nrg6a-uc.a.run.app",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
           body: JSON.stringify({
             matchId: match.id,
@@ -58,12 +60,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
   const handleUnregister = async () => {
     setIsLoading(true);
     try {
+      const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
         "https://removeparticipant-65477nrg6a-uc.a.run.app",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
           body: JSON.stringify({
             matchId: match.id,

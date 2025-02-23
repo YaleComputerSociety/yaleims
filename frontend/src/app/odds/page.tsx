@@ -12,6 +12,7 @@ import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { headers } from "next/headers.js";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -99,8 +100,12 @@ const YoddsPage: React.FC = () => {
     const fetchMyPoints = async () => {
       setCoinsLoading(true);
       try {
+        const userToken = sessionStorage.getItem("userToken")
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`, 
+          {
+            headers: {Authorization: `Bearer ${userToken}`}
+          }
         );
         if (!response.ok)
           throw new Error(`Error fetching points: ${response.statusText}`);
@@ -124,8 +129,12 @@ const YoddsPage: React.FC = () => {
     const fetchPendingBets = async () => {
       try {
         setPendingLoading(true);
+        const userToken = sessionStorage.getItem("userToken")
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getPendingBets?email=${userEmail}`
+          `https://us-central1-yims-125a2.cloudfunctions.net/getPendingBets?email=${userEmail}`,
+          {
+            headers: {Authorization: `Bearer ${userToken}`}
+          }
         );
         if (!response.ok)
           throw new Error(

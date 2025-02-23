@@ -8,6 +8,24 @@ const db = admin.firestore();
 
 export const getPendingBets = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
+    // uncomment and redeploy once new frontend changes are deployed
+    // const authHeader = req.headers.authorization || ""
+    // if (!authHeader.startsWith("Bearer ")) {
+    //   return res.status(401).json({error: "No token provided"});
+    // }
+    // //   // getting token passed from request
+    // const idToken = authHeader.split("Bearer ")[1];
+    // // //   //verifying the token using firebase admin
+    // let decoded;
+    // try {
+    //   decoded = await admin.auth().verifyIdToken(idToken);
+    //   if (!decoded) {
+    //     return res.status(401).json({error: "Invalid Token"})
+    //   }
+    // } catch (error) {
+    //   return res.status(401).json({error: "Invalid Token"})
+    // } 
+    //get rid of email in the query and use the decoded users email
     const { email } = req.query;
 
     if (typeof email !== "string") {

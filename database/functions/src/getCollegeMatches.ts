@@ -10,6 +10,20 @@ const db = admin.firestore();
 export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
+      // uncomment after new frontend deployed
+      // const authHeader = req.headers.authorization || "";
+      // if (!authHeader.startsWith("Bearer ")) {
+      //   return res.status(401).json({error: "No token provided"});
+      // }
+
+      // // getting token passed from request
+      // const idToken = authHeader.split("Bearer ")[1];
+      // //verifying the token using firebase admin
+      // const decoded = await admin.auth().verifyIdToken(idToken);
+      // if (!decoded.email_verified) {
+      //   return res.status(401).json({error: "Token Incorrect or Expired"});
+      // }
+
       const { type, sortOrder = "desc", college, limit = -1 } = req.query; // Retrieve 'type', 'sortOrder', and 'college' query parameters
       const currentDate = new Date();
       let query: Query = db.collection("matches"); // Explicitly use Query type
@@ -78,7 +92,7 @@ export const getCollegeMatches = functions.https.onRequest(async (req, res) => {
       return res.status(200).json(matches);
     } catch (error) {
       console.error("Error fetching matches:", error);
-      return res.status(500).send("Internal Server Error");
+      return res.send(500).json({error: "Internal Server Error"});
     }
   });
 });

@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { setCookie, getCookie, deleteCookie } from "cookies-next";
 import { auth, provider, signInWithPopup } from "../../lib/firebase";
+import { onIdTokenChanged } from "firebase/auth";
 
 const UserContext = createContext();
 
@@ -60,6 +61,8 @@ export const UserProvider = ({ children }) => {
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
+      const userToken = await signedInUser.getIdToken(true)
+      sessionStorage.setItem("userToken", userToken)
 
       if (!signedInUser.email.endsWith("@yale.edu")) {
         throw new Error("You must use a Yale email to sign in.");
@@ -85,6 +88,22 @@ export const UserProvider = ({ children }) => {
       setUser(null); // Ensure the user state is cleared if sign-in fails
     }
   };
+
+  useEffect(() => {
+    const minutes=4;
+    const interval=minutes * 60 * 10000;
+    // console.log("authcontext")
+    
+    const handle = setInterval(async () => {
+        const user = auth.currentUser;
+        if (user) {
+            const newToken = await user.getIdToken(true);
+            sessionStorage.setItem("userToken", newToken)
+            // console.log(user);
+        }
+    }, interval);
+    return () => clearInterval(handle);
+  }, [])
 
   const signOut = async () => {
     try {
