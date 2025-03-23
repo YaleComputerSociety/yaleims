@@ -116,6 +116,13 @@ export const sports: Sport[] = [
     emoji: "🥅",
     season: { "2024-2025": "Spring" },
   },
+  {
+    id: "14",
+    name: "Kanjam",
+    points_for_win: 5,
+    emoji: "🥏",
+    season: { "2024-2025": "Spring" },
+  },
 ];
 
 export const sportsMap: SportMap = {
@@ -130,6 +137,7 @@ export const sportsMap: SportMap = {
   CHoops: 5,
   Dodgeball: 8,
   Broomball: 6,
+  Kanjam: 5,
 };
 
 export const emojiMap: EmojiMap = {
@@ -147,6 +155,7 @@ export const emojiMap: EmojiMap = {
   "Indoor Soccer": "⚽",
   Volleyball: "🏐",
   Netball: "🥅",
+  Kanjam: "🥏",
 };
 
 // College abbreviations mapped to full college names (fixed keys)
