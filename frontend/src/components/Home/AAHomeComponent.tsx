@@ -20,7 +20,16 @@ const AAHomeComponent: React.FC = () => {
   const [sortedColleges, setSortedColleges] = useState<any[]>([]);
   const [sortedUsers, setSortedUsers] = useState<any[]>([]);
   const { setFilter } = useContext(FiltersContext);
-  const [selected, setSelected] = useState<string>("2024-2025");
+  const { filter } = useContext(FiltersContext);
+  const [selected, setSelected] = useState<string>(filter.selected?.trim() !== "" ? filter.selected : "2024-2025");
+  // const [selected, setSelected] = useState<string>("2024-2025");
+
+  useEffect(() => {
+    if (selected === "Prediction" && sortedUsers.length === 0) {
+      console.debug("Fetching user leaderboard due to selected change...");
+      fetchUserLeaderboard();
+    }
+  }, [selected]); 
 
   useEffect(() => {
     const fetchCollegesLeaderboard = async () => {
@@ -83,9 +92,13 @@ const AAHomeComponent: React.FC = () => {
   };
 
   const handleCollegeClick = (collegeName: string) => {
-    const collegeAbbreviation = toCollegeAbbreviation[collegeName];
-    // console.log(`/schedules?college=${collegeAbbreviation}`);
-    router.push(`/schedules?college=${collegeAbbreviation}`);
+    setFilter({
+      college: toCollegeAbbreviation[collegeName],
+      sport: "",
+      date: "",
+      selected: "",
+    });
+    router.push("/scores");
   };
 
   const handleSelectedChange = (filter: string) => {
@@ -130,6 +143,8 @@ const AAHomeComponent: React.FC = () => {
             </div>
           ) : (
             <>
+              {console.debug("Users fed to PredictionPodiums:", sortedUsers.slice(0, 3))}
+              {console.debug("Users fed to PredictionLeaderboard:", sortedUsers)}
               <PredictionPodiums users={sortedUsers.slice(0, 3)} />
               <PredictionLeaderboard users={sortedUsers} />
             </>

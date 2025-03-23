@@ -2,7 +2,7 @@ import React, { createContext, useState, ReactNode } from "react";
 import { Filters, FiltersContextType } from "@src/types/components";
 // Create the context with an undefined default value
 export const FiltersContext = createContext<FiltersContextType>({
-  filter: { college: "", sport: "", date: "" }, // Provide default values
+  filter: { college: "", sport: "", date: "", selected: ""}, // Provide default values
   setFilter: () => {},
   resetFilters: () => {},
 });
@@ -17,6 +17,7 @@ const FiltersProvider: React.FC<FiltersProviderProps> = ({ children }) => {
     college: "",
     sport: "",
     date: "",
+    selected: "",
   });
 
   const resetFilters = () => {
@@ -24,6 +25,7 @@ const FiltersProvider: React.FC<FiltersProviderProps> = ({ children }) => {
       college: "",
       sport: "",
       date: "",
+      selected: "",
     });
   };
 

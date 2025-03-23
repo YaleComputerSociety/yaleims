@@ -21,8 +21,12 @@ const AddScoresPage: React.FC = () => {
     const fetchMatches = async () => {
       setLoading(true);
       try {
+        const userToken = sessionStorage.getItem("userToken")
         const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getUnscoredMatches"
+          "https://us-central1-yims-125a2.cloudfunctions.net/getUnscoredMatches",
+          {
+            headers: {Authorization: `Bearer ${userToken}`}
+          }
         );
 
         if (response.ok) {
@@ -44,12 +48,14 @@ const AddScoresPage: React.FC = () => {
     setUnscoreMessage(null);
 
     try {
+      const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/undoScoreMatch",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
           body: JSON.stringify({ matchId: unscoreId }),
         }

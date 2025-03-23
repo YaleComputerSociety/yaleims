@@ -158,7 +158,7 @@ const TableRow: React.FC<TableRowProps> = ({
           )}
         </div>
         <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700">
-          {getTimeString(timestamp)}
+          {getTimeString(timestamp).length < 8 ? <>&nbsp;{getTimeString(timestamp)}</> : getTimeString(timestamp)}
         </div>
 
         <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">

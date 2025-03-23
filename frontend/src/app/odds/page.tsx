@@ -11,6 +11,8 @@ import { Match, Bet } from "@src/types/components";
 import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import { headers } from "next/headers.js";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -32,6 +34,9 @@ const YoddsPage: React.FC = () => {
 
   const { user, signIn } = useUser();
   const userEmail = user ? user.email : null;
+  const router = useRouter();
+  const { setFilter } = useContext(FiltersContext);
+  
 
   const [newUsername, setUsername] = useState("Anonymous");
 
@@ -95,8 +100,12 @@ const YoddsPage: React.FC = () => {
     const fetchMyPoints = async () => {
       setCoinsLoading(true);
       try {
+        const userToken = sessionStorage.getItem("userToken")
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`, 
+          {
+            headers: {Authorization: `Bearer ${userToken}`}
+          }
         );
         if (!response.ok)
           throw new Error(`Error fetching points: ${response.statusText}`);
@@ -120,8 +129,12 @@ const YoddsPage: React.FC = () => {
     const fetchPendingBets = async () => {
       try {
         setPendingLoading(true);
+        const userToken = sessionStorage.getItem("userToken")
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getPendingBets?email=${userEmail}`
+          `https://us-central1-yims-125a2.cloudfunctions.net/getPendingBets?email=${userEmail}`,
+          {
+            headers: {Authorization: `Bearer ${userToken}`}
+          }
         );
         if (!response.ok)
           throw new Error(
@@ -155,6 +168,16 @@ const YoddsPage: React.FC = () => {
     // Implementation for betting functionality
   };
 
+  const sendToRankings = () => {
+    setFilter({
+      college: "",
+      sport: "",
+      date: "",
+      selected: "Prediction",
+    });
+    router.push("/");
+  };
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -177,10 +200,18 @@ const YoddsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
+    <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto relative">
+      {/* Rankings Button */}
+      <button
+        className="absolute top-10 right-12 mr-8 px-5 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+        onClick={sendToRankings}
+      >
+        See Rankings
+      </button>
+
       <div className="flex justify-center items-center mb-4 pt-10">
         <div
-          className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg "
+          className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg"
           style={{ maxWidth: "250px", minWidth: "200px" }}
         >
           <p className="text-center">
@@ -197,13 +228,17 @@ const YoddsPage: React.FC = () => {
             <Image
               src="/YCoin.png"
               alt="YCoin"
-              height={35} // Retains the specified height
-              width={35} // Retains the specified width
-              style={{ objectFit: "contain" }} // Proper usage of objectFit
+              height={35}
+              width={35}
+              style={{ objectFit: "contain" }}
             />
           </div>
         </div>
       </div>
+      <p className="text-center text-xs text-gray-500">
+        500 YCoins added every week (Sunday)!
+      </p>
+
       <p className="text-center text-xs text-gray-500">
         500 YCoins added every week (Sunday)!
       </p>
@@ -230,14 +265,14 @@ const YoddsPage: React.FC = () => {
         Upcoming Games
       </p>
 
-      <p className="text-xs text-center text-gray-500 ">
+      <p className="text-xs text-center text-gray-500">
         Predict game outcomes and see how your predictions stack against other
         Yalies! <br></br>Odds are determined by an internal algorithm and affect
         potential earnings.
         <br></br>
       </p>
 
-      <div className="min-w-full flex-col items-center md:px-20">
+      <div className="min-w-full flex-col items-center md:px-20 relative">
         <MatchesTable
           filteredMatches={filteredMatches}
           handleCollegeClick={handleCollegeClick}
@@ -252,9 +287,94 @@ const YoddsPage: React.FC = () => {
           />
         )}
       </div>
-
       <br></br>
     </div>
+
+    
+    // <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
+
+    //   {/* Rankings Button*/}
+    //   <button
+    //     className="md:px-25 absolute mt-10 top-8 right-15 px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+    //     onClick={sendToRankings}
+    //   >
+    //     See Rankings
+    //   </button>
+      
+    //   <div className="flex justify-center items-center mb-4 pt-10">
+    //     <div
+    //       className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg "
+    //       style={{ maxWidth: "250px", minWidth: "200px" }}
+    //     >
+    //       <p className="text-center">
+    //         <span className="text-yellow-300">{user.username}</span> YCoins:
+    //       </p>
+    //       <div className="flex flex-row justify-center items-center gap-1">
+    //         {coinsLoading ? (
+    //           <FaSpinner className="animate-spin" />
+    //         ) : (
+    //           <p className="text-center text-3xl">
+    //             {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
+    //           </p>
+    //         )}
+    //         <Image
+    //           src="/YCoin.png"
+    //           alt="YCoin"
+    //           height={35} // Retains the specified height
+    //           width={35} // Retains the specified width
+    //           style={{ objectFit: "contain" }} // Proper usage of objectFit
+    //         />
+    //       </div>
+    //     </div>
+    //   </div>
+
+    //   <p className="md:text-xl font-bold text-center mb-4 pt-6">
+    //     Pending Predictions
+    //   </p>
+
+    //   <p className="text-xs text-center text-gray-500">
+    //     Predictions may only be canceled 24 hours or more before the game.
+    //   </p>
+
+    //   {pendingLoading ? (
+    //     <div className="flex justify-center items-center mt-4">
+    //       <FaSpinner className="animate-spin" />
+    //     </div>
+    //   ) : (
+    //     <div className="min-w-full flex-col items-center md:px-20">
+    //       <MatchesTablePending pendingBets={pendingBets} />
+    //     </div>
+    //   )}
+
+    //   <p className="md:text-xl font-bold text-center mb-4 pt-6">
+    //     Upcoming Games
+    //   </p>
+
+    //   <p className="text-xs text-center text-gray-500 ">
+    //     Predict game outcomes and see how your predictions stack against other
+    //     Yalies! <br></br>Odds are determined by an internal algorithm and affect
+    //     potential earnings.
+    //     <br></br>
+    //   </p>
+
+    //   <div className="min-w-full flex-col items-center md:px-20">
+    //     <MatchesTable
+    //       filteredMatches={filteredMatches}
+    //       handleCollegeClick={handleCollegeClick}
+    //       availablePoints={availablePoints}
+    //     />
+    //     {filteredMatches.length > 0 && (
+    //       <Pagination
+    //         currentPageNumber={page}
+    //         totalPages={totalPages}
+    //         setPageNumber={setPage}
+    //         setQueryType={setQueryType}
+    //       />
+    //     )}
+    //   </div>
+
+    //   <br></br>
+    // </div>
   );
 };
 

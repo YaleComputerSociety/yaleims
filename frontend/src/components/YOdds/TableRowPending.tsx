@@ -47,12 +47,14 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     if (!userEmail) return;
 
     try {
+      const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
         `https://us-central1-yims-125a2.cloudfunctions.net/deleteBet?email=${userEmail}&matchId=${bet.matchId}&sport=${bet.sport}&betAmount=${bet.betAmount}&betOdds=${bet.betOdds}&betOption=${bet.betOption}`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
           },
         }
       );
@@ -111,15 +113,14 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   };
 
   const TimeDisplay = () => (
-    <div className="-mb-6">
-      <div className="flex justify-between w-full pr-3 py-2 pb-4 text-xs font-extralight text-gray-900 dark:text-white">
-        <span className="ml-5">{getTimeString(bet.matchTimestamp)}</span>
-        <span>
-          {bet.sport}
-          {emojiMap[bet.sport]}
-        </span>
+      <div className="flex items-center justify-between px-3 py-2 text-xs font-extralight text-gray-900 dark:text-gray-400 w-full">
+        <div className="flex items-center space-x-2">
+          <span>
+            {getTimeString(bet.matchTimestamp)} | {bet.sport}
+          </span>
+          <span className="text-lg">{emojiMap[bet.sport]}</span>
+        </div>
       </div>
-    </div>
   );
 
   const BetDetails = () => (
