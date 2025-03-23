@@ -1,0 +1,32 @@
+[
+  {
+    "userId": "ella.white@yale.edu",
+    "betId": "EeNDEZgvtjueJ3PSTnYd",
+    "away_college": "BK",
+    "sport": "Dodgeball",
+    "matchId": "546",
+    "createdAt": {
+      "seconds": 1739751374,
+      "nanoseconds": 372000000
+    },
+    "betOption": "SM",
+    "betAmount": 1,
+    "home_college": "SM",
+    "betOdds": 0.3037945393487167
+  },
+  {
+    "userId": "henry.hoak@yale.edu",
+    "betId": "RPzaGttkjxs8rkIl8Aaw",
+    "betOdds": 0.3037945393487167,
+    "home_college": "SM",
+    "betOption": "BK",
+    "sport": "Dodgeball",
+    "betAmount": 159,
+    "matchId": "546",
+    "away_college": "BK",
+    "createdAt": {
+      "seconds": 1739751860,
+      "nanoseconds": 449000000
+    }
+  }
+]

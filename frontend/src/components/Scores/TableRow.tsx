@@ -147,7 +147,12 @@ const TableRow: React.FC<TableRowProps> = ({
       <div className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_auto_1fr_auto_auto] items-center">
         <div className="pl-4">
           {!isOpen ? (
-            <SlArrowRight onClick={() => setIsOpen(!isOpen)} />
+            <SlArrowRight
+              onClick={() => {
+                setIsOpen(!isOpen)
+                // console.log(match.id)
+              }}
+            />
           ) : (
             <SlArrowDown onClick={() => setIsOpen(!isOpen)} />
           )}

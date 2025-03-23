@@ -137,6 +137,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
       setIsSignedUp(false);
       if (participantsShow) {
+        console.log(match.id);
         const participant_data = await getMatchParticipants(
           match.id.toString()
         );
@@ -164,10 +165,12 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     : "Date TBD";
 
   const matchTime = match.timestamp
-    ? new Date(match.timestamp).toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }) .replace(/^0/, "") // Remove leading zero if present
+    ? new Date(match.timestamp)
+        .toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+        .replace(/^0/, "") // Remove leading zero if present
     : "Time TBD";
 
   const location = match.location || "Location TBD";
@@ -270,6 +273,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         <button
           className="underline"
           onClick={async () => {
+            // console.log(match.id);
             if (!participantsShow) {
               const participant_data = await getMatchParticipants(
                 match.id.toString()
