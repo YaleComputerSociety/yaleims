@@ -46,16 +46,16 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
       }
 
       // Step 4: Fetch User Details from Yalies API
-      const yaliesResponse = await fetch("https://yalies.io/api/people", {
+      const yaliesResponse = await fetch("https://api.yalies.io/v2/people", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MjUzNzcxNTIsInN1YiI6ImF3eDIifQ.sKmMqhsyh71EIqfLPMqIx50py3nhhzo6kkq7OKPiHM8",
+            "Bearer e784BztDa6V5DQ88sIBqBXBP5i-rYjy-ix7Mu-kPLKQP4EDpdwelKA",
         },
         body: JSON.stringify({
           filters: { email: [email] },
-          page: 1,
+          page: 0, // ✅ Change from 1 to 0
           page_size: 1,
         }),
       });
