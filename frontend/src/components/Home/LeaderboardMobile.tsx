@@ -48,6 +48,7 @@ const Leaderboard: React.FC = () => {
       college: toCollegeAbbreviation[collegeName],
       sport: "",
       date: "",
+      selected: ""
     });
     router.push("/scores");
   };
