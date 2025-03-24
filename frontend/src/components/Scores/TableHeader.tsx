@@ -69,6 +69,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           value={filter.sport}
         >
           <option value="">All Sports</option>
+          <option value="Indoor Soccer">Indoor Soccer</option>
+          <option value="Volleyball">Volleyball</option>
+          <option value="Kanjam">Kanjam</option>
           <option value="Soccer">Soccer</option>
           <option value="Flag Football">Flag Football</option>
           <option value="Spikeball">Spikeball</option>
@@ -79,10 +82,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           <option value="CHoops">CHoops</option>
           <option value="WHoops">WHoops</option>
           <option value="MHoops">MHoops</option>
-          <option value="Indoor Soccer">Indoor Soccer</option>
           <option value="Dodgeball">Dodgeball</option>
-          <option value="Volleyball">Volleyball</option>
-          <option value="Netball">Netball</option>
         </select>
       </div>
     </div>

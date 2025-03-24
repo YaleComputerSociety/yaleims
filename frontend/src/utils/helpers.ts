@@ -26,6 +26,27 @@ export const colleges = [
 // List of sports with the proper type
 export const sports: Sport[] = [
   {
+    id: "15",
+    name: "Indoor Soccer",
+    points_for_win: 5,
+    emoji: "⚽",
+    season: { "2024-2025": "Spring" },
+  },
+  {
+    id: "14",
+    name: "Kanjam",
+    points_for_win: 5,
+    emoji: "🥏",
+    season: { "2024-2025": "Spring" },
+  },
+  {
+    id: "12",
+    name: "Volleyball",
+    points_for_win: 6,
+    emoji: "🏐",
+    season: { "2024-2025": "Spring" },
+  },
+  {
     id: "1",
     name: "Soccer",
     points_for_win: 11,
@@ -103,24 +124,10 @@ export const sports: Sport[] = [
     season: { "2024-2025": "Winter" },
   },
   {
-    id: "12",
-    name: "Volleyball",
-    points_for_win: 6,
-    emoji: "🏐",
-    season: { "2024-2025": "Spring" },
-  },
-  {
     id: "13",
     name: "Netball",
     points_for_win: 7,
     emoji: "🥅",
-    season: { "2024-2025": "Spring" },
-  },
-  {
-    id: "14",
-    name: "Kanjam",
-    points_for_win: 5,
-    emoji: "🥏",
     season: { "2024-2025": "Spring" },
   },
 ];
