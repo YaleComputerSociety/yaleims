@@ -36,7 +36,6 @@ const YoddsPage: React.FC = () => {
   const userEmail = user ? user.email : null;
   const router = useRouter();
   const { setFilter } = useContext(FiltersContext);
-  
 
   const [newUsername, setUsername] = useState("Anonymous");
 
@@ -100,11 +99,11 @@ const YoddsPage: React.FC = () => {
     const fetchMyPoints = async () => {
       setCoinsLoading(true);
       try {
-        const userToken = sessionStorage.getItem("userToken")
+        const userToken = sessionStorage.getItem("userToken");
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`, 
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`,
           {
-            headers: {Authorization: `Bearer ${userToken}`}
+            headers: { Authorization: `Bearer ${userToken}` },
           }
         );
         if (!response.ok)
@@ -129,11 +128,11 @@ const YoddsPage: React.FC = () => {
     const fetchPendingBets = async () => {
       try {
         setPendingLoading(true);
-        const userToken = sessionStorage.getItem("userToken")
+        const userToken = sessionStorage.getItem("userToken");
         const response = await fetch(
           `https://us-central1-yims-125a2.cloudfunctions.net/getPendingBets?email=${userEmail}`,
           {
-            headers: {Authorization: `Bearer ${userToken}`}
+            headers: { Authorization: `Bearer ${userToken}` },
           }
         );
         if (!response.ok)
@@ -235,13 +234,6 @@ const YoddsPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <p className="text-center text-xs text-gray-500">
-        500 YCoins added every week (Sunday)!
-      </p>
-
-      <p className="text-center text-xs text-gray-500">
-        500 YCoins added every week (Sunday)!
-      </p>
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Pending Predictions
@@ -290,7 +282,6 @@ const YoddsPage: React.FC = () => {
       <br></br>
     </div>
 
-    
     // <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
 
     //   {/* Rankings Button*/}
@@ -300,7 +291,7 @@ const YoddsPage: React.FC = () => {
     //   >
     //     See Rankings
     //   </button>
-      
+
     //   <div className="flex justify-center items-center mb-4 pt-10">
     //     <div
     //       className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg "
