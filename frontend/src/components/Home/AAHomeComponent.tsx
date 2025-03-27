@@ -62,6 +62,7 @@ const AAHomeComponent: React.FC = () => {
 
     fetchCollegesLeaderboard();
   }, []);
+  console.log(sortedColleges)
 
   const fetchUserLeaderboard = async () => {
     setLoadingUsers(true);
@@ -121,7 +122,7 @@ const AAHomeComponent: React.FC = () => {
   return (
     <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto">
       {/* Title */}
-      <Title selected={selected} onFilterChange={handleSelectedChange} />
+      <Title selected={selected} lastUpdated={sortedColleges[0].today} onFilterChange={handleSelectedChange} />
 
       {/* Conditional Rendering */}
       {selected === "2024-2025" ? (

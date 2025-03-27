@@ -2,10 +2,11 @@ import React from "react";
 
 type TitleProps = {
   selected: string;
+  lastUpdated: string,
   onFilterChange: (filter: string) => void;
 };
 
-const Title: React.FC<TitleProps> = ({ selected, onFilterChange }) => {
+const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) => {
   const handleSelectionChange = (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -20,22 +21,27 @@ const Title: React.FC<TitleProps> = ({ selected, onFilterChange }) => {
           {selected === "All Time" && "ALL-TIME STANDINGS"}
           {selected === "Prediction" && "PREDICTION STANDINGS"}
         </h1>
-        <div className="hidden xs:block text-right">
-          <select
-            value={selected}
-            onChange={handleSelectionChange}
-            className="focus:outline-none dark:bg-black border-solid border-2 md:p-2 p-1 border-blue-600 md:rounded-2xl rounded-xl text-blue-600 mg:text-sm xs:text-xs font-bold text-[10px]"
-          >
-            <option value="2024-2025">2024-2025</option>
-            <option value="Prediction">Prediction</option>
-            <option value="All Time">All Time</option>
-          </select>
-          <p className="mg:pt-5 pt-3 text-blue-600 underline mg:text-sm xs:text-xs text-[10px]">
-            Every point, every game,
-          </p>
-          <p className="text-blue-600 underline mg:text-sm xs:text-xs text-[10px]">
-            every play matters.
-          </p>
+        <div className="hidden xs:grid text-right grid-cols-2">
+          <div>
+            <p className="mg:text-sm xs:text-xs text-left pt-2 text-blue-600 underline">Last Updated: {lastUpdated}</p>
+          </div>
+          <div>
+            <select
+              value={selected}
+              onChange={handleSelectionChange}
+              className="focus:outline-none dark:bg-black border-solid border-2 md:p-2 p-1 border-blue-600 md:rounded-2xl rounded-xl text-blue-600 mg:text-sm xs:text-xs font-bold text-[10px]"
+            >
+              <option value="2024-2025">2024-2025</option>
+              <option value="Prediction">Prediction</option>
+              <option value="All Time">All Time</option>
+            </select>
+            <p className="mg:pt-5 pt-3 text-blue-600 underline mg:text-sm xs:text-xs text-[10px]">
+              Every point, every game,
+            </p>
+            <p className="text-blue-600 underline mg:text-sm xs:text-xs text-[10px]">
+              every play matters.
+            </p>
+          </div>
         </div>
       </div>
       <div className="xs:hidden text-blue-700 dark:text-white -mt-8">
