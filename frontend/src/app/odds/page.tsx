@@ -12,7 +12,6 @@ import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { headers } from "next/headers.js";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
