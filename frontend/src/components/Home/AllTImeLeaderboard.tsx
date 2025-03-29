@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { allTimeStandings } from "@src/utils/helpers";
 
-const AllTimeLeaderboardTable: React.FC = () => {
+const AllTimeLeaderboard: React.FC = () => {
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   useEffect(() => {
@@ -68,4 +68,4 @@ const AllTimeLeaderboardTable: React.FC = () => {
   );
 };
 
-export default AllTimeLeaderboardTable;
+export default AllTimeLeaderboard;
