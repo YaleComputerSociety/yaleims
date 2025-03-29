@@ -3,7 +3,7 @@
 import Dropdown from "@src/components/Faq/Dropdown";
 import Link from "next/link";
 
-export default function FAQ() {
+export default function Faq() {
   const sections = [
     {
       title: "About Us",
