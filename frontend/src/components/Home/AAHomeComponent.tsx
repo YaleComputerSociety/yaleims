@@ -9,7 +9,7 @@ import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
 import AllTimePodiums from "./AllTimePodiums";
-// import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
+import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import PredictionPodiums from "./PredictionPodiums";
 import PredictionLeaderboard from "./PredictionLeaderboard";
 
@@ -62,7 +62,6 @@ const AAHomeComponent: React.FC = () => {
 
     fetchCollegesLeaderboard();
   }, []);
-  console.log(sortedColleges)
 
   const fetchUserLeaderboard = async () => {
     setLoadingUsers(true);
@@ -154,7 +153,7 @@ const AAHomeComponent: React.FC = () => {
       ) : (
         <div>
           <AllTimePodiums />
-          {/* <AllTimeLeaderboardTable /> */}
+          <AllTimeLeaderboardTable />
         </div>
       )}
     </div>
