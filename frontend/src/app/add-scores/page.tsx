@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Matchv2 as Match } from "@src/types/components";
-import MatchCard from "@src/components/AddScores/MatchCard";
+import MatchCard from "@src/components/addScores/MatchCard";
 import LoadingScreen from "@src/components/LoadingScreen";
 import withProtectedRoute from "@src/components/withProtectedRoute";
 

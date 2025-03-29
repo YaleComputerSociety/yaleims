@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import SportCard from "@src/components/About/SportCard";
-import SportModal from "@src/components/About/SportModal";
+import SportCard from "@src/components/about/SportCard";
+import SportModal from "@src/components/about/SportModal";
 
 const fallSports = [
   "Cornhole",

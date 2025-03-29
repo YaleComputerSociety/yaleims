@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AAHomeComponent from "@src/components/Home/AAHomeComponent"
+import AAHomeComponent from "@src/components/home/AAHomeComponent"
 import Link from "next/link";
 
 const HomePage: React.FC = () => {
