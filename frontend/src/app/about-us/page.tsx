@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useEffect } from "react";
-import PersonCard from "@src/components/about/PersonCard";
+import PersonCard from "@src/components/About/PersonCard";
 import Link from "next/link";
 
 const AboutUsPage: React.FC = () => {

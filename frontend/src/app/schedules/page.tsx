@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import LoadingScreen from "@src/components/LoadingScreen";
-import Filters from "@src/components/schedule/Filter";
-import ListView from "@src/components/schedule/ListView";
-import Calendar from "@src/components/schedule/Calendar";
+import Filters from "@src/components/Schedule/Filter";
+import ListView from "@src/components/Schedule/ListView";
+import Calendar from "@src/components/Schedule/Calendar";
 import { FaSpinner } from "react-icons/fa";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 

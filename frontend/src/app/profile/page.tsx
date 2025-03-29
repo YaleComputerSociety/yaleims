@@ -6,7 +6,7 @@ import Image from "next/image";
 import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
 import { Match, Participant } from "@src/types/components";
 import LoadingScreen from "@src/components/LoadingScreen";
-import ListView from "@src/components/profile/ListView";
+import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 

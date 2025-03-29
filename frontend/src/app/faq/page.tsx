@@ -1,6 +1,6 @@
 "use client";
 
-import Dropdown from "@src/components/faq/Dropdown";
+import Dropdown from "@src/components/Faq/Dropdown";
 import { LiaJenkins } from "react-icons/lia";
 import Link from "next/link";
 
