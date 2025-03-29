@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Dropdown from "@src/components/Faq/Dropdown";
+import Dropdown from "@src/components/faq/Dropdown";
 import Link from "next/link";
 
 const AboutIMSPage: React.FC = () => {

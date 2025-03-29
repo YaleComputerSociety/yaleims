@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext } from "react";
 import Image from "next/image.js";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
-import Pagination from "@src/components/Scores/Pagination.jsx";
+import Pagination from "@src/components/scores/Pagination.jsx";
 import MatchesTable from "@src/components/YOdds/MatchTable";
 import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
 import { Match, Bet } from "@src/types/components";
