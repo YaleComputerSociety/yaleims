@@ -1,24 +1,4 @@
 {
-  "hosting": {
-    "public": "dist",
-    "rewrites": [
-      {
-        "source": "/**",
-        "function": "nextApp"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.txt",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store"
-          }
-        ]
-      }
-    ]
-  },
   "functions": {
     "source": "functions"
   }
