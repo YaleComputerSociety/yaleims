@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import LoadingScreen from "../../components/LoadingScreen";
-import Filters from "../../components/Schedule/Filter";
-import ListView from "../../components/Schedule/ListView";
-import Calendar from "../../components/Schedule/Calendar";
+import LoadingScreen from "@src/components/LoadingScreen";
+import Filters from "@src/components/Schedule/Filter";
+import ListView from "@src/components/Schedule/ListView";
+import Calendar from "@src/components/Schedule/Calendar";
 import { FaSpinner } from "react-icons/fa";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 

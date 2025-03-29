@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from "react";
-import LoadingScreen from "../../components/LoadingScreen";
-import CollegeSummaryCard from "../../components/Scores/CollegeSummaryCard";
-import CollegeSummaryCardMobile from "../../components/Scores/CollegeSummaryCardMobile";
-import { FiltersContext } from "../../context/FiltersContext";
-import TableHeader from "../../components/Scores/TableHeader";
-import MatchesTable from "../../components/Scores/MatchTable";
-import { Match, CollegeStats } from "../../types/components";
-import Pagination from "../../components/Scores/Pagination";
+import LoadingScreen from "@src/components/LoadingScreen";
+import CollegeSummaryCard from "@src/components/Scores/CollegeSummaryCard";
+import CollegeSummaryCardMobile from "@src/components/Scores/CollegeSummaryCardMobile";
+import { FiltersContext } from "@src/context/FiltersContext";
+import TableHeader from "@src/components/Scores/TableHeader";
+import MatchesTable from "@src/components/Scores/MatchTable";
+import { Match, CollegeStats } from "@src/types/components";
+import Pagination from "@src/components/Scores/Pagination";
 
 import "react-loading-skeleton/dist/skeleton.css";
 

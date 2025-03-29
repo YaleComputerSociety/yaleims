@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "../../context/UserContext";
+import { useUser } from "@src/context/UserContext";
 import Image from "next/image";
-import { toCollegeAbbreviation } from "../../utils/helpers"; // Ensure this import is correct
-import { Match, Participant } from "../../types/components";
-import LoadingScreen from "../../components/LoadingScreen";
-import ListView from "../../components/Profile/ListView";
+import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
+import { Match, Participant } from "@src/types/components";
+import LoadingScreen from "@src/components/LoadingScreen";
+import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 

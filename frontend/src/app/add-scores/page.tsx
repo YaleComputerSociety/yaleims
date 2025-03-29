@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { Matchv2 as Match } from "@src/types/components";
-import MatchCard from "../../components/AddScores/MatchCard";
-import LoadingScreen from "../../components/LoadingScreen";
-import withProtectedRoute from "../../components/withProtectedRoute";
+import MatchCard from "@src/components/AddScores/MatchCard";
+import LoadingScreen from "@src/components/LoadingScreen";
+import withProtectedRoute from "@src/components/withProtectedRoute";
 
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
