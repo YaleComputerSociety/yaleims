@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-// import Dropdown from "@src/components/Faq/Dropdown";
+import Dropdown from "@src/components/Faq/Dropdown";
 import Link from "next/link";
 
 const AboutIMSPage: React.FC = () => {
@@ -79,7 +79,7 @@ const AboutIMSPage: React.FC = () => {
         </Link>
       </p>
       <br />
-      {/* <div className="space-y-4">
+      <div className="space-y-4">
         {faqs.map((faq, index) => (
           <Dropdown
             key={index}
@@ -88,7 +88,7 @@ const AboutIMSPage: React.FC = () => {
             links={faq.links}
           />
         ))}
-      </div> */}
+      </div>
       <div className="flex gap-1">
         <p>See more FAQs</p>
         <Link className="text-blue-500" href={"/faq"}>
