@@ -6,7 +6,6 @@ interface Link {
   label: string;
   url: string;
 }
-
 interface DropdownProps {
   question: string;
   answer: string;
