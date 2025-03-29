@@ -5,9 +5,9 @@ import "./globals.css";
 import NavBar from "../components/NavBar"; // Adjust path accordingly
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { UserProvider } from "../context/UserContext";
-import FiltersProvider from "@src/context/FiltersContext";
-import { ThemeProvider } from "@src/context/ThemeContext";
-import Footer from "@src/components/Footer";
+import FiltersProvider from "../context/FiltersContext";
+import { ThemeProvider } from "../context/ThemeContext";
+import Footer from "../components/Footer";
 
 const CLIENT_ID =
   "683055403263-8nk173ne786mjmhicqmuod2ufmcdnnec.apps.googleusercontent.com";

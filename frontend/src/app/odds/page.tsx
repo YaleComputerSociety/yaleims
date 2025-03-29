@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState, useContext } from "react";
 import Image from "next/image.js";
-import LoadingScreen from "@src/components/LoadingScreen";
-import { FiltersContext } from "@src/context/FiltersContext";
-import Pagination from "@src/components/Scores/Pagination.jsx";
-import MatchesTable from "@src/components/YOdds/MatchTable.jsx";
-import MatchesTablePending from "@src/components/YOdds/MatchTablePending.jsx";
-import { Match, Bet } from "@src/types/components";
+import LoadingScreen from "../../components/LoadingScreen";
+import { FiltersContext } from "../../context/FiltersContext";
+import Pagination from "../../components/Scores/Pagination.jsx";
+import MatchesTable from "../../components/YOdds/MatchTable.jsx";
+import MatchesTablePending from "../../components/YOdds/MatchTablePending.jsx";
+import { Match, Bet } from "../../types/components";
 import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";

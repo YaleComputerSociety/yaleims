@@ -1,7 +1,6 @@
 "use client";
 
-import Dropdown from "@src/components/Faq/Dropdown";
-import { LiaJenkins } from "react-icons/lia";
+import Dropdown from "../../components/Faq/Dropdown";
 import Link from "next/link";
 
 export default function FAQ() {
