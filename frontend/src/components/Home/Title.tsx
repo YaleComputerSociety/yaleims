@@ -32,7 +32,7 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
               className="focus:outline-none dark:bg-black border-solid border-2 md:p-2 p-1 border-blue-600 md:rounded-2xl rounded-xl text-blue-600 mg:text-sm xs:text-xs font-bold text-[10px]"
             >
               <option value="2024-2025">2024-2025</option>
-              <option value="Prediction">Predictionnssssssssss</option>
+              <option value="Prediction">Predictions</option>
               <option value="All Time">All Time</option>
             </select>
             <p className="mg:pt-5 pt-3 text-blue-600 underline mg:text-sm xs:text-xs text-[10px]">
