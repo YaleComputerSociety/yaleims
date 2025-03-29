@@ -1,6 +1,6 @@
 "use client";
 
-// import Dropdown from "@src/components/Faq/Dropdown";
+import Dropdown from "@src/components/Faq/Dropdown";
 import Link from "next/link";
 
 export default function Faq() {
@@ -184,7 +184,7 @@ export default function Faq() {
             <h2 className="text-lg sm:text-2xl font-semibold mb-4">
               {section.title}
             </h2>
-            {/* <div className="space-y-4 ml-5">
+            <div className="space-y-4 ml-5">
               {section.faqs.map((faq, i) => (
                 <Dropdown
                   key={i}
@@ -193,7 +193,7 @@ export default function Faq() {
                   links={faq.links || []}
                 />
               ))}
-            </div> */}
+            </div>
           </div>
         ))}
       </div>
