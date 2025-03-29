@@ -9,7 +9,7 @@ import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
 import AllTimePodiums from "./AllTimePodiums";
-import AllTimeLeaderboardTable from "./AllTImeLeaderboard";
+import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import PredictionPodiums from "./PredictionPodiums";
 import PredictionLeaderboard from "./PredictionLeaderboard";
 
