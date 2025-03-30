@@ -18,6 +18,7 @@ import { getPendingBets } from "./getPendingBets.js";
 import { getMyAvailablePoints } from "./getMyAvailablePoints.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
 import { getMatchParticipants } from "./getMatchParticipants.js";
+import { currentLeaderboardPublic } from "./publicApis.js";
 
 export {
   getLeaderboard,
@@ -40,4 +41,5 @@ export {
   getUserLeaderboard,
   undoScoreMatch,
   getMatchParticipants,
+  currentLeaderboardPublic
 };
