@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { setCookie, getCookie, deleteCookie } from "cookies-next";
 import { auth, provider, signInWithPopup } from "../../lib/firebase";
-import { onIdTokenChanged } from "firebase/auth";
 
 const UserContext = createContext();
 
