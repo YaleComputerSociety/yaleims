@@ -41,4 +41,4 @@ if (typeof window !== "undefined") {
   console.warn("Skipping Firebase Analytics initialization on server side");
 }
 
-export { auth, provider, signInWithPopup };
+export { app, auth, provider, signInWithPopup };
