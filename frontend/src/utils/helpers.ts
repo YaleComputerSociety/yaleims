@@ -145,6 +145,10 @@ export const sportsMap: SportMap = {
   Dodgeball: 8,
   Broomball: 6,
   Kanjam: 5,
+  "Indoor Soccer": 5,
+  Volleyball: 6,
+  Netball: 7,
+
 };
 
 export const emojiMap: EmojiMap = {
