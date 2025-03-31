@@ -42,7 +42,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const casSignOut = useCallback(async () => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn) {
+      setLoading(false)
+      return;
+    }
 
     setLoading(true)
     try {
@@ -73,7 +76,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (authCheckPromise) {
       return authCheckPromise;
     }
-
+    
+    setLoading(true)
     authCheckPromise = fetch("/api/auth/verify")
       .then(async (response) => {
         if (response.ok) {
