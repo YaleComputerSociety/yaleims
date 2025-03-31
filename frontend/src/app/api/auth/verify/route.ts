@@ -5,15 +5,18 @@ import { cookies } from "next/headers";
 interface DecodedToken {
   netid: string;
   email: string;
-  role?: string;
+  role: string;
+  username: string;
+  college: string;
+  points: string;
+  matches_played: number;
 }
 
 function isValidDecodedToken(decoded: any): decoded is DecodedToken {
   return (
     typeof decoded === "object" &&
     typeof decoded.netid === "string" &&
-    typeof decoded.email === "string" &&
-    (decoded.role === undefined || typeof decoded.role === "string")
+    typeof decoded.email === "string"
   );
 }
 
@@ -44,7 +47,11 @@ export async function GET(): Promise<NextResponse> {
       user: {
         netid: decoded.netid,
         email: decoded.email,
-        role: "admin",
+        role: decoded.role,
+        username: decoded.username,
+        college: decoded.college,
+        points: decoded.points,
+        matches_played: decoded.matches_played,        
       },
     });
   } catch (error) {

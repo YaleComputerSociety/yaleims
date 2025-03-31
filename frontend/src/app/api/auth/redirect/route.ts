@@ -60,7 +60,26 @@ export async function GET(request: Request): Promise<NextResponse> {
       const yaliesJSON = await yaliesResponse.json();
       const email = yaliesJSON[0].email;
 
-      const token = jwt.sign({ netid, email, role: "admin" }, JWT_SECRET, {
+      const response1 = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+      const result1 = await response1.json();
+      const token = jwt.sign({ 
+        netid,
+        email, 
+        role: result1.user.role,
+        username: result1.user.username,
+        college: result1.user.college,
+        points: result1.user.points,
+        matches_played: result1.user.matches_played,
+      }, JWT_SECRET, {
         expiresIn: "7d",
       });
 
