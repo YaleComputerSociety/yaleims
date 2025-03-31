@@ -35,7 +35,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
           body: JSON.stringify({
             matchId: match.id,
             participantType:
-              user.college === match.home_college
+              user?.college === match.home_college
                 ? "home_college_participants"
                 : "away_college_participants",
             user,
@@ -72,7 +72,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
           body: JSON.stringify({
             matchId: match.id,
             participantType:
-              user.college === match.home_college
+              user?.college === match.home_college
                 ? "home_college_participants"
                 : "away_college_participants",
             user, // Pass the full user object
