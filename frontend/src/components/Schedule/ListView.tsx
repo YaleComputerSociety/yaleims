@@ -132,7 +132,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               <div className="ml-4 text-xl font-semibold text-black dark:text-white">
                 {format(date, "EEEE, MMMM d, yyyy")}
               </div>
-              {dateMatches.map((match: Match) => {
+              {dateMatches.map((match: Match, index: number) => {
                 const isSignedUp = userMatches.some(
                   (userMatch) =>
                     new Date(userMatch.timestamp).getTime() ===
@@ -140,7 +140,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                 );
                 return (
                   <MatchListItem
-                    key={match.id}
+                    key={crypto.randomUUID()}
                     match={match}
                     user={user}
                     isSignedUp={isSignedUp}
