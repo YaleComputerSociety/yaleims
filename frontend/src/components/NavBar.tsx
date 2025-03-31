@@ -22,7 +22,7 @@ const NavBar: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { resetFilters } = filtersContext;
   const [isClick, setisClick] = useState(false);
-  const { user, signIn, loading } = useUser();
+  const { user, loading } = useUser();
   const { theme, toggleTheme } = useTheme(); // Use global theme context
 
   const toggleNavbar = () => {
@@ -83,6 +83,7 @@ const NavBar: React.FC = () => {
           </button>
 
           {/* User Profile or Sign-In */}
+          
           <div className="mt-2">
             {loading ? (
               <div className="animate-pulse text-gray-800 dark:text-gray-300">
@@ -91,20 +92,32 @@ const NavBar: React.FC = () => {
             ) : user ? (
               <UserProfileButton name={user.name} />
             ) : (
-              <button
-                onClick={signIn}
-                className={`py-1 px-3 rounded border ${
+              <Link
+                className={`py-1.5 px-3 rounded border ${
                   theme === "light"
                     ? "border-black hover:border-gray-400 hover:text-gray-400"
                     : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
                 }`}
+                href="api/auth/login"
               >
-                Sign in with Google
-              </button>
+                Sign In With CAS
+              </Link>
+              // <button
+              //   onClick={googleAuth}
+              //   className={`py-1 px-3 rounded border ${
+              //     theme === "light"
+              //       ? "border-black hover:border-gray-400 hover:text-gray-400"
+              //       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
+              //   }`}
+              // >
+              //   Sign in with Google
+              // </button>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mobile Navbar */}
       <div
         className={`${
           isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
@@ -156,16 +169,27 @@ const NavBar: React.FC = () => {
               ) : user ? (
                 <UserProfileButton name={user.name} />
               ) : (
-                <button
-                  onClick={signIn}
-                  className={`py-1 px-3 rounded border mt-3 ${
+                <Link
+                  className={`py-1 px-3 mt-2 rounded border ${
                     theme === "light"
                       ? "border-black hover:border-gray-400 hover:text-gray-400"
                       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
                   }`}
+                  href='api/auth/login'
                 >
-                  Sign in with Google
-                </button>
+                  Sign In With CAS
+                </Link>
+
+                // <button
+                //   onClick={googleAuth}
+                //   className={`py-1 px-3 rounded border mt-3 ${
+                //     theme === "light"
+                //       ? "border-black hover:border-gray-400 hover:text-gray-400"
+                //       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
+                //   }`}
+                // >
+                //   Sign in with Google
+                // </button>
               )
             ) : (
               ""
@@ -173,6 +197,8 @@ const NavBar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Harmburger Menu */}
       {isClick && (
         <div className="mg:hidden -mt-4 bg-white dark:bg-black flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
           {links.map((link, index) => (
@@ -195,12 +221,18 @@ const NavBar: React.FC = () => {
                 <UserProfileButton name={user.name} />
               </div>
             ) : (
-              <button
-                onClick={signIn}
-                className="block w-full bg-white dark:bg-yellow-500 text-blue-700 dark:text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-yellow-600 transition duration-200"
+              <Link
+                className="block w-full bg-white items-cente text-center dark:bg-yellow-500 text-blue-700 dark:text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-yellow-600 transition duration-200"
+                href='api/auth/login'
               >
-                Sign in with Google
-              </button>
+                Sign With CAS
+              </Link>
+              // <button
+              //   onClick={googleAuth}
+              //   className="block w-full bg-white dark:bg-yellow-500 text-blue-700 dark:text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-yellow-600 transition duration-200"
+              // >
+              //   Sign in with Google
+              // </button>
             )}
           </div>
         </div>

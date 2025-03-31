@@ -2,7 +2,7 @@ import Image from "next/image";
 import { toCollegeName, emojiMap } from "@src/utils/helpers";
 import { YoddsTableRowProps } from "@src/types/components";
 import { useState } from "react";
-import { useUser } from "../../context/UserContext.jsx";
+import { useUser } from "../../context/UserContext";
 
 const TableRow: React.FC<YoddsTableRowProps> = ({
   match,

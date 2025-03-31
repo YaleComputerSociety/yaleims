@@ -59,6 +59,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       });
       const yaliesJSON = await yaliesResponse.json();
       const email = yaliesJSON[0].email;
+      const name = `${yaliesJSON[0].first_name} ${yaliesJSON[0].last_name}`;
 
       const response1 = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser",
@@ -72,6 +73,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       );
       const result1 = await response1.json();
       const token = jwt.sign({ 
+        name,
         netid,
         email, 
         role: result1.user.role,

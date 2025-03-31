@@ -1,6 +1,6 @@
 import { FC, useState, useEffect } from "react";
 import { emojiMap } from "@src/utils/helpers";
-import { useUser } from "../../context/UserContext.jsx";
+import { useUser } from "../../context/UserContext";
 import Image from "next/image";
 import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";

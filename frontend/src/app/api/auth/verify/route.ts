@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
 interface DecodedToken {
+  name: string;
   netid: string;
   email: string;
   role: string;
@@ -45,6 +46,7 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({
       isLoggedIn: true,
       user: {
+        name: decoded.name,
         netid: decoded.netid,
         email: decoded.email,
         role: decoded.role,

@@ -8,10 +8,11 @@ import Pagination from "@src/components/Scores/Pagination";
 import MatchesTable from "@src/components/YOdds/MatchTable";
 import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
 import { Match, Bet } from "@src/types/components";
-import { useUser } from "@src/context/UserContext.jsx";
+import { useUser } from "@src/context/UserContext";
 import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -31,7 +32,7 @@ const YoddsPage: React.FC = () => {
   const [pendingBets, setPendingBets] = useState<Bet[]>([]);
   const [availablePoints, setAvailablePoints] = useState<number>(0);
 
-  const { user, signIn } = useUser();
+  const { user } = useUser();
   const userEmail = user ? user.email : null;
   const router = useRouter();
   const { setFilter } = useContext(FiltersContext);
@@ -184,15 +185,15 @@ const YoddsPage: React.FC = () => {
     return (
       <div className="text-center h-48 mt-40 w-2/5 mx-auto">
         {" "}
-        <div
+        <Link
           className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
           hover:shadow-lg hover:scale-105 hover:rounded-lg transition-transform duration-300 ease-in-out text-center"
-          onClick={signIn}
+          href="/api/auth/login"
         >
           <span className="text-white dark:text-gray-200 font-medium rounded-lg">
             Sign in with Google to view your yodds
           </span>
-        </div>
+        </Link>
       </div>
     );
   }
