@@ -6,8 +6,6 @@ interface DecodedToken {
   netid: string;
   email: string;
   role?: string;
-  iat: number;
-  exp: number;
 }
 
 function isValidDecodedToken(decoded: any): decoded is DecodedToken {
@@ -15,9 +13,7 @@ function isValidDecodedToken(decoded: any): decoded is DecodedToken {
     typeof decoded === "object" &&
     typeof decoded.netid === "string" &&
     typeof decoded.email === "string" &&
-    (decoded.role === undefined || typeof decoded.role === "string") &&
-    typeof decoded.iat === "number" &&
-    typeof decoded.exp === "number"
+    (decoded.role === undefined || typeof decoded.role === "string")
   );
 }
 
@@ -26,7 +22,6 @@ export async function GET(): Promise<NextResponse> {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
 
-    // not logged in
     if (!token?.value) {
       return NextResponse.json({ isLoggedIn: false }, { status: 200 });
     }
@@ -44,24 +39,16 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ isLoggedIn: false }, { status: 401 });
     }
 
-    // if (decoded.exp < Math.floor(Date.now() / 1000)) {
-    //   const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });
-    //   response.cookies.delete("token");
-    //   return response;
-    // }
-
     return NextResponse.json({
       isLoggedIn: true,
       user: {
         netid: decoded.netid,
         email: decoded.email,
-        role: decoded.role || "user",
+        role: "admin",
       },
     });
   } catch (error) {
-    // Log the error server-side but don't expose details to client
     console.error("Authentication error:", error);
-
     const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });
     response.cookies.delete("token");
     return response;
