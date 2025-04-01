@@ -13,6 +13,9 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
     onFilterChange(event.target.value);
   };
 
+  const [ day, month, year ] = lastUpdated.split('-');
+  const convertedDate = `${month}/${day}/${year}`
+
   return (
     <div>
       <div className="grid grid-cols-2 md:max-w-[80%] sm:max-w-[75%] max-w-[85%] mx-auto pt-7 mb-7 xs:mb-0">
@@ -23,7 +26,7 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
         </h1>
         <div className="hidden xs:grid text-right grid-cols-2">
           <div>
-            <p className="mg:text-sm xs:text-xs text-left pt-2 text-blue-600 underline">Last Updated: {lastUpdated}</p>
+            <p className="mg:text-sm xs:text-xs text-left pt-2 text-blue-600 underline">Last Updated: {convertedDate}</p>
           </div>
           <div>
             <select
