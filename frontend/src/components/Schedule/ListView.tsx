@@ -140,7 +140,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                 );
                 return (
                   <MatchListItem
-                    key={crypto.randomUUID()}
+                    key={index}
                     match={match}
                     user={user}
                     isSignedUp={isSignedUp}
