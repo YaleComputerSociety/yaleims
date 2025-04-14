@@ -270,42 +270,51 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
 
             {/* Coin input and submit button column */}
             <div className="flex flex-col md:justify-start md:-mt-2 md:ml-4 mt-3">
-              {/* Coin input field */}
-              <div className="w-full md:w-48">
-                <input
-                  type="number"
-                  min="0"
-                  max="1000"
-                  value={coins || ""}
-                  onChange={(e) => handleCoinChange(e.target.value)}
-                  disabled={isSubmitted}
-                  placeholder="Enter YCoins"
-                  className="w-full md:w-32 px-2 py-1.5 text-xs mg:text-mg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-900"
-                />
-              </div>
-
-              {/* Submit button */}
-              <button
-                onClick={handleSubmit}
-                disabled={!selectedOption || !coins || isSubmitted || isLoading}
-                className={`mt-2 w-full md:w-32 px-4 py-1.5 rounded-md text-xs mg:text-mg font-medium
-                ${
-                  isSubmitted
-                    ? "bg-green-500 text-white cursor-not-allowed"
-                    : isLoading
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : selectedOption && coins
-                    ? "bg-blue-500 hover:bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }
-              `}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault(); // Prevent default page reload
+                  if (!selectedOption || !coins || isSubmitted || isLoading) return;
+                  handleSubmit();
+                }}
               >
-                {isSubmitted
-                  ? "Prediction Placed"
-                  : isLoading
-                  ? "Placing..."
-                  : "Predict"}
-              </button>
+
+                {/* Coin input field */}
+                <div className="w-full md:w-48">
+                  <input
+                    type="number"
+                    min="0"
+                    max="1000"
+                    value={coins || ""}
+                    onChange={(e) => handleCoinChange(e.target.value)}
+                    disabled={isSubmitted}
+                    placeholder="Enter YCoins"
+                    className="w-full md:w-32 px-2 py-1.5 text-xs mg:text-mg border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-900"
+                  />
+                </div>
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={!selectedOption || !coins || isSubmitted || isLoading}
+                  className={`mt-2 w-full md:w-32 px-4 py-1.5 rounded-md text-xs mg:text-mg font-medium
+                    ${
+                      isSubmitted
+                        ? "bg-green-500 text-white cursor-not-allowed"
+                        : isLoading
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : selectedOption && coins
+                        ? "bg-blue-500 hover:bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    }
+                  `}
+                >
+                  {isSubmitted
+                    ? "Prediction Placed"
+                    : isLoading
+                    ? "Placing..."
+                    : "Predict"}
+                </button>
+              </form>
             </div>
           </div>
         </div>
