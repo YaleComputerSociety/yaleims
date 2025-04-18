@@ -65,6 +65,7 @@ export interface MatchesTableProps {
   filteredMatches: Match[]; // Type the filteredMatches prop as an array of Match
   handleCollegeClick?: (college: string) => void;
   handleSportClick?: (sport: string) => void;
+  updateBetSlip?: (bet: Bet) => Bet[];
   availablePoints?: number;
 }
 
@@ -169,13 +170,13 @@ export interface Participant {
 
 export interface Bet {
   away_college: string;
-  betAmount: number;
   betOdds: number;
   betOption: string;
   home_college: string;
   matchId: string;
   sport: string;
   matchTimestamp: string;
+  betId: number
 }
 
 export interface SportModalProps {
@@ -191,5 +192,6 @@ export interface SportInfo {
 
 export interface SportCardProps {
   sport: string;
+  displayName?: boolean;
   handleClick: (sport: string) => void;
 }

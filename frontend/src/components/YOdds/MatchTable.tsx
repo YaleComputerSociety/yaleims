@@ -1,12 +1,15 @@
 import { groupByDate } from "@src/utils/helpers";
 
 import TableRow from "./TableRow";
+import BetTemplate from "./BetTemplate";
 
 import { MatchesTableProps } from "@src/types/components";
+import { set } from "date-fns";
 
 // Main MatchesTable Component
 const MatchesTable: React.FC<MatchesTableProps> = ({
   filteredMatches,
+  updateBetSlip,
   availablePoints,
 }) => {
   const test = groupByDate(filteredMatches);
@@ -29,12 +32,12 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
             </div>
             <div className="">
               {items.map((match, index) => (
-                <TableRow
+                <BetTemplate
                   key={index}
                   match={match}
-                  availablePoints={availablePoints}
                   isFirst={index === 0} // Check if it's the first row
                   isLast={index === items.length - 1} // Check if it's the last row
+                  updateBetSlip={updateBetSlip}
                 />
               ))}
             </div>

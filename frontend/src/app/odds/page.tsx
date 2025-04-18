@@ -11,6 +11,14 @@ import { Match, Bet } from "@src/types/components";
 import { useUser } from "../../context/UserContext.jsx";
 import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import BetTemplate from "@src/components/YOdds/BetTemplate";
+import { MdClose } from "react-icons/md";
+import BetSlipRow from "@src/components/YOdds/BetSlipRow";
+import { SportCardProps } from "@src/types/components";
+import SportCard from "@src/components/About/SportCard";
+import { sports } from "@src/utils/helpers";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -34,6 +42,28 @@ const YoddsPage: React.FC = () => {
   const userEmail = user ? user.email : null;
 
   const [newUsername, setUsername] = useState("Anonymous");
+  const [viewPendingBets, setViewPendingBets] = useState(false);
+  const [viewBetSlip, setViewBetSlip] = useState(false);
+  const [betslip, setBetSlip] = useState<Bet[]>([]);
+  const [betCount, setBetCount] = useState(0);
+  const [betAmount, setBetAmount] = useState(0);
+
+  const updateBetSlip = (bet: Bet): Bet[] => {
+    const updatedBetSlip = [...betslip, bet];
+    setBetSlip(updatedBetSlip);
+    setBetCount(() => betCount + 1)
+    return updatedBetSlip;
+  };
+  console.log(betslip)
+  console.log(betAmount)
+
+  const removeBet = (bet: Bet): Bet[] => {
+    const updatedBetSlip = betslip.filter((b) => b.betId !== bet.betId);
+    setBetSlip(updatedBetSlip);
+    setBetCount(() => betCount - 1)
+    return updatedBetSlip;
+  }
+  // console.log(pendingBets)
 
   // Construct URL parameters for different query types
   const getQueryParams = (type: string) => {
@@ -139,20 +169,47 @@ const YoddsPage: React.FC = () => {
     fetchPendingBets();
   }, [userEmail]);
 
-  useEffect(() => {
-    if (!pendingBets.length) return;
+  // useEffect(() => {
+  //   if (!pendingBets.length) return;
 
-    setFilteredMatches((prevMatches) => {
-      const filtered = prevMatches.filter((match) => {
-        // Check if there is a prediction for the current match
-        return !pendingBets.some((bet) => bet.matchId == match.id);
-      });
-      return filtered;
-    });
-  }, [pendingBets]);
+  //   setFilteredMatches((prevMatches) => {
+  //     const filtered = prevMatches.filter((match) => {
+  //       // Check if there is a prediction for the current match
+  //       return !pendingBets.some((bet) => bet.matchId == match.id);
+  //     });
+  //     return filtered;
+  //   });
+  // }, [pendingBets]);
+
+  useEffect(() => {
+    const html = document.documentElement;
+  
+    if (viewPendingBets || viewBetSlip) {  
+      html.classList.add("overflow-hidden");
+    } else {
+      html.classList.remove("overflow-hidden");
+    }
+    return () => {
+      html.classList.remove("overflow-hidden");
+    };
+  }, [viewPendingBets, viewBetSlip]);
 
   const handleCollegeClick = (collegeName: string) => {
     // Implementation for betting functionality
+  };
+
+  const submitBet = async () => {
+    
+  }
+
+  const sendToRankings = () => {
+    setFilter({
+      college: "",
+      sport: "",
+      date: "",
+      selected: "Prediction",
+    });
+    router.push("/");
   };
 
   if (isLoading) {
@@ -177,54 +234,80 @@ const YoddsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
-      <div className="flex justify-center items-center mb-4 pt-10">
-        <div
-          className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg "
-          style={{ maxWidth: "250px", minWidth: "200px" }}
-        >
-          <p className="text-center">
-            <span className="text-yellow-300">{newUsername}</span> YCoins:
-          </p>
-          <div className="flex flex-row justify-center items-center gap-1">
-            {coinsLoading ? (
-              <FaSpinner className="animate-spin" />
-            ) : (
-              <p className="text-center text-3xl">
-                {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
-              </p>
-            )}
-            <Image
-              src="/YCoin.png"
-              alt="YCoin"
-              height={35} // Retains the specified height
-              width={35} // Retains the specified width
-              style={{ objectFit: "contain" }} // Proper usage of objectFit
-            />
+    <div className={`min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto relative`}>
+      
+      {/* Rankings Button */}
+
+      <div className="pt-10 flex flex-row justify-between items-center px-4 rounded-lg pb-5">
+        <div className="max-w-[75%] flex flex-col gap-y-6">
+          <div className="flex flex-row gap-x-2 p-x-4 overflow-y-auto invisible-scrollbar">
+            {sports.map((sport, index) => (
+              <SportCard
+                key={sport.id}
+                sport={sport.name}
+                displayName={false}
+                handleClick={() => {
+
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex flex-row items-center justify-between w-full">
+            <button
+              className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={() => {
+                setViewPendingBets(!viewPendingBets);
+              }}
+            >
+              View Pending Bets
+            </button>
+            <button
+              className="top-0 z-50 sticky px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={() => {
+                setViewBetSlip(!viewBetSlip);
+              }}
+            >
+              <p>View Slip {betCount}</p>
+            </button>
+            <button
+              className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={sendToRankings}
+            >
+              See Rankings
+            </button>
+          </div>
+        </div>
+        <div className="items-center max-h-[100%">
+          <div
+            className="p-6 h-[100%] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg"
+            style={{ maxWidth: "250px", minWidth: "200px" }}
+          >
+            <p className="text-center">
+              <span className="text-yellow-300">{newUsername}</span> YCoins:
+            </p>
+            <div className="flex flex-row justify-center items-center gap-1">
+              {coinsLoading ? (
+                <FaSpinner className="animate-spin" />
+              ) : (
+                <p className="text-center text-3xl">
+                  {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
+                </p>
+              )}
+              <Image
+                src="/YCoin.png"
+                alt="YCoin"
+                height={35}
+                width={35}
+                style={{ objectFit: "contain" }}
+              />
+            </div>
           </div>
         </div>
       </div>
-      <p className="text-center text-xs text-gray-500">
-        500 YCoins added every week (Sunday)!
-      </p>
-
-      <p className="md:text-xl font-bold text-center mb-4 pt-6">
-        Pending Predictions
-      </p>
-
+      
       <p className="text-xs text-center text-gray-500">
         Predictions may only be canceled 24 hours or more before the game.
       </p>
-
-      {pendingLoading ? (
-        <div className="flex justify-center items-center mt-4">
-          <FaSpinner className="animate-spin" />
-        </div>
-      ) : (
-        <div className="min-w-full flex-col items-center md:px-20">
-          <MatchesTablePending pendingBets={pendingBets} />
-        </div>
-      )}
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Upcoming Games
@@ -237,11 +320,13 @@ const YoddsPage: React.FC = () => {
         <br></br>
       </p>
 
-      <div className="min-w-full flex-col items-center md:px-20">
+      <div className="min-w-full flex-col items-center md:px-20 relative">
+        {/* <BetTemplate match={filteredMatches[0]} /> */}
         <MatchesTable
           filteredMatches={filteredMatches}
           handleCollegeClick={handleCollegeClick}
           availablePoints={availablePoints}
+          updateBetSlip={updateBetSlip}
         />
         {filteredMatches.length > 0 && (
           <Pagination
@@ -252,8 +337,80 @@ const YoddsPage: React.FC = () => {
           />
         )}
       </div>
-
-      <br></br>
+      {viewPendingBets && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          onClick={() => setViewPendingBets(false)}
+        >
+          <div 
+            className="w-[60%] h-[80%] bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-black bg-custom_gray">
+              <h2 className="text-xl font-semibold">Pending Bets</h2>
+              <button
+                onClick={() => setViewPendingBets(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+              {pendingLoading ? (
+                <div className="flex justify-center items-center">
+                  <FaSpinner className="animate-spin" />
+                </div>
+              ) : (
+                <MatchesTablePending pendingBets={pendingBets} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {viewBetSlip && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          onClick={() => setViewBetSlip(false)}
+        >
+          <div 
+            className="w-[60%] h-[80%] bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-black bg-custom_gray">
+              <h2 className="text-xl font-semibold">Prediction Slip</h2>
+              <button onClick={submitBet}>Submit Bet</button>
+              <input onChange={(e) => setBetAmount(Number(e.target.value))}></input>
+              <button
+                onClick={() => setViewBetSlip(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+              {betslip.length === 0 ? (
+                <div className="flex justify-center items-center flex-col">
+                  <p className="text-gray-600">No bets in the slip</p>
+                  <p className="text-gray-600">Add bets to make a parlay</p>
+                </div>
+              ) : (
+                <div>
+                  {betslip.map((bet, index) => (
+                    <BetSlipRow
+                      key={index}
+                      bet={bet}
+                      isFirst={index === 0}
+                      isLast={index === betslip.length - 1}
+                      removeBet={removeBet}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 };
