@@ -16,6 +16,7 @@ module.exports = {
         primary_light: "#8DB8EA",
         podium_light: "#7FA9DB",
         primary_lightest: "#d0e4fb",
+        custom_gray: "#242526"
       },
       fontFamily: {
         sans: ['Inter var', 'sans-serif'],

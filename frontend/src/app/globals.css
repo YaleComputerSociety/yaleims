@@ -57,3 +57,17 @@ nav {
   background-color: var(--nav-bg); /* Background color from theme */
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: black; /* Tailwind's gray-200 */
+}
+
+.invisible-scrollbar::-webkit-scrollbar {
+  display: none;
+}
