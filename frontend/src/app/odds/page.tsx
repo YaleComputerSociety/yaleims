@@ -388,8 +388,6 @@ const YoddsPage: React.FC = () => {
           >
             <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-black bg-custom_gray">
               <h2 className="text-xl font-semibold">Prediction Slip</h2>
-              <button onClick={submitBet}>Submit Bet</button>
-              <input onChange={(e) => setBetAmount(Number(e.target.value))}></input>
               <button
                 onClick={() => setViewBetSlip(false)}
                 className="text-gray-600 hover:text-white text-xl font-bold"
@@ -397,7 +395,7 @@ const YoddsPage: React.FC = () => {
                 <MdClose />
               </button>
             </div>
-            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
               {betslip.length === 0 ? (
                 <div className="flex justify-center items-center flex-col">
                   <p className="text-gray-600">No bets in the slip</p>
@@ -417,6 +415,19 @@ const YoddsPage: React.FC = () => {
                 </div>
               )}
             </div>
+              <div className="flex justify-between p-2 border-t-2 border-black">
+                <input 
+                  onChange={(e) => setBetAmount(Number(e.target.value))} 
+                  type="number"
+                  className=""
+                />
+                <button
+                  className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                  onClick={submitBet}
+                >
+                  Submit Bet
+                </button>
+              </div>
           </div>
         </div>
       )}

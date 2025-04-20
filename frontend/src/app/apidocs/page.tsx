@@ -5,11 +5,12 @@ const ApiDocs = () => {
         try {
             const cookieStore = await cookies()
             const token = cookieStore.get('token')
-            console.log(token)
+           
             if (!token?.value) {
                 console.error("Token not found")
                 return
             }
+            console.log(token.value)
             const response = await fetch("https://publicapisignup-65477nrg6a-uc.a.run.app", {
                 method: "POST",
                 headers: {
@@ -17,7 +18,7 @@ const ApiDocs = () => {
                     Authorization: `Bearer ${token.value}`
                 },
                 body: JSON.stringify({
-                    apiKey: "eda35",
+                    apiKey: "eda3oprkgpok5",
                 })
             })
             if (!response.ok) {

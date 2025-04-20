@@ -1,6 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import { initializeApp, getApps } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,34 +10,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+let firebaseApp;
 
-// Conditionally initialize Firebase Analytics
-let analytics = null;
-if (typeof window !== "undefined") {
-  isSupported().then((supported) => {
-    if (supported) {
-      analytics = getAnalytics(app);
-
-      // Customize gtag with cookie_flags
-      window.gtag =
-        window.gtag ||
-        function () {
-          window.dataLayer.push(arguments);
-        };
-      window.dataLayer = window.dataLayer || [];
-
-      window.gtag("config", process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, {
-        cookie_flags: "SameSite=None; Secure",
-      });
-    } else {
-      console.warn("Firebase Analytics is not supported in this environment");
-    }
-  });
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
 } else {
-  console.warn("Skipping Firebase Analytics initialization on server side");
+  firebaseApp = getApps()[0]; 
 }
 
-export { app, auth, provider, signInWithPopup };
+const db = getFirestore(firebaseApp);
+
+export { db, firebaseApp };
