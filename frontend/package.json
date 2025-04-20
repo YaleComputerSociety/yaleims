@@ -9,12 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.2",
     "@react-oauth/google": "^0.12.1",
     "cookies-next": "^5.0.2",
     "date-fns": "^3.6.0",
     "firebase": "^10.13.1",
     "firebase-functions": "^6.1.1",
     "googleapis": "^143.0.0",
+    "lucide-react": "^0.501.0",
     "next": "^15.1.2",
     "node": "^20.17.0",
     "passport": "^0.7.0",
@@ -27,7 +29,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/passport": "^1.0.17",
-    "@types/react": "^18.3.12",
+    "@types/react": "^18.3.20",
     "@types/react-big-calendar": "^1.8.12",
     "@types/react-dom": "^18.3.1",
     "@types/xml2js": "^0.4.14",

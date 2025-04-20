@@ -1,4 +1,5 @@
 import React from "react";
+import PopupTrigger from "./MVPPopup";
 
 type TitleProps = {
   selected: string;
@@ -17,13 +18,16 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
   const convertedDate = `${month}/${day}/${year}`
 
   return (
-    <div>
+    <div className="relative pt-7 mb-7">
+      <div className="absolute top-[3.2rem] right-[1.25rem] md:top-[3.4rem] md:right-[5rem] z-10">
+        <PopupTrigger/>
+      </div>
       <div className="grid grid-cols-2 md:max-w-[80%] sm:max-w-[75%] max-w-[85%] mx-auto pt-7 mb-7 xs:mb-0">
-        <h1 className="hidden xs:block text-start ml-3 md:text-5xl text-4xl text-blue-600 font-bold dark:text-white mg:text-6xl relative">
-          {selected === "2024-2025" && "TYNG CUP STANDINGS"}
-          {selected === "All Time" && "ALL-TIME STANDINGS"}
-          {selected === "Prediction" && "PREDICTION STANDINGS"}
-        </h1>
+          <h1 className="hidden xs:block text-start ml-3 md:text-5xl text-4xl text-blue-600 font-bold dark:text-white mg:text-6xl relative">
+            {selected === "2024-2025" && "TYNG CUP STANDINGS"}
+            {selected === "All Time" && "ALL-TIME STANDINGS"}
+            {selected === "Prediction" && "PREDICTION STANDINGS"}
+          </h1>
         <div className="hidden xs:grid text-right grid-cols-2">
           <div>
             <p className="mg:text-sm xs:text-xs text-left pt-2 text-blue-600 underline">Last Updated: {convertedDate}</p>
