@@ -22,15 +22,15 @@ const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
 // Set a timestamp for February 20, 2025 (months are 0-indexed)
-const feb20 = Timestamp.fromDate(new Date(2025, 1, 20));
+const feb20 = Timestamp.fromDate(new Date(2025, 4, 20));
 
-const broomballByes = [{ team: "BF" }, { team: "BR" }];
+const kamJamByes = [{ team: "BF" }, { team: "ES" }];
 // Each sport win is worth 5 points.
-const winPoints = 6;
+const winPoints = 5;
 
 async function addByeMatches() {
   const batch = writeBatch(firestore);
-  let autoIdCounter = 608; // Starting document ID for bye matches; adjust as needed
+  let autoIdCounter = 755; // Starting document ID for bye matches; adjust as needed
 
   // Helper function to process bye entries for a given sport
   const processByes = (byeArray, sportName) => {
@@ -47,13 +47,13 @@ async function addByeMatches() {
         home_college_score: 0,
         away_college_score: 0,
         winner: bye.team,
-        id: autoIdCounter,
+        id: matchId,
       };
 
       // Add the bye match document to the "matches" collection
       const matchDocRef = doc(
         collection(firestore, "matches"),
-        matchId.toString()
+        String(matchId)
       );
       batch.set(matchDocRef, byeMatch);
 
@@ -68,7 +68,7 @@ async function addByeMatches() {
   };
 
   // Process each sport's bye entries
-  processByes(broomballByes, "Broomball");
+  processByes(kamJamByes, "Kanjam");
 
   try {
     await batch.commit();

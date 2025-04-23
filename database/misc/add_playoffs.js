@@ -46,7 +46,7 @@ const convertToTimestamp = (dateStr, timeStr) => {
 // Function to parse CSV and add matches to Firestore
 async function parseAndAddMatches(csvFilePath) {
   const matches = [];
-  let autoIncrementId = 654; // Adjust as needed
+  let autoIncrementId = 759; // Adjust as needed
 
   fs.createReadStream(csvFilePath)
     .pipe(csvParser())
@@ -113,4 +113,4 @@ async function parseAndAddMatches(csvFilePath) {
 }
 
 // Call the function with the path to your CSV file
-parseAndAddMatches("data/matches.csv");
+parseAndAddMatches("data/Kanjam_Schedule.csv");

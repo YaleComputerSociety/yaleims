@@ -1,9 +1,10 @@
 {
   "hosting": {
-    "public": "public",
+    "public": ".next",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
-        "source": "/**",
+        "source": "**",
         "function": "nextApp"
       }
     ],
@@ -12,7 +13,8 @@
         "source": "**/*.txt",
         "headers": [{ "key": "Cache-Control", "value": "no-store" }]
       }
-    ]
+    ],
+    "cleanUrls": true
   },
   "functions": {
     "source": "functions"

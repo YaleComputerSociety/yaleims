@@ -35,7 +35,7 @@ export const sports: Sport[] = [
   {
     id: "14",
     name: "Kanjam",
-    points_for_win: 5,
+    points_for_win: 6,
     emoji: "🥏",
     season: { "2024-2025": "Spring" },
   },
@@ -144,7 +144,7 @@ export const sportsMap: SportMap = {
   CHoops: 5,
   Dodgeball: 8,
   Broomball: 6,
-  Kanjam: 5,
+  Kanjam: 6,
 };
 
 export const emojiMap: EmojiMap = {
