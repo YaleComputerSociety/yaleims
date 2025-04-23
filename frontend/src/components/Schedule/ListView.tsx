@@ -3,13 +3,14 @@ import { useUser } from "@src/context/UserContext";
 import MatchListItem from "./MatchListItem";
 import { Match, CalendarMatchListProps } from "@src/types/components";
 import { format, addDays, isSameDay } from "date-fns";
+import Link from "next/link";
 
 const ListView: React.FC<CalendarMatchListProps> = ({
   matches,
   topDate,
   setTopDate,
 }) => {
-  const { user, signIn } = useUser();
+  const { user } = useUser();
   const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const dateRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -101,15 +102,15 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     <div>
       <div className="space-y-4">
         {!user && (
-          <div
+          <Link
             className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
                 hover:shadow-lg hover:scale-105 hover:rounded-lg transition-transform duration-300 ease-in-out text-center"
-            onClick={signIn}
+            href="/api/auth/login"
           >
             <span className="text-white dark:text-gray-200 font-medium rounded-lg">
-              Sign in with Google to sign up for matches!
+              Sign in with Cas to sign up for matches!
             </span>
-          </div>
+          </Link>
         )}
 
         {allDates.map((date) => {
@@ -131,7 +132,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               <div className="ml-4 text-xl font-semibold text-black dark:text-white">
                 {format(date, "EEEE, MMMM d, yyyy")}
               </div>
-              {dateMatches.map((match: Match) => {
+              {dateMatches.map((match: Match, index: number) => {
                 const isSignedUp = userMatches.some(
                   (userMatch) =>
                     new Date(userMatch.timestamp).getTime() ===
@@ -139,7 +140,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                 );
                 return (
                   <MatchListItem
-                    key={match.id}
+                    key={index}
                     match={match}
                     user={user}
                     isSignedUp={isSignedUp}

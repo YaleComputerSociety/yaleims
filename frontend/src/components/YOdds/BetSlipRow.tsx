@@ -5,26 +5,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";
 import { resolve } from "path";
+import { Bet } from "@src/types/components";
 
-interface TableRowPendingProps {
-  bet: {
-    matchId: string;
-    sport: string;
-    betAmount: number;
-    betOdds: number;
-    betOption: string;
-    matchTimestamp: string;
-    home_college: string;
-    away_college: string;
-  };
+interface BetSlipProps {
+  bet: Bet;
   isFirst: boolean;
   isLast: boolean;
+  removeBet: (bet: Bet) => Bet[];
 }
 
-const TableRowPending: FC<TableRowPendingProps> = ({
+const betSlipRow: FC<BetSlipProps> = ({
   bet,
   isFirst,
   isLast,
+  removeBet
 }) => {
   const [reloadNow, setReloadNow] = useState(false);
   const { user } = useUser();
@@ -36,41 +30,17 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     }
   }, [reloadNow]);
 
-  const getTimeString = (timestamp: string) =>
-    new Date(timestamp).toLocaleString("en-US", {
+  const getTimeString = (timestamp: string) => {
+    console.log("timestamp", timestamp)
+    return new Date(timestamp).toLocaleString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    });
-
-  const handleDeleteBet = async () => {
-    if (!userEmail) return;
-
-    try {
-      const userToken = sessionStorage.getItem("userToken")
-      const response = await fetch(
-        `https://us-central1-yims-125a2.cloudfunctions.net/deleteBet?email=${userEmail}&matchId=${bet.matchId}&sport=${bet.sport}&betAmount=${bet.betAmount}&betOdds=${bet.betOdds}&betOption=${bet.betOption}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
-          },
-        }
-      );
-
-      if (!response.ok) {
-        return response.text().then((message) => {
-          alert(message);
-        });
-      }
-
-      await response.text();
-      setReloadNow(true);
-    } catch (error) {
-      console.error("Failed to delete bet:", error);
-    }
-  };
+    })
+  }
 
   const CollegeDisplay = ({
     college,
@@ -127,40 +97,20 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     <div className="xs:grid sm:grid-cols-2 gap-2 items-center text-xs mr-5">
       <div className="text-right sm:text-center">
         <div className="flex flex-row">
-          <p>Initial Amount: </p>
+          <p>Odds: </p>
           <div className="flex flex-row justify-end">
-            <p>{bet.betAmount}</p>
-            <Image
-              src="/YCoin.png"
-              alt="YCoin"
-              height={17} // Retains the specified height
-              width={17} // Retains the specified width
-              style={{ objectFit: "contain" }} // Proper usage of objectFit
-            />
+            <p>{bet.betOdds}</p>
           </div>
         </div>
-
-        <div className="flex flex-row justify-end">
-          <p>
-            Potential:{" "}
-            {(bet.betAmount * (1 + (1 - bet.betOdds) / bet.betOdds)).toFixed(2)}{" "}
-          </p>
-          <Image
-            src="/YCoin.png"
-            alt="YCoin"
-            height={17} // Retains the specified height
-            width={17} // Retains the specified width
-            style={{ objectFit: "contain" }} // Proper usage of objectFit
-          />
-        </div>
       </div>
-
       <div className="text-right">
         <button
-          onClick={handleDeleteBet}
           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors mt-1"
+          onClick={() => {
+            removeBet(bet);
+          }}
         >
-          Cancel
+          Remove
         </button>
       </div>
     </div>
@@ -175,7 +125,6 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   return (
     <div className={containerClasses}>
       <TimeDisplay />
-
       <div className="flex flex-wrap justify-between items-center">
         {/* Grid container for colleges */}
         <div className="sm:grid lg:grid-cols-[auto_auto] xl:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center text-left px-3 lg:px-6 py-4 text-xs xs:text-sm">
@@ -204,4 +153,4 @@ const TableRowPending: FC<TableRowPendingProps> = ({
   );
 };
 
-export default TableRowPending;
+export default betSlipRow;

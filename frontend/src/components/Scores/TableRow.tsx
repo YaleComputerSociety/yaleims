@@ -67,7 +67,7 @@ const TableRow: React.FC<TableRowProps> = ({
     });
   };
 
-  const CollegeDisplay = ({ college, score, isWinner, points = 0 }: any) => (
+  const CollegeDisplay = ({ college, score, isWinner, points }: any) => (
     <div
       className={`cursor-pointer flex items-center flex-row${
         !isWinner ? "text-gray-400" : ""
@@ -128,7 +128,7 @@ const TableRow: React.FC<TableRowProps> = ({
   const isDraw = home_college_score === away_college_score;
   const homeWins = home_college_score > away_college_score;
   const points = isDraw ? sportsMap[sport] / 2 : sportsMap[sport];
-
+  
   // console.log(correctPercentage, incorrectPercentage);
 
   return (

@@ -1,21 +1,4 @@
 {
-  "hosting": {
-    "public": ".next",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [
-      {
-        "source": "**",
-        "function": "nextApp"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.txt",
-        "headers": [{ "key": "Cache-Control", "value": "no-store" }]
-      }
-    ],
-    "cleanUrls": true
-  },
   "functions": {
     "source": "functions"
   }

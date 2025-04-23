@@ -9,7 +9,7 @@ import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
 import AllTimePodiums from "./AllTimePodiums";
-import AllTimeLeaderboardTable from "./AllTImeLeaderboard";
+import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import PredictionPodiums from "./PredictionPodiums";
 import PredictionLeaderboard from "./PredictionLeaderboard";
 
@@ -121,7 +121,7 @@ const AAHomeComponent: React.FC = () => {
   return (
     <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto">
       {/* Title */}
-      <Title selected={selected} onFilterChange={handleSelectedChange} />
+      <Title selected={selected} lastUpdated={sortedColleges[0].today} onFilterChange={handleSelectedChange} />
 
       {/* Conditional Rendering */}
       {selected === "2024-2025" ? (

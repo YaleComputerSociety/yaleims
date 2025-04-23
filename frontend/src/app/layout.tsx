@@ -2,9 +2,9 @@
 
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NavBar from "../components/NavBar"; // Adjust path accordingly
+import NavBar from "@src/components/NavBar"; // Adjust path accordingly
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { UserProvider } from "../context/UserContext";
+import { UserProvider } from "@src/context/UserContext";
 import FiltersProvider from "@src/context/FiltersContext";
 import { ThemeProvider } from "@src/context/ThemeContext";
 import Footer from "@src/components/Footer";

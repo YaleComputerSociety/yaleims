@@ -23,7 +23,7 @@ const sportColors: ColorMap = {
   Netball: "border-[#AF2819]",
 };
 
-const sportDisplayName: ColorMap = {
+export const sportDisplayName: ColorMap = {
   Cornhole: "Cornhole",
   Soccer: "Soccer",
   Spikeball: "Spikeball",
@@ -40,20 +40,21 @@ const sportDisplayName: ColorMap = {
   Netball: "Netball",
 };
 
-const SportCard: React.FC<SportCardProps> = ({ sport, handleClick }) => {
+const SportCard: React.FC<SportCardProps> = ({ sport, handleClick, displayName }) => {
   return (
-    <div className="flex flex-col items-center space-y-2 py-5">
+    <div className="flex flex-col items-center space-y-2">
       <div
         onClick={() => handleClick(sport)}
-        className={`p-5 rounded-full border-8 text-3xl cursor-pointer ${
+        className={`p-5 rounded-full border-8 text-2xl cursor-pointer ${
           sportColors[sport] || "border-blue-400"
         }`}
       >
         {emojiMap[sport]}
       </div>
+      {displayName && (
       <div className="text-center whitespace-pre-line">
         {sportDisplayName[sport]}
-      </div>
+      </div>)}
     </div>
   );
 };

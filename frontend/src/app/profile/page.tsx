@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "../../context/UserContext";
+import { useUser } from "@src/context/UserContext";
 import Image from "next/image";
 import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
 import { Match, Participant } from "@src/types/components";
@@ -11,7 +11,7 @@ import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 
 const Profile = () => {
-  const { user, loading, signOut, setUser } = useUser();
+  const { user, loading, casSignOut, setUser } = useUser();
   const [matches, setMatches] = useState<Match[]>([]);
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -146,10 +146,12 @@ const Profile = () => {
         const data = await response.json();
         if (data.success) {
           // Update the user context
-          setUser({
-            ...user,
-            username: data.username, // Update the username only
-          });
+          if (setUser && user) {
+            setUser({
+              ...user,
+              username: data.username, // Update the username only
+            });
+          }
           setIsEditing(false); // Close the popup
         } else {
           setError("Failed to update username. Please try again.");
@@ -168,7 +170,7 @@ const Profile = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await casSignOut();
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -239,7 +241,7 @@ const Profile = () => {
 
             <div className="hidden sm:block">
               <button
-                onClick={handleLogout}
+                onClick={casSignOut}
                 className="mt-6 py-2 px-4 bg-red-500 text-white rounded-md"
               >
                 Log Out
