@@ -4,13 +4,14 @@ import { Match, Bet } from "@src/types/components";
 import { useState } from "react";
 import { useUser } from "../../context/UserContext";
 import crypto from 'crypto';
+import { useBetState } from "../../context/BetContext";
 
 const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: { match: Match, setSelectedOption: Function, selectedOption: Bet | null, 
   updateBetSlip?: (bet: Bet) => Bet[]}) => {
   const { home_college, away_college } = match;
   
   const { user } = useUser();
-  const [isBetAdded, setIsBetAdded] = useState(false);
+  const [isBetAdded, setIsBetAdded] = useBetState();
   const [isLoading, setIsLoading] = useState(false);
 
   // const RadioOption = ({ value, college = null, label }: any) => (
@@ -146,13 +147,12 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
               if (selectedOption) {
                 updateBetSlip && updateBetSlip(selectedOption);
                 setSelectedOption(null)
+                setIsBetAdded(true)
               }}}
             className={`mt-2 w-full md:w-32 px-4 py-1.5 rounded-md text-xs mg:text-mg font-medium
             ${
               isBetAdded
                 ? "bg-green-500 text-white cursor-not-allowed"
-                : isLoading
-                ? "bg-gray-400 text-white cursor-not-allowed"
                 : selectedOption
                 ? "bg-blue-500 hover:bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
@@ -161,8 +161,6 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
           >
             {isBetAdded
               ? "In Bet Slip!"
-              : isLoading
-              ? "Placing..."
               : "Add to Bet Slip"}
           </button>
         </div>

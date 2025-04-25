@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";
 import { resolve } from "path";
 import { Bet } from "@src/types/components";
+import { useBetState } from "../../context/BetContext";
 
 interface BetSlipProps {
   bet: Bet;
@@ -22,6 +23,7 @@ const betSlipRow: FC<BetSlipProps> = ({
 }) => {
   const [reloadNow, setReloadNow] = useState(false);
   const { user } = useUser();
+  const [isBetAdded, setIsBetAdded] = useBetState();
   const userEmail = user?.email;
 
   useEffect(() => {
@@ -108,6 +110,7 @@ const betSlipRow: FC<BetSlipProps> = ({
           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors mt-1"
           onClick={() => {
             removeBet(bet);
+            setIsBetAdded(false);
           }}
         >
           Remove

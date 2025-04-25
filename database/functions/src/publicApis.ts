@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import {randomBytes} from "crypto";
 
 interface DecodedToken {
   name: string;
@@ -37,16 +38,18 @@ export const publicApiSignup = functions.https.onRequest((req, res) => {
                 }
 
       const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload as DecodedToken;
-      const apiKey = req.body.apiKey;
+      
+      const description = req.body.description;
+      const apiKey = randomBytes(32).toString("hex");
 
-      await db.collection("user_api_keys").doc(decoded.email).set({
-        apiKey: apiKey,
+      const userRef = db.collection("users").doc(decoded.email);
+      await userRef.collection("api_keys").doc(description).set({
+        description: description, apiKey: apiKey, createdAt: admin.firestore.Timestamp.now()
+      });
+
+      await db.collection("user_api_keys").doc(apiKey).set({
         email: decoded.email,
-        username: decoded.username,
-        college: decoded.college,
-        netid: decoded.netid,
-        name: decoded.name,
-        createdAt: admin.firestore.Timestamp.now(),
+        uses: 0,
       });
 
       return res.status(200).json({ message: "Successfully signed up for public APIs", apiKey: apiKey });
