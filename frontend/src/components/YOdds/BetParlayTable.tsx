@@ -8,14 +8,14 @@ import { BetParlay, BetParlayTableProps } from "@src/types/components";
 const BetParlayTable: React.FC<BetParlayTableProps> = ({ parlays }) => {
   if (!parlays.length) {
     return (
-      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+      <p className="text-center pt-4 text-sm text-gray-500 dark:text-gray-400">
         No bets found.
       </p>
     );
   }
 
   return (
-    <div className="space-y-6 pt-4 pb-4">
+    <div className="space-y-6 pt-4 pb-4 ">
       {parlays.map((parlay) => {
         const { betId, createdAt, betArray, betAmount, totalOdds, won } = parlay;
         const returnValue = won
@@ -23,7 +23,7 @@ const BetParlayTable: React.FC<BetParlayTableProps> = ({ parlays }) => {
           : 0 : null;
 
         return (
-          <div key={betId} className="rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div key={betId} className="rounded-lg border border-gray-200 dark:border-gray-700  shadow-sm">
             {/* header */}
             <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
               <h2 className="font-semibold text-gray-800 dark:text-gray-200">

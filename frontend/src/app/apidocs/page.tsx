@@ -28,7 +28,7 @@ const ApiDocs = () => {
         });
     
         return () => unsubscribe();
-    }, [description])
+    }, [user?.email])
     console.log("apiKeys", apiKeys)
 
     return (

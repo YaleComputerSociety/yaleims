@@ -19,27 +19,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <UserProvider>
-      <FiltersProvider>
-        <ThemeProvider>
-          <GoogleOAuthProvider clientId={CLIENT_ID}>
-            <html lang="en">
-              <head>
-                <title>Yale IMs</title>
-                <link rel="icon" href="/favicon.ico" />
-                <meta property="og:title" content="Yale IMs" />
-              </head>
+    <ThemeProvider>
+      <UserProvider>
+        <FiltersProvider>
+            <GoogleOAuthProvider clientId={CLIENT_ID}>
+              <html lang="en">
+                <head>
+                  <title>Yale IMs</title>
+                  <link rel="icon" href="/favicon.ico" />
+                  <meta property="og:title" content="Yale IMs" />
+                </head>
 
-              <body className={`${inter.className} min-h-screen`}>
-                <NavBar />
-                <div className="mb-10"></div>
-                {children}
-                <Footer />
-              </body>
-            </html>
-          </GoogleOAuthProvider>
-        </ThemeProvider>
-      </FiltersProvider>
-    </UserProvider>
+                <body className={`${inter.className} min-h-screen`}>
+                  <NavBar />
+                  <div className="mb-10"></div>
+                  {children}
+                  <Footer />
+                </body>
+              </html>
+            </GoogleOAuthProvider>
+        </FiltersProvider>
+      </UserProvider>
+    </ThemeProvider>
   );
 }

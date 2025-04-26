@@ -17,8 +17,8 @@ import { MdClose } from "react-icons/md";
 import BetSlipRow from "@src/components/YOdds/BetSlipRow";
 import SportCard from "@src/components/About/SportCard";
 import { sports } from "@src/utils/helpers";
-import { SharedBetProvider } from "@src/context/BetContext";
 import BetParlayTable from "@src/components/YOdds/BetParlayTable";
+import { totalOddsCalc } from '@src/utils/helpers';
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -51,10 +51,13 @@ const YoddsPage: React.FC = () => {
   const [betslip, setBetSlip] = useState<Bet[]>([]);
   const [betCount, setBetCount] = useState(0);
   const [betAmount, setBetAmount] = useState<number | ''>('');
+  const [totalOdds, setTotalOdds] = useState<number>(1);
 
+  // console.log(totalOdds)
   const updateBetSlip = (bet: Bet): Bet[] => {
     const updatedBetSlip = [...betslip, bet];
     setBetSlip(updatedBetSlip);
+    setTotalOdds(totalOddsCalc(updatedBetSlip));
     setBetCount(() => betCount + 1)
     return updatedBetSlip;
   };
@@ -64,6 +67,7 @@ const YoddsPage: React.FC = () => {
   const removeBet = (bet: Bet): Bet[] => {
     const updatedBetSlip = betslip.filter((b) => b.betId !== bet.betId);
     setBetSlip(updatedBetSlip);
+    setTotalOdds(totalOddsCalc(updatedBetSlip));
     setBetCount(() => betCount - 1)
     return updatedBetSlip;
   }
@@ -89,7 +93,8 @@ const YoddsPage: React.FC = () => {
       pageSize: "20",
       sortOrder: "asc",
       college: "All",
-      date: "future",
+      date: "All",
+      sport: filter.sport ? filter.sport : "All",
     };
 
     if (type === "next" && lastVisible) {
@@ -222,7 +227,7 @@ const YoddsPage: React.FC = () => {
 
     fetchPastBets();
   }, [userEmail]);
-  console.log(pastBets)
+  // console.log(pastBets)
 
   // useEffect(() => {
   //   if (!pendingBets.length) return;
@@ -253,7 +258,17 @@ const YoddsPage: React.FC = () => {
     // Implementation for betting functionality
   };
 
-  const submitBet = async () => {
+  const addBet = async ({
+    email,
+    betAmount,
+    betArray,
+    totalOdds,
+  }: {
+    email: string;
+    betAmount: number;
+    betArray: Bet[];
+    totalOdds: number;
+  }) => {
     try {
       const userToken = sessionStorage.getItem("userToken");
       const response = await fetch(
@@ -265,9 +280,10 @@ const YoddsPage: React.FC = () => {
             Authorization: `Bearer ${userToken}`,
           },
           body: JSON.stringify({
-            email: userEmail,
-            betAmount,
-            bets: betslip,
+            email: email,
+            betAmount: betAmount,
+            betsArray: betArray,
+            totalOdds: totalOdds,
           }),
         }
       );
@@ -281,8 +297,44 @@ const YoddsPage: React.FC = () => {
     } finally {
       setBetAmount('')
       setBetSlip([])
+      setTotalOdds(1)
     }
   }
+
+  const handleSubmitBet = async () => {
+    if (!user?.email) {
+      alert("Please log in to place a bet");
+      return;
+    }
+
+    if (!betslip || betslip.length <= 0) {
+      alert("Please add bets before submitting");
+      return;
+    }
+    
+    if (betAmount === '') {
+      alert("Please enter a bet amount");
+      return;    }
+
+    if (!availablePoints || availablePoints < 1) {
+      alert("You don't have enough YCoins");
+      return;
+    } else if (betAmount && (betAmount < 1 || betAmount > Math.min(250, availablePoints))) {
+      alert(`Value must be between 1 and ${Math.min(250, availablePoints)}.`);
+      return;
+    }
+
+    try {
+      await addBet({
+        email: user.email,
+        betAmount: betAmount ? betAmount : 0,
+        betArray: betslip,
+        totalOdds: totalOdds,
+      });
+    } catch (error) {
+      alert("Failed to place bet. Please try again.");
+    }
+  };
 
   const sendToRankings = () => {
     setFilter({
@@ -315,10 +367,9 @@ const YoddsPage: React.FC = () => {
     );
   }
 
-  // console.log(filter)
+  // console.log(filtered)
 
   return (
-    <SharedBetProvider>
       <div className={`min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto relative`}>
         
         {/* Rankings Button */}
@@ -462,8 +513,9 @@ const YoddsPage: React.FC = () => {
                   <div className="flex justify-center items-center">
                     <FaSpinner className="animate-spin" />
                   </div>
-                ) : (
-                  <BetParlayTable parlays={pastBets} />
+                ) : pastBets.length > 0 ? 
+                  (<BetParlayTable parlays={pastBets} />) : 
+                  (<div className="text-sm pt-4 items-center">No Bet History.</div>
                 )}
               </div>
             </div>
@@ -517,11 +569,11 @@ const YoddsPage: React.FC = () => {
                   <MdClose />
                 </button>
               </div>
-              <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
+              <div className="pl-4 pr-4 pt-4 overflow-y-auto custom-scrollbar h-full">
                 {betslip.length === 0 ? (
                   <div className="flex justify-center items-center flex-col">
-                    <p className="text-gray-600">No bets in the slip</p>
-                    <p className="text-gray-600">Add bets to make a parlay</p>
+                    <p className="text-gray-500 text-sm">No bets in the slip</p>
+                    <p className="text-gray-500 text-sm">Add bets to make a parlay</p>
                   </div>
                 ) : (
                   <div>
@@ -538,21 +590,41 @@ const YoddsPage: React.FC = () => {
                 )}
               </div>
                 <div className="flex justify-between p-2 border-t-2 dark:border-black border-gray-300">
-                  <input 
-                    onChange={(e) => setBetAmount(() => Number(e.target.value))}
-                    type="number"
-                    min={0}
-                    max={250}
-                    value={betAmount || ''}
-                    className="rounded-md w-[40%] p-2 placeholder-gray-400 text-black bg-gray-300 dark:text-white dark:bg-black focus:outline-none text-sm focus:ring-2 focus:ring-blue-400"
-                    placeholder="Enter bet amount"
-                  />
-                  <button
-                    className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                    onClick={submitBet}
-                  >
-                    Submit Bet
-                  </button>
+                  <div className="flex flex-row items-center w-[70%] gap-x-2">
+                    <input 
+                      onChange={(e) => setBetAmount(() => Number(e.target.value))}
+                      type="number"
+                      min={0}
+                      max={250}
+                      value={betAmount || ''}
+                      className="rounded-md w-[20%] absolute p-2 placeholder-gray-400 text-black bg-gray-300 dark:text-white dark:bg-black focus:outline-none text-sm focus:ring-2 focus:ring-blue-400"
+                      placeholder="Enter bet amount"
+                    />
+                    <div className="pl-[50%] text-right text-xs sm:text-center gap-x-2 flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
+                      <p>Total Odds: </p>
+                      <div className="flex flex-row justify-end">
+                        <p>{(totalOdds).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right text-xs sm:text-center gap-x-2 flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
+                      <p>Potential Winnings: </p>
+                      { betAmount !== "" &&
+                      <div className="flex flex-row justify-end">
+                        <p>{(betAmount * totalOdds).toFixed(2)}</p>
+                      </div>
+                      }
+                    </div>
+                    
+                  </div>
+                  <div>
+                    <button
+                      className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                      onClick={handleSubmitBet}
+                    >
+                      Submit Bet
+                    </button>
+                  </div>
                 </div>
             </div>
           </div>
@@ -560,7 +632,6 @@ const YoddsPage: React.FC = () => {
         
         
       </div>
-    </SharedBetProvider>
 
     // <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
 

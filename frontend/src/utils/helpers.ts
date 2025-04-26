@@ -132,6 +132,9 @@ export const sports: Sport[] = [
   },
 ];
 
+export const totalOddsCalc = (bets: { betOdds: number }[]): number =>
+  bets.reduce((prod, { betOdds }) => prod * betOdds, 1);
+
 export const sportsMap: SportMap = {
   "Flag Football": 6,
   Spikeball: 6,

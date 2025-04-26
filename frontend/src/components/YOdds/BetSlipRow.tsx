@@ -6,7 +6,6 @@ import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";
 import { resolve } from "path";
 import { Bet } from "@src/types/components";
-import { useBetState } from "../../context/BetContext";
 
 interface BetSlipProps {
   bet: Bet;
@@ -23,7 +22,6 @@ const betSlipRow: FC<BetSlipProps> = ({
 }) => {
   const [reloadNow, setReloadNow] = useState(false);
   const { user } = useUser();
-  const [isBetAdded, setIsBetAdded] = useBetState();
   const userEmail = user?.email;
 
   useEffect(() => {
@@ -64,10 +62,10 @@ const betSlipRow: FC<BetSlipProps> = ({
       : "";
 
     return (
-      <div className="text-xs xs:text-sm w-40 sm:w-52">
+      <div className="text-xs xs:text-xs w-30 sm:w-40">
         <p
-          className={`flex items-center  p-2 ${bgColor} ${
-            bgColor ? "rounded-xl dark:text-black" : ""
+          className={`flex items-center p-1 ${bgColor} ${
+            bgColor ? "rounded-lg dark:text-black" : ""
           }`}
         >
           <Image
@@ -85,7 +83,7 @@ const betSlipRow: FC<BetSlipProps> = ({
   };
 
   const TimeDisplay = () => (
-      <div className="flex items-center justify-between px-3 py-2 text-xs font-extralight text-gray-900 dark:text-gray-400 w-full">
+      <div className="flex items-center justify-between px-3 pt-2 text-xs font-extralight text-gray-900 dark:text-gray-400 w-full">
         <div className="flex items-center space-x-2">
           <span>
             {getTimeString(bet.matchTimestamp)} | {bet.sport}
@@ -96,21 +94,18 @@ const betSlipRow: FC<BetSlipProps> = ({
   );
 
   const BetDetails = () => (
-    <div className="xs:grid sm:grid-cols-2 gap-2 items-center text-xs mr-5">
-      <div className="text-right sm:text-center">
-        <div className="flex flex-row">
+    <div className="text-xs flex flex-row items-center gap-x-2">
+      <div className="text-right sm:text-center flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
           <p>Odds: </p>
           <div className="flex flex-row justify-end">
-            <p>{bet.betOdds}</p>
+            <p>{(bet.betOdds).toFixed(2)}</p>
           </div>
-        </div>
       </div>
       <div className="text-right">
         <button
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors mt-1"
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg transition-colors"
           onClick={() => {
             removeBet(bet);
-            setIsBetAdded(false);
           }}
         >
           Remove
@@ -128,9 +123,9 @@ const betSlipRow: FC<BetSlipProps> = ({
   return (
     <div className={containerClasses}>
       <TimeDisplay />
-      <div className="flex flex-wrap justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center p-2">
         {/* Grid container for colleges */}
-        <div className="sm:grid lg:grid-cols-[auto_auto] xl:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center text-left px-3 lg:px-6 py-4 text-xs xs:text-sm">
+        <div className="sm:grid lg:grid-cols-[auto_auto] xl:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center text-left  text-xs xs:text-sm">
           <CollegeDisplay
             college={bet.home_college}
             isSelected={bet.betOption === bet.home_college}
@@ -148,7 +143,7 @@ const betSlipRow: FC<BetSlipProps> = ({
         </div>
 
         {/* Ensure this div is pushed to the end */}
-        <div className="col-span-2 ml-auto mb-3 -mt-2 xl:mt-0">
+        <div className="">
           <BetDetails />
         </div>
       </div>
