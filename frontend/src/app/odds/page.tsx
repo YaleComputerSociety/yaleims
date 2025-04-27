@@ -353,15 +353,15 @@ const YoddsPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="text-center h-48 mt-40 w-2/5 mx-auto">
+      <div className="text-center h-48 mt-40 w-[80%] md:w-2/5 mx-auto">
         {" "}
         <Link
           className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
           hover:shadow-lg hover:scale-105 hover:rounded-lg transition-transform duration-300 ease-in-out text-center"
           href="/api/auth/login"
         >
-          <span className="text-white dark:text-gray-200 font-medium rounded-lg">
-            Sign in with CAS to view your yodds
+          <span className="text-white md:text-md text-sm dark:text-gray-200 font-medium rounded-lg">
+            Sign in with CAS to view yodds
           </span>
         </Link>
       </div>
@@ -371,14 +371,14 @@ const YoddsPage: React.FC = () => {
   // console.log(filtered)
 
   return (
-      <div className={`min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto relative`}>
+      <div className={`min-h-screen md:p-8 p-3 flex-col items-center lg:w-[90%] lg:mx-auto relative`}>
         
         {/* Rankings Button */}
 
-        <div className="pt-10 flex flex-row justify-between items-center px-4 rounded-lg pb-5">
-          <div className="max-w-[75%] flex flex-col gap-y-6">
+        <div className="pt-10 flex flex-col xs:flex-row justify-between gap-x-4 gap-y-2 items-center px-4 rounded-lg pb-5">
+          <div className="max-w-[100%] xs:max-w-[75%] flex flex-col gap-y-2 md:gap-y-6">
             <div 
-              className="flex flex-row py-3 px-3 gap-x-3 overflow-y-auto invisible-scrollbar"
+              className="flex flex-row px-2 py-3 pb-5 md:py-3 md:px-3 gap-x-3 overflow-y-auto invisible-scrollbar"
             >
               {sports.map((sport, index) => (
                 <SportCard
@@ -390,9 +390,9 @@ const YoddsPage: React.FC = () => {
                 />
               ))}
             </div>
-            <div className="flex flex-row items-center justify-between w-full">
+            <div className="flex flex-row items-start gap-x-2 justify-between w-full">
               <button
-                className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
                 onClick={() => {
                   setViewPendingBets(!viewPendingBets);
                 }}
@@ -400,7 +400,7 @@ const YoddsPage: React.FC = () => {
                 Pending Bets {pendingBets.length}
               </button>
               <button
-                className="top-0 sticky px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
                 onClick={() => {
                   setViewBetSlip(!viewBetSlip);
                 }}
@@ -408,7 +408,7 @@ const YoddsPage: React.FC = () => {
                 <p>View Slip {betCount}</p>
               </button>
               <button
-                className="top-0 sticky px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
                 onClick={() => {
                   setViewBetHistory(!viewBetHistory);
                 }}
@@ -416,7 +416,7 @@ const YoddsPage: React.FC = () => {
                 <p>View History {pastBets.length}</p>
               </button>
               <button
-                className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
                 onClick={sendToRankings}
               >
                 See Rankings
@@ -425,8 +425,8 @@ const YoddsPage: React.FC = () => {
           </div>
           <div className="items-center max-h-[100%">
             <div
-              className="p-6 h-[100%] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg"
-              style={{ maxWidth: "250px", minWidth: "200px" }}
+              className="p-3 mg:p-6 h-[100%] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xs xs:text-sm mg:text-xl rounded-xl shadow-lg"
+              style={{ maxWidth: "250px", minWidth: "100px" }}
             >
               <p className="text-center">
                 <span className="text-yellow-300">{newUsername}</span> YCoins:
@@ -435,15 +435,15 @@ const YoddsPage: React.FC = () => {
                 {coinsLoading ? (
                   <FaSpinner className="animate-spin" />
                 ) : (
-                  <p className="text-center text-3xl">
+                  <p className="text-center text-sm md:text-lg mg:text-3xl">
                     {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
                   </p>
                 )}
                 <Image
                   src="/YCoin.png"
                   alt="YCoin"
-                  height={35}
-                  width={35}
+                  height={30}
+                  width={30}
                   style={{ objectFit: "contain" }}
                 />
               </div>
@@ -474,7 +474,7 @@ const YoddsPage: React.FC = () => {
           <></>
         )}
 
-        <div className="min-w-full flex-col items-center md:px-20 relative">
+        <div className="min-w-full flex-col items-center px-5 lg:px-15 relative">
           {/* <BetTemplate match={filteredMatches[0]} /> */}
           <MatchesTable
             filteredMatches={filteredMatches}
@@ -497,7 +497,7 @@ const YoddsPage: React.FC = () => {
             onClick={() => setViewBetHistory(false)}
           >
             <div 
-              className="w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+              className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
@@ -528,7 +528,7 @@ const YoddsPage: React.FC = () => {
             onClick={() => setViewPendingBets(false)}
           >
             <div 
-              className="w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+              className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
@@ -558,7 +558,7 @@ const YoddsPage: React.FC = () => {
             onClick={() => setViewBetSlip(false)}
           >
             <div 
-              className="w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+              className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">

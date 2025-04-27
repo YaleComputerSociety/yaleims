@@ -76,7 +76,7 @@ const BetTemplate = (
         <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700">
           {getTimeString(timestamp).length < 8 ? <>&nbsp;{getTimeString(timestamp)}</> : getTimeString(timestamp)}
         </div>
-        <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.3fr_0.2fr_0.3fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
+        <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid xs:grid-cols-[0.3fr_0.2fr_0.3fr] grid-rows-1 grid-flow-col gap-2 items-center">
           <CollegeDisplay college={home_college} />
           <div>VS</div>
           <CollegeDisplay college={away_college} />
@@ -90,7 +90,7 @@ const BetTemplate = (
             {sport}
           </div>
         </div>
-        <div className="sm:block text-center text-xs py-1 w-[100px] flex flex-col border-l border-gray-200 dark:border-gray-700">
+        <div className="hidden sm:block text-center text-xs py-1 w-[100px] flex-col border-l border-gray-200 dark:border-gray-700">
           <div>{type}</div>
           {type == "Regular" ? "Season" : "Round"}
         </div>

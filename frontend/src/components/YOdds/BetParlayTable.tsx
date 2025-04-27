@@ -25,8 +25,8 @@ const BetParlayTable: React.FC<BetParlayTableProps> = ({ parlays }) => {
         return (
           <div key={betId} className="rounded-lg border border-gray-200 dark:border-gray-700  shadow-sm">
             {/* header */}
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
-              <h2 className="font-semibold text-gray-800 dark:text-gray-200">
+            <div className="flex xs:flex-row flex-col gap-x-2 items-start xs:items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+              <h2 className="font-semibold mg:text-sm text-xs text-gray-800 dark:text-gray-200">
                 Bet&nbsp;#<span className="tracking-wider">{betId}</span>
               </h2>
               <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -63,7 +63,7 @@ const BetParlayTable: React.FC<BetParlayTableProps> = ({ parlays }) => {
             </ul>
 
             {/* footer with stake & return */}
-            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-b-lg text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-b-lg text-xs xs:text-sm text-gray-600 dark:text-gray-400">
               <span>
                 Bet amount:&nbsp;<span className="font-semibold">{betAmount}</span>
               </span>
