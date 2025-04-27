@@ -14,7 +14,7 @@ interface BetSlipProps {
   removeBet: (bet: Bet) => Bet[];
 }
 
-const betSlipRow: FC<BetSlipProps> = ({
+const BetSlipRow: FC<BetSlipProps> = ({
   bet,
   isFirst,
   isLast,
@@ -151,4 +151,4 @@ const betSlipRow: FC<BetSlipProps> = ({
   );
 };
 
-export default betSlipRow;
+export default BetSlipRow;
