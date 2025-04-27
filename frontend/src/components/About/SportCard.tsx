@@ -83,6 +83,9 @@ const SportCard: React.FC<SportCardProps> = ({ sport, handleClick, displayName, 
         }
       >
         {emojiMap[sport]}
+        <div className="absolute text-xs transition-opacity bg-blue-100 border border-blue-600 dark:bg-black dark:text-white dark:border-black rounded opacity-0 group-hover:opacity-100">
+          {sport}
+        </div>
       </div>
       {displayName && (
       <div className="text-center whitespace-pre-line">

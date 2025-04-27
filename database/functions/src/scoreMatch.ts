@@ -6,18 +6,69 @@ const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
 
-interface Prediction {
-  betOption: string;
-  betAmount: number;
-  betOdds: number;
-}
+// interface Prediction {
+//   betOption: string;
+//   betAmount: number;
+//   betOdds: number;
+// }
 
-interface PredictionsMap {
-  [email: string]: Prediction;
-}
+// interface PredictionsMap {
+//   [email: string]: Prediction;
+// }
+
+const settleParlayLegs = async (matchId: string, winningTeam: string) => {
+  const legsSnap = await db
+    .collectionGroup("betArray")
+    .where("matchId", "==", matchId)
+    .where("won", "==", null)
+    .get();
+
+  await Promise.all(
+    legsSnap.docs.map(async (legDoc) =>
+      db.runTransaction(async (tx) => {
+        const legRef = legDoc.ref;
+        const leg = legDoc.data() as any;
+
+        const parlayRef = legRef.parent.parent!;
+        const userRef = parlayRef.parent.parent!;
+
+        const parlaySnap = await tx.get(parlayRef);
+        const parlay = parlaySnap.data()!;
+
+        const legWon =
+          (winningTeam === "Draw" && leg.betOption === "Draw") ||
+          (winningTeam === leg.home_college && leg.betOption === leg.home_college) ||
+          (winningTeam === leg.away_college && leg.betOption === leg.away_college);
+
+        tx.update(legRef, {winner:winningTeam, won: legWon });
+
+        const currentCashed = (parlay.currentCashed ?? 0) + 1;
+        const lostLegs   = (parlay.lostLegs   ?? 0) + (legWon ? 0 : 1);
+
+        tx.update(parlayRef, {
+          currentCashed,
+          lostLegs,
+        });
+
+        if (currentCashed === parlay.legCount) {
+          const parlayWon = lostLegs === 0;
+          const payout    = parlayWon ? parlay.betAmount * parlay.betOdds : 0;
+
+          tx.update(parlayRef, { settled: true, won: parlayWon, payout });
+
+          if (payout > 0) {
+            tx.update(userRef, {
+              points: admin.firestore.FieldValue.increment(payout),
+              correctPredictions: admin.firestore.FieldValue.increment(1),
+            });
+          }
+        }
+      })
+    )
+  );
+};
 
 const getPointsForWinBySportName = async (sportName: string) => {
-  // Query Firestore for the document where the "name" field matches the sport name
   const sportsRef = db.collection("sports");
   const querySnapshot = await sportsRef.where("name", "==", sportName).get();
 
@@ -25,14 +76,12 @@ const getPointsForWinBySportName = async (sportName: string) => {
     throw new Error(`No sport found with the name: ${sportName}`);
   }
 
-  // Since names are unique, get the first document
   const sportDoc = querySnapshot.docs[0];
   const sportData = sportDoc.data();
 
-  // Retrieve points_for_win from the document
   const pointsForWin = sportData.points_for_win;
 
-  return pointsForWin || 0; // Return 0 if points_for_win is undefined
+  return pointsForWin || 0;
 };
 
 export const scoreMatch = functions.https.onRequest(async (req, res) => {
@@ -52,25 +101,6 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       if (req.method !== "POST") {
         return res.status(405).send("Method Not Allowed");
       }
-
-      // uncomment and redeploy once new frontend changes are deployed
-      // const authHeader = req.headers.authorization || ""
-      // if (!authHeader.startsWith("Bearer ")) {
-      //   return res.status(401).json({error: "No token provided"});
-      // }
-      // //   // getting token passed from request
-      // const idToken = authHeader.split("Bearer ")[1];
-      // // //   //verifying the token using firebase admin
-      // let decoded;
-      // try {
-      //   decoded = await admin.auth().verifyIdToken(idToken);
-      //   if (!decoded) {
-      //     return res.status(401).json({error: "Invalid Token"})
-      //   }
-      // } catch (error) {
-      //   return res.status(401).json({error: "Invalid Token"})
-      // } 
-      //get rid of email in the query and use the decoded users email
 
       // validate request parameters
       if (
@@ -257,36 +287,14 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await rankBatch.commit();
 
+      // reward singles and parlays after dat
       const matchData = await db.collection("matches").doc(matchId).get();
-      const predictions =
-        (matchData.data()?.predictions as PredictionsMap) || {};
+      
+      await settleParlayLegs(matchId, matchData.data()!.winner);
 
-      const rewardBatch = db.batch();
-
-      for (const [sanitizedEmail, prediction] of Object.entries(predictions)) {
-        if (prediction.betOption === winningTeam) {
-          const rewardAmount = parseFloat(
-            (
-              prediction.betAmount *
-              (1 + (1 - prediction.betOdds) / prediction.betOdds)
-            ).toFixed(2)
-          );
-
-          const userRef = db
-            .collection("users")
-            .doc(sanitizedEmail.replace(/_/g, "."));
-          rewardBatch.update(userRef, {
-            points: admin.firestore.FieldValue.increment(rewardAmount),
-            correctPredictions: admin.firestore.FieldValue.increment(1), // Increment correctPredictions field
-          });
-        }
-      }
-
-      await rewardBatch.commit();
-      // return success response
       return res
         .status(200)
-        .send("Match and colleges data updated successfully.");
+        .send("Match, colleges, bets and parlays updated successfully.");
     } catch (error) {
       console.error("Error scoring match:", error);
       return res.status(500).send("Internal Server Error");

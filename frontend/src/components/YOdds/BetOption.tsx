@@ -43,7 +43,7 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
               betOdds: (1 * (1 + (1 - odds) / odds)), 
               home_college: match.home_college, 
               away_college: match.away_college,
-              matchId: match.id,
+              matchId: match.id.toString(),
               matchTimestamp: match.timestamp,
               sport: match.sport,
               won: null,

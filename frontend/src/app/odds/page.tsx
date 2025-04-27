@@ -52,7 +52,7 @@ const YoddsPage: React.FC = () => {
   const [betCount, setBetCount] = useState(0);
   const [betAmount, setBetAmount] = useState<number | ''>('');
   const [totalOdds, setTotalOdds] = useState<number>(1);
-
+  // console.log(betslip)
   // console.log(totalOdds)
   const updateBetSlip = (bet: Bet): Bet[] => {
     const updatedBetSlip = [...betslip, bet];
@@ -62,7 +62,8 @@ const YoddsPage: React.FC = () => {
     return updatedBetSlip;
   };
   // console.log(betslip)
-  // console.log(betAmount)
+  // console.log(pendingBets)
+  // console.log(filteredMatches)
 
   const removeBet = (bet: Bet): Bet[] => {
     const updatedBetSlip = betslip.filter((b) => b.betId !== bet.betId);
@@ -93,7 +94,7 @@ const YoddsPage: React.FC = () => {
       pageSize: "20",
       sortOrder: "asc",
       college: "All",
-      date: "All",
+      date: "future",
       sport: filter.sport ? filter.sport : "All",
     };
 
@@ -282,7 +283,7 @@ const YoddsPage: React.FC = () => {
           body: JSON.stringify({
             email: email,
             betAmount: betAmount,
-            betsArray: betArray,
+            betArray: betArray,
             totalOdds: totalOdds,
           }),
         }
@@ -290,13 +291,13 @@ const YoddsPage: React.FC = () => {
       if (!response.ok) {
         throw new Error(`Error submitting bet: ${response.statusText}`);
       }
-      const data = await response.json();
-      console.log(data);
+      console.log(response);
     } catch (error) {
       console.error("Failed to submit bet:", error);
     } finally {
       setBetAmount('')
       setBetSlip([])
+      setBetCount(0)
       setTotalOdds(1)
     }
   }
@@ -515,7 +516,7 @@ const YoddsPage: React.FC = () => {
                   </div>
                 ) : pastBets.length > 0 ? 
                   (<BetParlayTable parlays={pastBets} />) : 
-                  (<div className="text-sm pt-4 items-center">No Bet History.</div>
+                  (<div className="text-sm pt-4 items-center text-center">No Bet History.</div>
                 )}
               </div>
             </div>

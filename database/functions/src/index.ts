@@ -21,6 +21,7 @@ import { getMatchParticipants } from "./getMatchParticipants.js";
 import { publicApiSignup } from "./publicApis.js";
 import { addBetMod } from "./addBetMod.js";
 import { getBets } from "./getBets.js";
+import { getMatchesPaginatedTest } from "./getMatchesPaginatedTest.js";
 
 export {
   getLeaderboard,
@@ -46,4 +47,5 @@ export {
   publicApiSignup,
   addBetMod,
   getBets,
+  getMatchesPaginatedTest,
 };

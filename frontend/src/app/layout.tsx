@@ -8,6 +8,17 @@ import { UserProvider } from "@src/context/UserContext";
 import FiltersProvider from "@src/context/FiltersContext";
 import { ThemeProvider } from "@src/context/ThemeContext";
 import Footer from "@src/components/Footer";
+import { initAnalytics } from "../../lib/firebase";
+import React from "react";
+
+// tiny client island declared right here
+function AnalyticsInit() {
+  "use client";                      // ← turns just this function into a Client Component
+  React.useEffect(() => {
+    initAnalytics();                 // fire-and-forget
+  }, []);
+  return null;
+}
 
 const CLIENT_ID =
   "683055403263-8nk173ne786mjmhicqmuod2ufmcdnnec.apps.googleusercontent.com";
@@ -31,6 +42,7 @@ export default function RootLayout({
                 </head>
 
                 <body className={`${inter.className} min-h-screen`}>
+                  <AnalyticsInit />
                   <NavBar />
                   <div className="mb-10"></div>
                   {children}
