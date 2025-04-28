@@ -74,7 +74,7 @@ const MVPPopup = () => {
           />
 
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
-            <div className="bg-gradient-to-b from-[#E8F0FF] to-[#BBD3FF] rounded-3xl p-6 max-w-md w-full relative shadow-2xl">
+            <div className="bg-gradient-to-b from-[#E8F0FF] to-[#BBD3FF] rounded-3xl p-4 max-w-md w-full relative shadow-2xl">
               <button
                 onClick={() => setIsOpen(false)}
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
@@ -126,7 +126,7 @@ const MVPPopup = () => {
                   <img
                     src={mvpData.photo}
                     alt={`${mvpData.fname} ${mvpData.lname}`}
-                    className="w-52 h-52 rounded-lg object-cover mb-3"
+                    className="w-52 h-40 rounded-lg object-cover mb-3"
                   />
                 ) : (
                   <div className="w-24 h-24 bg-gray-200 rounded-lg mb-3" />
@@ -141,7 +141,7 @@ const MVPPopup = () => {
                   <strong className="text-blue-600">{mvpData.year}</strong> in{" "}
                   <strong className="text-blue-600">{mvpData.college}</strong>{" "}
                   College studying{" "}
-                  <strong className="text-blue-600">{mvpData.major}</strong>, for being named this week's Most Valuable Player. 🏅 Keep up the great work{" "}
+                  <strong className="text-blue-600">{mvpData.major}</strong>, for being named this week&apos;s Most Valuable Player. 🏅 Keep up the great work{" "}
                   <strong className="text-blue-600">{mvpData.fname}</strong>!
                 </div>
               </div>
