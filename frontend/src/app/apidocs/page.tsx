@@ -29,14 +29,26 @@ const ApiDocs = () => {
     
         return () => unsubscribe();
     }, [user?.email])
-    console.log("apiKeys", apiKeys)
+
+    if (!user) {
+        return (
+            <div className="mt-20 mb-20 items-center flex flex-col">
+                <h1 className="md:text-4xl text-xl font-bold text-center xs:mb-4 pt-8">
+                    YaleIMs API
+                </h1>
+                <div className="w-[90%] md:[75%] mg:w-[60%] px-10">
+                    <p className="text-center">Please log in to view this page.</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="mt-20 mb-20 items-center flex flex-col">
             <h1 className="md:text-4xl text-xl font-bold text-center xs:mb-4 pt-8">
                 YaleIMs API
             </h1>
-            <div className="w-[60%] px-10">
+            <div className="w-[90%] md:[75%] mg:w-[60%] px-10">
                 <div className="justify-center mt-8">
                     <p>
                         The YaleIMs API can be used to programmatically query information about intramurals in your own programs and software projects. 
@@ -79,8 +91,7 @@ const ApiDocs = () => {
                     Documentation
                 </h1>
                 <p>
-                    GET: https://yaleims/api/v1/getLeaderboard <br/>
-                    GET: https://yaleims/api/v1/getMatches <br/>
+                    POST: https://yaleims.com/api/v1/getLeaderboard <br/>
                 </p>
             </div>
         </div>

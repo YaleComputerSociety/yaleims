@@ -52,6 +52,7 @@ const YoddsPage: React.FC = () => {
   const [betCount, setBetCount] = useState(0);
   const [betAmount, setBetAmount] = useState<number | ''>('');
   const [totalOdds, setTotalOdds] = useState<number>(1);
+  const [submitButtonClicked, setSubmitButtonClicked] = useState(0);
   // console.log(betslip)
   // console.log(totalOdds)
   const updateBetSlip = (bet: Bet): Bet[] => {
@@ -168,7 +169,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchMyPoints();
-  }, [userEmail]);
+  }, [userEmail, submitButtonClicked]);
 
   // Fetch pending bets
   useEffect(() => {
@@ -198,7 +199,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchPendingBets();
-  }, [userEmail]);
+  }, [userEmail, submitButtonClicked]);
 
   useEffect(() => {
     if (!userEmail) return;
@@ -332,6 +333,7 @@ const YoddsPage: React.FC = () => {
         betArray: betslip,
         totalOdds: totalOdds,
       });
+      setSubmitButtonClicked((prev) => prev + 1);
     } catch (error) {
       alert("Failed to place bet. Please try again.");
     }
