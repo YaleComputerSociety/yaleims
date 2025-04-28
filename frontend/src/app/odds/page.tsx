@@ -246,7 +246,7 @@ const YoddsPage: React.FC = () => {
   useEffect(() => {
     const html = document.documentElement;
   
-    if (viewPendingBets || viewBetSlip) {  
+    if (viewPendingBets || viewBetSlip || viewBetHistory) {  
       html.classList.add("overflow-hidden");
     } else {
       html.classList.remove("overflow-hidden");
