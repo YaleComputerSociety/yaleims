@@ -176,8 +176,24 @@ export interface Bet {
   home_college: string;
   matchId: string;
   sport: string;
+  winner?: string;
+  won?: boolean;
   matchTimestamp: string;
   betId: number
+}
+
+export interface BetParlay {
+  betArray: Bet[];
+  betId: string;
+  currentCashed: number;
+  createdAt: string;
+  betAmount: number;
+  totalOdds: number;
+  won: boolean;
+}
+
+export interface BetParlayTableProps {
+  parlays: BetParlay[];
 }
 
 export interface SportModalProps {
@@ -195,4 +211,5 @@ export interface SportCardProps {
   sport: string;
   displayName?: boolean;
   handleClick: (sport: string) => void;
+  active?: boolean;
 }

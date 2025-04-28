@@ -57,6 +57,11 @@ export default function Footer() {
                     Profile
                   </Link>
                 </li>
+                <li>
+                  <Link href="/apidocs" className="hover:underline">
+                    Api
+                  </Link>
+                </li>
               </ul>
             </div>
 

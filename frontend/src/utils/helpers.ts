@@ -35,7 +35,7 @@ export const sports: Sport[] = [
   {
     id: "14",
     name: "Kanjam",
-    points_for_win: 5,
+    points_for_win: 6,
     emoji: "🥏",
     season: { "2024-2025": "Spring" },
   },
@@ -132,6 +132,9 @@ export const sports: Sport[] = [
   },
 ];
 
+export const totalOddsCalc = (bets: { betOdds: number }[]): number =>
+  bets.reduce((prod, { betOdds }) => prod * betOdds, 1);
+
 export const sportsMap: SportMap = {
   "Flag Football": 6,
   Spikeball: 6,
@@ -144,7 +147,7 @@ export const sportsMap: SportMap = {
   CHoops: 5,
   Dodgeball: 8,
   Broomball: 6,
-  Kanjam: 5,
+  Kanjam: 6,
   "Indoor Soccer": 5,
   Volleyball: 6,
   Netball: 7,

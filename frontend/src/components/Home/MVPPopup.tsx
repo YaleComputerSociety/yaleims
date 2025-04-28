@@ -12,43 +12,43 @@ const MVPPopup = () => {
     major: "Computer Science",
   });
 
-  useEffect(() => {
-    fetch("https://yalies.io/graphql", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer YOUR_YALIES_API_KEY`,
-      },
-      body: JSON.stringify({
-        query: `
-          query {
-            people(name: "Alex Johnson") {
-              fname
-              lname
-              photo
-              college
-              year
-              major
-            }
-          }
-        `,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const person = data?.data?.people?.[0];
-        if (person) {
-          setMvpData({
-            fname: person.fname,
-            lname: person.lname,
-            photo: person.photo,
-            college: person.college,
-            year: person.year,
-            major: person.major,
-          });
-        }
-      });
-  }, []);
+  // useEffect(() => {
+  //   fetch("https://yalies.io/graphql", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       Authorization: `Bearer YOUR_YALIES_API_KEY`,
+  //     },
+  //     body: JSON.stringify({
+  //       query: `
+  //         query {
+  //           people(name: "Alex Johnson") {
+  //             fname
+  //             lname
+  //             photo
+  //             college
+  //             year
+  //             major
+  //           }
+  //         }
+  //       `,
+  //     }),
+  //   })
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       const person = data?.data?.people?.[0];
+  //       if (person) {
+  //         setMvpData({
+  //           fname: person.fname,
+  //           lname: person.lname,
+  //           photo: person.photo,
+  //           college: person.college,
+  //           year: person.year,
+  //           major: person.major,
+  //         });
+  //       }
+  //     });
+  // }, []);
 
   return (
     <>

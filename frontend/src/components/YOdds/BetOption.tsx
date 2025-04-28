@@ -40,19 +40,20 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
             // setSelectedOption(e.target.value);
             setSelectedOption({ 
               betOption: e.target.value, 
-              betOdds: (1 * (1 + (1 - odds) / odds)).toFixed(2), 
+              betOdds: (1 * (1 + (1 - odds) / odds)), 
               home_college: match.home_college, 
               away_college: match.away_college,
-              matchId: match.id,
+              matchId: match.id.toString(),
               matchTimestamp: match.timestamp,
               sport: match.sport,
+              won: null,
               betId: crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 10)
             }); // Update both the option and odds
             // setSelectedOption(e.target.value.option);
             // setSelectedOdds(e.target.value.odds);
           }}
           className="peer hidden"
-          disabled={isBetAdded}
+          // disabled={isBetAdded}
         />
         <span className="w-4 h-4 mg:w-5 mg:h-5 flex items-center justify-center border-2 rounded-full border-gray-400 peer-checked:bg-blue-500 dark:border-gray-600 dark:peer-checked:border-blue-400">
           <span className="w-2 h-2 mg:w-2.5 mg:h-2.5 rounded-full bg-blue-500 dark:bg-blue-400 hidden peer-checked:block"></span>
@@ -101,7 +102,7 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
               />
               <RadioOption
                 value={away_college}
-                odds={match.home_college_odds ?? 0} // Provide a fallback value if undefined
+                odds={match.away_college_odds ?? 0} // Provide a fallback value if undefined
                 // value={JSON.stringify({ option: away_college, odds: match.away_college_odds })}
                 college={away_college}
                 label={`${toCollegeName[away_college]} - ${
@@ -141,28 +142,26 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
         </div>
         <div>
           <button
-            disabled={!selectedOption || isLoading || isBetAdded}
+            disabled={!selectedOption || isLoading}
             onClick={() => {
               if (selectedOption) {
                 updateBetSlip && updateBetSlip(selectedOption);
                 setSelectedOption(null)
+                // setIsBetAdded(true)
               }}}
             className={`mt-2 w-full md:w-32 px-4 py-1.5 rounded-md text-xs mg:text-mg font-medium
             ${
-              isBetAdded
-                ? "bg-green-500 text-white cursor-not-allowed"
-                : isLoading
-                ? "bg-gray-400 text-white cursor-not-allowed"
-                : selectedOption
+              // isBetAdded
+              //   ? "bg-green-500 text-white cursor-not-allowed"
+              //   : selectedOption
+              selectedOption
                 ? "bg-blue-500 hover:bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
             }
           `}
           >
-            {isBetAdded
-              ? "In Bet Slip!"
-              : isLoading
-              ? "Placing..."
+            {selectedOption
+              ? "Add to Bet Slip"
               : "Add to Bet Slip"}
           </button>
         </div>

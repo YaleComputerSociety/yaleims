@@ -19,6 +19,9 @@ import { getMyAvailablePoints } from "./getMyAvailablePoints.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
 import { getMatchParticipants } from "./getMatchParticipants.js";
 import { publicApiSignup } from "./publicApis.js";
+import { addBetMod } from "./addBetMod.js";
+import { getBets } from "./getBets.js";
+import { getMatchesPaginatedTest } from "./getMatchesPaginatedTest.js";
 
 export {
   getLeaderboard,
@@ -42,4 +45,7 @@ export {
   undoScoreMatch,
   getMatchParticipants,
   publicApiSignup,
+  addBetMod,
+  getBets,
+  getMatchesPaginatedTest,
 };
