@@ -148,7 +148,6 @@ export const sportsMap: SportMap = {
   "Indoor Soccer": 5,
   Volleyball: 6,
   Netball: 7,
-
 };
 
 export const emojiMap: EmojiMap = {

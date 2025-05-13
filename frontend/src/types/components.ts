@@ -177,7 +177,7 @@ export interface Bet {
   matchId: string;
   sport: string;
   matchTimestamp: string;
-  betId: number
+  betId: number;
 }
 
 export interface SportModalProps {
@@ -195,4 +195,25 @@ export interface SportCardProps {
   sport: string;
   displayName?: boolean;
   handleClick: (sport: string) => void;
+}
+
+export interface BracketModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: BracketData) => void;
+  sport: string;
+}
+
+export interface BracketData {
+  sport: string;
+  teams: Team[];
+}
+
+export interface Team {
+  college: string;
+  seed: string | number;
+  division: "green" | "blue" | "none";
+  matchSlot: string | number;
+  matchDatetime: string;
+  location: string;
 }
