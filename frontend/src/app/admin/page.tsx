@@ -221,9 +221,51 @@ const AdminBracketsPage: React.FC = () => {
     }
   };
 
+  const handleDeleteBracket = async (
+    sport: string,
+    setDeleteLoading: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    setDeleteLoading(true);
+    try {
+      // call cloud function
+      const dataToSend = { sport };
+
+      const userToken = sessionStorage.getItem("userToken");
+      const response = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/deleteBracket",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`,
+          },
+          body: JSON.stringify(dataToSend),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete bracket");
+      }
+
+      console.log("Success:", data);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <BracketInterface openModal={openModal} />
+      <h1 className="text-2xl sm:text-3xl font-extrabold mb-8 text-center text-black-500">
+        Admin Panel
+      </h1>
+      <BracketInterface
+        openModal={openModal}
+        handleDeleteBracket={handleDeleteBracket}
+      />
 
       <BracketCreateModal
         isOpen={isModalOpen}

@@ -1,5 +1,6 @@
 import { Team, BracketModalProps } from "@src/types/components";
 import React, { useState, useEffect, ChangeEvent } from "react";
+import { collegeNamesList } from "@src/utils/helpers";
 
 const teamsInit: Team[] = [
   {
@@ -123,23 +124,6 @@ const BracketModal: React.FC<BracketModalProps> = ({
   sport,
 }) => {
   const [teams, setTeams] = useState<Team[]>(teamsInit);
-
-  const colleges = [
-    "Benjamin Franklin",
-    "Berkeley",
-    "Branford",
-    "Davenport",
-    "Ezra Stiles",
-    "Grace Hopper",
-    "Jonathan Edwards",
-    "Morse",
-    "Pauli Murray",
-    "Pierson",
-    "Saybrook",
-    "Silliman",
-    "Timothy Dwight",
-    "Trumbull",
-  ];
 
   // Reset form when modal opens
   useEffect(() => {
@@ -298,7 +282,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       }
                     >
                       <option value="">Select College</option>
-                      {colleges.map((college) => (
+                      {collegeNamesList.map((college) => (
                         <option key={college} value={college}>
                           {college}
                         </option>
