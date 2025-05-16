@@ -227,37 +227,37 @@ const AdminBracketsPage: React.FC = () => {
   };
 
   const handleSave = async (bracketData: BracketData): Promise<void> => {
-    try {
-      scoreTesting();
-    } catch (err) {
-      console.error("Error:", err);
-    }
-
-    // // console.log("Bracket data to save:", bracketData);
-    // console.log("Bracket data to save:", testData);
     // try {
-    //   // call cloud function
-    //   const userToken = sessionStorage.getItem("userToken");
-    //   const response = await fetch(
-    //     "https://us-central1-yims-125a2.cloudfunctions.net/createBracket",
-    //     {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //         Authorization: `Bearer ${userToken}`,
-    //       },
-    //       // body: JSON.stringify(bracketData),
-    //       body: JSON.stringify(testData),
-    //     }
-    //   );
-    //   const data = await response.json();
-    //   if (!response.ok) {
-    //     throw new Error(data.error || "Failed to create bracket");
-    //   }
-    //   console.log("Success:", data);
-    // } catch (error) {
-    //   console.error("Error:", error);
+    //   scoreTesting();
+    // } catch (err) {
+    //   console.error("Error:", err);
     // }
+
+    // console.log("Bracket data to save:", bracketData);
+    console.log("Bracket data to save:", testData);
+    try {
+      // call cloud function
+      const userToken = sessionStorage.getItem("userToken");
+      const response = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/createBracket",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`,
+          },
+          // body: JSON.stringify(bracketData),
+          body: JSON.stringify(testData),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create bracket");
+      }
+      console.log("Success:", data);
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   const handleDeleteBracket = async (
@@ -316,5 +316,4 @@ const AdminBracketsPage: React.FC = () => {
   );
 };
 
-// make it with protected route -> but CAS login is not working so unsure what to do
 export default withProtectedRoute(AdminBracketsPage);

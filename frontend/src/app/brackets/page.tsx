@@ -94,11 +94,20 @@ function mapMatchToTeams(match: Matchv2) {
 const BracketsPage: React.FC = () => {
   const { topTeam, bottomTeam } = mapMatchToTeams(match1);
 
+  // return (
+  //   <div className={ubuntu.className}>
+  //     <div className="p-6 space-y-4">
+  //       <h1 className="text-2xl font-bold">Brackets</h1>
+  //       <BracketCell topTeam={topTeam} bottomTeam={bottomTeam} />
+  //     </div>
+  //   </div>
+  // );
+
   return (
     <div className={ubuntu.className}>
       <div className="p-6 space-y-4">
         <h1 className="text-2xl font-bold">Brackets</h1>
-        <BracketCell topTeam={topTeam} bottomTeam={bottomTeam} />
+        <BracketCell matchId={"playoff-4"} />
       </div>
     </div>
   );
