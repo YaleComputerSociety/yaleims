@@ -1,6 +1,6 @@
 import { Team, BracketModalProps } from "@src/types/components";
 import React, { useState, useEffect, ChangeEvent } from "react";
-import { collegeNamesList } from "@src/utils/helpers";
+import { collegeNamesList, toCollegeAbbreviation } from "@src/utils/helpers";
 
 const teamsInit: Team[] = [
   {
@@ -278,7 +278,11 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       className="w-full p-2 border border-gray-300 rounded"
                       value={team.college}
                       onChange={(e) =>
-                        handleChange(index, "college", e.target.value)
+                        handleChange(
+                          index,
+                          "college",
+                          toCollegeAbbreviation[e.target.value] // see if this causes any problems
+                        )
                       }
                     >
                       <option value="">Select College</option>

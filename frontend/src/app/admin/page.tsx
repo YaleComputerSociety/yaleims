@@ -4,13 +4,13 @@ import React, { useState } from "react";
 import BracketCreateModal from "@src/components/Admin/BracketCreateModal";
 import BracketInterface from "@src/components/Admin/BracketInterface";
 import { BracketData } from "@src/types/components";
-// import withProtectedRoute from "@src/components/withProtectedRoute";
+import withProtectedRoute from "@src/components/withProtectedRoute";
 
 const testData: BracketData = {
-  sport: "test!",
+  sport: "Indoor Soccer",
   teams: [
     {
-      college: "Benjamin Franklin",
+      college: "BF",
       seed: "1",
       division: "green",
       matchSlot: "1",
@@ -18,7 +18,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Berkeley",
+      college: "BK",
       seed: "2",
       division: "green",
       matchSlot: "2",
@@ -26,7 +26,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Branford",
+      college: "BF",
       seed: "3",
       division: "green",
       matchSlot: "2",
@@ -34,7 +34,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Davenport",
+      college: "DC",
       seed: "4",
       division: "green",
       matchSlot: "3",
@@ -42,7 +42,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Ezra Stiles",
+      college: "ES",
       seed: "5",
       division: "green",
       matchSlot: "3",
@@ -50,7 +50,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Grace Hopper",
+      college: "GH",
       seed: "6",
       division: "green",
       matchSlot: "4",
@@ -58,7 +58,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Jonathan Edwards",
+      college: "JE",
       seed: "7",
       division: "green",
       matchSlot: "4",
@@ -66,7 +66,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Morse",
+      college: "MC",
       seed: "1",
       division: "blue",
       matchSlot: "7",
@@ -74,7 +74,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Pauli Murray",
+      college: "MY",
       seed: "2",
       division: "blue",
       matchSlot: "8",
@@ -82,7 +82,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Pierson",
+      college: "PC",
       seed: "3",
       division: "blue",
       matchSlot: "8",
@@ -90,7 +90,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Saybrook",
+      college: "SY",
       seed: "4",
       division: "blue",
       matchSlot: "9",
@@ -98,7 +98,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Silliman",
+      college: "SM",
       seed: "5",
       division: "blue",
       matchSlot: "9",
@@ -106,7 +106,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Timothy Dwight",
+      college: "TD",
       seed: "6",
       division: "blue",
       matchSlot: "10",
@@ -114,7 +114,7 @@ const testData: BracketData = {
       location: "PWG",
     },
     {
-      college: "Trumbull",
+      college: "TC",
       seed: "7",
       division: "blue",
       matchSlot: "10",
@@ -189,36 +189,75 @@ const AdminBracketsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (bracketData: BracketData): Promise<void> => {
-    // console.log("Bracket data to save:", bracketData);
-    console.log("Bracket data to save:", testData);
-
+  const scoreTesting = async () => {
     try {
       // call cloud function
       const userToken = sessionStorage.getItem("userToken");
       const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/createBracket",
+        "https://us-central1-yims-125a2.cloudfunctions.net/scoreMatchTesting",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${userToken}`,
           },
-          // body: JSON.stringify(bracketData),
-          body: JSON.stringify(testData),
+          body: JSON.stringify({
+            matchId: "playoff-11",
+            homeScore: 10,
+            awayScore: 20,
+            homeForfeit: false,
+            awayForfeit: false,
+            homeTeam: "PC",
+            awayTeam: "MC",
+            sport: "Indoor Soccer",
+          }),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create bracket");
+        throw new Error(data.error || "Failed to score match");
       }
 
       console.log("Success:", data);
     } catch (error) {
       console.error("Error:", error);
     }
+  };
+
+  const handleSave = async (bracketData: BracketData): Promise<void> => {
+    try {
+      scoreTesting();
+    } catch (err) {
+      console.error("Error:", err);
+    }
+
+    // // console.log("Bracket data to save:", bracketData);
+    // console.log("Bracket data to save:", testData);
+    // try {
+    //   // call cloud function
+    //   const userToken = sessionStorage.getItem("userToken");
+    //   const response = await fetch(
+    //     "https://us-central1-yims-125a2.cloudfunctions.net/createBracket",
+    //     {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         Authorization: `Bearer ${userToken}`,
+    //       },
+    //       // body: JSON.stringify(bracketData),
+    //       body: JSON.stringify(testData),
+    //     }
+    //   );
+    //   const data = await response.json();
+    //   if (!response.ok) {
+    //     throw new Error(data.error || "Failed to create bracket");
+    //   }
+    //   console.log("Success:", data);
+    // } catch (error) {
+    //   console.error("Error:", error);
+    // }
   };
 
   const handleDeleteBracket = async (
@@ -278,4 +317,4 @@ const AdminBracketsPage: React.FC = () => {
 };
 
 // make it with protected route -> but CAS login is not working so unsure what to do
-export default AdminBracketsPage;
+export default withProtectedRoute(AdminBracketsPage);

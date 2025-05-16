@@ -20,6 +20,9 @@ import { undoScoreMatch } from "./undoScoreMatch.js";
 import { getMatchParticipants } from "./getMatchParticipants.js";
 import { publicApiSignup } from "./publicApis.js";
 import { addBetMod } from "./addBetMod.js";
+import { createBracket } from "./createBracket.js";
+import { deleteBracket } from "./deleteBracket.js";
+import { scoreMatchTesting } from "./scoreMatchTesting.js";
 
 export {
   getLeaderboard,
@@ -43,5 +46,8 @@ export {
   undoScoreMatch,
   getMatchParticipants,
   publicApiSignup,
-  addBetMod
+  addBetMod,
+  createBracket,
+  deleteBracket,
+  scoreMatchTesting,
 };
