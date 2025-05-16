@@ -69,7 +69,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
     match.away_college !== "TBD" ? toCollegeName[match.away_college] : "TBD";
   const homeCollegeName =
     match.home_college !== "TBD" ? toCollegeName[match.home_college] : "TBD";
-  const matchScored = match.winner ? true : false;
+  const matchScored = match.winner !== "" ? true : false;
   const isBye = match.type === "Bye" ? true : false;
 
   // will be 'away', 'home' or null
@@ -135,14 +135,14 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
                   winningTeam === "away" ? "text-black" : "text-gray-400"
                 }
               >
-                {match.away_college_score}
+                {matchScored ? match.away_college_score : "?"}
               </span>
               <span
                 className={
                   winningTeam === "home" ? "text-black" : "text-gray-400"
                 }
               >
-                {match.home_college_score}
+                {matchScored ? match.home_college_score : "?"}
               </span>
             </div>
           </div>
