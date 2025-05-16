@@ -65,8 +65,10 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
   }
 
   // variables from match data
-  const awayCollegeName = toCollegeName[match.away_college];
-  const homeCollegeName = toCollegeName[match.home_college];
+  const awayCollegeName =
+    match.away_college !== "TBD" ? toCollegeName[match.away_college] : "TBD";
+  const homeCollegeName =
+    match.home_college !== "TBD" ? toCollegeName[match.home_college] : "TBD";
   const matchScored = match.winner ? true : false;
   const isBye = match.type === "Bye" ? true : false;
 
@@ -84,6 +86,10 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
   // if match.type == "Final" give the winner the gold color and the loser the silver color
   // can also make this more advanced later but we don't have support for a third place match right now
 
+  // TODO: think about if/how we might want to include info about the division?
+  // each match in a playoff bracket is either in blue or green division; this determines which side of the bracket they are on
+  // i.e. see this link: https://docs.google.com/spreadsheets/d/1nRupYEAwzXtmp3t1Dnu_HjhDQDVJv-ILGwW6sO-z9w0/edit?pli=1&gid=1668930486#gid=1668930486
+
   return (
     <div className="relative bg-white rounded-3xl shadow-lg w-64 aspect-[288/155] flex flex-col justify-between p-4 text-black">
       <div className="absolute top-1/2 left-0 w-full h-[3px] bg-gray-300 transform -translate-y-1/2 z-20" />
@@ -91,18 +97,21 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
       {/* Top team */}
       <div className="flex items-center justify-between z-10">
         <div className="flex items-center space-x-2">
-          <img
-            src={`/college_flags/${awayCollegeName}.png`}
-            alt={awayCollegeName}
-            className="w-6 h-6"
-          />
+          {/* only show image if college not TBD */}
+          {awayCollegeName !== "TBD" && (
+            <img
+              src={`/college_flags/${awayCollegeName}.png`}
+              alt={awayCollegeName}
+              className="w-6 h-6"
+            />
+          )}
           <div className="flex items-center space-x-1">
             <span className={`font-semibold text-lg`}>{awayCollegeName}</span>
             <div
               className={`bg-gray-100 text-base rounded-full px-2 py-[6px] w-[28px] h-[32px] flex items-center justify-center font-bold self-start`}
               style={{ position: "relative", top: "-8px" }}
             >
-              {match.away_seed}
+              {match.away_seed == -1 ? "" : match.away_seed}
             </div>
           </div>
         </div>
@@ -141,11 +150,14 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
           {/* Bottom team name/seed */}
           <div className="flex items-center justify-between z-10">
             <div className="flex items-center space-x-2">
-              <img
-                src={`/college_flags/${homeCollegeName}.png`}
-                alt={homeCollegeName}
-                className="w-6 h-6"
-              />
+              {/* only show image if college not TBD */}
+              {homeCollegeName !== "TBD" && (
+                <img
+                  src={`/college_flags/${homeCollegeName}.png`}
+                  alt={homeCollegeName}
+                  className="w-6 h-6"
+                />
+              )}
               <div className="flex items-center space-x-1">
                 <span className={`font-semibold text-lg`}>
                   {homeCollegeName}
@@ -154,7 +166,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
                   className={`bg-gray-100 text-base rounded-full px-2 py-[6px] w-[28px] h-[32px] flex items-center justify-center font-bold self-start`}
                   style={{ position: "relative", top: "-8px" }}
                 >
-                  {match.home_seed}
+                  {match.home_seed == -1 ? "" : match.home_seed}
                 </span>
               </div>
             </div>
