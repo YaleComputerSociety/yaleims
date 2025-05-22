@@ -2,7 +2,7 @@
 
 import React from "react";
 import BracketCell, { TeamData } from "@src/components/Brackets/BracketCell";
-import { Matchv2 } from "@src/types/components";
+import { Match } from "@src/types/components";
 import { Ubuntu } from "next/font/google";
 
 // test
@@ -12,28 +12,13 @@ const ubuntu = Ubuntu({
   weight: ["400", "700"],
 });
 
-const match1: Matchv2 = {
-  id: "1",
-  home_college: "Morse",
-  away_college: "Trumbull", // right now i'm selecting bye in here. How can i use the database to do this?
-  home_college_score: 0,
-  away_college_score: 3, // what about draw?
-  home_college_participants: [],
-  away_college_participants: [],
-  sport: "Soccer",
-  timestamp: { _seconds: 59, _nanoseconds: 5 },
-  location: "hi",
-  winner: "Morse",
-  forfeit: false,
-  round: "BronzeFinal", // ask kaitlyn about this, logic for activating bronze, silver,and gold effects after final completes.
-};
 
 const collegeMeta: Record<string, { seed: number; logo: string }> = {
   Morse: { seed: 1, logo: "/logos/morse.png" },
   Trumbull: { seed: 6, logo: "/logos/trumbull.png" },
 };
 
-function mapMatchToTeams(match: Matchv2) {
+function mapMatchToTeams(match: Match) {
   const isBye = match.away_college.toLowerCase() === "bye";
 
   const home: TeamData = {
@@ -64,7 +49,7 @@ function mapMatchToTeams(match: Matchv2) {
   // not modular yet
 
   /* Gold and Silver Effects on Final Round */
-  if (match.round === "Final") {
+  if (match.type === "Final") {
     if (winner === home.college) {
       home.identifier = "gold";
       away.identifier = "silver";
@@ -75,7 +60,7 @@ function mapMatchToTeams(match: Matchv2) {
   }
 
   /* Bronze effect for winning team in Bronze medal match */ // not sure what to call or if we have something in the database for this yet
-  if (match.round === "BronzeFinal") {
+  if (match.type === "BronzeFinal") {
     if (winner === home.college) {
       home.identifier = "bronze";
       away.identifier = "4th";
@@ -92,7 +77,7 @@ function mapMatchToTeams(match: Matchv2) {
 }
 
 const BracketsPage: React.FC = () => {
-  const { topTeam, bottomTeam } = mapMatchToTeams(match1);
+//   const { topTeam, bottomTeam } = mapMatchToTeams(match);
 
   // return (
   //   <div className={ubuntu.className}>
@@ -107,7 +92,7 @@ const BracketsPage: React.FC = () => {
     <div className={ubuntu.className}>
       <div className="p-6 space-y-4">
         <h1 className="text-2xl font-bold">Brackets</h1>
-        <BracketCell matchId={"playoff-4"} />
+        <BracketCell matchId={"playoff-15"} />
       </div>
     </div>
   );
