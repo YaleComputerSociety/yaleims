@@ -8,14 +8,15 @@ import { UserProvider } from "@src/context/UserContext";
 import FiltersProvider from "@src/context/FiltersContext";
 import { ThemeProvider } from "@src/context/ThemeContext";
 import Footer from "@src/components/Footer";
+import ToastProvider from "@src/context/ToastContext";
 import { initAnalytics } from "../../lib/firebase";
 import React from "react";
 
 // tiny client island declared right here
 function AnalyticsInit() {
-  "use client";                      // ← turns just this function into a Client Component
+  "use client"; // ← turns just this function into a Client Component
   React.useEffect(() => {
-    initAnalytics();                 // fire-and-forget
+    initAnalytics(); // fire-and-forget
   }, []);
   return null;
 }
@@ -33,23 +34,24 @@ export default function RootLayout({
     <ThemeProvider>
       <UserProvider>
         <FiltersProvider>
-            <GoogleOAuthProvider clientId={CLIENT_ID}>
-              <html lang="en">
-                <head>
-                  <title>Yale IMs</title>
-                  <link rel="icon" href="/favicon.ico" />
-                  <meta property="og:title" content="Yale IMs" />
-                </head>
+          <GoogleOAuthProvider clientId={CLIENT_ID}>
+            <html lang="en">
+              <head>
+                <title>Yale IMs</title>
+                <link rel="icon" href="/favicon.ico" />
+                <meta property="og:title" content="Yale IMs" />
+              </head>
 
-                <body className={`${inter.className} min-h-screen`}>
-                  <AnalyticsInit />
-                  <NavBar />
-                  <div className="mb-10"></div>
-                  {children}
-                  <Footer />
-                </body>
-              </html>
-            </GoogleOAuthProvider>
+              <body className={`${inter.className} min-h-screen`}>
+                <AnalyticsInit />
+                <NavBar />
+                <ToastProvider />
+                <div className="mb-10"></div>
+                {children}
+                <Footer />
+              </body>
+            </html>
+          </GoogleOAuthProvider>
         </FiltersProvider>
       </UserProvider>
     </ThemeProvider>

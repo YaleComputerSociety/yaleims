@@ -179,7 +179,7 @@ export interface Bet {
   winner?: string;
   won?: boolean;
   matchTimestamp: string;
-  betId: number
+  betId: number;
 }
 
 export interface BetParlay {
@@ -212,4 +212,15 @@ export interface SportCardProps {
   displayName?: boolean;
   handleClick: (sport: string) => void;
   active?: boolean;
+}
+
+export interface ParsedMatch {
+  match_slot: number;
+  away_college: string;
+  away_seed: number;
+  home_college: string;
+  home_seed: number;
+  location: string;
+  timestamp: string;
+  division: string;
 }

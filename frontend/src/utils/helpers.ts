@@ -23,6 +23,23 @@ export const colleges = [
   { id: "TC", name: "Trumbull" },
 ];
 
+const collegeAbbreviationsList = [
+  "BF",
+  "BK",
+  "BR",
+  "DC",
+  "ES",
+  "GH",
+  "JE",
+  "MC",
+  "MY",
+  "PC",
+  "SY",
+  "SM",
+  "TD",
+  "TC",
+];
+
 // List of sports with the proper type
 export const sports: Sport[] = [
   {
@@ -151,7 +168,6 @@ export const sportsMap: SportMap = {
   "Indoor Soccer": 5,
   Volleyball: 6,
   Netball: 7,
-
 };
 
 export const emojiMap: EmojiMap = {
@@ -375,3 +391,84 @@ export const allTimeStandings = [
   ["Branford", 2],
   ["Benjamin Franklin", 0],
 ];
+
+// CSV Bracket Input Validation Functions
+import { ParsedMatch } from "@src/types/components";
+
+function isValidMatchSlot(slot: number) {
+  return Number.isInteger(slot) && slot >= 1 && slot <= 15;
+}
+
+function isValidCollege(college: string) {
+  return collegeAbbreviationsList.includes(college);
+}
+
+function isValidSeed(seed: number) {
+  return Number.isInteger(seed) && seed >= 1 && seed <= 7;
+}
+
+function isValidTimestamp(ts: string) {
+  // Checks for format YYYY-MM-DDTHH:MM (24-hour)
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(ts);
+}
+
+function isValidDivision(division: string) {
+  return ["green", "blue", "final"].includes(division);
+}
+
+export const verifyAndNormalizeMatchInput = (match: ParsedMatch) => {
+  // Overwrite for match_slots 5,6,11-15
+  if ([5, 6, 11, 12, 13, 14, 15].includes(match.match_slot)) {
+    if (!isValidTimestamp(match.timestamp)) {
+      return null;
+    }
+
+    return {
+      ...match,
+      away_college: "TBD",
+      home_college: "TBD",
+      away_seed: -1,
+      home_seed: -1,
+      division: "none",
+    };
+  }
+
+  // Special logic for bye matches (slots 1 and 7)
+  if ([1, 7].includes(match.match_slot)) {
+    let { away_college, home_college } = match;
+
+    // If one is empty, set it to the other
+    if (!away_college && home_college) {
+      away_college = home_college;
+    } else if (!home_college && away_college) {
+      home_college = away_college;
+    }
+
+    // If still not equal or either is empty, invalid
+    if (!away_college || !home_college || away_college !== home_college) {
+      return null;
+    }
+
+    match = {
+      ...match,
+      away_college,
+      home_college,
+    };
+  }
+
+  // Validate fields
+  if (
+    !isValidMatchSlot(match.match_slot) ||
+    !isValidCollege(match.away_college) ||
+    !isValidCollege(match.home_college) ||
+    !isValidSeed(match.away_seed) ||
+    !isValidSeed(match.home_seed) ||
+    typeof match.location !== "string" ||
+    !isValidTimestamp(match.timestamp) ||
+    !isValidDivision(match.division)
+  ) {
+    return null;
+  }
+
+  return match;
+};
