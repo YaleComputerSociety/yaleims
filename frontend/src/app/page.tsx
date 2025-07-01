@@ -22,17 +22,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <br />
-      {/* Banner */}
-      <div className="bg-blue-600 text-white text-center p-4 font-bold">
-        Welcome back from Spring Break! 🏆 Intramural Sports Spring Season is
-        upon us. We will do our best to keep up with the intramural sports
-        schedules and weather conflicts! 📩{" "}
-        <Link href="/contact" className="underline">
-          Contact us
-        </Link>{" "}
-        if you have any questions.
-      </div>
+      <br /> 
       <AAHomeComponent />
       <br />
       <br />

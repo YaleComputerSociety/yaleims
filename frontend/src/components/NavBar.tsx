@@ -2,10 +2,12 @@ import React, { useState, useContext, useEffect } from "react";
 import Link from "next/link";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
 import { FiltersContext } from "@src/context/FiltersContext";
+import { useSignIn } from "@src/context/SignInContext";
 import { useUser } from "../context/UserContext";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import Image from "next/image";
 import { useTheme } from "../context/ThemeContext";
+import LoginModal from "./LoginModal";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -23,7 +25,8 @@ const NavBar: React.FC = () => {
   const { resetFilters } = filtersContext;
   const [isClick, setisClick] = useState(false);
   const { user, loading } = useUser();
-  const { theme, toggleTheme } = useTheme(); // Use global theme context
+  const { theme, toggleTheme } = useTheme();
+  const { open, setOpen } = useSignIn();
 
   const toggleNavbar = () => {
     setisClick(!isClick);
@@ -45,12 +48,14 @@ const NavBar: React.FC = () => {
 
   return (
     <nav className="p-3 pb-4 items-center w-full fixed top-0 z-50 transition-colors duration-300 pr-5">
+      <LoginModal />
       <div className="mg:flex mg:block justify-between items-center hidden">
         <div className="hover:text-slate-500 text-xl pl-10">
           <Link href={links[0].href} onClick={resetFilters}>
             <Image src="/LOGO.png" width={130} height={130} alt="YALE IMS" />
           </Link>
         </div>
+        
         <div className="flex space-x-4 items-center">
           {links.slice(1).map((link) => (
             <Link
@@ -92,16 +97,16 @@ const NavBar: React.FC = () => {
             ) : user ? (
               <UserProfileButton name={user.name} />
             ) : (
-              <Link
-                className={`py-1.5 px-3 rounded border ${
+              <div
+                className={`py-1.5 px-3 rounded border cursor-pointer ${
                   theme === "light"
                     ? "border-black hover:border-gray-400 hover:text-gray-400"
                     : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
                 }`}
-                href="api/auth/login"
+                onClick={() => setOpen(!open)}
               >
-                Sign In With CAS
-              </Link>
+                Sign In
+              </div>
               // <button
               //   onClick={googleAuth}
               //   className={`py-1 px-3 rounded border ${
@@ -169,16 +174,16 @@ const NavBar: React.FC = () => {
               ) : user ? (
                 <UserProfileButton name={user.name} />
               ) : (
-                <Link
+                <div
                   className={`py-1 px-3 mt-2 rounded border ${
                     theme === "light"
                       ? "border-black hover:border-gray-400 hover:text-gray-400"
                       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
                   }`}
-                  href='api/auth/login'
+                  onClick={() => setOpen(!open)}
                 >
-                  Sign In With CAS
-                </Link>
+                  Sign In
+                </div>
 
                 // <button
                 //   onClick={googleAuth}

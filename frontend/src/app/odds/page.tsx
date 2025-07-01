@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MdClose } from "react-icons/md";
 import BetSlipRow from "@src/components/YOdds/BetSlipRow";
-import SportCard from "@src/components/About/SportCard";
+import SportCard from "@src/app/About/SportCard";
 import { sports } from "@src/utils/helpers";
 import BetParlayTable from "@src/components/YOdds/BetParlayTable";
 import { totalOddsCalc } from '@src/utils/helpers';
@@ -119,7 +119,7 @@ const YoddsPage: React.FC = () => {
       try {
         const params = new URLSearchParams(getQueryParams(queryType));
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMatchesPaginated?${params}`
+          `https://us-central1-yims-125a2.cloudfunctions.net/getMatchesPaginatedTest?${params}`
         );
 
         if (!response.ok) {

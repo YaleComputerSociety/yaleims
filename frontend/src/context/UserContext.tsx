@@ -41,6 +41,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  console.log(user)
+
   const casSignOut = useCallback(async () => {
     if (!isLoggedIn) {
       setLoading(false)
