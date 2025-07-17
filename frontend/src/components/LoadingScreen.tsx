@@ -3,7 +3,7 @@ import Image from "next/image";
 
 const LoadingScreen = () => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-primary_lightest dark:bg-[#0e265c]">
+    <div className="flex min-h-[100vh] min-w-fit items-center justify-center z-50 bg-primary_lightest dark:bg-[#0e265c]">
       <Image
         src="/loader_animations/sport_loader.gif"
         alt="Loading..."

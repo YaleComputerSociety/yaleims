@@ -19,6 +19,7 @@ import SportCard from "@src/app/About/SportCard";
 import { sports } from "@src/utils/helpers";
 import BetParlayTable from "@src/components/YOdds/BetParlayTable";
 import { totalOddsCalc } from '@src/utils/helpers';
+import PageHeading from "@src/components/PageHeading";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -373,353 +374,268 @@ const YoddsPage: React.FC = () => {
   // console.log(filtered)
 
   return (
-      <div className={`min-h-screen md:p-8 p-3 flex-col items-center lg:w-[90%] lg:mx-auto relative`}>
-        
-        {/* Rankings Button */}
+    <div className="flex flex-col pt-20 min-h-screen items-center">
+      <PageHeading heading="Odds" />
+      {/* Rankings Button */}
 
-        <div className="pt-10 flex flex-col xs:flex-row justify-between gap-x-4 gap-y-2 items-center px-4 rounded-lg pb-5">
-          <div className="max-w-[100%] xs:max-w-[75%] flex flex-col gap-y-2 md:gap-y-6">
-            <div 
-              className="flex flex-row px-2 py-3 pb-5 md:py-3 md:px-3 gap-x-3 overflow-y-auto invisible-scrollbar"
-            >
-              {sports.map((sport, index) => (
-                <SportCard
-                  key={sport.id}
-                  sport={sport.name}
-                  active={sport.name === filter.sport}
-                  displayName={false}
-                  handleClick={handleFilterChange}     
-                />
+      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-8 items-start rounded-lg pb-5">
+        <div className="flex flex-col gap-y-2 md:gap-y-6 min-w-0">
+          <div className="w-full overflow-x-auto invisible-scrollbar gap-x-4">
+            <div className="flex w-max gap-3 px-2 py-3 items-center">
+              {sports.map((sport) => (
+              <SportCard
+                key={sport.id}
+                sport={sport.name}
+                active={sport.name === filter.sport}
+                displayName={false}
+                handleClick={handleFilterChange}     
+              />
               ))}
             </div>
-            <div className="flex flex-row items-start gap-x-2 justify-between w-full">
-              <button
-                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                onClick={() => {
-                  setViewPendingBets(!viewPendingBets);
-                }}
-              >
-                Pending Bets {pendingBets.length}
-              </button>
-              <button
-                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                onClick={() => {
-                  setViewBetSlip(!viewBetSlip);
-                }}
-              >
-                <p>View Slip {betCount}</p>
-              </button>
-              <button
-                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                onClick={() => {
-                  setViewBetHistory(!viewBetHistory);
-                }}
-              >
-                <p>View History {pastBets.length}</p>
-              </button>
-              <button
-                className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                onClick={sendToRankings}
-              >
-                See Rankings
-              </button>
-            </div>
           </div>
-          <div className="items-center max-h-[100%">
-            <div
-              className="p-3 mg:p-6 h-[100%] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xs xs:text-sm mg:text-xl rounded-xl shadow-lg"
-              style={{ maxWidth: "250px", minWidth: "100px" }}
+          <div className="flex flex-row items-start gap-x-2 justify-between">
+            <button
+              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={() => {
+                setViewPendingBets(!viewPendingBets);
+              }}
             >
-              <p className="text-center">
-                <span className="text-yellow-300">{newUsername}</span> YCoins:
-              </p>
-              <div className="flex flex-row justify-center items-center gap-1">
-                {coinsLoading ? (
-                  <FaSpinner className="animate-spin" />
-                ) : (
-                  <p className="text-center text-sm md:text-lg mg:text-3xl">
-                    {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
-                  </p>
-                )}
-                <Image
-                  src="/YCoin.png"
-                  alt="YCoin"
-                  height={30}
-                  width={30}
-                  style={{ objectFit: "contain" }}
-                />
-              </div>
+              Pending Bets {pendingBets.length}
+            </button>
+            <button
+              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={() => {
+                setViewBetSlip(!viewBetSlip);
+              }}
+            >
+              <p>View Slip {betCount}</p>
+            </button>
+            <button
+              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={() => {
+                setViewBetHistory(!viewBetHistory);
+              }}
+            >
+              <p>View History {pastBets.length}</p>
+            </button>
+            <button
+              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              onClick={sendToRankings}
+            >
+              See Rankings
+            </button>
+          </div>
+        </div>
+        <div className="items-center my-auto">
+          <div
+            className="p-3 mg:p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xs xs:text-sm mg:text-xl rounded-xl shadow-lg"
+            style={{ maxWidth: "250px", minWidth: "100px" }}
+          >
+            <p className="text-center">
+              <span className="text-yellow-300">{newUsername}</span> YCoins:
+            </p>
+            <div className="flex flex-row justify-center items-center gap-1">
+              {coinsLoading ? (
+                <FaSpinner className="animate-spin" />
+              ) : (
+                <p className="text-center text-sm md:text-lg mg:text-3xl">
+                  {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
+                </p>
+              )}
+              <Image
+                src="/YCoin.png"
+                alt="YCoin"
+                height={30}
+                width={30}
+                style={{ objectFit: "contain" }}
+              />
             </div>
           </div>
         </div>
-        
-        <p className="text-xs text-center text-gray-500">
-          Predictions may only be canceled 24 hours or more before the game.
-        </p>
-
-        <p className="md:text-xl font-bold text-center mb-4 pt-6">
-          Upcoming Games
-        </p>
-
-        <p className="text-xs text-center text-gray-500">
-          Predict game outcomes and see how your predictions stack against other
-          Yalies! <br></br>Odds are determined by an internal algorithm and affect
-          potential earnings.
-          <br></br>
-        </p>
-
-        {filteredMatches.length == 0 ? (
-          <div className="text-center mt-10">
-            <h1>No matches available!</h1>
-          </div>
-        ) : (
-          <></>
-        )}
-
-        <div className="min-w-full flex-col items-center px-5 lg:px-15 relative">
-          {/* <BetTemplate match={filteredMatches[0]} /> */}
-          <MatchesTable
-            filteredMatches={filteredMatches}
-            handleCollegeClick={handleCollegeClick}
-            availablePoints={availablePoints}
-            updateBetSlip={updateBetSlip}
-          />
-          {filteredMatches.length > 0 && (
-            <Pagination
-              currentPageNumber={page}
-              totalPages={totalPages}
-              setPageNumber={setPage}
-              setQueryType={setQueryType}
-            />
-          )}
-        </div>
-        {viewBetHistory && (
-          <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
-            onClick={() => setViewBetHistory(false)}
-          >
-            <div 
-              className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
-                <h2 className="text-xl font-semibold">Bet History</h2>
-                <button
-                  onClick={() => setViewBetHistory(false)}
-                  className="text-gray-600 hover:text-white text-xl font-bold"
-                >
-                  <MdClose />
-                </button>
-              </div>
-              <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
-                {pendingLoading ? (
-                  <div className="flex justify-center items-center">
-                    <FaSpinner className="animate-spin" />
-                  </div>
-                ) : pastBets.length > 0 ? 
-                  (<BetParlayTable parlays={pastBets} />) : 
-                  (<div className="text-sm pt-4 items-center text-center">No Bet History.</div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        {viewPendingBets && (
-          <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
-            onClick={() => setViewPendingBets(false)}
-          >
-            <div 
-              className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
-                <h2 className="text-xl font-semibold">Pending Bets</h2>
-                <button
-                  onClick={() => setViewPendingBets(false)}
-                  className="text-gray-600 hover:text-white text-xl font-bold"
-                >
-                  <MdClose />
-                </button>
-              </div>
-              <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
-                {pendingLoading ? (
-                  <div className="flex justify-center items-center">
-                    <FaSpinner className="animate-spin" />
-                  </div>
-                ) : (
-                  <BetParlayTable parlays={pendingBets} />
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        {viewBetSlip && (
-          <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
-            onClick={() => setViewBetSlip(false)}
-          >
-            <div 
-              className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
-                <h2 className="text-xl font-semibold">Prediction Slip</h2>
-                <button
-                  onClick={() => setViewBetSlip(false)}
-                  className="text-gray-600 hover:text-white text-xl font-bold"
-                >
-                  <MdClose />
-                </button>
-              </div>
-              <div className="pl-4 pr-4 pt-4 overflow-y-auto custom-scrollbar h-full">
-                {betslip.length === 0 ? (
-                  <div className="flex justify-center items-center flex-col">
-                    <p className="text-gray-500 text-sm">No bets in the slip</p>
-                    <p className="text-gray-500 text-sm">Add bets to make a parlay</p>
-                  </div>
-                ) : (
-                  <div>
-                    {betslip.map((bet, index) => (
-                      <BetSlipRow
-                        key={index}
-                        bet={bet}
-                        isFirst={index === 0}
-                        isLast={index === betslip.length - 1}
-                        removeBet={removeBet}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-                <div className="flex justify-between p-2 border-t-2 dark:border-black border-gray-300">
-                  <div className="flex flex-row items-center w-[70%] gap-x-2">
-                    <input 
-                      onChange={(e) => setBetAmount(() => Number(e.target.value))}
-                      type="number"
-                      min={0}
-                      max={250}
-                      value={betAmount || ''}
-                      className="rounded-md w-[20%] absolute p-2 placeholder-gray-400 text-black bg-gray-300 dark:text-white dark:bg-black focus:outline-none text-sm focus:ring-2 focus:ring-blue-400"
-                      placeholder="Enter bet amount"
-                    />
-                    <div className="pl-[50%] text-right text-xs sm:text-center gap-x-2 flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
-                      <p>Total Odds: </p>
-                      <div className="flex flex-row justify-end">
-                        <p>{(totalOdds).toFixed(2)}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right text-xs sm:text-center gap-x-2 flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
-                      <p>Potential Winnings: </p>
-                      { betAmount !== "" &&
-                      <div className="flex flex-row justify-end">
-                        <p>{(betAmount * totalOdds).toFixed(2)}</p>
-                      </div>
-                      }
-                    </div>
-                    
-                  </div>
-                  <div>
-                    <button
-                      className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                      onClick={handleSubmitBet}
-                    >
-                      Submit Bet
-                    </button>
-                  </div>
-                </div>
-            </div>
-          </div>
-        )}
-        
-        
       </div>
+      
+      <p className="text-xs text-center text-gray-500">
+        Predictions may only be canceled 24 hours or more before the game.
+      </p>
 
-    // <div className="min-h-screen p-8 md:p-0 flex-col items-center lg:w-4/5 lg:mx-auto">
+      <p className="md:text-xl font-bold text-center mb-4 pt-6">
+        Upcoming Games
+      </p>
 
-    //   {/* Rankings Button*/}
-    //   <button
-    //     className="md:px-25 absolute mt-10 top-8 right-15 px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-    //     onClick={sendToRankings}
-    //   >
-    //     See Rankings
-    //   </button>
+      <p className="text-xs text-center text-gray-500">
+        Predict game outcomes and see how your predictions stack against other
+        Yalies! <br></br>Odds are determined by an internal algorithm and affect
+        potential earnings.
+        <br></br>
+      </p>
 
-    //   <div className="flex justify-center items-center mb-4 pt-10">
-    //     <div
-    //       className="p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xl rounded-xl shadow-lg "
-    //       style={{ maxWidth: "250px", minWidth: "200px" }}
-    //     >
-    //       <p className="text-center">
-    //         <span className="text-yellow-300">{user.username}</span> YCoins:
-    //       </p>
-    //       <div className="flex flex-row justify-center items-center gap-1">
-    //         {coinsLoading ? (
-    //           <FaSpinner className="animate-spin" />
-    //         ) : (
-    //           <p className="text-center text-3xl">
-    //             {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
-    //           </p>
-    //         )}
-    //         <Image
-    //           src="/YCoin.png"
-    //           alt="YCoin"
-    //           height={35} // Retains the specified height
-    //           width={35} // Retains the specified width
-    //           style={{ objectFit: "contain" }} // Proper usage of objectFit
-    //         />
-    //       </div>
-    //     </div>
-    //   </div>
+      {filteredMatches.length == 0 ? (
+        <div className="text-center mt-10">
+          <h1>No matches available!</h1>
+        </div>
+      ) : (
+        <></>
+      )}
 
-    //   <p className="md:text-xl font-bold text-center mb-4 pt-6">
-    //     Pending Predictions
-    //   </p>
-
-    //   <p className="text-xs text-center text-gray-500">
-    //     Predictions may only be canceled 24 hours or more before the game.
-    //   </p>
-
-    //   {pendingLoading ? (
-    //     <div className="flex justify-center items-center mt-4">
-    //       <FaSpinner className="animate-spin" />
-    //     </div>
-    //   ) : (
-    //     <div className="min-w-full flex-col items-center md:px-20">
-    //       <MatchesTablePending pendingBets={pendingBets} />
-    //     </div>
-    //   )}
-
-    //   <p className="md:text-xl font-bold text-center mb-4 pt-6">
-    //     Upcoming Games
-    //   </p>
-
-    //   <p className="text-xs text-center text-gray-500 ">
-    //     Predict game outcomes and see how your predictions stack against other
-    //     Yalies! <br></br>Odds are determined by an internal algorithm and affect
-    //     potential earnings.
-    //     <br></br>
-    //   </p>
-
-    //   <div className="min-w-full flex-col items-center md:px-20">
-    //     <MatchesTable
-    //       filteredMatches={filteredMatches}
-    //       handleCollegeClick={handleCollegeClick}
-    //       availablePoints={availablePoints}
-    //     />
-    //     {filteredMatches.length > 0 && (
-    //       <Pagination
-    //         currentPageNumber={page}
-    //         totalPages={totalPages}
-    //         setPageNumber={setPage}
-    //         setQueryType={setQueryType}
-    //       />
-    //     )}
-    //   </div>
-
-    //   <br></br>
-    // </div>
+      <div className="flex-col items-center px-5 lg:px-15 relative">
+        {/* <BetTemplate match={filteredMatches[0]} /> */}
+        <MatchesTable
+          filteredMatches={filteredMatches}
+          handleCollegeClick={handleCollegeClick}
+          availablePoints={availablePoints}
+          updateBetSlip={updateBetSlip}
+        />
+        {filteredMatches.length > 0 && (
+          <Pagination
+            currentPageNumber={page}
+            totalPages={totalPages}
+            setPageNumber={setPage}
+            setQueryType={setQueryType}
+          />
+        )}
+      </div>
+      {viewBetHistory && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          onClick={() => setViewBetHistory(false)}
+        >
+          <div 
+            className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
+              <h2 className="text-xl font-semibold">Bet History</h2>
+              <button
+                onClick={() => setViewBetHistory(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+              {pendingLoading ? (
+                <div className="flex justify-center items-center">
+                  <FaSpinner className="animate-spin" />
+                </div>
+              ) : pastBets.length > 0 ? 
+                (<BetParlayTable parlays={pastBets} />) : 
+                (<div className="text-sm pt-4 items-center text-center">No Bet History.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {viewPendingBets && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          onClick={() => setViewPendingBets(false)}
+        >
+          <div 
+            className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
+              <h2 className="text-xl font-semibold">Pending Bets</h2>
+              <button
+                onClick={() => setViewPendingBets(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+              {pendingLoading ? (
+                <div className="flex justify-center items-center">
+                  <FaSpinner className="animate-spin" />
+                </div>
+              ) : (
+                <BetParlayTable parlays={pendingBets} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {viewBetSlip && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          onClick={() => setViewBetSlip(false)}
+        >
+          <div 
+            className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
+              <h2 className="text-xl font-semibold">Prediction Slip</h2>
+              <button
+                onClick={() => setViewBetSlip(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr-4 pt-4 overflow-y-auto custom-scrollbar h-full">
+              {betslip.length === 0 ? (
+                <div className="flex justify-center items-center flex-col">
+                  <p className="text-gray-500 text-sm">No bets in the slip</p>
+                  <p className="text-gray-500 text-sm">Add bets to make a parlay</p>
+                </div>
+              ) : (
+                <div>
+                  {betslip.map((bet, index) => (
+                    <BetSlipRow
+                      key={index}
+                      bet={bet}
+                      isFirst={index === 0}
+                      isLast={index === betslip.length - 1}
+                      removeBet={removeBet}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+              <div className="flex justify-between p-2 border-t-2 dark:border-black border-gray-300">
+                <div className="flex flex-row items-center w-[70%] gap-x-2">
+                  <input 
+                    onChange={(e) => setBetAmount(() => Number(e.target.value))}
+                    type="number"
+                    min={0}
+                    max={250}
+                    value={betAmount || ''}
+                    className="rounded-md w-[20%] absolute p-2 placeholder-gray-400 text-black bg-gray-300 dark:text-white dark:bg-black focus:outline-none text-sm focus:ring-2 focus:ring-blue-400"
+                    placeholder="Enter bet amount"
+                  />
+                  <div className="pl-[50%] text-right text-xs sm:text-center gap-x-2 flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
+                    <p>Total Odds: </p>
+                    <div className="flex flex-row justify-end">
+                      <p>{(totalOdds).toFixed(2)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right text-xs sm:text-center gap-x-2 flex border-r border-gray-400 text-gray-900 dark:text-gray-400 pr-2">
+                    <p>Potential Winnings: </p>
+                    { betAmount !== "" &&
+                    <div className="flex flex-row justify-end">
+                      <p>{(betAmount * totalOdds).toFixed(2)}</p>
+                    </div>
+                    }
+                  </div>
+                  
+                </div>
+                <div>
+                  <button
+                    className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                    onClick={handleSubmitBet}
+                  >
+                    Submit Bet
+                  </button>
+                </div>
+              </div>
+          </div>
+        </div>
+      )}
+      
+      
+    </div>
   );
 };
 

@@ -112,9 +112,7 @@ const AAHomeComponent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-10">
-        <LoadingScreen />
-      </div>
+      <LoadingScreen />
     );
   }
 
@@ -137,18 +135,13 @@ const AAHomeComponent: React.FC = () => {
         </div>
       ) : selected === "Prediction" ? (
         <div className="px-5">
-          {loadingUsers ? (
-            <div className="text-center py-10">
-              <LoadingScreen />
-            </div>
-          ) : (
             <>
               {console.debug("Users fed to PredictionPodiums:", sortedUsers.slice(0, 3))}
               {console.debug("Users fed to PredictionLeaderboard:", sortedUsers)}
               <PredictionPodiums users={sortedUsers.slice(0, 3)} />
               <PredictionLeaderboard users={sortedUsers} />
             </>
-          )}
+          
         </div>
       ) : (
         <div>

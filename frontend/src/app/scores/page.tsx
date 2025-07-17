@@ -9,6 +9,7 @@ import TableHeader from "@src/components/Scores/TableHeader";
 import MatchesTable from "@src/components/Scores/MatchTable";
 import { Match, CollegeStats } from "@src/types/components";
 import Pagination from "@src/components/Scores/Pagination";
+import PageHeading from "@src/components/PageHeading";
 
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -169,12 +170,13 @@ const ScoresPage: React.FC = () => {
     resetPaginationState();
   };
 
-  return (
-    <div className="p-4 flex flex-col justify-center max-w-[1500px] mx-auto">
-      <h1 className="md:text-4xl text-xl font-bold text-center xs:mb-4 pt-8">
-        Scores and Rankings
-      </h1>
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
+  return (
+    <main className="flex flex-col mt-20 justify-center max-w-full mx-auto">
+      <PageHeading heading="Scores and Rankings" />
       {filter.college && filter.college != "All" && (
         <>
           <div className="hidden xs:block">
@@ -220,8 +222,7 @@ const ScoresPage: React.FC = () => {
           </>
         )}
       </div>
-      {isLoading && <LoadingScreen />}
-    </div>
+    </main>
   );
 };
 

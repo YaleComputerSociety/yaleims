@@ -19,7 +19,6 @@ body {
     #8db8ea
   ); /* Light blue gradient for body */
   --foreground: #1f2937; /* Text color for light mode */
-  --nav-bg: #d0e4fa;
 }
 
 /* Dark mode styles */
@@ -31,7 +30,6 @@ body {
     #0f0f0f
   ); /* Dark blue gradient for body */
   --foreground: #e5e7eb; /* Text color for dark mode */
-  --nav-bg: #0e2659;
 }
 
 html,
@@ -51,10 +49,6 @@ body {
   background: var(--body-bg, white); /* Gradient background for body */
   color: var(--foreground, black); /* Text color */
   transition: background 0.5s ease, color 0.3s ease; /* Smooth transition for background and text */
-}
-
-nav {
-  background-color: var(--nav-bg); /* Background color from theme */
 }
 
 .custom-scrollbar::-webkit-scrollbar {

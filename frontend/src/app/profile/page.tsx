@@ -189,7 +189,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="flex flex-col max-w-[1500px] mx-auto">
+    <div className="flex min-h-screen flex-col max-w-[1500px] mx-auto">
       <div className="flex-grow m-3 ">
         <h2 className="text-lg sm:text-2xl font-semibold text-center mt-10">
           Hey {user.name.split(" ")[0]}, play some IMs today!

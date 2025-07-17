@@ -7,6 +7,7 @@ import ListView from "@src/components/Schedule/ListView";
 import Calendar from "@src/components/Schedule/Calendar";
 import { FaSpinner } from "react-icons/fa";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
+import PageHeading from "@src/components/PageHeading";
 
 const PAGE_SIZE = "10";
 
@@ -105,14 +106,12 @@ const SchedulePage: React.FC = () => {
   };
 
   return (
-    <div className="pt-8">
+    <div className="pt-20">
       {isFirstLoad ? (
         <LoadingScreen />
       ) : (
-        <div className="p-4 flex flex-col items-center">
-          <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 xs:mb-8">
-            Schedules
-          </h1>
+        <div className="p-4 min-h-screen flex flex-col items-center">
+          <PageHeading heading="Schedules" />
 
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl">
             {/* Filters and Calendar */}
