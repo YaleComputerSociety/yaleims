@@ -1,5 +1,5 @@
 import React from "react";
-import PopupTrigger from "./MVPPopup";
+import { useSeason } from "@src/context/SeasonContext";
 
 type TitleProps = {
   selected: string;
@@ -17,16 +17,15 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
   const [ day, month, year ] = lastUpdated.split('-');
   const convertedDate = `${month}/${day}/${year}`
 
+  const { currentSeason, pastSeasons } = useSeason();
+
   return (
     <div className="relative pt-7 mb-7">
-      <div className="absolute top-[3.2rem] right-[1.25rem] md:top-[3.4rem] md:right-[5rem] z-10">
-        <PopupTrigger/>
-      </div>
       <div className="grid grid-cols-2 md:max-w-[80%] sm:max-w-[75%] max-w-[85%] mx-auto pt-7 mb-7 xs:mb-0">
           <h1 className="hidden xs:block text-start ml-3 md:text-5xl text-4xl text-blue-600 font-bold dark:text-white mg:text-6xl relative">
-            {selected === "2024-2025" && "TYNG CUP STANDINGS"}
+            {selected === currentSeason?.year && "TYNG CUP STANDINGS"}
             {selected === "All Time" && "ALL-TIME STANDINGS"}
-            {selected === "Prediction" && "PREDICTION STANDINGS"}
+            {pastSeasons?.years?.includes(selected) && `${selected} STANDINGS`}
           </h1>
         <div className="hidden xs:grid text-right grid-cols-2">
           <div>
@@ -38,8 +37,10 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
               onChange={handleSelectionChange}
               className="focus:outline-none dark:bg-black border-solid border-2 md:p-2 p-1 border-blue-600 md:rounded-2xl rounded-xl text-blue-600 mg:text-sm xs:text-xs font-bold text-[10px]"
             >
-              <option value="2024-2025">2024-2025</option>
-              <option value="Prediction">Predictions</option>
+              <option value={currentSeason?.year}>{currentSeason?.year}</option>
+              {pastSeasons?.years.map((season) => (
+                <option key={season} value={season}>{season}</option>
+              ))}
               <option value="All Time">All Time</option>
             </select>
             <p className="mg:pt-5 pt-3 text-blue-600 underline mg:text-sm xs:text-xs text-[10px]">
@@ -53,9 +54,9 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
       </div>
       <div className="xs:hidden text-blue-700 dark:text-white -mt-8">
         <h1 className="text-center font-bold text-2xl">
-          {selected === "2024-2025" && "TYNG CUP STANDINGS"}
+          {selected === currentSeason?.year && "TYNG CUP STANDINGS"}
           {selected === "All Time" && "ALL-TIME STANDINGS"}
-          {selected === "Prediction" && "PREDICTION STANDINGS"}
+          {pastSeasons?.years && selected in pastSeasons.years && `${selected} STANDINGS`}
         </h1>
         <div className="flex flex-row justify-between w-3/4 mx-auto items-center">
           <select
@@ -63,8 +64,10 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
             onChange={handleSelectionChange}
             className="focus:outline-none dark:bg-black border-solid border-2 p-1 border-blue-600 rounded-lg text-sm font-bold text-blue-700"
           >
-            <option value="2024-2025">2024-2025</option>
-            <option value="Prediction">Prediction</option>
+            <option value={currentSeason?.year}>{currentSeason?.year}</option>
+            {pastSeasons?.years.map((season) => (
+              <option key={season} value={season}>{season}</option>
+            ))}
             <option value="All Time">All Time</option>
           </select>
           <h2 className="mt-4 text-right text-xs font-extralight underline mb-4 ">

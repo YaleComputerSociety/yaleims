@@ -12,6 +12,8 @@ import { initAnalytics } from "../../lib/firebase";
 import React from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { SeasonProvider } from "@src/context/SeasonContext";
+
 
 // tiny client island declared right here
 function AnalyticsInit() {
@@ -32,37 +34,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <UserProvider>
-      <FiltersProvider>
-        <GoogleOAuthProvider clientId={CLIENT_ID}>
-          <html lang="en" suppressHydrationWarning>
-            <head>
-              <title>Yale IMs</title>
-              <link rel="icon" href="/favicon.ico" />
-              <meta property="og:title" content="Yale IMs" />
-            </head>
-            <body
-              className={`${inter.className} min-h-screen w-full grid grid-cols-[0.16fr_0.84fr]`}
-            >
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-              >
-                <div>
-                  <AnalyticsInit />
-                  <NavBar />
-                </div>
-                <div className="">
-                  {children}
-                  <Footer />
-                </div>
-                <ToastContainer />
-              </ThemeProvider>
-            </body>
-          </html>
-        </GoogleOAuthProvider>
-      </FiltersProvider>
+    <UserProvider>      
+        <FiltersProvider>
+          <GoogleOAuthProvider clientId={CLIENT_ID}>
+            <html lang="en" suppressHydrationWarning>
+              <head>
+                <title>Yale IMs</title>
+                <link rel="icon" href="/favicon.ico" />
+                <meta property="og:title" content="Yale IMs" />
+              </head>
+              <body className={`${inter.className} min-h-screen w-full grid grid-cols-[0.16fr_0.84fr]`}>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                  <div>
+                    <AnalyticsInit />
+                    <NavBar />
+                  </div>
+                  <div className="">
+                    <SeasonProvider>{children}</SeasonProvider>                      
+                    <Footer />
+                  </div>    
+                  <ToastContainer />
+                </ThemeProvider>               
+              </body>
+            </html>
+          </GoogleOAuthProvider>
+        </FiltersProvider>
     </UserProvider>
   );
 }
