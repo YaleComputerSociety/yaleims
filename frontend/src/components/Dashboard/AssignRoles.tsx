@@ -74,37 +74,51 @@ const AssignRoles = () => {
     <div className="flex flex-row justify-center p-4">
       <h2 className="text-lg font-semibold flex items-center">Assign Roles</h2>
       <select
-        className="ml-8 px-4 py-2 border rounded text-gray-800"
+        className="ml-8 px-4 py-2 border rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
         value={roleInput}
         onChange={handleRoleChange}
       >
-        <option value="" className="text-gray-400">
+        <option
+          value=""
+          className="text-gray-300 dark:text-gray-500 bg-white dark:bg-gray-900"
+        >
           Assign role
         </option>
         {roles.map((role) => (
-          <option key={role} value={role}>
+          <option
+            key={role}
+            value={role}
+            className="text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900"
+          >
             {role}
           </option>
         ))}
       </select>
       <input
         type="email"
-        className="ml-4 px-4 py-2 border rounded text-gray-800"
+        className="ml-4 px-4 py-2 border rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 placeholder:text-gray-300"
         placeholder="User email"
         value={emailInput}
         onChange={handleEmailChange}
       />
       {roleInput === "captain" && (
         <select
-          className="ml-4 px-2 py-2 border rounded text-gray-800"
+          className="ml-4 px-2 py-2 border rounded text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700"
           value={sportInput}
           onChange={(e) => setSportInput(e.target.value)}
         >
-          <option value="" className="text-gray-400">
+          <option
+            value=""
+            className="text-gray-300 dark:text-gray-500 bg-white dark:bg-gray-900"
+          >
             Assign sport
           </option>
           {sports.map((sport) => (
-            <option key={sport.id} value={sport.name}>
+            <option
+              key={sport.id}
+              value={sport.name}
+              className="text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900"
+            >
               {sport.name}
             </option>
           ))}
