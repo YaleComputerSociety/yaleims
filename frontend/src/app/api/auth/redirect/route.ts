@@ -93,7 +93,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "none",
       });
 
       return redirectResponse;

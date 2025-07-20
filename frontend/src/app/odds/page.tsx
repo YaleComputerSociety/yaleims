@@ -54,8 +54,7 @@ const YoddsPage: React.FC = () => {
   const [betAmount, setBetAmount] = useState<number | ''>('');
   const [totalOdds, setTotalOdds] = useState<number>(1);
   const [submitButtonClicked, setSubmitButtonClicked] = useState(0);
-  // console.log(betslip)
-  // console.log(totalOdds)
+ 
   const updateBetSlip = (bet: Bet): Bet[] => {
     const updatedBetSlip = [...betslip, bet];
     setBetSlip(updatedBetSlip);
@@ -63,9 +62,6 @@ const YoddsPage: React.FC = () => {
     setBetCount(() => betCount + 1)
     return updatedBetSlip;
   };
-  // console.log(betslip)
-  // console.log(pendingBets)
-  // console.log(filteredMatches)
 
   const removeBet = (bet: Bet): Bet[] => {
     const updatedBetSlip = betslip.filter((b) => b.betId !== bet.betId);
@@ -150,16 +146,10 @@ const YoddsPage: React.FC = () => {
     const fetchMyPoints = async () => {
       setCoinsLoading(true);
       try {
-        const userToken = sessionStorage.getItem("userToken");
-        const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`,
-          {
-            headers: { Authorization: `Bearer ${userToken}` },
-          }
-        );
-        if (!response.ok)
-          throw new Error(`Error fetching points: ${response.statusText}`);
+        const response = await fetch("/api/functions/getMyAvailablePoints");
+        if (!response.ok) throw new Error("Error fetching points");
         const data = await response.json();
+        
         setAvailablePoints(data.points);
         setUsername(data.username);
       } catch (error) {
@@ -273,14 +263,14 @@ const YoddsPage: React.FC = () => {
     totalOdds: number;
   }) => {
     try {
-      const userToken = sessionStorage.getItem("userToken");
+      const token = sessionStorage.getItem("userToken");  
       const response = await fetch(
         "https://addbetmod-65477nrg6a-uc.a.run.app",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             email: email,

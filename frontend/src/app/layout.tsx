@@ -10,6 +10,7 @@ import { ThemeProvider } from 'next-themes';
 import Footer from "@src/components/Footer";
 import { initAnalytics } from "../../lib/firebase";
 import React from "react";
+import { SeasonProvider } from "@src/context/SeasonContext";
 
 // tiny client island declared right here
 function AnalyticsInit() {
@@ -31,7 +32,8 @@ export default function RootLayout({
 }>) {
   return (
     <UserProvider>
-      <FiltersProvider>
+      
+        <FiltersProvider>
           <GoogleOAuthProvider clientId={CLIENT_ID}>
             <html lang="en" suppressHydrationWarning>
               <head>
@@ -46,14 +48,14 @@ export default function RootLayout({
                     <NavBar />
                   </div>
                   <div className="">
-                    {children}
+                    <SeasonProvider>{children}</SeasonProvider>                      
                     <Footer />
                   </div>    
                 </ThemeProvider>               
               </body>
             </html>
           </GoogleOAuthProvider>
-      </FiltersProvider>
+        </FiltersProvider>
     </UserProvider>
   );
 }
