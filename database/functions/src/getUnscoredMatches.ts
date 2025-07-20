@@ -27,7 +27,7 @@ export const getUnscoredMatches = functions.https.onRequest(
         //   }
         // } catch (error) {
         //   return res.status(401).json({error: "Invalid Token"})
-        // } 
+        // }
         //get rid of email in the query and use the decoded users email
         const currentDate = admin.firestore.Timestamp.now();
 
