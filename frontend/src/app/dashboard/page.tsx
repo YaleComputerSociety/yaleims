@@ -17,6 +17,7 @@ const Dashboard: React.FC = () => {
       <PageHeading heading="Dashboard" />
       <div>
         {user?.role === "admin" && <AdminDashboard />}
+        <AdminDashboard />
         {user?.role === "user" && <UserDashboard />}
         {user?.role === "captain" && <CaptainDashboard />}
         {user?.role === "college_rep" && <CollegeRepDashboard />}

@@ -22,6 +22,7 @@ import { publicApiSignup } from "./publicApis.js";
 import { addBetMod } from "./addBetMod.js";
 import { getBets } from "./getBets.js";
 import { getMatchesPaginatedTest } from "./getMatchesPaginatedTest.js";
+import { updateUserRole } from "./updateUserRole.js";
 import { getSeasons } from "./getSeasons.js";
 import { getLeaderboardv2 } from "./getLeaderboardv2.js";
 
@@ -51,5 +52,6 @@ export {
   addBetMod,
   getBets,
   getMatchesPaginatedTest,
+  updateUserRole,
   getSeasons
 };
