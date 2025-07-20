@@ -10,40 +10,23 @@ import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
 import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
-import PredictionPodiums from "./PredictionPodiums";
-import PredictionLeaderboard from "./PredictionLeaderboard";
+import { useSeason } from "@src/context/SeasonContext";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
-  const [loadingUsers, setLoadingUsers] = useState<boolean>(false); // Track user leaderboard loading
   const [sortedColleges, setSortedColleges] = useState<any[]>([]);
-  const [sortedUsers, setSortedUsers] = useState<any[]>([]);
   const { setFilter } = useContext(FiltersContext);
   const { filter } = useContext(FiltersContext);
-  const [selected, setSelected] = useState<string>(filter.selected?.trim() !== "" ? filter.selected : "2024-2025");
-  // const [selected, setSelected] = useState<string>("2024-2025");
-
-  useEffect(() => {
-    if (selected === "Prediction" && sortedUsers.length === 0) {
-      console.debug("Fetching user leaderboard due to selected change...");
-      fetchUserLeaderboard();
-    }
-  }, [selected]); 
+  const { currentSeason } = useSeason();
+  const [selected, setSelected] = useState<string>(filter.selected?.trim() !== "" ? filter.selected : currentSeason?.year || "2025-2026");
 
   useEffect(() => {
     const fetchCollegesLeaderboard = async () => {
       try {
-        const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getLeaderboard",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
+        setLoading(true);
+        if (selected === "All Time") return;
+        const response = await fetch(`api/functions/getLeaderboardv2?seasonId=${encodeURIComponent(selected)}`)
         if (!response.ok) {
           throw new Error(
             `Error fetching colleges leaderboard: ${response.statusText}`
@@ -61,35 +44,7 @@ const AAHomeComponent: React.FC = () => {
     };
 
     fetchCollegesLeaderboard();
-  }, []);
-
-  const fetchUserLeaderboard = async () => {
-    setLoadingUsers(true);
-    try {
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Error fetching users leaderboard: ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      setSortedUsers(() => data);
-    } catch (error) {
-      console.error("Failed to fetch users leaderboard:", error);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
+  }, [selected]);
 
   const handleCollegeClick = (collegeName: string) => {
     setFilter({
@@ -103,11 +58,6 @@ const AAHomeComponent: React.FC = () => {
 
   const handleSelectedChange = (filter: string) => {
     setSelected(filter);
-
-    if (filter === "Prediction" && sortedUsers.length === 0) {
-      // Only fetch user leaderboard if not already loaded
-      fetchUserLeaderboard();
-    }
   };
 
   if (loading) {
@@ -117,12 +67,14 @@ const AAHomeComponent: React.FC = () => {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto">
-      {/* Title */}
+    <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto mb-20">
       <Title selected={selected} lastUpdated={sortedColleges[0].today} onFilterChange={handleSelectedChange} />
-
-      {/* Conditional Rendering */}
-      {selected === "2024-2025" ? (
+      {selected === "All Time" ? (
+        <div>
+          <AllTimePodiums />
+          <AllTimeLeaderboardTable />
+        </div>
+      ) : (
         <div>
           <YearlyPodiums
             colleges={sortedColleges.slice(0, 3)}
@@ -132,21 +84,6 @@ const AAHomeComponent: React.FC = () => {
             colleges={sortedColleges}
             onCollegeClick={handleCollegeClick}
           />
-        </div>
-      ) : selected === "Prediction" ? (
-        <div className="px-5">
-            <>
-              {console.debug("Users fed to PredictionPodiums:", sortedUsers.slice(0, 3))}
-              {console.debug("Users fed to PredictionLeaderboard:", sortedUsers)}
-              <PredictionPodiums users={sortedUsers.slice(0, 3)} />
-              <PredictionLeaderboard users={sortedUsers} />
-            </>
-          
-        </div>
-      ) : (
-        <div>
-          <AllTimePodiums />
-          <AllTimeLeaderboardTable />
         </div>
       )}
     </div>

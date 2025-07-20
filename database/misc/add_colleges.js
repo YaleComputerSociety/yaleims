@@ -17,7 +17,7 @@ const colleges = [
     { abbreviation: "SY", name: "Saybrook" },
     { abbreviation: "SM", name: "Silliman" },
     { abbreviation: "TD", name: "Timothy Dwight" },
-    { abbreviation: "TC", name: "Trumbull" }
+    { abbreviatigcon: "TC", name: "Trumbull" }
   ];
 
 // Function to add colleges to Firestore with references to users and matches

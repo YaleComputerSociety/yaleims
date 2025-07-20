@@ -26,8 +26,8 @@ const copyCollection = async (sourceCollectionName, targetCollectionName) => {
 };
 
 // Replace with your collection names
-const sourceCollectionName = 'colleges';
-const targetCollectionName = 'colleges_testing';
+const sourceCollectionName = 'users';
+const targetCollectionName = 'users_copy';
 
 // Execute the copy function
 copyCollection(sourceCollectionName, targetCollectionName);

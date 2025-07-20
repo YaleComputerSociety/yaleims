@@ -1,3 +1,25 @@
+export const JWT_SECRET="wp[rkfwprk0pki942j4e-9j1o[jfcm2lv;24p[2p0-1i0]]]"
+
+export interface DecodedToken {
+  name: string;
+  netid: string;
+  email: string;
+  role: string;
+  username: string;
+  college: string;
+  points: string;
+  matches_played: number;
+}
+
+export function isValidDecodedToken(decoded: any): decoded is DecodedToken {
+  return (
+    typeof decoded === "object" &&
+    typeof decoded.netid === "string" &&
+    typeof decoded.email === "string"
+  );
+}
+
+
 export interface Sport {
   id: number;
   name: string;
