@@ -24,7 +24,10 @@ import { getBets } from "./getBets.js";
 import { getMatchesPaginatedTest } from "./getMatchesPaginatedTest.js";
 import { updateUserRole } from "./updateUserRole.js";
 import { getSeasons } from "./getSeasons.js";
+import { getSeasonPoints } from "./getSeasonPoints.js";
 import { getLeaderboardv2 } from "./getLeaderboardv2.js";
+import { getBetsv2 } from "./getBetsv2.js";
+import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
 
 export {
   getLeaderboard,
@@ -51,7 +54,11 @@ export {
   publicApiSignup,
   addBetMod,
   getBets,
+  getBetsv2,
   getMatchesPaginatedTest,
+  getSeasons,
+  getSeasonPoints,
+  getMatchesPaginatedv2
   updateUserRole,
   getSeasons
 };

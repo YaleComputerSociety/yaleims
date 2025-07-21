@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import jwt from "jsonwebtoken";
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -21,27 +23,27 @@ interface Bet {
 }
 
 interface AddBetRequestBody {
-  email: string;
   betAmount: number;
   betArray: Bet[];
   totalOdds: number
 }
 
-// const calculateParlayOdds = (bets: Bet[]): number =>
-//   bets.reduce((acc, leg) => {
-//     if (!leg.betOdds || leg.betOdds <= 1)
-//       throw new Error(`Invalid odds for match ${leg.matchId}: ${leg.betOdds}`);
-//     return acc * leg.betOdds;
-//   }, 1);
-
 export const addBetMod = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
-    const { 
-      email, 
-      betAmount, 
-      betArray, 
-      totalOdds,
-    } = req.body as AddBetRequestBody;
+    const authHeader = req.headers.authorization || ""
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({error: "No token provided"});
+    }
+    const token = authHeader.split("Bearer ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!isValidDecodedToken(decoded)) {
+      console.error("Invalid token structure");
+      return res.status(401).json({error: "Invalid Token Structure"})
+    }
+    const email = decoded.email;
+    const { seasonId } = req.query as { seasonId: string };
+    const { betAmount, betArray, totalOdds } = req.body as AddBetRequestBody;
     const currentCashed = 0 
 
     if (!email || !Array.isArray(betArray) || betArray.length === 0)
@@ -50,24 +52,24 @@ export const addBetMod = functions.https.onRequest(async (req, res) => {
 
     const finalOdds = totalOdds;
     try {
-      const userRef = db.collection("users").doc(email);
-      const userSnap = await userRef.get();
+      const userSeasonRef = db.collection("users").doc(email).collection("seasons").doc(seasonId);
+      const userSnap = await userSeasonRef.get();
       if (!userSnap.exists) return res.status(404).send("User not found");
 
       await Promise.all(
         betArray.map(async (leg) => {
-          const mSnap = await db.collection("matches").doc(leg.matchId).get();
+          const mSnap = await db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId).get();
           if (!mSnap.exists)
             throw new Error(`Match not found: ${leg.matchId}`);
         })
       );
 
       await db.runTransaction(async (tx) => {
-        tx.update(userRef, {
+        tx.update(userSeasonRef, {
           "points": admin.firestore.FieldValue.increment(-betAmount),
         });
 
-        const parlayRef = userRef.collection("bets").doc();
+        const parlayRef = userSeasonRef.collection("bets").doc();
         tx.set(parlayRef, {
           betAmount,
           betOdds: finalOdds,
@@ -86,7 +88,7 @@ export const addBetMod = functions.https.onRequest(async (req, res) => {
           tx.set(legRef, leg);
 
           /* ii.  Update predictions + volume on the match doc */
-          const matchRef = db.collection("matches").doc(leg.matchId);
+          const matchRef = db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId);
 
           tx.update(matchRef, {
             [`predictions.${sanitizedEmail}.${parlayRef.id}`]: {
