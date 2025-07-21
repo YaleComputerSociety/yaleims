@@ -82,90 +82,90 @@ const UpdateScores: React.FC = () => {
   }
 
   return (
-    <div className="p-8 flex-col items-center mx-auto md:mx-20">
-      <h1 className="md:text-4xl text-xl font-bold text-center mb-8 pt-8 text-blue-600">
+    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-6 w-full flex flex-col gap-6">
+      <h2 className="text-2xl font-semibold text-blue-600 mb-2">
         Matches To Be Scored
-      </h1>
-
-      <div className="flex flex-col gap-4 items-center">
+      </h2>
+      <div className="flex flex-col gap-3">
         {/* Matches Section */}
         {Array.isArray(matches) && matches.length === 0 ? (
-          <p>No past matches to be scored</p>
+          <p className="text-gray-500 text-center">
+            No past matches to be scored
+          </p>
         ) : Array.isArray(matches) ? (
           matches.map((match) => (
             <MatchCard key={match.id} match={match} setLoading={setLoading} />
           ))
         ) : (
-          <p>Something went wrong. Please try again later.</p>
-        )}
-
-        {/* Unscore Match Form */}
-        <div className="mt-8 p-4 w-full md:w-1/2">
-          <h2 className="text-xl font-bold mb-4 text-blue-600">
-            Undo Scored Match
-          </h2>
-          <form onSubmit={handleSubmit}>
-            <label
-              htmlFor="matchId"
-              className="block text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Enter Match ID to Unscore:
-            </label>
-            <input
-              type="text"
-              id="matchId"
-              value={unscoreId}
-              onChange={(e) => setUnscoreId(e.target.value)}
-              placeholder="Match ID"
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-              required
-            />
-            <button
-              type="submit"
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Unscore Match
-            </button>
-          </form>
-          {unscoreMessage && (
-            <p
-              className={`mt-4 text-sm ${
-                unscoreMessage.includes("Successfully")
-                  ? "text-green-600"
-                  : "text-red-600"
-              }`}
-            >
-              {unscoreMessage}
-            </p>
-          )}
-        </div>
-
-        {/* Confirmation Modal */}
-        {showConfirmation && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-              <h3 className="text-lg font-semibold mb-4">
-                Are you sure you want to unscore this match?
-              </h3>
-              <p className="mb-6 text-gray-600">Match ID: {unscoreId}</p>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => setShowConfirmation(false)}
-                  className="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUnscoreMatch}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                >
-                  Confirm
-                </button>
-              </div>
-            </div>
-          </div>
+          <p className="text-red-500 text-center">
+            Something went wrong. Please try again later.
+          </p>
         )}
       </div>
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+        <h3 className="text-lg font-bold text-blue-600 mb-2">
+          Undo Scored Match
+        </h3>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <label
+            htmlFor="matchId"
+            className="text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Enter Match ID to Unscore:
+          </label>
+          <input
+            type="text"
+            id="matchId"
+            value={unscoreId}
+            onChange={(e) => setUnscoreId(e.target.value)}
+            placeholder="Match ID"
+            className="p-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-300 bg-gray-50 dark:bg-gray-800"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mt-2 self-end"
+          >
+            Unscore Match
+          </button>
+        </form>
+        {unscoreMessage && (
+          <p
+            className={`mt-2 text-sm ${
+              unscoreMessage.includes("Successfully")
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+          >
+            {unscoreMessage}
+          </p>
+        )}
+      </div>
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg text-center">
+            <h3 className="text-lg font-semibold mb-4">
+              Are you sure you want to unscore this match?
+            </h3>
+            <p className="mb-6 text-gray-600">Match ID: {unscoreId}</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUnscoreMatch}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
