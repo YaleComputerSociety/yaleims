@@ -10,6 +10,7 @@ import MatchesTable from "@src/components/Scores/MatchTable";
 import { Match, CollegeStats } from "@src/types/components";
 import Pagination from "@src/components/Scores/Pagination";
 import PageHeading from "@src/components/PageHeading";
+import { useSeason } from "@src/context/SeasonContext";
 
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -20,6 +21,7 @@ const ScoresPage: React.FC = () => {
   // State for matches
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  console.log(filteredMatches);
 
   // State for college stats
   const [collegeStats, setCollegeStats] = useState<CollegeStats | null>(null);
@@ -32,6 +34,7 @@ const ScoresPage: React.FC = () => {
   const [queryType, setQueryType] = useState<string>("index");
   const [totalPages, setTotalPages] = useState<number>(10);
   const [sortOrder, setSortOrder] = useState<string>("desc");
+  const { currentSeason } = useSeason();
 
   const resetPaginationState = () => {
     setPage(1); // Reset page number when filter is changed
@@ -89,14 +92,9 @@ const ScoresPage: React.FC = () => {
     const fetchMatches = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMatchesPaginated?${getParams()}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error fetching scores: ${response.statusText}`);
-        }
-
+        const params = new URLSearchParams(getParams());
+        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
+        if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
         const data = await response.json();
 
         setFilteredMatches(data.matches);

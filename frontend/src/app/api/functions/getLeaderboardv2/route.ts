@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const seasonId = url.searchParams.get("seasonId") ?? "2025-2026";
     const response= await fetch(
-        `https://getleaderboardv2-65477nrg6a-uc.a.run.app?seasonId=${encodeURIComponent(seasonId)}`,
+        `https://getleaderboardv2-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
     );
 

@@ -34,6 +34,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           name="date"
           onChange={handleFilterChange}
           className="text-sm  rounded-md py-1 px-1 bg-white dark:bg-black"
+          value={filter.date}
         >
           <option value="All">All Past Games</option>
           <option value="today">Today</option>

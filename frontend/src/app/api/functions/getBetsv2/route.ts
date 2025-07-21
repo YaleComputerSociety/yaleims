@@ -6,8 +6,12 @@ export async function GET(req: Request) {
     if (!token) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
+    const url = new URL(req.url);
+    const seasonId = url.searchParams.get("seasonId") ?? "2025-2026";
+    const history = url.searchParams.get("history")
+    const pending = url.searchParams.get("pending");
     const response= await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints",
+        `https://getbetsv2-65477nrg6a-uc.a.run.app?seasonId=${seasonId}&history=${history}&pending=${pending}`,
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
     );
 

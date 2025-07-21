@@ -51,7 +51,7 @@ const BetParlayTable: React.FC<BetParlayTableProps> = ({ parlays }) => {
                     </div>
                     <div className="mt-1 sm:mt-0 flex items-center text-xs text-gray-500 dark:text-gray-400">
                       Winner:&nbsp;{bet.winner ?? "Pending"}&nbsp;|&nbsp;Option:&nbsp;{bet.betOption}
-                      {bet.winner == null ? <Loader className="ml-1 w-4 h-4 text-gray-400" /> : betWon ? (
+                      {bet.winner === null ? <Loader className="ml-1 w-4 h-4 text-gray-400" /> : betWon ? (
                         <CheckCircle className="ml-1 w-4 h-4 text-green-400" />
                       ) : (
                         <XCircle className="ml-1 w-4 h-4 text-red-400" />

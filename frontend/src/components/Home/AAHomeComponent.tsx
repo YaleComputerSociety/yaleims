@@ -26,7 +26,7 @@ const AAHomeComponent: React.FC = () => {
       try {
         setLoading(true);
         if (selected === "All Time") return;
-        const response = await fetch(`api/functions/getLeaderboardv2?seasonId=${encodeURIComponent(selected)}`)
+        const response = await fetch(`api/functions/getLeaderboardv2?seasonId=${selected}`)
         if (!response.ok) {
           throw new Error(
             `Error fetching colleges leaderboard: ${response.statusText}`

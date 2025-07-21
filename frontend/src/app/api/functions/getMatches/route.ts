@@ -6,11 +6,14 @@ export async function GET(req: Request) {
     if (!token) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
-    const url = new URL(req.url);
-    const seasonId = url.searchParams.get("seasonId") ?? "2025-2026";
-    const response= await fetch(
-        `https://getseasons-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
+    const { searchParams } = new URL(req.url);
+    const forwardParams = new URLSearchParams(searchParams);
+    if (!forwardParams.has("seasonId")) {
+        forwardParams.set("seasonId", "2025-2026");
+    }
+
+    const response = await fetch(
+        `https://getmatchespaginatedv2-65477nrg6a-uc.a.run.app?${forwardParams.toString()}`
     );
 
     if (!response.ok) {

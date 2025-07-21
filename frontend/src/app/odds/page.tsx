@@ -20,6 +20,7 @@ import { sports } from "@src/utils/helpers";
 import BetParlayTable from "@src/components/YOdds/BetParlayTable";
 import { totalOddsCalc } from '@src/utils/helpers';
 import PageHeading from "@src/components/PageHeading";
+import { useSeason } from "@src/context/SeasonContext";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -54,6 +55,8 @@ const YoddsPage: React.FC = () => {
   const [betAmount, setBetAmount] = useState<number | ''>('');
   const [totalOdds, setTotalOdds] = useState<number>(1);
   const [submitButtonClicked, setSubmitButtonClicked] = useState(0);
+  const { currentSeason } = useSeason();
+  
  
   const updateBetSlip = (bet: Bet): Bet[] => {
     const updatedBetSlip = [...betslip, bet];
@@ -115,19 +118,16 @@ const YoddsPage: React.FC = () => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams(getQueryParams(queryType));
-        const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMatchesPaginatedTest?${params}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error fetching matches: ${response.statusText}`);
-        }
+        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
+        if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
         const data = await response.json();
         setFilteredMatches(data.matches);
+        
         if (data.firstVisible) setFirstVisible(data.firstVisible);
         if (data.lastVisible) setLastVisible(data.lastVisible);
         if (data.totalPages) setTotalPages(data.totalPages);
+        
       } catch (error) {
         console.error("Failed to fetch matches:", error);
       } finally {
@@ -138,7 +138,7 @@ const YoddsPage: React.FC = () => {
     window.scrollTo(0, 0);
     fetchMatches();
   }, [page, queryType, filter.sport]);
-
+  console.log(pendingBets)
   // Fetch user points
   useEffect(() => {
     if (!userEmail) return;
@@ -146,12 +146,12 @@ const YoddsPage: React.FC = () => {
     const fetchMyPoints = async () => {
       setCoinsLoading(true);
       try {
-        const response = await fetch("/api/functions/getMyAvailablePoints");
+        const response = await fetch(`/api/functions/getSeasonPoints?seasonId=${currentSeason?.year || "2025-2026"}`);
         if (!response.ok) throw new Error("Error fetching points");
         const data = await response.json();
         
         setAvailablePoints(data.points);
-        setUsername(data.username);
+        setUsername(user?.username ?? "Anonymous");
       } catch (error) {
         console.error("Failed to fetch points:", error);
       } finally {
@@ -169,19 +169,12 @@ const YoddsPage: React.FC = () => {
     const fetchPendingBets = async () => {
       try {
         setPendingLoading(true);
-        const userToken = sessionStorage.getItem("userToken");
-        const response = await fetch(
-          `https://getBets-65477nrg6a-uc.a.run.app?email=${userEmail}&pending=true`,
-          {
-            headers: { Authorization: `Bearer ${userToken}` },
-          }
-        );
+        const response = await fetch(`/api/functions/getBetsv2?seasonId=${currentSeason?.year || '2025-2026'}&history=false&pending=true`)
         if (!response.ok)
-          throw new Error(
-            `Error fetching pending bets: ${response.statusText}`
-          );
+          throw new Error(`Error fetching pending bets: ${response.statusText}`);
         const data = await response.json();
-        setPendingBets(data);
+        const pendingBetsData = Object.values(data).flat() as BetParlay[];
+        setPendingBets(pendingBetsData);
       } catch (error) {
         console.error("Failed to fetch pending bets:", error);
       } finally {
@@ -198,19 +191,12 @@ const YoddsPage: React.FC = () => {
     const fetchPastBets = async () => {
       try {
         setPendingLoading(true);
-        const userToken = sessionStorage.getItem("userToken");
-        const response = await fetch(
-          `https://getBets-65477nrg6a-uc.a.run.app?email=${userEmail}&history=true`,
-          {
-            headers: { Authorization: `Bearer ${userToken}` },
-          }
-        );
+        const response = await fetch(`/api/functions/getBetsv2?seasonId=${currentSeason?.year || '2025-2026'}&history=true&pending=false`)
         if (!response.ok)
-          throw new Error(
-            `Error fetching pending bets: ${response.statusText}`
-          );
+          throw new Error(`Error fetching pending bets: ${response.statusText}`);
         const data = await response.json();
-        setPastBets(data);
+        const betsData = Object.values(data).flat() as BetParlay[];
+        setPastBets(betsData);
       } catch (error) {
         console.error("Failed to fetch past bets:", error);
       } finally {
@@ -252,34 +238,21 @@ const YoddsPage: React.FC = () => {
   };
 
   const addBet = async ({
-    email,
     betAmount,
     betArray,
     totalOdds,
   }: {
-    email: string;
     betAmount: number;
     betArray: Bet[];
     totalOdds: number;
   }) => {
     try {
-      const token = sessionStorage.getItem("userToken");  
-      const response = await fetch(
-        "https://addbetmod-65477nrg6a-uc.a.run.app",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: email,
-            betAmount: betAmount,
-            betArray: betArray,
-            totalOdds: totalOdds,
-          }),
-        }
-      );
+      const response = await fetch(`/api/functions/addBet?seasonId=${currentSeason?.year}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ betAmount, betArray, totalOdds }),
+      });
+
       if (!response.ok) {
         throw new Error(`Error submitting bet: ${response.statusText}`);
       }
@@ -319,7 +292,6 @@ const YoddsPage: React.FC = () => {
 
     try {
       await addBet({
-        email: user.email,
         betAmount: betAmount ? betAmount : 0,
         betArray: betslip,
         totalOdds: totalOdds,
@@ -346,7 +318,7 @@ const YoddsPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="text-center h-48 mt-40 w-[80%] md:w-2/5 mx-auto">
+      <div className="text-center min-h-screen h-48 mt-40 w-[80%] md:w-2/5 mx-auto">
         {" "}
         <Link
           className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md 
@@ -467,7 +439,7 @@ const YoddsPage: React.FC = () => {
         <></>
       )}
 
-      <div className="flex-col items-center px-5 lg:px-15 relative">
+      <div className="flex-col items-center w-full px-20">
         {/* <BetTemplate match={filteredMatches[0]} /> */}
         <MatchesTable
           filteredMatches={filteredMatches}
