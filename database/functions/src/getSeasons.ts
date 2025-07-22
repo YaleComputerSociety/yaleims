@@ -1,29 +1,12 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
 export const getSeasons = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
-    const authHeader = req.headers.authorization || "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "No token provided" });
-    }
-    const token = authHeader.split("Bearer ")[1];
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch {
-      return res.status(401).json({ error: "Invalid token" });
-    }
-    if (!isValidDecodedToken(decoded)) {
-      return res.status(401).json({ error: "Invalid Token Structure" });
-    }
-
     try {
       const currentRef = db.collection("seasons").doc("current");
       const pastRef = db.collection("seasons").doc("past");

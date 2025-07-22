@@ -1,16 +1,8 @@
-import { cookies } from "next/headers";
-
 export async function GET(req: Request) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
-    }
     const url = new URL(req.url);
     const seasonId = url.searchParams.get("seasonId") ?? "2025-2026";
     const response= await fetch(
-        `https://getseasons-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
+        `https://getseasons-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`
     );
 
     if (!response.ok) {

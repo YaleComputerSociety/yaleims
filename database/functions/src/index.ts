@@ -58,7 +58,6 @@ export {
   getMatchesPaginatedTest,
   getSeasons,
   getSeasonPoints,
-  getMatchesPaginatedv2
-  updateUserRole,
-  getSeasons
+  getMatchesPaginatedv2,
+  updateUserRole
 };
