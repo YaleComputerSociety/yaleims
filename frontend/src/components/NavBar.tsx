@@ -19,7 +19,7 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
     <Link
       href="/profile"
-      className="mt-3 py-1 px-3 hover:text-blue-400 border rounded-lg border-blue-600 hover:border-blue-400 text-blue-600"
+      className="py-1 px-3 hover:text-blue-400 border rounded-lg border-blue-600 hover:border-blue-400 text-blue-600"
     >
       Welcome, {name.split(" ")[0]}!
     </Link>
@@ -102,7 +102,7 @@ const NavBar: React.FC = () => {
       <div
         className={`${
           isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
-        } -mt-2 md:hidden flex items-center justify-between`}
+        } md:hidden flex items-center justify-between`}
       >
         <button onClick={toggleNavbar} className="pl-4">
           {isClick ? (
@@ -113,18 +113,18 @@ const NavBar: React.FC = () => {
           ) : (
             <IoIosMenu
               size={30}
-              className="mt-3 text-gray-800 dark:text-gray-100"
+              className=" text-gray-800 dark:text-gray-100"
             />
           )}
         </button>
-        <div className="flex gap-4">
-          <div>
+        <div className="flex gap-4 items-center">
+          <div className="items-center flex">
             {isClick ? ( 
               ""
             ) : (
               <button
                 onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
-                className="mt-4 rounded transition-colors"
+                className="rounded transition-colors"
                 aria-label="Toggle Light/Dark Mode"
               >
                 {theme === "light" ? (
@@ -151,7 +151,7 @@ const NavBar: React.FC = () => {
                 <UserProfileButton name={user.name} />
               ) : (
                 <Link
-                  className={`py-1 px-3 mt-2 rounded border ${
+                  className={`py-1 px-3 rounded border ${
                     theme === "light"
                       ? "border-black hover:border-gray-400 hover:text-gray-400"
                       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
@@ -181,7 +181,7 @@ const NavBar: React.FC = () => {
 
       {/* Harmburger Menu */}
       {isClick && (
-        <div className="mg:hidden -mt-4 bg-white dark:bg-black flex flex-col pb-4 px-6 space-y-4 rounded-b-lg shadow-lg">
+        <div className="mg:hidden bg-white dark:bg-black flex flex-col pb-4 px-3 space-y-4 rounded-b-lg shadow-lg">
           {links.map((link, index) => (
             <Link
               key={index + "-second"}
@@ -208,12 +208,6 @@ const NavBar: React.FC = () => {
               >
                 Sign In
               </Link>
-              // <button
-              //   onClick={googleAuth}
-              //   className="block w-full bg-white dark:bg-yellow-500 text-blue-700 dark:text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-yellow-600 transition duration-200"
-              // >
-              //   Sign in with Google
-              // </button>
             )}
           </div>
         </div>
