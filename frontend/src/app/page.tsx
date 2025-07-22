@@ -1,24 +1,22 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AAHomeComponent from "@src/components/Home/AAHomeComponent";
+import LoadingScreen from "@src/components/LoadingScreen";
 import { useUser } from "@src/context/UserContext";
-import LoadingScreen from '@src/components/LoadingScreen';
-import { useState } from 'react';
 
 const HomePage: React.FC = () => {
-  const { user } = useUser();
-
+  const { user, loading } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/dashboard");
-    }
-  }, [user, router]);
+  const unauthenticated = !loading && !user;
 
-  if (!user) return <LoadingScreen />;
+  useEffect(() => {
+    if (unauthenticated) router.replace("/dashboard");
+  }, [unauthenticated, router]);
+
+  if (loading || unauthenticated) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen">

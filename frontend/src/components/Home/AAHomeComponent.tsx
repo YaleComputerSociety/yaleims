@@ -11,6 +11,8 @@ import { YearlyPodiums } from "./YearlyPodiums";
 import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import { useSeason } from "@src/context/SeasonContext";
+import PageHeading from "../PageHeading";
+import Page from "@src/app/add-scores/page";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
@@ -67,7 +69,8 @@ const AAHomeComponent: React.FC = () => {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto mt-10 mb-20">
+    <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
+      <PageHeading heading="" />
       <Title selected={selected} lastUpdated={sortedColleges[0].today} onFilterChange={handleSelectedChange} />
       {selected === "All Time" ? (
         <div>
