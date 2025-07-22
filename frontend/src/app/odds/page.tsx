@@ -138,7 +138,6 @@ const YoddsPage: React.FC = () => {
     window.scrollTo(0, 0);
     fetchMatches();
   }, [page, queryType, filter.sport]);
-  console.log(pendingBets)
   // Fetch user points
   useEffect(() => {
     if (!userEmail) return;
@@ -256,7 +255,6 @@ const YoddsPage: React.FC = () => {
       if (!response.ok) {
         throw new Error(`Error submitting bet: ${response.statusText}`);
       }
-      console.log(response);
     } catch (error) {
       console.error("Failed to submit bet:", error);
     } finally {
@@ -439,7 +437,7 @@ const YoddsPage: React.FC = () => {
         <></>
       )}
 
-      <div className="flex-col min-w-full px-2 mg:px-5 mp:px-18">
+      <div className="flex-col min-w-full px-2 mg:px-8 mp:px-20">
         {/* <BetTemplate match={filteredMatches[0]} /> */}
         <MatchesTable
           filteredMatches={filteredMatches}

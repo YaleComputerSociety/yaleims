@@ -10,8 +10,8 @@ module.exports = {
     extend: {
       screens: {
         xs: "569px",
-        mg: "915px",
-        mp: "1035px"
+        mg: "930px",
+        mp: "1043px"
       },
       colors: {
         primary_light: "#8DB8EA",
