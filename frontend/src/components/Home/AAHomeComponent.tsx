@@ -67,7 +67,7 @@ const AAHomeComponent: React.FC = () => {
   }
 
   return (
-    <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto mb-20">
+    <div className="rounded-lg overflow-hidden w-full sm:max-w-5xl mx-auto mt-10 mb-20">
       <Title selected={selected} lastUpdated={sortedColleges[0].today} onFilterChange={handleSelectedChange} />
       {selected === "All Time" ? (
         <div>

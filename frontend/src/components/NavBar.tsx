@@ -67,8 +67,8 @@ const NavBar: React.FC = () => {
   ];
 
   return (
-    <nav className="p-6 items-center w-[16%] h-full fixed backdrop-blur-sm bg-white/50  dark:bg-black/50">
-      <div className="mg:flex mg:flex-col justify-between items-left hidden">
+    <nav className="mg:p-5 p-2 z-50 items-center md:w-[16%] md:h-full w-full fixed backdrop-blur-sm bg-white/50  dark:bg-black/50">
+      <div className="md:flex md:flex-col justify-between items-left hidden">
         <div className="text-base pb-10 flex flex-row justify-between">
           <Link href={links[0].href} onClick={resetFilters}>
             <Image 
@@ -78,25 +78,9 @@ const NavBar: React.FC = () => {
               alt="YALE IMS"
             />
           </Link>
-          <button
-            onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
-            className="mt-2 rounded transition-colors"
-            aria-label="Toggle Light/Dark Mode"
-          >
-            {theme === "light" ? (
-              <MdOutlineLightMode
-                className="text-gray-800 hover:text-blue-400"
-                size={24}
-              />) : (         
-              <MdDarkMode
-                className="text-gray-100 hover:text-yellow-300"
-                size={24}
-              />)
-            }
-          </button>
         </div>
         
-        <div className="flex text-base flex-col space-y-1 items-left">
+        <div className="flex mp:text-base text-sm flex-col space-y-1 items-left">
           {links.slice(1).map((link) => {
             const active = isActive(link.href);
             return (
@@ -107,7 +91,7 @@ const NavBar: React.FC = () => {
               onClick={resetFilters}
               target={link.text === "Feedback" ? "_blank" : ""}
             >
-              <span className="pr-3">{link.icon}</span>
+              <span className="mp:pr-2 pr-1">{link.icon}</span>
               {link.text}
             </Link>)
           })}
@@ -118,7 +102,7 @@ const NavBar: React.FC = () => {
       <div
         className={`${
           isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
-        } -mt-2 mg:hidden flex items-center justify-between`}
+        } -mt-2 md:hidden flex items-center justify-between`}
       >
         <button onClick={toggleNavbar} className="pl-4">
           {isClick ? (

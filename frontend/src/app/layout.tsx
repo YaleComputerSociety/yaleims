@@ -43,7 +43,7 @@ export default function RootLayout({
                 <link rel="icon" href="/favicon.ico" />
                 <meta property="og:title" content="Yale IMs" />
               </head>
-              <body className={`${inter.className} min-h-screen w-full grid grid-cols-[0.16fr_0.84fr]`}>
+              <body className={`${inter.className} min-h-screen w-full flex flex-col md:grid md:grid-cols-[0.16fr_0.84fr]`}>
                 <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                   <div>
                     <AnalyticsInit />

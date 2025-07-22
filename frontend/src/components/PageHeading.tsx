@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useUser } from '../context/UserContext'
 import { useTheme } from 'next-themes';
+import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -20,12 +21,28 @@ interface PageHeadingProps {
 
 export default function PageHeading({ heading }: PageHeadingProps) {
     const { user, loading } = useUser();
-    const { theme } = useTheme();
+    const { theme, setTheme } = useTheme();
 
     return (
-        <div className='fixed top-0 z-50 flex flex-row w-[84%] transition-all p-4 justify-between items-center backdrop-blur-sm'>
-            <h1 className="md:text-3xl text-xl font-bold text-center">{heading}</h1>
-            <div className=" transition-all">
+        <div className='md:fixed md:top-0  md:z-50 flex flex-row w-[84%] transition-all md:p-2 p-4 justify-between items-center backdrop-blur-sm'>
+            <h1 className="md:text-3xl text-2xl font-bold">{heading}</h1>
+            <div className=" transition-all hidden md:flex gap-x-5 items-center">
+                <button
+                    onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
+                    className="mt-2 rounded transition-colors text-center"
+                    aria-label="Toggle Light/Dark Mode"
+                >
+                    {theme === "light" ? (
+                    <MdOutlineLightMode
+                        className="text-gray-800 hover:text-blue-400"
+                        size={24}
+                    />) : (         
+                    <MdDarkMode
+                        className="text-gray-100 hover:text-yellow-300"
+                        size={24}
+                    />)
+                    }
+                </button>
                 {loading ? (
                     <div className="animate-pulse text-gray-800 dark:text-gray-300">
                         Loading...

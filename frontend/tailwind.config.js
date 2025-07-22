@@ -11,6 +11,7 @@ module.exports = {
       screens: {
         xs: "569px",
         mg: "915px",
+        mp: "1035px"
       },
       colors: {
         primary_light: "#8DB8EA",

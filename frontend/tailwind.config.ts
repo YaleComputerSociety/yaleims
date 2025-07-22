@@ -12,6 +12,7 @@ const config: Config = {
       screens: {
         xs: "569px", // Custom screen size for smaller devices
         mg: "915px",
+        mp: "1035px",
       },
       colors: {
         primary_light: "#8DB8EA",
