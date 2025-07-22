@@ -340,8 +340,8 @@ const YoddsPage: React.FC = () => {
       <PageHeading heading="Odds" />
       {/* Rankings Button */}
 
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-8 items-start rounded-lg pb-5">
-        <div className="flex flex-col gap-y-2 md:gap-y-6 min-w-0">
+      <div className="w-full max-w-5xl p-5 mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-8 items-start rounded-lg pb-5">
+        <div className="flex flex-col gap-y-2 md:gap-y-6 min-w-0 pb-4">
           <div className="w-full overflow-x-auto invisible-scrollbar gap-x-4">
             <div className="flex w-max gap-3 px-2 py-3 items-center">
               {sports.map((sport) => (
@@ -357,7 +357,7 @@ const YoddsPage: React.FC = () => {
           </div>
           <div className="flex flex-row items-start gap-x-2 justify-between">
             <button
-              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
               onClick={() => {
                 setViewPendingBets(!viewPendingBets);
               }}
@@ -365,7 +365,7 @@ const YoddsPage: React.FC = () => {
               Pending Bets {pendingBets.length}
             </button>
             <button
-              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
               onClick={() => {
                 setViewBetSlip(!viewBetSlip);
               }}
@@ -373,7 +373,7 @@ const YoddsPage: React.FC = () => {
               <p>View Slip {betCount}</p>
             </button>
             <button
-              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
               onClick={() => {
                 setViewBetHistory(!viewBetHistory);
               }}
@@ -381,16 +381,16 @@ const YoddsPage: React.FC = () => {
               <p>View History {pastBets.length}</p>
             </button>
             <button
-              className="px-2 py-1 mg:px-3 mg:py-2 text-xs xs:text-sm mg:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+              className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
               onClick={sendToRankings}
             >
               See Rankings
             </button>
           </div>
         </div>
-        <div className="items-center my-auto">
+        <div className="items-center justify-center my-auto mx-auto">
           <div
-            className="p-3 mg:p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xs xs:text-sm mg:text-xl rounded-xl shadow-lg"
+            className="p-3 mp:p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xs xs:text-sm mp:text-xl rounded-xl shadow-lg"
             style={{ maxWidth: "250px", minWidth: "100px" }}
           >
             <p className="text-center">
@@ -400,7 +400,7 @@ const YoddsPage: React.FC = () => {
               {coinsLoading ? (
                 <FaSpinner className="animate-spin" />
               ) : (
-                <p className="text-center text-sm md:text-lg mg:text-3xl">
+                <p className="text-center text-sm mg:text-lg mp:text-3xl">
                   {availablePoints !== null ? availablePoints.toFixed(2) : "0"}
                 </p>
               )}
@@ -439,7 +439,7 @@ const YoddsPage: React.FC = () => {
         <></>
       )}
 
-      <div className="flex-col items-center w-full px-20">
+      <div className="flex-col min-w-full px-2 mg:px-5 mp:px-18">
         {/* <BetTemplate match={filteredMatches[0]} /> */}
         <MatchesTable
           filteredMatches={filteredMatches}
