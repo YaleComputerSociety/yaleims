@@ -23,6 +23,23 @@ export const colleges = [
   { id: "TC", name: "Trumbull" },
 ];
 
+export const collegeNamesList = [
+  "Benjamin Franklin",
+  "Berkeley",
+  "Branford",
+  "Davenport",
+  "Ezra Stiles",
+  "Grace Hopper",
+  "Jonathan Edwards",
+  "Morse",
+  "Pauli Murray",
+  "Pierson",
+  "Saybrook",
+  "Silliman",
+  "Timothy Dwight",
+  "Trumbull",
+];
+
 // List of sports with the proper type
 export const sports: Sport[] = [
   {

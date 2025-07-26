@@ -27,8 +27,8 @@ export type Match = {
   timestamp: string; // Date and time of the match, in ISO format or UNIX timestamp
   location: string; // The location where the match was played (optional)
   location_extra: string;
-  type: string;
-  division: string;
+  type: string; // Regular, Bye, Playoff, Quarterfinal, Semifinal, Final
+  division?: string;
   winner: string | null; // Determines the winner, or if it's a draw
   forfeit: boolean;
   home_college_odds?: number;
@@ -39,6 +39,8 @@ export type Match = {
   away_volume?: number;
   draw_volume?: number;
   default_volume?: number;
+  next_match_id?: string;
+  playoff_bracket_slot?: number;
 };
 
 export type Matchv2 = {
@@ -179,7 +181,7 @@ export interface Bet {
   winner?: string;
   won?: boolean;
   matchTimestamp: string;
-  betId: number
+  betId: number;
 }
 
 export interface BetParlay {
@@ -212,4 +214,25 @@ export interface SportCardProps {
   displayName?: boolean;
   handleClick: (sport: string) => void;
   active?: boolean;
+}
+
+export interface BracketModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: BracketData) => void;
+  sport: string;
+}
+
+export interface BracketData {
+  sport: string;
+  teams: Team[];
+}
+
+export interface Team {
+  college: string;
+  seed: string | number;
+  division: "green" | "blue" | "none";
+  matchSlot: string | number;
+  matchDatetime: string;
+  location: string;
 }

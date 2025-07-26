@@ -102,6 +102,28 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         return res.status(405).send("Method Not Allowed");
       }
 
+<<<<<<< HEAD
+=======
+      // uncomment and redeploy once new frontend changes are deployed
+      // const authHeader = req.headers.authorization || ""
+      // if (!authHeader.startsWith("Bearer ")) {
+      //   return res.status(401).json({error: "No token provided"});
+      // }
+      // //   // getting token passed from request
+      // const idToken = authHeader.split("Bearer ")[1];
+      // // //   //verifying the token using firebase admin
+      // let decoded;
+      // try {
+      //   decoded = await admin.auth().verifyIdToken(idToken);
+      //   if (!decoded) {
+      //     return res.status(401).json({error: "Invalid Token"})
+      //   }
+      // } catch (error) {
+      //   return res.status(401).json({error: "Invalid Token"})
+      // }
+      //get rid of email in the query and use the decoded users email
+
+>>>>>>> origin/feature/brackets
       // validate request parameters
       if (
         !matchId ||
@@ -132,9 +154,8 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       let winningTeam: string;
       const doubleForfeit = homeForfeit && awayForfeit;
 
-      // there's some forfeit logic here that i'm a little confused about
       if (doubleForfeit) {
-        winningTeam = "Default"; // not sure if i understood this correctly
+        winningTeam = "Default";
       } else if (homeForfeit || awayForfeit) {
         homeForfeit ? (winningTeam = awayTeam) : (winningTeam = homeTeam);
       } else if (homeScore == awayScore) {
@@ -158,7 +179,6 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       const pointsForWin = await getPointsForWinBySportName(sport); // evetually change this to get from firestore - but right now the data is stored weird; change id to string of the sport name rather than a number
 
       // all cases for updating college stats of win, loss, tie, forfeit, points (all cases increment games played)
-      // this code is veryyy lengthy, but i'm unsure if there's a more concise way since there are just a lot of cases to manage
       if (doubleForfeit) {
         collegeUpdateData[homeTeam] = {
           games: admin.firestore.FieldValue.increment(1),
@@ -236,7 +256,45 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await batch.commit();
 
-      // update ranks -- may be a good idea to have a separate function for this as well, scheduled to run every so often, to protect against failures (if this section doesn't run properly for some reason)
+      const matchDocData = matchDoc.data() || {};
+
+      // update next match in bracket (if a playoff match and there is a definitive winner, else will have to be manual?)
+      const matchType = matchDocData.type;
+
+      if (
+        matchType &&
+        matchType !== "Regular" &&
+        matchType !== "Final" &&
+        winningTeam !== "Default" &&
+        winningTeam !== "Draw"
+      ) {
+        const nextMatchId = matchDocData.next_match_id;
+        const matchBracketSlot = matchDocData.playoff_bracket_slot;
+        const winnerSeed =
+          winningTeam == homeTeam
+            ? matchDocData.home_seed
+            : matchDocData.away_seed;
+
+        if (nextMatchId && matchBracketSlot) {
+          const nextMatchRef = db.collection("matches").doc(nextMatchId);
+
+          // Prepare update object
+          let updateData: any = {};
+          if (matchBracketSlot % 2 === 1) {
+            // Odd slot: update away team/seed
+            updateData.away_team = winningTeam;
+            updateData.away_seed = winnerSeed;
+          } else {
+            // Even slot: update home team/seed
+            updateData.home_team = winningTeam;
+            updateData.home_seed = winnerSeed;
+          }
+
+          await nextMatchRef.update(updateData);
+        }
+      }
+
+      // update ranks
       const collegesSnapshot = await db.collection("colleges").get();
       const colleges: { id: string; points: number; wins: number }[] = [];
 
@@ -287,10 +345,18 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await rankBatch.commit();
 
+<<<<<<< HEAD
       // reward singles and parlays after dat
       const matchData = await db.collection("matches").doc(matchId).get();
       
       await settleParlayLegs(matchId, matchData.data()!.winner);
+=======
+      // get match data
+      const matchData = await db.collection("matches").doc(matchId).get();
+
+      const predictions =
+        (matchData.data()?.predictions as PredictionsMap) || {};
+>>>>>>> origin/feature/brackets
 
       return res
         .status(200)
