@@ -1,6 +1,12 @@
-import { Team, BracketModalProps } from "@src/types/components";
+import {
+  Team,
+  BracketModalProps,
+  ParsedMatch,
+  BracketData,
+} from "@src/types/components";
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { collegeNamesList, toCollegeAbbreviation } from "@src/utils/helpers";
+import { toast } from "react-toastify";
 
 const teamsInit: Team[] = [
   {
@@ -124,6 +130,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
   sport,
 }) => {
   const [teams, setTeams] = useState<Team[]>(teamsInit);
+  const [parsedMatches, setParsedMatches] = useState<ParsedMatch[]>([]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -144,89 +151,71 @@ const BracketModal: React.FC<BracketModalProps> = ({
 
   // Handle form submission
   const handleSubmit = () => {
-    onSave({
+    const bracketData: BracketData = {
       sport,
-      teams,
-    });
-    onClose();
+      matches: parsedMatches,
+    };
+
+    onSave(bracketData);
   };
 
-  // Handle CSV file upload
-  // const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
-  //   const file = event.target.files?.[0];
-  //   if (!file) return;
+  // Handle CSV file upload for: matchSlot, awayCollege, awaySeed, homeCollege, homeSeed, location, timestamp, division
+  // TODO: add rigid input validation here
+  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  //   const reader = new FileReader();
-  //   reader.onload = (e: ProgressEvent<FileReader>) => {
-  //     const csvText = e.target?.result as string;
-  //     if (!csvText) return;
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      try {
+        const csvText = e.target?.result as string;
+        if (!csvText) return;
 
-  //     const lines = csvText.split("\n");
+        const lines = csvText
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+        if (lines.length === 0) return;
+        // Remove header if present
+        const header = lines[0].toLowerCase();
+        const hasHeader =
+          header.includes("matchslot") && header.includes("awaycollege");
+        const startLine = hasHeader ? 1 : 0;
 
-  //     // Skip header if present
-  //     const startLine = lines[0].includes("College") ? 1 : 0;
-
-  //     const newTeams: Team[] = [];
-
-  //     for (let i = startLine; i < lines.length && newTeams.length < 8; i++) {
-  //       if (!lines[i].trim()) continue;
-
-  //       const values = lines[i].split(",");
-  //       if (values.length >= 5) {
-  //         const division = values[2].trim().toLowerCase();
-
-  //         newTeams.push({
-  //           college: values[0].trim(),
-  //           seed: values[1].trim(),
-  //           division: division === "blue" ? "blue" : "green",
-  //           matchSlot: values[3].trim(),
-  //           matchDatetime: values[4].trim(),
-  //         });
-  //       }
-  //     }
-
-  //     if (newTeams.length > 0) {
-  //       setTeams(newTeams);
-  //     }
-  //   };
-
-  //   reader.readAsText(file);
-  // };
-
-  // const downloadTemplate = () => {
-  //   // Create CSV content with template and example data
-  //   const csvContent = `College,Seed,Division,MatchSlot,MatchDatetime
-  // Berkeley,1,Green,2,2025-05-15T19:00
-  // Stanford,2,Blue,10,2025-05-15T20:30
-  // Harvard,3,Green,3,2025-05-16T18:00
-  // Yale,4,Blue,9,2025-05-16T19:30
-  // Princeton,5,Green,4,2025-05-17T17:00
-  // Columbia,6,Blue,8,2025-05-17T18:30
-  // Cornell,7,Green,1,2025-05-18T17:00
-  // Brown,8,Blue,7,2025-05-18T18:30`;
-
-  //   // Create a Blob with the CSV content
-  //   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-
-  //   // Create a download link
-  //   const link = document.createElement("a");
-  //   const url = URL.createObjectURL(blob);
-
-  //   link.setAttribute("href", url);
-  //   link.setAttribute("download", "bracket_template.csv");
-  //   link.style.visibility = "hidden";
-
-  //   // Add to DOM, trigger download, and clean up
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   document.body.removeChild(link);
-  // };
+        const newParsedMatches: ParsedMatch[] = [];
+        for (let i = startLine; i < lines.length; i++) {
+          const values = lines[i].split(",");
+          if (values.length < 8) continue;
+          newParsedMatches.push({
+            match_slot: Number(values[0].trim()),
+            away_college: values[1].trim() || "TBD",
+            away_seed: Number(values[2].trim()) || -1,
+            home_college: values[3].trim() || "TBD",
+            home_seed: Number(values[4].trim()) || -1,
+            location: values[5].trim() || "TBD",
+            timestamp: values[6].trim() || "TBD",
+            division: values[7].trim().toLowerCase(),
+          });
+        }
+        if (newParsedMatches.length > 0) {
+          setParsedMatches(newParsedMatches);
+        }
+        toast.success("CSV file uploaded!");
+      } catch (err) {
+        toast.error("Error parsing CSV file. Please check the format.");
+      } finally {
+        // Reset file input so user can upload the same file again if needed
+        if (event.target) event.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg w-11/12 max-w-5xl max-h-[90vh] overflow-y-auto shadow-lg">
+      <div className="bg-white rounded-lg w-2/3 max-w-5xl max-h-[80vh] overflow-y-auto shadow-lg">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold">
@@ -361,30 +350,32 @@ const BracketModal: React.FC<BracketModalProps> = ({
           </table>
 
           {/* CSV Upload */}
-          {/* <div className="p-4 border border-dashed border-gray-300 rounded text-center mt-6">
+          <div className="p-4 border border-dashed border-gray-300 rounded text-center mt-6">
             <h3 className="text-lg font-medium mb-2">Or upload CSV</h3>
             <div className="flex justify-center gap-4 mt-3">
-              <button
-                onClick={downloadTemplate}
-                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
+              <a
+                href="https://docs.google.com/spreadsheets/d/1D0Bx1oYOOAgQJF4-qDzcKdQYsWmbPfR3-xyAbrI1h4Q/edit?usp=sharing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors cursor-pointer"
               >
-                Download Template
-              </button>
-              <input
-                type="file"
-                accept=".csv"
-                id="csv-upload"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <button
-                onClick={() => document.getElementById("csv-upload")?.click()}
-                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
+                View Template
+              </a>
+              <label
+                htmlFor="csv-upload"
+                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors cursor-pointer"
               >
                 Choose CSV File
-              </button>
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="csv-upload"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
             </div>
-          </div> */}
+          </div>
         </div>
 
         {/* Footer */}

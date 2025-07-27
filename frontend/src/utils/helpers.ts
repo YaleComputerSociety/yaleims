@@ -396,3 +396,5 @@ export const isValidEmail = (input: string) => {
   // Accepts emails like first.last@school.edu
   return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(input);
 };
+
+export const currentYear = "2025-2026"; // TODO: make dynamic?

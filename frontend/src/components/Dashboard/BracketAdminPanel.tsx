@@ -7,180 +7,6 @@ import { BracketData } from "@src/types/components";
 import withProtectedRoute from "@src/components/withProtectedRoute";
 import { toast } from "react-toastify";
 
-const testData: BracketData = {
-  sport: "Indoor Soccer",
-  teams: [
-    {
-      college: "BF",
-      seed: "1",
-      division: "green",
-      matchSlot: "1",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "BK",
-      seed: "2",
-      division: "green",
-      matchSlot: "2",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "BF",
-      seed: "3",
-      division: "green",
-      matchSlot: "2",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "DC",
-      seed: "4",
-      division: "green",
-      matchSlot: "3",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "ES",
-      seed: "5",
-      division: "green",
-      matchSlot: "3",
-      matchDatetime: "2025-05-02T11:36",
-      location: "PWG",
-    },
-    {
-      college: "GH",
-      seed: "6",
-      division: "green",
-      matchSlot: "4",
-      matchDatetime: "2025-05-03T11:36",
-      location: "PWG",
-    },
-    {
-      college: "JE",
-      seed: "7",
-      division: "green",
-      matchSlot: "4",
-      matchDatetime: "2025-05-03T11:36",
-      location: "PWG",
-    },
-    {
-      college: "MC",
-      seed: "1",
-      division: "blue",
-      matchSlot: "7",
-      matchDatetime: "2025-05-02T11:36",
-      location: "PWG",
-    },
-    {
-      college: "MY",
-      seed: "2",
-      division: "blue",
-      matchSlot: "8",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "PC",
-      seed: "3",
-      division: "blue",
-      matchSlot: "8",
-      matchDatetime: "2025-05-02T11:36",
-      location: "PWG",
-    },
-    {
-      college: "SY",
-      seed: "4",
-      division: "blue",
-      matchSlot: "9",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "SM",
-      seed: "5",
-      division: "blue",
-      matchSlot: "9",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TD",
-      seed: "6",
-      division: "blue",
-      matchSlot: "10",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TC",
-      seed: "7",
-      division: "blue",
-      matchSlot: "10",
-      matchDatetime: "2025-05-13T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "5",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "6",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "11",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "12",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "13",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "14",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-    {
-      college: "TBD",
-      seed: "-1",
-      division: "none",
-      matchSlot: "15",
-      matchDatetime: "2025-05-15T11:36",
-      location: "PWG",
-    },
-  ],
-};
-
 const BracketAdminPanel: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedSport, setSelectedSport] = useState<string>("");
@@ -234,8 +60,7 @@ const BracketAdminPanel: React.FC = () => {
     //   console.error("Error:", err);
     // }
 
-    // console.log("Bracket data to save:", bracketData);
-    console.log("Bracket data to save:", testData);
+    console.log("Bracket data to save:", bracketData);
     try {
       // call cloud function
       const userToken = sessionStorage.getItem("userToken");
@@ -247,17 +72,19 @@ const BracketAdminPanel: React.FC = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${userToken}`,
           },
-          // body: JSON.stringify(bracketData),
-          body: JSON.stringify(testData),
+          body: JSON.stringify(bracketData),
         }
       );
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Failed to create bracket");
       }
-      console.log("Success:", data);
+      toast.success(
+        `Bracket for sport '${bracketData.sport}' created successfully!`
+      );
+      setIsModalOpen(false);
     } catch (error) {
-      console.error("Error:", error);
+      toast.error(error instanceof Error ? error.message : "An error occurred");
     }
   };
 

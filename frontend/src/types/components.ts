@@ -225,7 +225,7 @@ export interface BracketModalProps {
 
 export interface BracketData {
   sport: string;
-  teams: Team[];
+  matches: ParsedMatch[];
 }
 
 export interface Team {
@@ -235,4 +235,24 @@ export interface Team {
   matchSlot: string | number;
   matchDatetime: string;
   location: string;
+}
+
+export interface ParsedMatch {
+  match_slot: number;
+  away_college: string;
+  away_seed: number;
+  home_college: string;
+  home_seed: number;
+  location: string;
+  timestamp: string;
+  division: string;
+}
+
+export interface CurrentSeason {
+  year: string;
+  season: string;
+}
+
+export interface PastSeasons {
+  years: string[];
 }

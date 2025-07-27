@@ -18,7 +18,24 @@ export const deleteBracket = functions.https.onRequest((req, res) => {
         return;
       }
 
-      const bracketRef = db.collection("brackets").doc(sport);
+      const currentSeasonInfo = await db
+        .collection("seasons")
+        .doc("current")
+        .get();
+
+      if (!currentSeasonInfo.exists) {
+        res.status(500).json({ error: "Current season not found." });
+        return;
+      }
+
+      const currentYear = currentSeasonInfo.data()?.year;
+
+      const bracketRef = db
+        .collection("brackets")
+        .doc("seasons")
+        .collection(currentYear)
+        .doc(sport);
+
       const bracketDoc = await bracketRef.get();
 
       if (!bracketDoc.exists) {

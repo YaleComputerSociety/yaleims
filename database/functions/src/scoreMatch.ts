@@ -37,13 +37,15 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
 
         const legWon =
           (winningTeam === "Draw" && leg.betOption === "Draw") ||
-          (winningTeam === leg.home_college && leg.betOption === leg.home_college) ||
-          (winningTeam === leg.away_college && leg.betOption === leg.away_college);
+          (winningTeam === leg.home_college &&
+            leg.betOption === leg.home_college) ||
+          (winningTeam === leg.away_college &&
+            leg.betOption === leg.away_college);
 
-        tx.update(legRef, {winner:winningTeam, won: legWon });
+        tx.update(legRef, { winner: winningTeam, won: legWon });
 
         const currentCashed = (parlay.currentCashed ?? 0) + 1;
-        const lostLegs   = (parlay.lostLegs   ?? 0) + (legWon ? 0 : 1);
+        const lostLegs = (parlay.lostLegs ?? 0) + (legWon ? 0 : 1);
 
         tx.update(parlayRef, {
           currentCashed,
@@ -52,7 +54,7 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
 
         if (currentCashed === parlay.legCount) {
           const parlayWon = lostLegs === 0;
-          const payout    = parlayWon ? parlay.betAmount * parlay.betOdds : 0;
+          const payout = parlayWon ? parlay.betAmount * parlay.betOdds : 0;
 
           tx.update(parlayRef, { settled: true, won: parlayWon, payout });
 
@@ -102,28 +104,6 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         return res.status(405).send("Method Not Allowed");
       }
 
-<<<<<<< HEAD
-=======
-      // uncomment and redeploy once new frontend changes are deployed
-      // const authHeader = req.headers.authorization || ""
-      // if (!authHeader.startsWith("Bearer ")) {
-      //   return res.status(401).json({error: "No token provided"});
-      // }
-      // //   // getting token passed from request
-      // const idToken = authHeader.split("Bearer ")[1];
-      // // //   //verifying the token using firebase admin
-      // let decoded;
-      // try {
-      //   decoded = await admin.auth().verifyIdToken(idToken);
-      //   if (!decoded) {
-      //     return res.status(401).json({error: "Invalid Token"})
-      //   }
-      // } catch (error) {
-      //   return res.status(401).json({error: "Invalid Token"})
-      // }
-      //get rid of email in the query and use the decoded users email
-
->>>>>>> origin/feature/brackets
       // validate request parameters
       if (
         !matchId ||
@@ -345,18 +325,10 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await rankBatch.commit();
 
-<<<<<<< HEAD
       // reward singles and parlays after dat
       const matchData = await db.collection("matches").doc(matchId).get();
-      
-      await settleParlayLegs(matchId, matchData.data()!.winner);
-=======
-      // get match data
-      const matchData = await db.collection("matches").doc(matchId).get();
 
-      const predictions =
-        (matchData.data()?.predictions as PredictionsMap) || {};
->>>>>>> origin/feature/brackets
+      await settleParlayLegs(matchId, matchData.data()!.winner);
 
       return res
         .status(200)
