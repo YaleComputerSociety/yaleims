@@ -1,3 +1,4 @@
+import BracketAdminPanel from "./BracketAdminPanel";
 import EditMatches from "./EditMatches";
 import UpdateScores from "./UpdateScores";
 
@@ -10,7 +11,7 @@ const AdminDashboard: React.FC = () => {
       <p>You can manage Intramurals at Yale</p>
       <UpdateScores />
       <EditMatches />
-      {/* bracket interface -- will get when the bracket feature is pushed */}
+      <BracketAdminPanel />
     </div>
   );
 };
