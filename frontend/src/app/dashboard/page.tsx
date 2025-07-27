@@ -8,9 +8,14 @@ import AdminDashboard from "@src/components/Dashboard/AdminDashboard";
 import UserDashboard from "@src/components/Dashboard/UserDashboard";
 import CaptainDashboard from "@src/components/Dashboard/CaptainDashboard";
 import DevDashboard from "@src/components/Dashboard/DevDashboard";
+import LoadingScreen from "@src/components/LoadingScreen";
 
 const Dashboard: React.FC = () => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen pt-20">
