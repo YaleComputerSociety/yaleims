@@ -21,7 +21,6 @@ const ScoresPage: React.FC = () => {
   // State for matches
   const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  console.log(filteredMatches);
 
   // State for college stats
   const [collegeStats, setCollegeStats] = useState<CollegeStats | null>(null);

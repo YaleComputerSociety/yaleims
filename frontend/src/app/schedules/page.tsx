@@ -8,6 +8,7 @@ import Calendar from "@src/components/Schedule/Calendar";
 import { FaSpinner } from "react-icons/fa";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 import PageHeading from "@src/components/PageHeading";
+import { useSeason } from "@src/context/SeasonContext";
 
 const PAGE_SIZE = "10";
 
@@ -30,6 +31,7 @@ const SchedulePage: React.FC = () => {
   const [hasMoreMatches, setHasMoreMatches] = useState(true);
   const [chunksLoaded, setChunksLoaded] = useState(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const {currentSeason} = useSeason()
 
   // state for calendar focus circle
   const [topDate, setTopDate] = useState(new Date());
@@ -53,43 +55,72 @@ const SchedulePage: React.FC = () => {
     setChunksLoaded(0);
   };
 
-  const fetchMoreMatches = async () => {
-    if (!hasMoreMatches) return;
-
-    const params = new URLSearchParams({
-      date: filter.date.toISOString(),
-      pageSize: PAGE_SIZE,
-      sport: filter.sport || "",
-      college: filter.college ? toCollegeAbbreviation[filter.college] : "",
-      lastVisible: lastVisible || "",
-    }).toString();
-
-    try {
-      setIsLoadingMore(true);
-
-      const response = await fetch(
-        `https://us-central1-yims-125a2.cloudfunctions.net/getSchedulePaginated?${params}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Error fetching matches: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setFilteredMatches((prev) => [...prev, ...data.matches]);
-      setLastVisible(data.lastVisible);
-      setHasMoreMatches(data.hasMoreMatches);
-    } catch (error) {
-      console.error("Failed to fetch matches:", error);
-    } finally {
-      setIsLoadingMore(false);
-      setIsFirstLoad(false);
-    }
-  };
-
   useEffect(() => {
-    fetchMoreMatches();
+    const fetchMatches = async () => {
+      if (!hasMoreMatches) return;
+      try {
+        setIsLoadingMore(true);
+        const params = new URLSearchParams({
+          date: filter.date.toISOString(),
+          pageSize: PAGE_SIZE,
+          sport: filter.sport || "",
+          college: filter.college ? toCollegeAbbreviation[filter.college] : "",
+          lastVisible: lastVisible || "",
+
+        }).toString();
+        const response = await fetch(`/api/functions/getSchedule?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
+        if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
+        const data = await response.json();
+        setFilteredMatches((prev) => [...prev, ...data.matches]);
+        setLastVisible(data.lastVisible);
+        setHasMoreMatches(data.hasMoreMatches);        
+      } catch (error) {
+        console.error("Failed to fetch matches:", error);
+      } finally {
+        setIsLoadingMore(false);
+        setIsFirstLoad(false);
+      }
+    };
+    fetchMatches();
   }, [filter, chunksLoaded]);
+
+  // const fetchMoreMatches = async () => {
+  //   if (!hasMoreMatches) return;
+
+  //   const params = new URLSearchParams({
+  //     date: filter.date.toISOString(),
+  //     pageSize: PAGE_SIZE,
+  //     sport: filter.sport || "",
+  //     college: filter.college ? toCollegeAbbreviation[filter.college] : "",
+  //     lastVisible: lastVisible || "",
+  //   }).toString();
+
+  //   try {
+  //     setIsLoadingMore(true);
+
+  //     const response = await fetch(
+  //       `https://us-central1-yims-125a2.cloudfunctions.net/getSchedulePaginated?${params}`
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error(`Error fetching matches: ${response.statusText}`);
+  //     }
+
+  //     const data = await response.json();
+  //     setFilteredMatches((prev) => [...prev, ...data.matches]);
+  //     setLastVisible(data.lastVisible);
+  //     setHasMoreMatches(data.hasMoreMatches);
+  //   } catch (error) {
+  //     console.error("Failed to fetch matches:", error);
+  //   } finally {
+  //     setIsLoadingMore(false);
+  //     setIsFirstLoad(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchMoreMatches();
+  // }, [filter, chunksLoaded]);
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));

@@ -31,7 +31,6 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
         const res = await fetch("/api/functions/getSeasons");  
         if (!res.ok) throw new Error("Failed to load season");
         const data = await res.json(); 
-        console.log(data)
         setCurrentSeason(data.current);
         setPastSeasons(data.past);
       } catch (err) {
