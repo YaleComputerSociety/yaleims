@@ -2,8 +2,8 @@
 
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NavBar from "@src/components/NavBar"; // Adjust path accordingly
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import NavBar from "@src/components/NavBar";
+import { useEffect } from "react";
 import { UserProvider } from "@src/context/UserContext";
 import FiltersProvider from "@src/context/FiltersContext";
 import { ThemeProvider } from "next-themes";
@@ -13,52 +13,49 @@ import React from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { SeasonProvider } from "@src/context/SeasonContext";
+import { NavbarProvider, useNavbar } from "@src/context/NavbarContext";
 
-
-// tiny client island declared right here
-function AnalyticsInit() {
-  "use client"; // ← turns just this function into a Client Component
-  React.useEffect(() => {
-    initAnalytics(); // fire-and-forget
-  }, []);
-  return null;
-}
-
-const CLIENT_ID =
-  "683055403263-8nk173ne786mjmhicqmuod2ufmcdnnec.apps.googleusercontent.com";
 const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function InnerLayout({ children }: { children: React.ReactNode }) {
+  const { collapsed } = useNavbar();
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  return (
+    <div className={`flex flex-col transition-all duration-200 min-h-screen md:grid ${collapsed ? "md:grid-cols-[0.05fr_0.95fr]" : "md:grid-cols-[0.16fr_0.84fr]"}`}>
+      <div className="transition-all duration-200">
+        <NavBar />
+      </div>
+      <div className="transition-all duration-200">
+        <SeasonProvider>{children}</SeasonProvider>                      
+        <Footer />
+      </div>    
+      <ToastContainer />
+    </div>
+  );
+}
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode;}>) {
   return (
     <UserProvider>      
-        <FiltersProvider>
-          <GoogleOAuthProvider clientId={CLIENT_ID}>
-            <html lang="en" suppressHydrationWarning>
-              <head>
-                <title>Yale IMs</title>
-                <link rel="icon" href="/favicon.ico" />
-                <meta property="og:title" content="Yale IMs" />
-              </head>
-              <body className={`${inter.className} min-h-screen w-full flex flex-col md:grid md:grid-cols-[0.16fr_0.84fr]`}>
-                <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                  <div>
-                    <AnalyticsInit />
-                    <NavBar />
-                  </div>
-                  <div className="">
-                    <SeasonProvider>{children}</SeasonProvider>                      
-                    <Footer />
-                  </div>    
-                  <ToastContainer />
-                </ThemeProvider>               
-              </body>
-            </html>
-          </GoogleOAuthProvider>
-        </FiltersProvider>
+      <FiltersProvider>
+        <NavbarProvider>
+          <html lang="en" suppressHydrationWarning>
+            <head>
+              <title>Yale IMs</title>
+              <link rel="icon" href="/favicon.ico" />
+              <meta property="og:title" content="Yale IMs" />
+            </head>
+            <body className={`${inter.className}`}>
+              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                <InnerLayout>{children}</InnerLayout>
+              </ThemeProvider>               
+            </body>
+          </html>
+        </NavbarProvider>
+      </FiltersProvider>
     </UserProvider>
   );
 }

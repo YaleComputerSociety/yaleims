@@ -156,7 +156,7 @@ const YoddsPage: React.FC = () => {
       } finally {
         setCoinsLoading(false);
       }
-    };
+    }
 
     fetchMyPoints();
   }, [userEmail, submitButtonClicked]);
@@ -330,8 +330,6 @@ const YoddsPage: React.FC = () => {
       </div>
     );
   }
-
-  // console.log(filtered)
 
   return (
     <div className="flex flex-col pt-20 min-h-screen items-center">

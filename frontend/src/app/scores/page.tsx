@@ -191,7 +191,7 @@ const ScoresPage: React.FC = () => {
         </>
       )}
 
-      <div className="min-w-full flex-col md:px-20">
+      <div className="w-full flex-col px-2 mg:px-8 mp:px-20">
         <TableHeader
           handleFilterChange={handleFilterChange}
           filter={filter}
