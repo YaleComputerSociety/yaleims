@@ -4,7 +4,8 @@ type CollegeMap = Record<string, string>; // Map of abbreviation to full name
 type SportMap = Record<string, number>;
 type EmojiMap = Record<string, string>;
 
-import { Match, Sport } from "@src/types/components";
+import { BracketData, Match, Sport } from "@src/types/components";
+import { toast } from "react-toastify";
 
 export const colleges = [
   { id: "BF", name: "Benjamin Franklin" },
@@ -218,6 +219,7 @@ export const toCollegeName: CollegeMap = {
   Silliman: "Silliman",
   "Timothy Dwight": "Timothy Dwight",
   Trumbull: "Trumbull",
+  "": "",
 };
 
 // College abbreviations mapped to full college names (fixed keys)
@@ -398,3 +400,209 @@ export const isValidEmail = (input: string) => {
 };
 
 export const currentYear = "2025-2026"; // TODO: make dynamic?
+
+export const validateBracketData = (bracketData: BracketData): boolean => {
+  const matches = bracketData.matches;
+  let isValid = true;
+  const collegeAbbrs = colleges.map((c) => c.id);
+
+  const matchSlots = matches.map((m) => m.match_slot);
+  // 1. All match slots 1-15 must be present
+  for (let i = 1; i <= 15; i++) {
+    if (!matchSlots.includes(i)) {
+      toast.error(`Missing match slot ${i}`, { autoClose: 7000 });
+      isValid = false;
+    }
+  }
+
+  // 2. Bye slots (1 and 7) must have same college in home and away, both seeds 1
+  [1, 7].forEach((slot) => {
+    const m = matches.find((m) => m.match_slot === slot);
+    if (!m) {
+      toast.error(`Missing bye match slot ${slot}`, { autoClose: 7000 });
+      isValid = false;
+      return;
+    }
+    if (
+      !m.away_college ||
+      !m.home_college ||
+      m.away_college !== m.home_college ||
+      m.away_seed !== 1 ||
+      m.home_seed !== 1
+    ) {
+      toast.error(
+        `Bye match slot ${slot} must have the same college for home and away, and both seeds must be 1.`,
+        { autoClose: 7000 }
+      );
+      isValid = false;
+    }
+  });
+
+  // 3. All colleges must be present only once (except byes in slots 1 and 7), and must be valid
+  const collegeCount: Record<string, number> = {};
+  matches.forEach((m, idx) => {
+    // Validate away_college
+    if (m.away_college && m.away_college !== "TBD") {
+      if (!collegeAbbrs.includes(m.away_college)) {
+        toast.error(
+          `Invalid away college in row ${idx + 1}: ${m.away_college}`,
+          { autoClose: 7000 }
+        );
+        isValid = false;
+      }
+    }
+    // Validate home_college
+    if (m.home_college && m.home_college !== "TBD") {
+      if (!collegeAbbrs.includes(m.home_college)) {
+        toast.error(
+          `Invalid home college in row ${idx + 1}: ${m.home_college}`,
+          { autoClose: 7000 }
+        );
+        isValid = false;
+      }
+    }
+    // skip byes for counting
+    if (
+      (m.match_slot === 1 || m.match_slot === 7) &&
+      m.away_college === m.home_college
+    ) {
+      if (m.away_college && m.away_college !== "TBD") {
+        collegeCount[m.away_college] = (collegeCount[m.away_college] || 0) + 1;
+      }
+      return;
+    }
+    if (m.away_college && m.away_college !== "TBD") {
+      collegeCount[m.away_college] = (collegeCount[m.away_college] || 0) + 1;
+    }
+    if (m.home_college && m.home_college !== "TBD") {
+      collegeCount[m.home_college] = (collegeCount[m.home_college] || 0) + 1;
+    }
+  });
+  Object.entries(collegeCount).forEach(([college, count]) => {
+    if (count > 1) {
+      toast.error(
+        `College ${college} appears ${count} times (should only appear once except byes)`,
+        { autoClose: 7000 }
+      );
+      isValid = false;
+    }
+  });
+
+  // Also check for missing colleges (should appear at least once, except TBD)
+  collegeAbbrs.forEach((abbr) => {
+    // Only check for missing if not present at all
+    if (!collegeCount[abbr]) {
+      toast.error(`College ${abbr} is missing from the bracket`, {
+        autoClose: 7000,
+      });
+      isValid = false;
+    }
+  });
+
+  // 4. Each seed 1-7 should only appear once per division (except 1 in byes, but byes should count toward presence)
+  const divisionSeeds: Record<string, Record<number, number>> = {
+    blue: {},
+    green: {},
+  };
+  matches.forEach((m) => {
+    if (m.division === "blue" || m.division === "green") {
+      // For byes (slots 1 and 7), count both away_seed and home_seed if they are 1
+      if (
+        (m.match_slot === 1 || m.match_slot === 7) &&
+        m.away_seed === 1 &&
+        m.home_seed === 1
+      ) {
+        divisionSeeds[m.division][1] = (divisionSeeds[m.division][1] || 0) + 1;
+        return;
+      }
+      [
+        { seed: m.away_seed, college: m.away_college },
+        { seed: m.home_seed, college: m.home_college },
+      ].forEach(({ seed, college }) => {
+        if (seed >= 1 && seed <= 7 && college && college !== "TBD") {
+          divisionSeeds[m.division][seed] =
+            (divisionSeeds[m.division][seed] || 0) + 1;
+        }
+      });
+    }
+  });
+  ["blue", "green"].forEach((div) => {
+    for (let s = 1; s <= 7; s++) {
+      const count = divisionSeeds[div][s] || 0;
+      if (count > 1) {
+        toast.error(
+          `Seed ${s} appears ${count} times in ${div} division (should only appear once except byes)`,
+          { autoClose: 7000 }
+        );
+        isValid = false;
+      }
+      if (count === 0) {
+        toast.error(`Seed ${s} missing from ${div} division`, {
+          autoClose: 7000,
+        });
+        isValid = false;
+      }
+    }
+  });
+
+  // 5. All timestamps must be valid timestamps
+  matches.forEach((m, idx) => {
+    if (m.timestamp === "" || isNaN(Date.parse(m.timestamp))) {
+      toast.error(`Invalid or missing timestamp in row ${idx + 1}`, {
+        autoClose: 7000,
+      });
+      isValid = false;
+    }
+  });
+
+  // 6. Location is some string (not empty)
+  matches.forEach((m, idx) => {
+    if (!m.location || m.location.trim() === "") {
+      toast.error(`Missing location in row ${idx + 1}`, { autoClose: 7000 });
+      isValid = false;
+    }
+  });
+
+  // 7. 7 blue, 7 green, 1 final match
+  const blue = matches.filter((m) => m.division === "blue").length;
+  const green = matches.filter((m) => m.division === "green").length;
+  const final = matches.filter((m) => m.division === "final").length;
+  if (blue !== 7) {
+    toast.error(`There must be 7 blue division matches (found ${blue})`, {
+      autoClose: 7000,
+    });
+    isValid = false;
+  }
+  if (green !== 7) {
+    toast.error(`There must be 7 green division matches (found ${green})`, {
+      autoClose: 7000,
+    });
+    isValid = false;
+  }
+  if (final !== 1) {
+    toast.error(`There must be 1 final match (found ${final})`, {
+      autoClose: 7000,
+    });
+    isValid = false;
+  }
+
+  // 8. match slots 5,6,11-15 should have no selected colleges or TBD and seeds -1
+  const TBDSlots = [5, 6, 11, 12, 13, 14, 15];
+  TBDSlots.forEach((slot) => {
+    const m = matches.find((m) => m.match_slot === slot);
+    if (!m) return;
+    const awayOk =
+      (!m.away_college || m.away_college === "TBD") && m.away_seed === -1;
+    const homeOk =
+      (!m.home_college || m.home_college === "TBD") && m.home_seed === -1;
+    if (!awayOk || !homeOk) {
+      toast.error(
+        `Match slot ${slot} should have no selected colleges (or 'TBD') and seeds -1`,
+        { autoClose: 7000 }
+      );
+      isValid = false;
+    }
+  });
+
+  return isValid;
+};

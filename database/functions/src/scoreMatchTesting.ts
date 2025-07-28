@@ -38,16 +38,8 @@ const db = admin.firestore();
 export const scoreMatchTesting = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const {
-        matchId,
-        homeScore,
-        awayScore,
-        homeForfeit,
-        awayForfeit,
-        homeTeam,
-        awayTeam,
-        sport,
-      } = req.body;
+      const { matchId, homeScore, awayScore, homeForfeit, awayForfeit, sport } =
+        req.body;
 
       if (req.method !== "POST") {
         return res.status(405).json({ error: "Method Not Allowed" });
@@ -60,8 +52,6 @@ export const scoreMatchTesting = functions.https.onRequest(async (req, res) => {
         typeof awayScore !== "number" ||
         typeof homeForfeit !== "boolean" ||
         typeof awayForfeit !== "boolean" ||
-        typeof homeTeam !== "string" ||
-        typeof awayTeam !== "string" ||
         typeof sport !== "string"
       ) {
         return res.status(400).json({ error: "Error with parameters" });
@@ -81,6 +71,9 @@ export const scoreMatchTesting = functions.https.onRequest(async (req, res) => {
           .status(400)
           .json({ error: "This match has already been scored." });
       }
+
+      const homeTeam = existingMatchData?.home_college;
+      const awayTeam = existingMatchData?.away_college;
 
       let winningTeam: string;
       const doubleForfeit = homeForfeit && awayForfeit;

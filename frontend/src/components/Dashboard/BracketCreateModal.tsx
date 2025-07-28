@@ -1,127 +1,27 @@
 import {
-  Team,
   BracketModalProps,
   ParsedMatch,
   BracketData,
 } from "@src/types/components";
 import React, { useState, useEffect, ChangeEvent } from "react";
-import { collegeNamesList, toCollegeAbbreviation } from "@src/utils/helpers";
+import {
+  collegeNamesList,
+  toCollegeAbbreviation,
+  toCollegeName,
+  validateBracketData,
+} from "@src/utils/helpers";
 import { toast } from "react-toastify";
 
-const teamsInit: Team[] = [
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "green",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-  {
-    college: "",
-    seed: "",
-    division: "blue",
-    matchSlot: "",
-    matchDatetime: "",
-    location: "",
-  },
-];
+const matchesInit: ParsedMatch[] = Array.from({ length: 15 }, (_, i) => ({
+  match_slot: i + 1,
+  away_college: "",
+  away_seed: 0,
+  home_college: "",
+  home_seed: 0,
+  location: "",
+  timestamp: "",
+  division: i <= 5 || i == 12 ? "blue" : i == 14 ? "final" : "green",
+}));
 
 const BracketModal: React.FC<BracketModalProps> = ({
   isOpen,
@@ -129,38 +29,50 @@ const BracketModal: React.FC<BracketModalProps> = ({
   onSave,
   sport,
 }) => {
-  const [teams, setTeams] = useState<Team[]>(teamsInit);
-  const [parsedMatches, setParsedMatches] = useState<ParsedMatch[]>([]);
+  const [parsedMatches, setParsedMatches] =
+    useState<ParsedMatch[]>(matchesInit);
+  const [overrideValidation, setOverrideValidation] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setTeams(teamsInit);
+      setParsedMatches(matchesInit);
     }
   }, [isOpen]);
 
-  // Handle field changes
-  const handleChange = (index: number, field: keyof Team, value: string) => {
-    const updatedTeams = [...teams];
-    updatedTeams[index] = {
-      ...updatedTeams[index],
-      [field]: value,
+  const handleChange = (
+    index: number,
+    field: keyof ParsedMatch,
+    value: string
+  ) => {
+    // Fields that should be numbers
+    const numberFields: (keyof ParsedMatch)[] = [
+      "match_slot",
+      "away_seed",
+      "home_seed",
+    ];
+    const updatedMatches = [...parsedMatches];
+    updatedMatches[index] = {
+      ...updatedMatches[index],
+      [field]: numberFields.includes(field) ? Number(value) : value,
     };
-    setTeams(updatedTeams);
+    console.log("Updated matches:", updatedMatches);
+    setParsedMatches(updatedMatches);
   };
 
-  // Handle form submission
   const handleSubmit = () => {
     const bracketData: BracketData = {
       sport,
       matches: parsedMatches,
     };
 
+    if (!overrideValidation && !validateBracketData(bracketData)) {
+      return;
+    }
+
     onSave(bracketData);
   };
 
-  // Handle CSV file upload for: matchSlot, awayCollege, awaySeed, homeCollege, homeSeed, location, timestamp, division
-  // TODO: add rigid input validation here
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -204,7 +116,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
       } catch (err) {
         toast.error("Error parsing CSV file. Please check the format.");
       } finally {
-        // Reset file input so user can upload the same file again if needed
+        // Reset file input
         if (event.target) event.target.value = "";
       }
     };
@@ -235,41 +147,97 @@ const BracketModal: React.FC<BracketModalProps> = ({
             <thead>
               <tr>
                 <th className="border border-gray-300 bg-gray-100 p-2 text-left">
-                  College
+                  Match Slot
                 </th>
                 <th className="border border-gray-300 bg-gray-100 p-2 text-left">
-                  Seed
+                  Away College
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Away Seed
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Home College
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Home Seed
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Timestamp
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Location
                 </th>
                 <th className="border border-gray-300 bg-gray-100 p-2 text-left">
                   Division
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
-                  Match Slot
-                </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
-                  Match Date/Time
-                </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
-                  Match Location
-                </th>
               </tr>
             </thead>
             <tbody>
-              {teams.map((team, index) => (
+              {parsedMatches.map((match, index) => (
                 <tr
                   key={index}
                   className={`${
-                    team.division === "green" ? "bg-green-50" : "bg-blue-50"
+                    match.division === "green"
+                      ? "bg-green-50"
+                      : match.division === "blue"
+                      ? "bg-blue-50"
+                      : "bg-gray-50"
                   }`}
                 >
                   <td className="border border-gray-300 p-2">
+                    <input
+                      className="w-full p-2 border border-gray-300 rounded"
+                      type="number"
+                      value={match.match_slot}
+                      min="1"
+                      max="15"
+                      onChange={(e) =>
+                        handleChange(index, "match_slot", e.target.value)
+                      }
+                      placeholder="1-15"
+                    />
+                  </td>
+                  <td className="border border-gray-300 p-2">
                     <select
                       className="w-full p-2 border border-gray-300 rounded"
-                      value={team.college}
+                      value={toCollegeName[match.away_college]}
                       onChange={(e) =>
                         handleChange(
                           index,
-                          "college",
+                          "away_college",
+                          toCollegeAbbreviation[e.target.value]
+                        )
+                      }
+                    >
+                      <option value="">Select College</option>
+                      {collegeNamesList.map((college) => (
+                        <option key={college} value={college}>
+                          {college}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    <input
+                      className="w-full p-2 border border-gray-300 rounded"
+                      type="number"
+                      value={match.away_seed}
+                      min="1"
+                      max="7"
+                      onChange={(e) =>
+                        handleChange(index, "away_seed", e.target.value)
+                      }
+                      placeholder="1-7"
+                    />
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={toCollegeName[match.home_college]}
+                      onChange={(e) =>
+                        handleChange(
+                          index,
+                          "home_college",
                           toCollegeAbbreviation[e.target.value] // see if this causes any problems
                         )
                       }
@@ -286,51 +254,22 @@ const BracketModal: React.FC<BracketModalProps> = ({
                     <input
                       className="w-full p-2 border border-gray-300 rounded"
                       type="number"
-                      value={team.seed}
+                      value={match.home_seed}
                       min="1"
                       max="7"
                       onChange={(e) =>
-                        handleChange(index, "seed", e.target.value)
+                        handleChange(index, "home_seed", e.target.value)
                       }
                       placeholder="1-7"
-                    />
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    <select
-                      className="w-full p-2 border border-gray-300 rounded"
-                      value={team.division}
-                      onChange={(e) =>
-                        handleChange(
-                          index,
-                          "division",
-                          e.target.value as "green" | "blue"
-                        )
-                      }
-                    >
-                      <option value="green">Green</option>
-                      <option value="blue">Blue</option>
-                    </select>
-                  </td>
-                  <td className="border border-gray-300 p-2">
-                    <input
-                      className="w-full p-2 border border-gray-300 rounded"
-                      type="number"
-                      value={team.matchSlot}
-                      min="1"
-                      max="15"
-                      onChange={(e) =>
-                        handleChange(index, "matchSlot", e.target.value)
-                      }
-                      placeholder="1-15"
                     />
                   </td>
                   <td className="border border-gray-300 p-2">
                     <input
                       className="w-full p-2 border border-gray-300 rounded"
                       type="datetime-local"
-                      value={team.matchDatetime}
+                      value={match.timestamp}
                       onChange={(e) =>
-                        handleChange(index, "matchDatetime", e.target.value)
+                        handleChange(index, "timestamp", e.target.value)
                       }
                     />
                   </td>
@@ -338,11 +277,28 @@ const BracketModal: React.FC<BracketModalProps> = ({
                     <input
                       className="w-full p-2 border border-gray-300 rounded"
                       type="text"
-                      value={team.location}
+                      value={match.location}
                       onChange={(e) =>
                         handleChange(index, "location", e.target.value)
                       }
                     />
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded"
+                      value={match.division}
+                      onChange={(e) =>
+                        handleChange(
+                          index,
+                          "division",
+                          e.target.value as "green" | "blue" | "final"
+                        )
+                      }
+                    >
+                      <option value="green">Green</option>
+                      <option value="blue">Blue</option>
+                      <option value="final">Final</option>
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -379,19 +335,34 @@ const BracketModal: React.FC<BracketModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Create Bracket
-          </button>
+        <div className="p-4 border-t border-gray-200 flex flex-col gap-2">
+          <div className="flex justify-end mb-2">
+            <label className="flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={overrideValidation}
+                onChange={() => setOverrideValidation((v) => !v)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                Override input validation
+              </span>
+            </label>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              Create Bracket
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "../LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
-import { toCollegeAbbreviation } from "@src/utils/helpers";
+import { currentYear, toCollegeAbbreviation } from "@src/utils/helpers";
 import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
@@ -21,14 +21,20 @@ const AAHomeComponent: React.FC = () => {
   const { setFilter } = useContext(FiltersContext);
   const { filter } = useContext(FiltersContext);
   const { currentSeason } = useSeason();
-  const [selected, setSelected] = useState<string>(filter.selected?.trim() !== "" ? filter.selected : currentSeason?.year || "2025-2026");
+  const [selected, setSelected] = useState<string>(
+    filter.selected?.trim() !== ""
+      ? filter.selected
+      : currentSeason?.year || currentYear
+  );
 
   useEffect(() => {
     const fetchCollegesLeaderboard = async () => {
       try {
         setLoading(true);
         if (selected === "All Time") return;
-        const response = await fetch(`api/functions/getLeaderboardv2?seasonId=${selected}`)
+        const response = await fetch(
+          `api/functions/getLeaderboardv2?seasonId=${selected}`
+        );
         if (!response.ok) {
           throw new Error(
             `Error fetching colleges leaderboard: ${response.statusText}`
@@ -63,15 +69,17 @@ const AAHomeComponent: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <LoadingScreen />
-    );
+    return <LoadingScreen />;
   }
 
   return (
     <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
       <PageHeading heading="" />
-      <Title selected={selected} lastUpdated={sortedColleges[0].today} onFilterChange={handleSelectedChange} />
+      <Title
+        selected={selected}
+        lastUpdated={sortedColleges[0].today}
+        onFilterChange={handleSelectedChange}
+      />
       {selected === "All Time" ? (
         <div>
           <AllTimePodiums />

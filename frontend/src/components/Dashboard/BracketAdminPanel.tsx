@@ -29,14 +29,14 @@ const BracketAdminPanel: React.FC = () => {
             Authorization: `Bearer ${userToken}`,
           },
           body: JSON.stringify({
-            matchId: "playoff-11",
-            homeScore: 10,
-            awayScore: 20,
+            matchId: "playoff-79",
+            homeScore: 0,
+            awayScore: 4,
             homeForfeit: false,
             awayForfeit: false,
-            homeTeam: "PC",
-            awayTeam: "MC",
-            sport: "Indoor Soccer",
+            homeTeam: "BK",
+            awayTeam: "ES",
+            sport: "Volleyball",
           }),
         }
       );
@@ -46,23 +46,24 @@ const BracketAdminPanel: React.FC = () => {
       if (!response.ok) {
         throw new Error(data.error || "Failed to score match");
       }
-
-      console.log("Success:", data);
     } catch (error) {
-      console.error("Error:", error);
+      toast.error(
+        "Error: " + (error instanceof Error ? error.message : "Unknown error")
+      );
     }
   };
 
   const handleSave = async (bracketData: BracketData): Promise<void> => {
     // try {
     //   scoreTesting();
+    //   toast.success("scored test match");
     // } catch (err) {
-    //   console.error("Error:", err);
+    //   toast.error(
+    //     "Error: " + (err instanceof Error ? err.message : "Unknown error")
+    //   );
     // }
 
-    console.log("Bracket data to save:", bracketData);
     try {
-      // call cloud function
       const userToken = sessionStorage.getItem("userToken");
       const response = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/createBracket",
