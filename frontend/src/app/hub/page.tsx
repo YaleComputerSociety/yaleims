@@ -19,7 +19,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-20">
-      <PageHeading heading="Dashboard" />
+      <PageHeading heading="Hub" />
       <div>
         {user?.role === "admin" && <AdminDashboard />}
         {user?.role === "user" && <UserDashboard />}
@@ -29,9 +29,9 @@ const Dashboard: React.FC = () => {
         {!user && (
           <div className="p-4">
             <h2 className="text-2xl font-bold mb-4">
-              Welcome to the Dashboard
+              Welcome to the Hub
             </h2>
-            <p>Please log in to access your dashboard.</p>
+            <p>Please log in to access your Hub.</p>
           </div>
         )}
       </div>
