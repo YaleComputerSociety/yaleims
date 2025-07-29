@@ -1,138 +1,6 @@
-// "use client";
-
-// import React, { useState, useEffect } from "react";
-// import Bracket from "@src/components/Brackets/Bracket";
-// import { currentYear, sports } from "@src/utils/helpers";
-// import { doc, getDoc } from "firebase/firestore";
-// import { db } from "../../../lib/firebase";
-// import { Ubuntu } from "next/font/google";
-// import { useSeason } from "@src/context/SeasonContext";
-// import LoadingSpinner from "@src/components/LoadingSpinner";
-// import LoadingScreen from "@src/components/LoadingScreen";
-
-// interface FirestoreMatch {
-//   bracket_placement: number;
-//   match_id: string;
-//   round: string;
-// }
-
-// const BracketsPage: React.FC = () => {
-// const { currentSeason, pastSeasons, seasonLoading } = useSeason();
-// const pastYears = pastSeasons?.years || [];
-
-// const [sport, setSport] = useState<string>("");
-// const [loading, setLoading] = useState<boolean>(false);
-// const [error, setError] = useState<string | null>(null);
-// const [bracket, setBracket] = useState<FirestoreMatch[] | null>(null); // update type with a bracket type
-// const [season, setSeason] = useState<string>(
-//   currentSeason?.year || currentYear
-// );
-
-// const handleSportChange = (sport: string) => {
-//   setSport(sport);
-// };
-
-// const handleSeasonChange = (season: string) => {
-//   setSeason(season);
-// };
-
-// useEffect(() => {
-//   const fetchBracket = async () => {
-//     try {
-//       setLoading(true);
-//       setError(null);
-
-//       const bracketDocRef = doc(db, "brackets", "seasons", season, sport);
-//       const bracketDoc = await getDoc(bracketDocRef);
-
-//       if (!bracketDoc.exists()) {
-//         setError(`Bracket for ${sport} (${season}) not found`);
-//         setBracket(null);
-//       } else {
-//         setBracket(bracketDoc.data().matches);
-//       }
-//     } catch (err) {
-//       console.error(`Error fetching bracket for ${sport} (${season}):`, err);
-//       setError(`Bracket doesn't yet exist!`);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   if (sport && season) {
-//     fetchBracket();
-//   }
-// }, [sport, season]);
-
-//   // TODO: fix loading and error displays
-
-//   // SMALL BUG: "Brackets" header slightly shifts when a new sport is selected?
-//   // may need to just redo the formatting of the header, may not be ideal
-
-// if (seasonLoading) {
-//   return <LoadingScreen />;
-// }
-
-//   return (
-//     <div className="p-6 min-h-screen">
-//       {/* header */}
-//       <div className="relative flex items-center w-full my-10">
-//         {/* sport dropdown left */}
-//         <div className="absolute left-0 flex gap-2">
-//           <select
-//             className="p-2 border border-gray-300 rounded"
-//             value={sport}
-//             onChange={(e) => handleSportChange(e.target.value)}
-//           >
-//             <option value="">Select Sport</option>
-//             {sports.map((sport) => (
-//               <option key={sport.name} value={sport.name}>
-//                 {sport.emoji} {sport.name}
-//               </option>
-//             ))}
-//           </select>
-//         </div>
-
-//         {/* title */}
-//         <h1 className="text-2xl sm:text-4xl font-bold w-full text-center">
-//           Brackets
-//         </h1>
-
-//         {/* year dropdown right */}
-// <div className="absolute right-0 flex gap-2">
-//   <select
-//     className="p-2 border border-gray-300 rounded"
-//     value={season}
-//     onChange={(e) => handleSeasonChange(e.target.value)}
-//   >
-//     <option value={currentSeason?.year || currentYear}>
-//       {currentSeason?.year || currentYear}
-//     </option>
-//     {pastYears
-//       .filter((y: string) => y !== (currentSeason?.year || currentYear))
-//       .map((y: string) => (
-//         <option key={y} value={y}>
-//           {y}
-//         </option>
-//       ))}
-//   </select>
-// </div>
-
-//         {/* loading and error states */}
-//         {loading && <LoadingSpinner />}
-//         {error && <p>no bracket yet!</p>}
-//       </div>
-//       {bracket ? <Bracket matches={bracket} /> : <p>No bracket</p>}
-//     </div>
-//   );
-// };
-
-// export default BracketsPage;
-
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Bracket from "@src/components/Brackets/Bracket";
 import { currentYear, sports } from "@src/utils/helpers";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
@@ -143,6 +11,8 @@ import BracketCell from "@src/components/Brackets/BracketCell";
 import { Ubuntu } from "next/font/google";
 import { useSeason } from "@src/context/SeasonContext";
 import LoadingScreen from "@src/components/LoadingScreen";
+import withProtectedRoute from "@src/components/withProtectedRoute";
+import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
 
 // const ubuntu = Ubuntu({
 //   subsets: ["latin"],
@@ -155,6 +25,15 @@ interface FirestoreMatch {
   round: string;
 }
 
+// mapping index in bracket array to the type of location of the match in the bracket
+const leftPlayoffIndices = [0, 1, 2, 3];
+const leftQuarterIndices = [4, 5];
+const leftSemiIndex = 12;
+const rightPlayoffIndices = [6, 7, 8, 9];
+const rightQuarterIndices = [10, 11];
+const rightSemiIndex = 13;
+const finalIndex = 14;
+
 const BracketsPage: React.FC = () => {
   const { currentSeason, pastSeasons, seasonLoading } = useSeason();
   const pastYears = pastSeasons?.years || [];
@@ -162,7 +41,7 @@ const BracketsPage: React.FC = () => {
   const [sport, setSport] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [bracket, setBracket] = useState<FirestoreMatch[] | null>(null); // update type with a bracket type
+  const [bracket, setBracket] = useState<FirestoreMatch[] | null>(null);
   const [season, setSeason] = useState<string>(
     currentSeason?.year || currentYear
   );
@@ -175,7 +54,13 @@ const BracketsPage: React.FC = () => {
     setSport(sport);
   };
 
+  // TODO Kaitlyn: move this into a function and api route for security
   useEffect(() => {
+    if (!sport || !season) {
+      setBracket(null);
+      return;
+    }
+
     const fetchBracket = async () => {
       try {
         setLoading(true);
@@ -184,11 +69,13 @@ const BracketsPage: React.FC = () => {
         const bracketDocRef = doc(db, "brackets", "seasons", season, sport);
         const bracketDoc = await getDoc(bracketDocRef);
 
-        if (!bracketDoc.exists()) {
+        if (!bracketDoc.exists() || !bracketDoc.data()?.matches) {
           setError(`Bracket for ${sport} (${season}) not found`);
           setBracket(null);
         } else {
-          setBracket(bracketDoc.data().matches);
+          const matches = bracketDoc.data()?.matches as FirestoreMatch[];
+          matches.sort((a, b) => a.bracket_placement - b.bracket_placement);
+          setBracket(matches);
         }
       } catch (err) {
         console.error(`Error fetching bracket for ${sport} (${season}):`, err);
@@ -294,42 +181,40 @@ const BracketsPage: React.FC = () => {
           <div className="grid grid-cols-7 gap-16 relative items-start max-w-7xl mx-auto">
             {/* Left Playoffs */}
             <div className="flex flex-col items-end space-y-20">
-              {bracket
-                .filter((m) => m.round === "playoffs-left")
-                .map((match) => (
+              {leftPlayoffIndices.map((index) => {
+                const match = bracket[index];
+                return (
                   <div className="scale-90" key={match.match_id}>
                     <BracketCell matchId={match.match_id} />
                   </div>
-                ))}
+                );
+              })}
             </div>
 
             {/* Left Quarters */}
             <div className="ml-4 flex flex-col items-end justify-center space-y-36">
-              {bracket
-                .filter((m) => m.round === "quarter-left")
-                .map((match) => (
+              {leftQuarterIndices.map((index) => {
+                const match = bracket[index];
+                return (
                   <div className="scale-90" key={match.match_id}>
                     <BracketCell matchId={match.match_id} />
                   </div>
-                ))}
+                );
+              })}
             </div>
 
             {/* Left Semis */}
             <div className="ml-6 flex flex-col items-end justify-center space-y-48">
-              {bracket
-                .filter((m) => m.round === "semi-left")
-                .map((match) => (
-                  <div className="scale-90" key={match.match_id}>
-                    <BracketCell matchId={match.match_id} />
-                  </div>
-                ))}
+              <div className="scale-90" key={bracket[leftSemiIndex].match_id}>
+                <BracketCell matchId={bracket[leftSemiIndex].match_id} />
+              </div>
             </div>
 
             {/* Final */}
             <div className="flex flex-col items-center justify-center space-y-6">
               <img src="/trophy.png" alt="Trophy" className="w-14 h-14" />
               <div className="scale-90">
-                <BracketCell matchId="playoff-15" />
+                <BracketCell matchId={bracket[finalIndex].match_id} />
               </div>
               <div className="bg-white rounded-lg px-2 py-1 shadow text-center">
                 <p className="text-base ">
@@ -340,48 +225,44 @@ const BracketsPage: React.FC = () => {
 
             {/* Right Semis */}
             <div className="-ml-6 flex flex-col items-start justify-center space-y-48">
-              {bracket
-                .filter((m) => m.round === "semi-right")
-                .map((match) => (
-                  <div className="scale-90" key={match.match_id}>
-                    <BracketCell matchId={match.match_id} />
-                  </div>
-                ))}
+              <div className="scale-90" key={bracket[rightSemiIndex].match_id}>
+                <BracketCell matchId={bracket[rightSemiIndex].match_id} />
+              </div>
             </div>
 
             {/* Right Quarters */}
             <div className="-ml-4 flex flex-col items-start justify-center space-y-36">
-              {bracket
-                .filter((m) => m.round === "quarter-right")
-                .map((match) => (
+              {rightQuarterIndices.map((index) => {
+                const match = bracket[index];
+                return (
                   <div className="scale-90" key={match.match_id}>
                     <BracketCell matchId={match.match_id} />
                   </div>
-                ))}
+                );
+              })}
             </div>
 
             {/* Right Playoffs */}
             <div className="flex flex-col items-start space-y-20">
-              {bracket
-                .filter((m) => m.round === "playoffs-right")
-                .map((match) => (
+              {rightPlayoffIndices.map((index) => {
+                const match = bracket[index];
+                return (
                   <div className="scale-90" key={match.match_id}>
                     <BracketCell matchId={match.match_id} />
                   </div>
-                ))}
+                );
+              })}
             </div>
           </div>
         </div>
       ) : (
-        <p className="text-center text-gray-500 mt-10">
-          No bracket loaded. Please select a sport.
-        </p>
+        <p className="text-center text-gray-500 mt-10">No bracket available.</p>
       )}
     </div>
   );
 };
 
-export default BracketsPage;
+export default withRoleProtectedRoute(BracketsPage, ["dev"]); // temporary until the page is ready
 
 //   return (
 //     <div className={ubuntu.className}>
