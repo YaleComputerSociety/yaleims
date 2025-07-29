@@ -1,6 +1,5 @@
 import withRoleProtectedRoute from "../withRoleProtectedRoute";
-import CaptainSelect from "./CaptainSelect";
-import MVPSelect from "./MVPSelect";
+import DCardPopup from "./DCardPopup";
 
 const CollegeRepDashboard: React.FC = () => {
   return (
@@ -8,13 +7,18 @@ const CollegeRepDashboard: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4">
         Welcome to the College Rep Dashboard
       </h2>
-      <p>
-        This is where college representatives can manage their teams and
-        schedules!
-      </p>
-      <CaptainSelect />
-      <MVPSelect />
-      {/* TODO: add ability to see captain role view, but for all in-season sports */}
+      <div className="grid grid-cols-3 gap-10">
+        <DCardPopup
+          title="Select Captains"  
+          openInfo="Click to View and Select Captains"
+          message="Select the Captains for each sport during the season, One Person can be a Captian of multiple sports"
+        />
+        <DCardPopup
+          title="Select MVP"
+          openInfo="Click to Select MVP for the Week"
+          message="Select the MVP for the week to have them displayed on the leaderboard Page!"
+        />
+      </div>
     </div>
   );
 };

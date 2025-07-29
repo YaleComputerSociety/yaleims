@@ -1,27 +1,59 @@
-import React from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { MdClose } from "react-icons/md";
 
 interface DCardPopupProps {
-  title: string
-  link?: string
-  message?: string
+  title: string;
+  message?: string;
+  openInfo: string;
 }
 
-export default function DCardPopup ({ title, link, message}: DCardPopupProps) {
-  return (
-    <div className="w-96 h-56 dark:bg-black bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg text-white">{title}</h2>
-        <div className="mt-4">
-            {message}
-        </div>
-        {link && (
-            <Link
-                href={link}
-                className="mt-auto flex justify-between text-xs text-gray-500"
+export default function DCardPopup({ title, message, openInfo }: DCardPopupProps) {
+    const [ open, setOpen ] = useState<boolean>(false)
+
+    // collapse navbar when open
+    useEffect(() => {
+        const html = document.documentElement;
+        if (open) { html.classList.add("overflow-hidden")}
+        else { html.classList.remove("overflow-hidden")}
+        return () => {
+          html.classList.remove("overflow-hidden");
+        };
+    }, [open]);
+
+    return (
+        <div className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md grid grid-rows-7">
+            <h2 className="text-lg font-semibold row-span-1">{title}</h2>
+            <div className="mt-4 row-span-5 ">{message}</div>
+            <button
+                onClick={() => setOpen(true)}
+                className="row-span-1 text-left inline-block text-xs text-indigo-600 hover:underline"
             >
-                Click to update scores
-            </Link>
-        )}
-    </div>
-  );
+                {openInfo} →
+            </button>
+            {open && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+                    onClick={() => setOpen(false)}
+                >
+                    <div 
+                        className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
+                            <h2 className="text-xl font-semibold">{title}</h2>
+                            <button
+                                onClick={() => setOpen(false)}
+                                className="text-gray-600 hover:text-white text-xl font-bold"
+                            >
+                                <MdClose />
+                            </button>
+                        </div>
+                        <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
+                            Test
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
