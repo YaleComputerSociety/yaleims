@@ -13,7 +13,7 @@ const AddScoresPage: React.FC = () => {
   const [unscoreId, setUnscoreId] = useState<string>(""); // For unscore input
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false); // For confirmation modal
-  const { currentSeason } = useSeason()
+  const { currentSeason } = useSeason();
 
   useEffect(() => {
     document.title = "Score Matches";
@@ -23,7 +23,11 @@ const AddScoresPage: React.FC = () => {
     const fetchMatches = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/functions/getUnscoredMatches?seasonId=${currentSeason?.year || "2025-2026"}`);
+        const response = await fetch(
+          `/api/functions/getUnscoredMatches?seasonId=${
+            currentSeason?.year || "2025-2026"
+          }`
+        );
 
         if (response.ok) {
           const data = await response.json();
@@ -44,14 +48,14 @@ const AddScoresPage: React.FC = () => {
     setUnscoreMessage(null);
 
     try {
-      const userToken = sessionStorage.getItem("userToken")
+      const userToken = sessionStorage.getItem("userToken");
       const response = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/undoScoreMatch",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
+            Authorization: `Bearer ${userToken}`,
           },
           body: JSON.stringify({ matchId: unscoreId }),
         }

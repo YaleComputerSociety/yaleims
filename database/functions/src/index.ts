@@ -28,6 +28,9 @@ import { getSeasonPoints } from "./getSeasonPoints.js";
 import { getLeaderboardv2 } from "./getLeaderboardv2.js";
 import { getBetsv2 } from "./getBetsv2.js";
 import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
+import { createBracket } from "./createBracket.js";
+import { deleteBracket } from "./deleteBracket.js";
+import { scoreMatchTesting } from "./scoreMatchTesting.js";
 import { getSchedulePaginatedv2 } from "./getSchedulePaginatedv2.js";
 
 export {
@@ -61,5 +64,8 @@ export {
   getSeasonPoints,
   getMatchesPaginatedv2,
   updateUserRole,
-  getSchedulePaginatedv2
+  createBracket,
+  deleteBracket,
+  scoreMatchTesting,
+  getSchedulePaginatedv2,
 };
