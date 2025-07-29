@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import jwt from "jsonwebtoken"
 
 const corsHandler = cors({ origin: true });
 
@@ -11,31 +13,31 @@ export const getUnscoredMatches = functions.https.onRequest(
   async (req, res) => {
     return corsHandler(req, res, async () => {
       try {
-        // uncomment and redeploy once new frontend changes are deployed
-        // const authHeader = req.headers.authorization || ""
-        // if (!authHeader.startsWith("Bearer ")) {
-        //   return res.status(401).json({error: "No token provided"});
-        // }
-        // //   // getting token passed from request
-        // const idToken = authHeader.split("Bearer ")[1];
-        // // //   //verifying the token using firebase admin
-        // let decoded;
-        // try {
-        //   decoded = await admin.auth().verifyIdToken(idToken);
-        //   if (!decoded) {
-        //     return res.status(401).json({error: "Invalid Token"})
-        //   }
-        // } catch (error) {
-        //   return res.status(401).json({error: "Invalid Token"})
-        // }
-        //get rid of email in the query and use the decoded users email
+        const authHeader = req.headers.authorization || ""
+        if (!authHeader.startsWith("Bearer ")) {
+          return res.status(401).json({error: "No token provided"});
+        }
+        const token = authHeader.split("Bearer ")[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (!isValidDecodedToken(decoded)) {
+          console.error("Invalid token structure");
+          return res.status(401).json({error: "Invalid Token Structure"})
+        }
+        const { role } = decoded as { role: string }
+        const seasonId = req.query.seasonId as string
+        if (!seasonId) return res.status(400).json({error: "SeasonId must be a query"})
+
+        if (role !== "admin") {
+          return res.status(401).json({error: "Unauthorized User"})
+        }
         const currentDate = admin.firestore.Timestamp.now();
 
         const snapshot = await db
-          .collection("matches")
+          .collection("matches").doc("seasons").collection(seasonId)
           .where("winner", "==", null)
-          .where("timestamp", "<", currentDate) // get past matches
-          .orderBy("timestamp", "asc") // orders oldest first
+          .where("timestamp", "<", currentDate) 
+          .orderBy("timestamp", "asc")
           .get();
 
         if (snapshot.empty) {

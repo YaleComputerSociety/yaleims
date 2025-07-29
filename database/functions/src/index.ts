@@ -31,6 +31,7 @@ import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
 import { createBracket } from "./createBracket.js";
 import { deleteBracket } from "./deleteBracket.js";
 import { scoreMatchTesting } from "./scoreMatchTesting.js";
+import { getSchedulePaginatedv2 } from "./getSchedulePaginatedv2.js";
 
 export {
   getLeaderboard,
@@ -66,4 +67,5 @@ export {
   createBracket,
   deleteBracket,
   scoreMatchTesting,
+  getSchedulePaginatedv2,
 };

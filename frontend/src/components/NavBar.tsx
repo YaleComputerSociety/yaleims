@@ -13,7 +13,10 @@ import { PiHandCoinsLight } from "react-icons/pi";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { VscFeedback } from "react-icons/vsc";
 import { usePathname } from "next/navigation";
-
+import { useNavbar } from "@src/context/NavbarContext";
+import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
+import { MdOutlineKeyboardArrowRight } from "react-icons/md";
+import { MdOutlineLeaderboard } from "react-icons/md";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -32,6 +35,8 @@ const NavBar: React.FC = () => {
   const [isClick, setisClick] = useState(false);
   const { user, loading } = useUser();
   const { theme, setTheme } = useTheme();
+  const { collapsed, onToggleCollapse } = useNavbar()
+   
 
   const pathname = usePathname();
 
@@ -57,31 +62,31 @@ const NavBar: React.FC = () => {
   };
 
   const links = [
-    { href: "/", text: "YALE IMS", text_mobile: "Home" },
-    { href: "/dashboard", text: "Dashboard", icon: <LuLayoutDashboard /> },
+    { href: "/hub", text: "Hub", icon: <LuLayoutDashboard /> },
+    { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard />},
     { href: "/scores", text: "Scores", icon: <MdOutlineScoreboard /> },
     { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
     { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
     { href: "/about-us", text: "About", icon: <IoInformationCircleOutline /> },
     { href: "https://yaleims.canny.io", text: "Feedback", icon: <VscFeedback /> },
   ];
+  const widthClass = collapsed ? "md:w-[5%]" : "md:w-[16%]";
 
   return (
-    <nav className="mg:p-5 p-2 z-50 items-center md:w-[16%] md:h-full w-full fixed backdrop-blur-sm bg-white/50  dark:bg-black/50">
-      <div className="md:flex md:flex-col justify-between items-left hidden">
-        <div className="text-base pb-10 flex flex-row justify-between">
-          <Link href={links[0].href} onClick={resetFilters}>
+    <nav className={`transition-all duration-200 ${collapsed ? 'mg:p-2' : 'mg:p-5'} p-2 z-50 items-center ${widthClass} md:h-full w-full fixed backdrop-blur-sm bg-white/50 dark:bg-black/50`}>
+      <div className={`md:flex md:flex-col justify-between h-full ${collapsed ? "items-center" : "items-left"} hidden`}>
+        <div className="text-base pb-10 flex flex-row justify-between ">
+            {collapsed ? <Image className="pt-6" src="/favicon.ico" width={40} height={40} alt="Logo"/> :
             <Image 
               src="/LOGO.png" 
               width={130} 
               height={130} 
               alt="YALE IMS"
-            />
-          </Link>
+            />}
         </div>
         
-        <div className="flex mp:text-base text-sm flex-col space-y-1 items-left">
-          {links.slice(1).map((link) => {
+        <div className={`flex mp:text-base text-sm flex-col space-y-1 ${collapsed ? "items-center" : "items-left"}`}>
+          {links.map((link) => {
             const active = isActive(link.href);
             return (
             <Link
@@ -91,11 +96,22 @@ const NavBar: React.FC = () => {
               onClick={resetFilters}
               target={link.text === "Feedback" ? "_blank" : ""}
             >
-              <span className="mp:pr-2 pr-1">{link.icon}</span>
-              {link.text}
+              {collapsed ? 
+                <span className="text-lg">{link.icon}</span> : 
+                <>
+                  <span className="mp:pr-2 pr-1">{link.icon}</span>
+                  {link.text}
+                </>}
             </Link>)
           })}
         </div>
+        <button
+          onClick={onToggleCollapse}
+          className="mb-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md ml-auto mt-auto"
+          aria-label="Toggle Collapse"
+        >
+          {collapsed ? <MdOutlineKeyboardArrowRight size={24} /> : <MdOutlineKeyboardArrowLeft size={24} />}
+        </button>
       </div>
 
       {/* Mobile Navbar */}
@@ -160,17 +176,6 @@ const NavBar: React.FC = () => {
                 >
                   Sign In
                 </Link>
-
-                // <button
-                //   onClick={googleAuth}
-                //   className={`py-1 px-3 rounded border mt-3 ${
-                //     theme === "light"
-                //       ? "border-black hover:border-gray-400 hover:text-gray-400"
-                //       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
-                //   }`}
-                // >
-                //   Sign in with Google
-                // </button>
               )
             ) : (
               ""
@@ -189,7 +194,7 @@ const NavBar: React.FC = () => {
               onClick={turnMenuOff}
               className="hover:text-slate-300 dark:hover:text-blue-300 flex justify-center items-center font-medium transition duration-200"
             >
-              {link.text_mobile || link.text}
+              {link.text}
             </Link>
           ))}
           <div>

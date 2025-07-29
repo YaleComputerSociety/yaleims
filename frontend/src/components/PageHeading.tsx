@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { useUser } from '../context/UserContext'
 import { useTheme } from 'next-themes';
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
+import { useNavbar } from '@src/context/NavbarContext';
+import { useSearchParams } from 'next/navigation';
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -22,9 +24,10 @@ interface PageHeadingProps {
 export default function PageHeading({ heading }: PageHeadingProps) {
     const { user, loading } = useUser();
     const { theme, setTheme } = useTheme();
+    const { collapsed } = useNavbar()
 
     return (
-        <div className='md:fixed md:top-0 md:z-50 flex flex-row w-[84%] md:p-3 p-4 backdrop-blur-sm'>
+        <div className={`transition-all duration-200 md:fixed md:top-0 md:z-50 flex flex-row ${collapsed ? "w-[95%]" : "w-[84%]"} md:p-3 p-4 backdrop-blur-sm`}>
             <div className='w-full flex flex-row justify-between items-center'>
                 <h1 className="md:text-3xl text-2xl font-bold">{heading}</h1>
                 <div className="hidden md:flex flex-row gap-x-5 items-center">

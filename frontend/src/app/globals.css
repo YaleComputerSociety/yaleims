@@ -17,7 +17,7 @@ body {
     to bottom,
     #d0e4fb,
     #8db8ea
-  ); /* Light blue gradient for body */
+  );
   --foreground: #1f2937; /* Text color for light mode */
 }
 

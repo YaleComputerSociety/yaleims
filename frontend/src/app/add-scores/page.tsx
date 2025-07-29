@@ -5,6 +5,7 @@ import { Matchv2 as Match } from "@src/types/components";
 import MatchCard from "@src/components/AddScores/MatchCard";
 import LoadingScreen from "@src/components/LoadingScreen";
 import withProtectedRoute from "@src/components/withProtectedRoute";
+import { useSeason } from "@src/context/SeasonContext";
 
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -12,6 +13,7 @@ const AddScoresPage: React.FC = () => {
   const [unscoreId, setUnscoreId] = useState<string>(""); // For unscore input
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false); // For confirmation modal
+  const { currentSeason } = useSeason();
 
   useEffect(() => {
     document.title = "Score Matches";
@@ -21,12 +23,10 @@ const AddScoresPage: React.FC = () => {
     const fetchMatches = async () => {
       setLoading(true);
       try {
-        const userToken = sessionStorage.getItem("userToken");
         const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getUnscoredMatches",
-          {
-            headers: { Authorization: `Bearer ${userToken}` },
-          }
+          `/api/functions/getUnscoredMatches?seasonId=${
+            currentSeason?.year || "2025-2026"
+          }`
         );
 
         if (response.ok) {
