@@ -5,9 +5,10 @@ interface DCardPopupProps {
   title: string;
   message?: string;
   openInfo: string;
+  CustomComponent: React.ComponentType;
 }
 
-export default function DCardPopup({ title, message, openInfo }: DCardPopupProps) {
+export default function DCardPopup({ title, message, openInfo, CustomComponent }: DCardPopupProps) {
     const [ open, setOpen ] = useState<boolean>(false)
 
     // collapse navbar when open
@@ -49,7 +50,7 @@ export default function DCardPopup({ title, message, openInfo }: DCardPopupProps
                             </button>
                         </div>
                         <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
-                            Test
+                            <CustomComponent />
                         </div>
                     </div>
                 </div>

@@ -1,9 +1,8 @@
 import React from "react";
-import withRoleProtectedRoute from "../withRoleProtectedRoute";
-import AssignRoles from "./AssignRoles";
-import BracketAdminPanel from "./BracketAdminPanel";
-import UpdateScores from "./UpdateScores";
-import EditMatches from "./EditMatches";
+import withRoleProtectedRoute from "../../withRoleProtectedRoute";
+import AssignRoles from "../Admin/AssignRoles";
+import BracketAdminPanel from "../Admin/BracketAdminPanel";
+import EditMatches from "../Admin/EditMatches";
 
 const DevDashboard = () => {
   return (
@@ -12,7 +11,6 @@ const DevDashboard = () => {
       <p>This is where developers can manage their users!</p>
       <AssignRoles />
       <BracketAdminPanel />
-      <UpdateScores />
       <EditMatches />
     </div>
   );

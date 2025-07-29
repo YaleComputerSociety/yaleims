@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import BracketCreateModal from "@src/components/Dashboard/BracketCreateModal";
-import BracketInterface from "@src/components/Dashboard/BracketInterface";
+import BracketCreateModal from "@src/components/Dashboard/Admin/BracketCreateModal";
+import BracketInterface from "@src/components/Dashboard/Admin/BracketInterface";
 import { BracketData } from "@src/types/components";
 import withProtectedRoute from "@src/components/withProtectedRoute";
 import { toast } from "react-toastify";

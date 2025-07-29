@@ -1,7 +1,6 @@
 import BracketAdminPanel from "./BracketAdminPanel";
 import EditMatches from "./EditMatches";
-import UpdateScores from "./UpdateScores";
-import DCardLink from "./DCardLink";
+import DCardLink from "../DCardLink";
 
 const AdminDashboard: React.FC = () => {
   // Fetch required data and pass it into the relevant component

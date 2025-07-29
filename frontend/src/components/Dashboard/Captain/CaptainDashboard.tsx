@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { getDoc, doc } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "../../../../lib/firebase";
 import { useUser } from "@src/context/UserContext";
-import withProtectedRoute from "../withProtectedRoute";
+import withProtectedRoute from "../../withProtectedRoute";
 import ViewTeamSignups from "./ViewTeamSignups";
-import LoadingScreen from "../LoadingScreen";
+import LoadingScreen from "../../LoadingScreen";
 
 const CaptainDashboard: React.FC = () => {
   const { user, loading } = useUser();

@@ -1,5 +1,5 @@
 import React from "react";
-import ComingSoon from "../ComingSoon";
+import ComingSoon from "../../ComingSoon";
 
 const EditMatches = () => {
   return <ComingSoon />;

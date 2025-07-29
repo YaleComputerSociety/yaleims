@@ -3,11 +3,11 @@
 import React from "react";
 import PageHeading from "@src/components/PageHeading";
 import { useUser } from "@src/context/UserContext";
-import CollegeRepDashboard from "@src/components/Dashboard/CollegeRepDashboard";
-import AdminDashboard from "@src/components/Dashboard/AdminDashboard";
-import UserDashboard from "@src/components/Dashboard/UserDashboard";
-import CaptainDashboard from "@src/components/Dashboard/CaptainDashboard";
-import DevDashboard from "@src/components/Dashboard/DevDashboard";
+import CollegeRepDashboard from "@src/components/Dashboard/College_Rep/CollegeRepDashboard";
+import AdminDashboard from "@src/components/Dashboard/Admin/AdminDashboard";
+import UserDashboard from "@src/components/Dashboard/User/UserDashboard";
+import CaptainDashboard from "@src/components/Dashboard/Captain/CaptainDashboard";
+import DevDashboard from "@src/components/Dashboard/Dev/DevDashboard";
 import LoadingScreen from "@src/components/LoadingScreen";
 
 const Dashboard: React.FC = () => {
