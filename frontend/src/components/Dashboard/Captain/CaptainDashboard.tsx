@@ -39,7 +39,7 @@ const CaptainDashboard: React.FC = () => {
   return (
     <div className="p-4 justify-center">
       <h2 className="text-2xl font-bold mb-4">
-        Welcome to the Captain Dashboard
+        Welcome to the Captain Hub
       </h2>
       <p>This is where captains can view their teams and manage signups.</p>
       {sports.length > 0 ? (

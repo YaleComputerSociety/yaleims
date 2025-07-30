@@ -3,6 +3,7 @@
 type CollegeMap = Record<string, string>; // Map of abbreviation to full name
 type SportMap = Record<string, number>;
 type EmojiMap = Record<string, string>;
+type SeasonSportsMap = { [x: string]: string[] }
 
 import { BracketData, Match, Sport } from "@src/types/components";
 import { toast } from "react-toastify";
@@ -39,7 +40,13 @@ export const collegeNamesList = [
   "Silliman",
   "Timothy Dwight",
   "Trumbull",
-];
+]; 
+
+export const seasonSports: SeasonSportsMap = {
+  winter: ["Broomball", "CHoops", "MHoops", "WHoops", "Dodgeball"],
+  spring: ["Indoor Soccer", "Kanjam", "Volleyball", "Netball",],
+  fall: ["Soccer", "Flag Football", "Spikeball", "Cornhole", "Pickleball", "Table Tennis"]
+}
 
 // List of sports with the proper type
 export const sports: Sport[] = [
