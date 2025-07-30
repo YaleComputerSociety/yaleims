@@ -32,6 +32,8 @@ import { createBracket } from "./createBracket.js";
 import { deleteBracket } from "./deleteBracket.js";
 import { scoreMatchTesting } from "./scoreMatchTesting.js";
 import { getSchedulePaginatedv2 } from "./getSchedulePaginatedv2.js";
+import { getUsersInCollege } from "./getUsersInCollege.js";
+import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
 
 export {
   getLeaderboard,
@@ -68,4 +70,6 @@ export {
   deleteBracket,
   scoreMatchTesting,
   getSchedulePaginatedv2,
+  getUsersInCollege,
+  assignRemoveCaptain,
 };
