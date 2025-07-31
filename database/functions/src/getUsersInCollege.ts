@@ -27,6 +27,7 @@ export const getUsersInCollege = functions.https.onRequest(
       }
 
       const college = decoded.college;
+      const wantCaptains = req.query.wantCaptains === "true"
 
       try {
         const snapshot = await db
@@ -36,6 +37,11 @@ export const getUsersInCollege = functions.https.onRequest(
 
         if (snapshot.empty) {
           return res.status(404).json({ error: "No users found" });
+        }
+
+        if (!wantCaptains) {
+          const users = snapshot.docs.map(doc => doc.data());
+          return res.status(200).json({users})
         }
 
         const users: any[] = [];

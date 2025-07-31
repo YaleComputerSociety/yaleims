@@ -27,7 +27,7 @@ export default function AssignCaptain() {
     const fetchData = async () => {
         setLoading(true)
         try {
-            const res = await fetch("/api/functions/getUsersInCollege")
+            const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=true")
             if (!res.ok) throw new Error(res.statusText)
             const data = await res.json()
             setUsersInCollege(data.users)
