@@ -2,7 +2,6 @@ import withRoleProtectedRoute from "../../withRoleProtectedRoute";
 import DCardPopup from "../DCardPopup";
 import AssignCaptain from "./AssignCaptain";
 import SelectMVP from "./SelectMVP";
-import AssignRoles from "../Admin/AssignRoles";
 
 const CollegeRepDashboard: React.FC = () => {
   return (

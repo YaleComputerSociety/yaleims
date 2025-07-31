@@ -42,6 +42,16 @@ export const collegeNamesList = [
   "Trumbull",
 ]; 
 
+// change this to actual season start before deploying
+export const seasonStart = new Date("2025-08-31T00:00:00Z")
+
+export function getCurrentWeekId(seasonStart: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - seasonStart.getTime();
+  const weekNumber = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return `week_${weekNumber}`;
+}
+
 export const seasonSports: SeasonSportsMap = {
   winter: ["Broomball", "CHoops", "MHoops", "WHoops", "Dodgeball"],
   spring: ["Indoor Soccer", "Kanjam", "Volleyball", "Netball",],

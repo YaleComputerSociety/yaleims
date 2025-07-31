@@ -1,16 +1,17 @@
 import { cookies } from "next/headers";
-
-export async function GET(req: Request) {
+ 
+export async function POST(req: Request) {
+    const { season, weekId, residentialCollege, mvpEmail } = await req.json();
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
     if (!token) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
-    const url = new URL(req.url);
-    const wantCaptains = url.searchParams.get("wantCaptains")
-    const response= await fetch(
-        `https://getusersincollege-65477nrg6a-uc.a.run.app?wantCaptains=${wantCaptains}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
+    const response = await fetch("https://setmvp-65477nrg6a-uc.a.run.app", {
+            method: "POST",
+            headers: {"Content-Type": "application/json", Authorization: `Bearer ${token.value}`},
+            body: JSON.stringify({ season, weekId, residentialCollege, mvpEmail }),
+        }
     );
 
     if (!response.ok) {
