@@ -34,6 +34,7 @@ import { scoreMatchTesting } from "./scoreMatchTesting.js";
 import { getSchedulePaginatedv2 } from "./getSchedulePaginatedv2.js";
 import { getUsersInCollege } from "./getUsersInCollege.js";
 import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
+import { setMVP } from "./setMVP.js";
 
 export {
   getLeaderboard,
@@ -72,4 +73,5 @@ export {
   getSchedulePaginatedv2,
   getUsersInCollege,
   assignRemoveCaptain,
+  setMVP
 };
