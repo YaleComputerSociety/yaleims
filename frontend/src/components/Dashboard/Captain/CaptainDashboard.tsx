@@ -24,7 +24,7 @@ const CaptainDashboard: React.FC = () => {
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
         const data = userSnap.data();
-        setSports(data.teams_captain_of || []);
+        setSports(data.sportsCaptainOf || []);
         setSelectedSport(data.teams_captain_of?.[0] || undefined);
       }
       setSportsLoading(false);
@@ -41,23 +41,7 @@ const CaptainDashboard: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4">
         Welcome to the Captain Hub
       </h2>
-      <p>This is where captains can view their teams and manage signups.</p>
-      {sports.length > 0 ? (
-        <select
-          className="border rounded px-3 py-2 mb-4"
-          value={selectedSport}
-          onChange={(e) => setSelectedSport(e.target.value)}
-        >
-          {sports.map((sport) => (
-            <option key={sport} value={sport}>
-              {sport}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <p>You are not the captain of any sports.</p>
-      )}
-      <ViewTeamSignups sport={selectedSport} />
+      
     </div>
   );
 };

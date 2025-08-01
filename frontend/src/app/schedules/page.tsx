@@ -83,44 +83,7 @@ const SchedulePage: React.FC = () => {
     };
     fetchMatches();
   }, [filter, chunksLoaded]);
-
-  // const fetchMoreMatches = async () => {
-  //   if (!hasMoreMatches) return;
-
-  //   const params = new URLSearchParams({
-  //     date: filter.date.toISOString(),
-  //     pageSize: PAGE_SIZE,
-  //     sport: filter.sport || "",
-  //     college: filter.college ? toCollegeAbbreviation[filter.college] : "",
-  //     lastVisible: lastVisible || "",
-  //   }).toString();
-
-  //   try {
-  //     setIsLoadingMore(true);
-
-  //     const response = await fetch(
-  //       `https://us-central1-yims-125a2.cloudfunctions.net/getSchedulePaginated?${params}`
-  //     );
-
-  //     if (!response.ok) {
-  //       throw new Error(`Error fetching matches: ${response.statusText}`);
-  //     }
-
-  //     const data = await response.json();
-  //     setFilteredMatches((prev) => [...prev, ...data.matches]);
-  //     setLastVisible(data.lastVisible);
-  //     setHasMoreMatches(data.hasMoreMatches);
-  //   } catch (error) {
-  //     console.error("Failed to fetch matches:", error);
-  //   } finally {
-  //     setIsLoadingMore(false);
-  //     setIsFirstLoad(false);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   fetchMoreMatches();
-  // }, [filter, chunksLoaded]);
+  // console.log(filteredMatches)
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
