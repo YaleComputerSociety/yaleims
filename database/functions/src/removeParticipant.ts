@@ -1,6 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+
+import jwt from "jsonwebtoken"
 
 const corsHandler = cors({ origin: true });
 
@@ -9,52 +12,38 @@ const db = admin.firestore();
 export const removeParticipant = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      // uncomment and redeploy once new frontend changes are deployed
-      // const authHeader = req.headers.authorization || ""
-      // if (!authHeader.startsWith("Bearer ")) {
-      //   return res.status(401).json({error: "No token provided"});
-      // }
-      // //   // getting token passed from request
-      // const idToken = authHeader.split("Bearer ")[1];
-      // // //   //verifying the token using firebase admin
-      // let decoded;
-      // try {
-      //   decoded = await admin.auth().verifyIdToken(idToken);
-      //   if (!decoded) {
-      //     return res.status(401).json({error: "Invalid Token"})
-      //   }
-      // } catch (error) {
-      //   return res.status(401).json({error: "Invalid Token"})
-      // } 
-      //get rid of email in the query and use the decoded users email
+      const authHeader = req.headers.authorization || ""
+      if (!authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({error: "No token provided"});
+      }
+      const token = authHeader.split("Bearer ")[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
 
-      // Extract fields from the request body
-      const { matchId, participantType, user, selectedMatch } = req.body;
+      if (!isValidDecodedToken(decoded)) {
+        console.error("Invalid token structure");
+        return res.status(401).json({error: "Invalid Token Structure"})
+      }
+      const email = decoded.email;
+      const { matchId, participantType, seasonId } = req.body;
 
-      // Check if all required parameters are provided
-      if (
-        !matchId ||
-        !participantType ||
-        !user ||
-        !user.email ||
-        !selectedMatch
-      ) {
+      if (!matchId || !participantType || !seasonId ) {
         console.error("Missing required parameters:", {
           matchId,
           participantType,
-          user,
-          selectedMatch,
+          seasonId
         });
         res.status(400).json({ error: "Missing required parameters" });
         return;
       }
 
       // Query Firestore to find the match document by its ID
-      const matchDoc = await admin
-        .firestore()
+      const matchRef = db
         .collection("matches")
-        .doc(matchId.toString())
-        .get();
+        .doc("seasons")
+        .collection(seasonId as string)
+        .doc(matchId as string)
+
+      const matchDoc = await matchRef.get()
 
       if (!matchDoc.exists) {
         console.error("Match not found for matchId:", matchId);
@@ -62,7 +51,6 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
         return;
       }
 
-      // Retrieve match data
       const matchData = matchDoc.data();
 
       if (
@@ -84,18 +72,15 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
 
       // Find the participant by email
       const participantIndex = participantsArray.findIndex(
-        (participant: { email: string }) => participant.email === user.email
+        (participant: { email: string }) => participant.email === email
       );
 
       if (participantIndex === -1) {
-        console.warn(`${user.email} is not a participant`);
-        res
-          .status(400)
-          .json({ error: `${user.email} is not a participant in this match` });
+        console.warn(`${email} is not a participant`);
+        res.status(400).json({ error: `${email} is not a participant in this match` });
         return;
       }
 
-      // Remove the participant and update Firestore
       participantsArray.splice(participantIndex, 1);
 
       await matchDoc.ref.update({
@@ -103,11 +88,11 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
       });
 
       // Update the user's "matches" array in the "users" collection
-      const userDocRef = db.collection("users").doc(user.email);
+      const userDocRef = db.collection("users").doc(email).collection("seasons").doc(seasonId);
       const userDoc = await userDocRef.get();
 
       if (!userDoc.exists) {
-        console.error(`User document not found for email: ${user.email}`);
+        console.error(`User document not found for email: ${email}`);
         res.status(404).json({ error: "User not found" });
         return;
       }
@@ -116,7 +101,7 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
       const userMatches = userData?.matches || [];
       // Remove the match from the user's matches array
       const matchIndex = userMatches.findIndex(
-        (match: any) => match.matchId === matchId
+        (match: any) => Number(match.id) === Number(matchId)
       );
 
       if (matchIndex !== -1) {
@@ -127,12 +112,12 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         message: `Successfully unregistered and updated your matches!`,
       });
     } catch (error) {
       console.error("Error processing request:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   });
 });

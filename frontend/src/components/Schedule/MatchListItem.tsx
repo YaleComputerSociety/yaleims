@@ -14,6 +14,7 @@ interface MatchListItemProps {
 }
 
 import { Participant } from "@src/types/components";
+import { useSeason } from "@src/context/SeasonContext";
 
 const MatchListItem: React.FC<MatchListItemProps> = ({
   match,
@@ -29,6 +30,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     away_college_participants: match.away_college_participants,
   });
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const { currentSeason } = useSeason()
 
   // Check if match is in the past
   const isPastMatch = match.timestamp
@@ -37,26 +39,22 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const handleSignUp = async () => {
     setIsLoading(true);
-
     try {
-      const response = await fetch(
-        "https://addparticipant-65477nrg6a-uc.a.run.app",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            matchId: match.id,
-            participantType:
-              toCollegeName[user.college] == toCollegeName[match.home_college]
-                ? "home_college_participants"
-                : "away_college_participants",
-            user, // Pass the full user object
-            selectedMatch: match, // Pass the full match object
-          }),
-        }
-      );
+      const response = await fetch("api/functions/addMatchParticipant",  {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          seasonId: currentSeason?.year || "2025-2026",
+          matchId: match.id,
+          matchTimestamp: match.timestamp,
+          participantType:
+            toCollegeName[user.college] == toCollegeName[match.home_college]
+              ? "home_college_participants"
+              : "away_college_participants",
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -64,12 +62,12 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       }
 
       setIsSignedUp(true);
-      if (participantsShow) {
-        const participant_data = await getMatchParticipants(
-          match.id.toString()
-        );
-        setParticipantionData(participant_data);
-      }
+      // if (participantsShow) {
+      //   const participant_data = await getMatchParticipants(
+      //     match.id.toString()
+      //   );
+      //   setParticipantionData(participant_data);
+      // }
     } catch (error) {
       console.error("Error signing up:", error);
     } finally {
@@ -81,7 +79,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     try {
       setIsLoadingParticipants(true);
       const response = await fetch(
-        `https://getmatchparticipants-65477nrg6a-uc.a.run.app?matchId=${matchId}`,
+        `/api/functions/getMatchParticipants?matchId=${matchId}&seasonId=2025-2026`,
         {
           method: "GET",
           headers: {
@@ -89,15 +87,11 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           },
         }
       );
-
-      // Check if the response is OK (status code 200-299)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Parse the response as JSON
       const data = await response.json();
-      // Return the data if needed
       return data;
     } catch (error) {
       console.error("Error fetching match participants:", error);
@@ -107,10 +101,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   };
 
   const handleUnregister = async () => {
-    setIsLoading(true);
-    try {
+    setIsLoading(true);    try {
       const response = await fetch(
-        "https://removeparticipant-65477nrg6a-uc.a.run.app",
+        "/api/functions/removeMatchParticipant",
         {
           method: "POST",
           headers: {
@@ -122,8 +115,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
               toCollegeName[user.college] === toCollegeName[match.home_college]
                 ? "home_college_participants"
                 : "away_college_participants",
-            user, // Pass the full user object
-            selectedMatch: match, // Pass the full match object
+            seasonId: "2025-2026"
           }),
         }
       );

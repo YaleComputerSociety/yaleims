@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import jwt from "jsonwebtoken"
 
 const corsHandler = cors({ origin: true });
 
@@ -9,16 +11,25 @@ const db = admin.firestore();
 export const getUserMatches = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
     try {
-      const { userId } = req.query;
-
-      if (!userId) {
-        res.status(400).send("Missing userId parameter");
-        return;
+      const authHeader = req.headers.authorization || ""
+      if (!authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({error: "No token provided"});
       }
+      const token = authHeader.split("Bearer ")[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
+  
+      if (!isValidDecodedToken(decoded)) {
+        console.error("Invalid token structure");
+        return res.status(401).json({error: "Invalid Token Structure"})
+      }
+      const email = decoded.email;
+      const seasonId = req.query.seasonId
 
       const userDoc = await db
         .collection("users")
-        .doc(userId as string)
+        .doc(email)
+        .collection("seasons")
+        .doc(seasonId as string)
         .get();
 
       if (!userDoc.exists) {
@@ -36,10 +47,10 @@ export const getUserMatches = functions.https.onRequest((req, res) => {
         return matchTimestamp > now; // Include matches with a timestamp in the future
       });
 
-      res.status(200).json(futureMatches);
+      return res.status(200).json(futureMatches);
     } catch (error) {
       console.error("Error fetching user matches:", error);
-      res.status(500).send("Internal Server Error");
+      return res.status(500).send("Internal Server Error");
     }
   });
 });

@@ -17,7 +17,6 @@ import { deleteBet } from "./deleteBet.js";
 import { getPendingBets } from "./getPendingBets.js";
 import { getMyAvailablePoints } from "./getMyAvailablePoints.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
-import { getMatchParticipants } from "./getMatchParticipants.js";
 import { publicApiSignup } from "./publicApis.js";
 import { addBetMod } from "./addBetMod.js";
 import { getBets } from "./getBets.js";
@@ -57,7 +56,6 @@ export {
   getUserLeaderboard,
   getLeaderboardv2,
   undoScoreMatch,
-  getMatchParticipants,
   publicApiSignup,
   addBetMod,
   getBets,

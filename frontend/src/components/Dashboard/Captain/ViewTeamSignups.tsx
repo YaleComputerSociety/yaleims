@@ -7,7 +7,6 @@ const ViewTeamSignups: React.FC<ViewTeamSignupsProps> = ({ sport }) => {
   return (
     <div>
       <h3 className="text-lg font-bold mb-2">View Your Teams</h3>
-      {/* TODO: Implement team viewing logic */}
       {sport && <p className="border rounded px-3 py-2">{sport}</p>}
     </div>
   );

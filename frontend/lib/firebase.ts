@@ -25,7 +25,6 @@ export const firebaseApp: FirebaseApp =
   getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 export const db = getFirestore(firebaseApp);
-export const admin = getFirestore(firebaseApp)
 
 // ─── Lazy analytics init ──────────────────────────────────────
 let analyticsInstance: Analytics | null = null;
