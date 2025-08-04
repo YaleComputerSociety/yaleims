@@ -69,7 +69,7 @@ const SportCard: React.FC<SportCardProps> = ({ sport, handleClick, displayName, 
         style={{ '--sport-col': sportHex[sport] } as React.CSSProperties}
         className={
           `relative z-10
-            p-3 mg:p-5 rounded-full text-lg mg:text-2xl cursor-pointer
+            p-2 mg:p-4 rounded-full text-lg mg:text-2xl cursor-pointer
             border-4 xs:border-8 border-[color:var(--sport-col)]
             transition-[transform,box-shadow,border] duration-300
 
