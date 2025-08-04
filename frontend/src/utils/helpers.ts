@@ -3,7 +3,7 @@
 type CollegeMap = Record<string, string>; // Map of abbreviation to full name
 type SportMap = Record<string, number>;
 type EmojiMap = Record<string, string>;
-type SeasonSportsMap = { [x: string]: string[] }
+type SeasonSportsMap = { [x: string]: string[] };
 
 import { BracketData, Match, Sport } from "@src/types/components";
 import { toast } from "react-toastify";
@@ -40,10 +40,10 @@ export const collegeNamesList = [
   "Silliman",
   "Timothy Dwight",
   "Trumbull",
-]; 
+];
 
 // change this to actual season start before deploying
-export const seasonStart = new Date("2025-08-31T00:00:00Z")
+export const seasonStart = new Date("2025-08-31T00:00:00Z");
 
 export function getCurrentWeekId(seasonStart: Date): string {
   const now = new Date();
@@ -54,9 +54,16 @@ export function getCurrentWeekId(seasonStart: Date): string {
 
 export const seasonSports: SeasonSportsMap = {
   winter: ["Broomball", "CHoops", "MHoops", "WHoops", "Dodgeball"],
-  spring: ["Indoor Soccer", "Kanjam", "Volleyball", "Netball",],
-  fall: ["Soccer", "Flag Football", "Spikeball", "Cornhole", "Pickleball", "Table Tennis"]
-}
+  spring: ["Indoor Soccer", "Kanjam", "Volleyball", "Netball"],
+  fall: [
+    "Soccer",
+    "Flag Football",
+    "Spikeball",
+    "Cornhole",
+    "Pickleball",
+    "Table Tennis",
+  ],
+};
 
 // List of sports with the proper type
 export const sports: Sport[] = [
@@ -622,4 +629,9 @@ export const validateBracketData = (bracketData: BracketData): boolean => {
   });
 
   return isValid;
+};
+
+// Validate timestamp format: YYYY-MM-DDTHH:MM
+export const isValidTimestamp = (s: string) => {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) && !isNaN(Date.parse(s));
 };

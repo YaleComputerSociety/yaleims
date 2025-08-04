@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Matchv2 as Match } from "@src/types/components";
 import MatchCard from "@src/components/AddScores/MatchCard";
 import LoadingScreen from "@src/components/LoadingScreen";
-import withProtectedRoute from "@src/components/withProtectedRoute";
 import { useSeason } from "@src/context/SeasonContext";
+import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
 
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -177,4 +177,4 @@ const AddScoresPage: React.FC = () => {
 
 AddScoresPage.displayName = "AddScoresPage";
 
-export default withProtectedRoute(AddScoresPage);
+export default withRoleProtectedRoute(AddScoresPage, ["admin", "dev"]);

@@ -18,7 +18,7 @@ const AdminDashboard: React.FC = () => {
         />
         <DCardLink
           title="Upload Matches"
-          link="/add-scores"
+          link="/hub/upload-schedule"
           message="You have uploaded schedules for 2 sports!"
         />
       </div>
