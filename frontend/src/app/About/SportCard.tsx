@@ -64,7 +64,7 @@ const SportCard: React.FC<SportCardProps> = ({ sport, handleClick, displayName, 
   return (
     <div className="group flex flex-col items-center space-y-2">
       <div
-        onClick={() => handleClick(sport)}
+        onClick={handleClick ? () => handleClick(sport) : undefined}
         /* expose the colour as a CSS custom property */
         style={{ '--sport-col': sportHex[sport] } as React.CSSProperties}
         className={

@@ -212,7 +212,7 @@ export interface SportInfo {
 export interface SportCardProps {
   sport: string;
   displayName?: boolean;
-  handleClick: (sport: string) => void;
+  handleClick?: (sport: string) => void;
   active?: boolean;
 }
 
