@@ -1,5 +1,3 @@
-import BracketAdminPanel from "./BracketAdminPanel";
-import EditMatches from "./EditMatches";
 import DCardLink from "../DCardLink";
 
 const AdminDashboard: React.FC = () => {
@@ -22,9 +20,6 @@ const AdminDashboard: React.FC = () => {
           message="You have uploaded schedules for 2 sports!"
         />
       </div>
-
-      {/* <UpdateScores />
-      <EditMatches /> */}
       {/* bracket interface -- will get when the bracket feature is pushed */}
     </div>
   );
