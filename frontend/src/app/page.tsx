@@ -13,7 +13,7 @@ const HomePage: React.FC = () => {
   const unauthenticated = !loading && !user;
 
   useEffect(() => {
-    if (unauthenticated) router.replace("/dashboard");
+    if (unauthenticated) router.replace("/hub");
   }, [unauthenticated, router]);
 
   if (loading || unauthenticated) return <LoadingScreen />;

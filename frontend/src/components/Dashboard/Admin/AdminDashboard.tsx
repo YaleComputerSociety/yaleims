@@ -14,11 +14,13 @@ const AdminDashboard: React.FC = () => {
         <DCardLink
           title="Score Matches"
           link="/add-scores"
+          openLinkInfo="Click to update scores →"
           message="5 matches left to scores. You've got this. You made a mistake? don't worry you can undo that score!"
         />
         <DCardLink
           title="Upload Matches"
           link="/add-scores"
+          openLinkInfo="Click to upload match schedule!"
           message="You have uploaded schedules for 2 sports!"
         />
       </div>
