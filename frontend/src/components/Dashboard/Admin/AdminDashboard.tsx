@@ -1,5 +1,3 @@
-import BracketAdminPanel from "./BracketAdminPanel";
-import EditMatches from "./EditMatches";
 import DCardLink from "../DCardLink";
 
 const AdminDashboard: React.FC = () => {
@@ -19,15 +17,12 @@ const AdminDashboard: React.FC = () => {
         />
         <DCardLink
           title="Upload Matches"
-          link="/add-scores"
+          link="/hub/upload-schedule"
+          message="Upload schedules for upcoming sports seasons in CSV format!"
           openLinkInfo="Click to upload match schedule!"
-          message="You have uploaded schedules for 2 sports!"
         />
       </div>
-
-      {/* <UpdateScores />
-      <EditMatches /> */}
-      {/* bracket interface -- will get when the bracket feature is pushed */}
+      {/* TODO: bracket interface -- will get when the bracket feature is pushed */}
     </div>
   );
 };

@@ -2,9 +2,9 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE        = "data/dodgeball.csv";
-const SEASON_ID       = "2025-2026";      // season we are inserting into
-const PREV_SEASON_ID  = "2024-2025";      // immediately previous season id
+const CSV_FILE = "data/dodgeball.csv";
+const SEASON_ID = "2025-2026"; // season we are inserting into
+const PREV_SEASON_ID = "2024-2025"; // immediately previous season id
 
 /** ✱ 2. FIREBASE SETUP ✱ */
 import { initializeApp } from "firebase/app";
@@ -45,8 +45,12 @@ const toTimestamp = (dateStr, timeStr, year = 2025) => {
 async function upsertMatches() {
   /* 4‑A. figure out starting ID:
          previous season count + current season existing count + 1 */
-  const prevSnap = await getDocs(collection(db, "matches", "seasons", PREV_SEASON_ID));
-  const currSnap = await getDocs(collection(db, "matches", "seasons", SEASON_ID));
+  const prevSnap = await getDocs(
+    collection(db, "matches", "seasons", PREV_SEASON_ID)
+  );
+  const currSnap = await getDocs(
+    collection(db, "matches", "seasons", SEASON_ID)
+  );
   const prevCount = prevSnap.size;
   const currCount = currSnap.size;
   let nextId = prevCount + currCount + 1; // first new match id

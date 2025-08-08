@@ -28,9 +28,7 @@ const Dashboard: React.FC = () => {
         {user?.role === "dev" && <DevDashboard />}
         {!user && (
           <div className="p-4">
-            <h2 className="text-2xl font-bold mb-4">
-              Welcome to the Hub
-            </h2>
+            <h2 className="text-2xl font-bold mb-4">Welcome to the Hub</h2>
             <p>Please log in to access your Hub.</p>
           </div>
         )}

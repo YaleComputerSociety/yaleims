@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
-  const { email, sport, assign, remove } = await req.json();
+  const { schedule } = await req.json();
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
   if (!token) {
@@ -9,15 +9,16 @@ export async function POST(req: Request) {
       status: 401,
     });
   }
+
   const response = await fetch(
-    "https://assignremovecaptain-65477nrg6a-uc.a.run.app",
+    "https://us-central1-yims-125a2.cloudfunctions.net/addSchedule",
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token.value}`,
       },
-      body: JSON.stringify({ email, sport, assign, remove }),
+      body: JSON.stringify({ schedule }),
     }
   );
 
