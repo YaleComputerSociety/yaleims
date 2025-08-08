@@ -3,16 +3,10 @@
 import PageHeading from "@src/components/PageHeading";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
 import React, { useRef, useState, ChangeEvent } from "react";
-import {
-  colleges,
-  currentYear,
-  isValidTimestamp,
-  sports,
-} from "@src/utils/helpers";
+import { colleges, currentYear, sports, toTimestamp } from "@src/utils/helpers";
 import { toast } from "react-toastify";
 import { useSeason } from "@src/context/SeasonContext";
 import LoadingScreen from "@src/components/LoadingScreen";
-import LoadingSpinner from "@src/components/LoadingSpinner";
 import { FaSpinner } from "react-icons/fa";
 
 interface Schedule {
@@ -34,51 +28,6 @@ const TEMPLATE_URL =
 
 const validCollegeAbbrs = colleges.map((c) => c.id);
 
-const parseScheduleCSV = (
-  csvText: string,
-  sport: string,
-  season: string
-): Schedule | null => {
-  const lines = csvText.trim().split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return null;
-  // Check header
-  const header = lines[0].toLowerCase().replace(/\s+/g, "");
-  if (
-    !header.includes("timestamp") ||
-    !header.includes("homecollege") ||
-    !header.includes("awaycollege") ||
-    !header.includes("location")
-  ) {
-    return null;
-  }
-  // Determine if locationExtra column is present
-  const hasLocationExtra = header.includes("locationextra");
-  const matches: ScheduleMatch[] = [];
-  // Validate each row
-  for (let i = 1; i < lines.length; i++) {
-    const row = lines[i].split(",").map((v) => v.trim());
-    if (row.length < 4) return null;
-    // If locationExtra is present, expect 5 columns, else 4
-    if (hasLocationExtra && row.length < 5) return null;
-    const [timestamp, homeCollege, awayCollege, location, locationExtra] = row;
-    if (!isValidTimestamp(timestamp)) return null;
-    if (!validCollegeAbbrs.includes(homeCollege)) return null;
-    if (!validCollegeAbbrs.includes(awayCollege)) return null;
-    if (!location || location.length === 0) return null;
-    const match: ScheduleMatch = {
-      timestamp,
-      homeCollege,
-      awayCollege,
-      location,
-    };
-    if (hasLocationExtra && locationExtra && locationExtra.length > 0) {
-      match.locationExtra = locationExtra;
-    }
-    matches.push(match);
-  }
-  return { matches, sport, season };
-};
-
 const UploadSchedulePage = () => {
   const { currentSeason, pastSeasons, seasonLoading } = useSeason();
   const pastYears = pastSeasons?.years || [];
@@ -94,9 +43,101 @@ const UploadSchedulePage = () => {
   );
   const [loading, setLoading] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const parseScheduleCSV = (
+    csvText: string,
+    sport: string,
+    season: string
+  ): Schedule | null => {
+    const lines = csvText.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return null;
+    // Check header
+    const header = lines[0].toLowerCase().replace(/\s+/g, "");
+    if (
+      !header.includes("date") ||
+      !header.includes("time") ||
+      !header.includes("homecollege") ||
+      !header.includes("awaycollege") ||
+      !header.includes("location")
+    ) {
+      setError(
+        "Invalid CSV format. Header must include: date, time, awayCollege, homeCollege, location."
+      );
+      return null;
+    }
+    // Determine if locationExtra column is present
+    const hasLocationExtra = header.includes("locationextra");
+    const matches: ScheduleMatch[] = [];
+    // Validate each row
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(",").map((v) => v.trim());
+      const rowNum = i + 1; // 1-based for user (header is row 1)
+      if (row.length < 5) {
+        setError(`Row ${rowNum}: Not enough columns (expected at least 5).`);
+        return null;
+      }
+      if (hasLocationExtra && row.length > 6) {
+        setError(`Row ${rowNum}: Too many columns (expected at most 6).`);
+        return null;
+      }
+
+      const [date, time, awayCollege, homeCollege, location, locationExtra] =
+        row;
+
+      // Validate date format: M/D or MM/DD
+      const dateRegex = /^\d{1,2}\/\d{1,2}$/;
+      if (!dateRegex.test(date)) {
+        setError(`Row ${rowNum}: Invalid date format (expected M/D or MM/DD).`);
+        return null;
+      }
+
+      // Validate time format: H:MM AM/PM
+      const timeRegex = /^\d{1,2}:\d{2}\s?(AM|PM)$/i;
+      if (!timeRegex.test(time)) {
+        setError(`Row ${rowNum}: Invalid time format (expected H:MM AM/PM).`);
+        return null;
+      }
+
+      // convert date and time to ISO string timestamp
+      const timestamp = toTimestamp(date, time, season);
+      if (!timestamp || isNaN(new Date(timestamp).getTime())) {
+        setError(`Row ${rowNum}: Invalid date/time combination.`);
+        return null;
+      }
+
+      if (!validCollegeAbbrs.includes(homeCollege)) {
+        setError(
+          `Row ${rowNum}: Invalid home college abbreviation: '${homeCollege}'.`
+        );
+        return null;
+      }
+      if (!validCollegeAbbrs.includes(awayCollege)) {
+        setError(
+          `Row ${rowNum}: Invalid away college abbreviation: '${awayCollege}'.`
+        );
+        return null;
+      }
+      if (!location || location.length === 0) {
+        setError(`Row ${rowNum}: Missing location.`);
+        return null;
+      }
+      const match: ScheduleMatch = {
+        timestamp,
+        homeCollege,
+        awayCollege,
+        location,
+      };
+      if (hasLocationExtra && locationExtra && locationExtra.trim() !== "") {
+        match.locationExtra = locationExtra;
+      }
+      matches.push(match);
+    }
+    return { matches, sport, season };
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    setError("");
     setIsValid(false);
     setFile(null);
     setFileName("");
@@ -112,7 +153,8 @@ const UploadSchedulePage = () => {
         setSchedule(parsedSchedule);
         setError("");
       } else {
-        setError("Invalid CSV format. Please use the template.");
+        // Clear the file input so user can re-upload the same file
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
     };
     reader.readAsText(f);
@@ -129,6 +171,7 @@ const UploadSchedulePage = () => {
     setSchedule(null);
     setSelectedSport("");
     setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleUpload = async () => {
@@ -237,6 +280,7 @@ const UploadSchedulePage = () => {
         </div>
         <div className="flex flex-col gap-2 w-full">
           <input
+            ref={fileInputRef}
             type="file"
             accept=".csv"
             id="csv-upload"
@@ -283,5 +327,4 @@ const UploadSchedulePage = () => {
   );
 };
 
-// export default withRoleProtectedRoute(UploadSchedulePage, ["admin", "dev"]);
-export default UploadSchedulePage; // will switch to withRoleProtectedRoute after development
+export default withRoleProtectedRoute(UploadSchedulePage, ["admin", "dev"]);

@@ -632,6 +632,51 @@ export const validateBracketData = (bracketData: BracketData): boolean => {
 };
 
 // Validate timestamp format: YYYY-MM-DDTHH:MM
-export const isValidTimestamp = (s: string) => {
+export const isValidFirestoreTimestamp = (s: string) => {
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) && !isNaN(Date.parse(s));
+};
+
+/** normal timestamp -> ISO string timestamp
+ * @param dateStr in M/D or MM/DD format
+ * @param timeStr in H:MM AM/PM format
+ * @param season in YYYY-YYYY format to determine the year
+ * e.g. "1/23" + "7:30 PM" → ISO String timestamp **/
+export const toTimestamp = (
+  dateStr: string,
+  timeStr: string,
+  season: string
+) => {
+  if (!dateStr || !timeStr || !season) return null;
+
+  const [mm, dd] = dateStr.split("/").map(Number);
+  // Support both 'H:MM AM/PM' and 'H:MMAM/PM' (with or without space)
+  let clock = "",
+    part = "";
+  const timeMatch = timeStr.match(/^(\d{1,2}:\d{2})\s*(AM|PM)$/i);
+  if (timeMatch) {
+    clock = timeMatch[1];
+    part = timeMatch[2];
+  } else {
+    [clock, part] = timeStr.split(" ");
+  }
+  let [hh, min] = clock.split(":").map(Number);
+  if (part && part.toLowerCase() === "pm" && hh !== 12) hh += 12;
+  if (part && part.toLowerCase() === "am" && hh === 12) hh = 0;
+
+  // Determine year from season and month
+  const [startYearStr, endYearStr] = season.split("-");
+  const startYear = parseInt(startYearStr, 10);
+  const endYear = parseInt(endYearStr, 10);
+  let year: number;
+  if (mm >= 1 && mm <= 5) {
+    year = endYear; // Jan-May: use later year
+  } else if (mm >= 8 && mm <= 12) {
+    year = startYear; // Aug-Dec: use earlier year
+  } else {
+    // June/July: default to startYear (no games expected)
+    year = startYear;
+  }
+
+  const dateObj = new Date(year, mm - 1, dd, hh, min, 0, 0);
+  return dateObj.toISOString();
 };

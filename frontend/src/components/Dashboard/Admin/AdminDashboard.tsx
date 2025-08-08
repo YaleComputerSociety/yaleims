@@ -17,10 +17,10 @@ const AdminDashboard: React.FC = () => {
         <DCardLink
           title="Upload Matches"
           link="/hub/upload-schedule"
-          message="You have uploaded schedules for 2 sports!"
+          message="Upload schedules for upcoming sports seasons in CSV format!"
         />
       </div>
-      {/* bracket interface -- will get when the bracket feature is pushed */}
+      {/* TODO: bracket interface -- will get when the bracket feature is pushed */}
     </div>
   );
 };

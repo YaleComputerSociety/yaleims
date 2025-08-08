@@ -4,6 +4,7 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 
 import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import { Timestamp } from "firebase-admin/firestore";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -64,12 +65,23 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
       const matches = schedule.matches;
       const season = schedule.season;
       const scheduleCollection = db
-        .collection("matches_testing")
+        .collection("matches")
         .doc("seasons")
         .collection(season);
 
       matches.forEach((match: ScheduleMatch) => {
         const docRef = scheduleCollection.doc(nextId.toString());
+
+        let firestoreTimestamp = null;
+        const dateObj = new Date(match.timestamp);
+
+        if (isNaN(dateObj.getTime())) {
+          console.error(`Invalid date for match.timestamp:`, match.timestamp);
+          firestoreTimestamp = null;
+        } else {
+          firestoreTimestamp = Timestamp.fromDate(dateObj);
+        }
+
         batch.set(docRef, {
           id: nextId++,
           away_college: match.awayCollege,
@@ -82,7 +94,7 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
           location: match.location,
           location_extra: match.locationExtra || null,
           sport: sport,
-          timestamp: match.timestamp,
+          timestamp: firestoreTimestamp,
           type: "Regular",
           winner: null,
         });
