@@ -122,7 +122,7 @@ export default function AssignCaptain() {
   };
 
   return (
-  <div className="space-y-5">
+  <div className="space-y-5 py-4">
     {/* Status banner */}
     <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30">
       {currentCaptains.length === 0 ? (

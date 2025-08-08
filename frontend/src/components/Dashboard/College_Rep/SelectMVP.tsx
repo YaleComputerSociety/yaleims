@@ -1,129 +1,177 @@
-import { useEffect, useMemo, useState } from "react"
-import LoadingScreen from "@src/components/LoadingScreen"
-import { useSeason } from "@src/context/SeasonContext"
-import { seasonStart, getCurrentWeekId } from "@src/utils/helpers"
-import { toast } from "react-toastify"
+import { useEffect, useMemo, useState } from "react";
+import LoadingScreen from "@src/components/LoadingScreen";
+import { useSeason } from "@src/context/SeasonContext";
+import { seasonStart, getCurrentWeekId } from "@src/utils/helpers";
 
 interface User {
-  email: string
-  firstname: string
-  lastname: string
-  captain: string[]
-  college: string
+  email: string;
+  firstname?: string;  // handle both shapes
+  lastname?: string;
+  firstName?: string;
+  lastName?: string;
+  captain?: string[];
+  college: string;
 }
 
 export default function SelectMVP() {
-    const [usersInCollege, setUsersInCollege] = useState<User[]>([])
-    const [loading, setLoading] = useState(false)
-    const [settingMVP, setSettingMVP] = useState(false)
-    const { currentSeason } = useSeason()
-    const [searchTerm, setSearchTerm] = useState<string>("")
-    const [selectUser, setSelectUser] = useState<User | null>(null)
+  const [usersInCollege, setUsersInCollege] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [settingMVP, setSettingMVP] = useState(false);
+  const { currentSeason } = useSeason();
 
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=false")
-            if (!res.ok) throw new Error(res.statusText)
-            const data = await res.json()
-            console.log(data)
-            setUsersInCollege(data.users)
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectUser, setSelectUser] = useState<User | null>(null);
+
+  // UI-only states (validation/feedback)
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const nameOf = (u: User) =>
+    `${u.firstName ?? u.firstname ?? ""} ${u.lastName ?? u.lastname ?? ""}`.trim();
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=false");
+      if (!res.ok) throw new Error(res.statusText);
+      const data = await res.json();
+      setUsersInCollege(Array.isArray(data?.users) ? data.users : []);
+    } catch (err) {
+      console.error(err);
+      setError("Couldn’t load roster. Try again.");
+    } finally {
+      setLoading(false);
     }
-    
-    useEffect(() => {
-        fetchData()
-    }, [])
+  };
 
-    const filteredUsers = useMemo(() => {
-        const term = searchTerm.toLowerCase()
-        if (!term) return []
-        return usersInCollege.filter((u) => {
-            const fullName = `${u.firstname} ${u.lastname}`.toLowerCase()
-            return fullName.includes(term) || u.email.toLowerCase().includes(term)
-        })
-    }, [searchTerm, usersInCollege])
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    if (loading || !currentSeason) {
-        return <LoadingScreen />
+  const filteredUsers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return [];
+    return usersInCollege.filter((u) => {
+      const full = nameOf(u).toLowerCase();
+      return full.includes(term) || u.email.toLowerCase().includes(term);
+    });
+  }, [searchTerm, usersInCollege]);
+
+  if (loading || !currentSeason) return <LoadingScreen />;
+
+  const selectMvp = async () => {
+    setError(null);
+    setNotice(null);
+    if (!selectUser) return setError("Pick a student first.");
+
+    const weekId = getCurrentWeekId(seasonStart);
+
+    try {
+      setSettingMVP(true);
+      await fetch("/api/functions/setMVP", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          season: currentSeason.year,
+          residentialCollege: selectUser.college,
+          weekId: weekId,
+          mvpEmail: selectUser.email,
+        }),
+      });
+      setNotice(`MVP set for week ${weekId}.`);
+      setSelectUser(null);
+      setSearchTerm("");
+    } catch (error) {
+      console.log(error);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSettingMVP(false);
     }
+  };
 
-    const selectMvp = async () => {
-        if (!selectUser) return
-        const weekId = getCurrentWeekId(seasonStart);
-        console.log(weekId)
-        try {
-            setSettingMVP(true)
-            await fetch("/api/functions/setMVP", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    season: currentSeason.year,
-                    residentialCollege: selectUser.college,
-                    weekId: weekId,
-                    mvpEmail: selectUser.email,
-                }),
-            });
-        } catch (error) {
-            console.log(error)
-        } finally {
-            toast.success("set MVP Successfully")
-            setSettingMVP(false)
-            setSelectUser(null)
-            setSearchTerm("")
-        }
-    }
+  const currentWeekId = getCurrentWeekId(seasonStart);
 
-    return (
-        <div className="space-y-4">
-            <button
-                className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-                onClick={selectMvp}
-            >
-                Select MVP
-            </button>
-            <div className="relative w-80">
-                <input
-                    type="seacrh"
-                    autoComplete="off"
-                    placeholder="Search by name or email…"
-                    className="w-full rounded border px-3 py-1"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+  return (
+    <div className="space-y-5 py-4">
+      {/* Status banner */}
+      <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30 text-sm">
+        <strong>{currentWeekId}</strong>.{" "}
+        {selectUser ? (
+          <>Ready to set MVP for <strong>{nameOf(selectUser) || selectUser.email}</strong>.</>
+        ) : (
+          <>Pick a student to enable actions.</>
+        )}
+      </div>
 
-                {searchTerm && filteredUsers.length > 0 && (
-                <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded border bg-white dark:bg-gray-800">
-                    {filteredUsers.slice(0, 10).map((u) => (
-                    <li
-                        key={u.email}
-                        className="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => {
-                        setSelectUser(u)
-                        setSearchTerm("")    
-                        }}
-                    >
-                        {u.firstname} {u.lastname} &nbsp;
-                        <span className="text-xs text-gray-500">({u.email})</span>
-                    </li>
-                    ))}
-                </ul>
-                )}
-            </div>
-
-            {selectUser && (
-                <div className="rounded bg-green-100 p-2 text-sm">
-                    Selected captain:{" "}
-                    <strong>
-                        {selectUser.firstname} {selectUser.lastname}
-                    </strong>
-                </div>
-            )}
-            
+      {/* Alerts */}
+      {error && (
+        <div className="rounded-md px-3 py-2 text-sm bg-red-50 text-red-700 dark:bg-red-950/30 shadow-sm dark:shadow-black/20" role="alert">
+          {error}
         </div>
-    )
+      )}
+      {notice && (
+        <div className="rounded-md px-3 py-2 text-sm bg-green-50 text-green-800 dark:bg-green-950/30 shadow-sm dark:shadow-black/20" role="status" aria-live="polite">
+          {notice}
+        </div>
+      )}
+
+      {/* Main panel */}
+      <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40 space-y-4">
+        <button
+          className="px-3 py-2 text-sm bg-green-600 text-white rounded-md shadow hover:opacity-90 disabled:opacity-50"
+          disabled={settingMVP || !selectUser}
+          onClick={selectMvp}
+        >
+          {settingMVP ? "Setting…" : "Select MVP"}
+        </button>
+
+        {/* Search */}
+        <div className="relative w-full max-w-md">
+          <input
+            type="search"
+            autoComplete="off"
+            placeholder="Search by name or email…"
+            className="w-full rounded-md px-3 py-2 text-sm bg-white dark:bg-black
+                       ring-1 ring-black/10 focus:ring-2 focus:ring-black/20
+                       dark:ring-white/10 dark:focus:ring-white/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md shadow-lg bg-white dark:bg-gray-900">
+              {filteredUsers.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-gray-500">No matches.</li>
+              ) : (
+                filteredUsers.slice(0, 10).map((u) => (
+                  <li
+                    key={u.email}
+                    className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => {
+                      setSelectUser(u);
+                      setSearchTerm("");
+                    }}
+                  >
+                    {nameOf(u) || u.email}{" "}
+                    <span className="text-xs text-gray-500">({u.email})</span>
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+
+        {/* Selected user */}
+        {selectUser && (
+          <div className="rounded-md px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 shadow-sm dark:shadow-black/20">
+            Selected: <strong>{nameOf(selectUser) || selectUser.email}</strong>
+          </div>
+        )}
+
+        {/* Helper text */}
+        <p className="text-xs text-gray-500">
+          {selectUser ? "Click Select MVP to confirm." : "Search and pick a student to continue."}
+        </p>
+      </div>
+    </div>
+  );
 }
