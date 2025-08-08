@@ -5,9 +5,10 @@ interface DCardLinkProps {
   title: string;
   link?: string;
   message?: string;
+  openLinkInfo: string;
 }
 
-export default function DCardLink({ title, link, message }: DCardLinkProps) {
+export default function DCardLink({ title, link, message, openLinkInfo }: DCardLinkProps) {
   return (
     <div
       className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md grid grid-rows-7"
@@ -19,7 +20,7 @@ export default function DCardLink({ title, link, message }: DCardLinkProps) {
           href={link}
           className="row-span-1 inline-block text-xs text-indigo-600 hover:underline"
         >
-          Click to update scores →
+          {openLinkInfo}
         </Link>
       )}
     </div>
