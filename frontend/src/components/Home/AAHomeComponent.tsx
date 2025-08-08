@@ -12,7 +12,7 @@ import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import { useSeason } from "@src/context/SeasonContext";
 import PageHeading from "../PageHeading";
-import Page from "@src/app/add-scores/page";
+import Page from "@src/app/hub/add-scores/page";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();

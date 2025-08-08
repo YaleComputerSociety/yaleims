@@ -11,7 +11,7 @@ const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-3 gap-10">
         <DCardLink
           title="Score Matches"
-          link="/add-scores"
+          link="/hub/add-scores"
           openLinkInfo="Click to update scores →"
           message="5 matches left to scores. You've got this. You made a mistake? don't worry you can undo that score!"
         />

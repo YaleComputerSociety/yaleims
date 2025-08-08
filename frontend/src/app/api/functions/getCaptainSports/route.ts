@@ -41,7 +41,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
     return NextResponse.json(sportsCaptainOf, { status: 200 });
   } catch (err) {
-    console.error("Error in getMatchParticipants:", err);
+    console.error("Error in getting sports for captain:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
