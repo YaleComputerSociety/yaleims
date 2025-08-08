@@ -6,11 +6,11 @@ import DCardPopup from "../DCardPopup";
 
 const CaptainDashboard = () => {
   return (
-    <div className="p-4 justify-center">
+    <div className="p-6 justify-center">
       <h2 className="text-2xl font-bold mb-4">
         Welcome to the Captain Hub
       </h2>
-      <div className="grid grid-cols-3 gap-10">
+      <div className="grid grid-cols-3 gap-6">
         <DCardInfo 
           title="Sports you are a Captain of"
           CustomComponent={ViewCaptainSports}

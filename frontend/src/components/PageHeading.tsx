@@ -27,7 +27,7 @@ export default function PageHeading({ heading }: PageHeadingProps) {
     const { collapsed } = useNavbar()
 
     return (
-        <div className={`transition-all duration-200 md:fixed md:top-0 md:z-50 flex flex-row ${collapsed ? "w-[95%]" : "w-[84%]"} md:p-3 p-4 backdrop-blur-sm`}>
+        <div className={`transition-all duration-200 md:fixed md:top-0 md:z-50 flex flex-row ${collapsed ? "w-[95%]" : "w-[84%]"} md:p-3 md:px-6 p-4 px-4 backdrop-blur-sm`}>
             <div className='w-full flex flex-row justify-between items-center'>
                 <h1 className="md:text-3xl text-2xl font-bold">{heading}</h1>
                 <div className="hidden md:flex flex-row gap-x-5 items-center">

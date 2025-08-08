@@ -5,11 +5,11 @@ import SelectMVP from "./SelectMVP";
 
 const CollegeRepDashboard: React.FC = () => {
   return (
-    <div className="p-4 justify-center">
+    <div className="p-6 justify-center">
       <h2 className="text-2xl font-bold mb-4">
         Welcome to the College Rep Hub
       </h2>
-      <div className="grid grid-cols-3 gap-10">
+      <div className="grid grid-cols-3 gap-6">
         <DCardPopup
           title="Select Captains"  
           openInfo="Click to View and Select Captains"

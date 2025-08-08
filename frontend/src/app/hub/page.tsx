@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
         {user?.role === "college_rep" && <CollegeRepDashboard />}
         {user?.role === "dev" && <DevDashboard />}
         {!user && (
-          <div className="p-4">
+          <div className="p-6">
             <h2 className="text-2xl font-bold mb-4">Welcome to the Hub</h2>
             <p>Please log in to access your Hub.</p>
           </div>

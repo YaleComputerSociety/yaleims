@@ -4,9 +4,9 @@ import ViewCaptainsCollegeRep from "./ViewCaptainsCollegeRep";
 
 export default function UserDashboard() {
   return (
-    <div className="p-4 justify-center">
+    <div className="p-6 justify-center">
       <h2 className="text-2xl font-bold mb-4">Welcome to the User Hub</h2>
-      <div className="grid grid-cols-3 gap-10">
+      <div className="grid grid-cols-3 gap-6">
         <DCardLink
           title="View Current Standings Here"
           link="/"

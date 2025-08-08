@@ -95,7 +95,7 @@ export default function ViewCaptainsCollegeRep() {
         )
       ) : 
       repRows.length === 0 ? (
-        <div className="dark:text-gray-300">No college reps found.</div>
+        <div className="dark:text-gray-300">No college rep found.</div>
       ) : (
         <ul className="divide-y divide-white/10 rounded-xl dark:bg-white/5 p-2">
           {repRows.map((r, i) => (

@@ -6,9 +6,9 @@ const AdminDashboard: React.FC = () => {
   // You can style things conditionally, You can also make the prop conditional!
 
   return (
-    <div className="p-4 justify-center">
+    <div className="p-6 justify-center">
       <h2 className="text-2xl font-medium mb-4">Welcome to the Admin Hub</h2>
-      <div className="grid grid-cols-3 gap-10">
+      <div className="grid grid-cols-3 gap-6">
         <DCardLink
           title="Score Matches"
           link="/hub/add-scores"
