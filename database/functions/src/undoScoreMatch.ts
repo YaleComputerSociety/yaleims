@@ -46,7 +46,7 @@ const getPointsForWinBySportName = async (
 export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
+      return res.status(405).json({ error: "Method Not Allowed" });
     }
 
     const authHeader = req.headers.authorization || "";
