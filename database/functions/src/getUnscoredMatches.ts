@@ -2,41 +2,48 @@ import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
 import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
 const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
+
+const userCanAccess = (role: string) => {
+  return role === "admin" || role === "dev";
+};
 
 // gets unscored matches (winner is null) that have already occurred (timestamp is in the past)
 export const getUnscoredMatches = functions.https.onRequest(
   async (req, res) => {
     return corsHandler(req, res, async () => {
       try {
-        const authHeader = req.headers.authorization || ""
+        const authHeader = req.headers.authorization || "";
         if (!authHeader.startsWith("Bearer ")) {
-          return res.status(401).json({error: "No token provided"});
+          return res.status(401).json({ error: "No token provided" });
         }
         const token = authHeader.split("Bearer ")[1];
         const decoded = jwt.verify(token, JWT_SECRET);
 
         if (!isValidDecodedToken(decoded)) {
           console.error("Invalid token structure");
-          return res.status(401).json({error: "Invalid Token Structure"})
+          return res.status(401).json({ error: "Invalid Token Structure" });
         }
-        const { role } = decoded as { role: string }
-        const seasonId = req.query.seasonId as string
-        if (!seasonId) return res.status(400).json({error: "SeasonId must be a query"})
+        const { role } = decoded as { role: string };
+        const seasonId = req.query.seasonId as string;
+        if (!seasonId)
+          return res.status(400).json({ error: "SeasonId must be a query" });
 
-        if (role !== "admin") {
-          return res.status(401).json({error: "Unauthorized User"})
+        if (!userCanAccess(role)) {
+          return res.status(401).json({ error: "Unauthorized User" });
         }
         const currentDate = admin.firestore.Timestamp.now();
 
         const snapshot = await db
-          .collection("matches").doc("seasons").collection(seasonId)
+          .collection("matches")
+          .doc("seasons")
+          .collection(seasonId)
           .where("winner", "==", null)
-          .where("timestamp", "<", currentDate) 
+          .where("timestamp", "<", currentDate)
           .orderBy("timestamp", "asc")
           .get();
 

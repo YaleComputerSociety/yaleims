@@ -2,14 +2,17 @@
 
 import React, { useState } from "react";
 import { MatchCardProps } from "@src/types/components";
-import { emojiMap, toCollegeName } from "@src/utils/helpers";
+import { currentYear, emojiMap, toCollegeName } from "@src/utils/helpers";
 import Image from "next/image";
+import { useSeason } from "@src/context/SeasonContext";
 
 const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
   const [awayScore, setAwayScore] = useState<string>("");
   const [homeScore, setHomeScore] = useState<string>("");
   const [awayForfeit, setAwayForfeit] = useState<boolean>(false);
   const [homeForfeit, setHomeForfeit] = useState<boolean>(false);
+  const { currentSeason } = useSeason();
+  const year = currentSeason?.year || currentYear;
 
   const handleAwayCheckboxChange = () => {
     setAwayForfeit(!awayForfeit);
@@ -50,35 +53,32 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, setLoading }) => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/scoreMatch",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            matchId: match.id.toString(),
-            homeScore: homeScore === "" ? null : parseInt(homeScore),
-            awayScore: awayScore === "" ? null : parseInt(awayScore),
-            homeForfeit: homeForfeit,
-            awayForfeit: awayForfeit,
-            homeTeam: match.home_college,
-            awayTeam: match.away_college,
-            sport: match.sport,
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/scoreMatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matchId: match.id.toString(),
+          homeScore: homeScore === "" ? null : parseInt(homeScore),
+          awayScore: awayScore === "" ? null : parseInt(awayScore),
+          homeForfeit: homeForfeit,
+          awayForfeit: awayForfeit,
+          homeTeam: match.home_college,
+          awayTeam: match.away_college,
+          sport: match.sport,
+          year: year,
+        }),
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Error: ${response.status} - ${errorText}`);
       }
+
+      window.location.reload(); // refresh page if successful
     } catch (error) {
       console.error("Failed to submit score:", error);
     } finally {
       setLoading(false);
-      window.location.reload(); // to refresh page and show updated list of matches
     }
   };
 
