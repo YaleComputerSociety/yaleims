@@ -17,23 +17,32 @@ interface ScheduleMatch {
   locationExtra?: string;
 }
 
+const canAddSchedule = (role: string) => {
+  return role === "admin" || role === "dev";
+};
+
 export const addSchedule = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
     if (req.method !== "POST") {
-      return res.status(400).json({ error: "Invalid Method" });
+      return res.status(405).send("Method Not Allowed");
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+    const idToken = authHeader.split("Bearer ")[1];
+    let decoded: any;
+    try {
+      decoded = jwt.verify(idToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    if (!isValidDecodedToken(decoded) || !canAddSchedule(decoded.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
     }
 
     try {
-      const authHeader = req.headers.authorization || "";
-      if (!authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "No token provided" });
-      }
-      const token = authHeader.split("Bearer ")[1];
-      const decoded = jwt.verify(token, JWT_SECRET);
-      if (!isValidDecodedToken(decoded)) {
-        return res.status(401).json({ error: "Invalid token" });
-      }
-
       // Validate and extract schedule from body
       const { schedule } = req.body;
       if (
