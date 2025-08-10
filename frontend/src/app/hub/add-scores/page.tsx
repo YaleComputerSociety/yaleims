@@ -6,6 +6,7 @@ import MatchCard from "@src/components/AddScores/MatchCard";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { useSeason } from "@src/context/SeasonContext";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import { currentYear } from "@src/utils/helpers";
 
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -14,6 +15,7 @@ const AddScoresPage: React.FC = () => {
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false); // For confirmation modal
   const { currentSeason } = useSeason();
+  const year = currentSeason?.year || currentYear;
 
   useEffect(() => {
     document.title = "Score Matches";
@@ -24,9 +26,7 @@ const AddScoresPage: React.FC = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `/api/functions/getUnscoredMatches?seasonId=${
-            currentSeason?.year || "2025-2026"
-          }`
+          `/api/functions/getUnscoredMatches?seasonId=${year}`
         );
 
         if (response.ok) {
@@ -49,17 +49,14 @@ const AddScoresPage: React.FC = () => {
 
     try {
       const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/undoScoreMatch",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify({ matchId: unscoreId }),
-        }
-      );
+      const response = await fetch("/api/functions/undoScoreMatch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: JSON.stringify({ matchId: unscoreId, year }),
+      });
 
       if (response.ok) {
         setUnscoreMessage("Successfully unscored the match.");

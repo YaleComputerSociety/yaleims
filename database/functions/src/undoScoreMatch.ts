@@ -1,6 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import jwt from "jsonwebtoken";
+
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -16,8 +19,13 @@ interface MatchData {
   away_college: string;
   winner: string;
   sport: string;
+  forfeit: boolean;
   predictions: Record<string, Prediction>;
 }
+
+const canUndoScoreMatch = (role: string): boolean => {
+  return role === "admin" || role === "dev";
+};
 
 const getPointsForWinBySportName = async (
   sportName: string
@@ -37,41 +45,43 @@ const getPointsForWinBySportName = async (
 
 export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method Not Allowed");
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+    const idToken = authHeader.split("Bearer ")[1];
+    let decoded: any;
     try {
-      if (req.method !== "POST") {
-        return res.status(405).send("Method Not Allowed");
-      }
+      decoded = jwt.verify(idToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    if (!isValidDecodedToken(decoded) || !canUndoScoreMatch(decoded.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
 
-      // uncomment and redeploy once new frontend changes are deployed
-      // const authHeader = req.headers.authorization || ""
-      // if (!authHeader.startsWith("Bearer ")) {
-      //   return res.status(401).json({error: "No token provided"});
-      // }
-      // //   // getting token passed from request
-      // const idToken = authHeader.split("Bearer ")[1];
-      // // //   //verifying the token using firebase admin
-      // let decoded;
-      // try {
-      //   decoded = await admin.auth().verifyIdToken(idToken);
-      //   if (!decoded) {
-      //     return res.status(401).json({error: "Invalid Token"})
-      //   }
-      // } catch (error) {
-      //   return res.status(401).json({error: "Invalid Token"})
-      // } 
-      //get rid of email in the query and use the decoded users email
-
-      const { matchId } = req.body;
+    try {
+      const { matchId, year } = req.body;
 
       if (!matchId) {
-        return res.status(400).send("Match ID is required.");
+        return res.status(400).json({ error: "Match ID is required." });
       }
 
-      const matchRef = db.collection("matches").doc(matchId);
+      const matchRef = db
+        .collection("matches")
+        .doc("seasons")
+        .collection(year)
+        .doc(matchId);
       const matchSnapshot = await matchRef.get();
 
       if (!matchSnapshot.exists) {
-        throw new Error(`Match with ID ${matchId} does not exist in matches.`);
+        return res
+          .status(404)
+          .json({ error: `Match with ID ${matchId} does not exist.` });
       }
 
       const matchData = matchSnapshot.data() as MatchData;
@@ -81,11 +91,20 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
         away_college: awayTeam,
         winner,
         sport,
+        forfeit,
         predictions,
       } = matchData;
 
-      if (!homeTeam || !awayTeam || !sport || !winner) {
-        throw new Error("Match data is incomplete or invalid.");
+      if (
+        !homeTeam ||
+        !awayTeam ||
+        !sport ||
+        !winner ||
+        typeof forfeit !== "boolean"
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Match data is incomplete or invalid." });
       }
 
       const collegeUpdateData: Record<
@@ -94,21 +113,46 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
       > = {};
       const pointsForWin = await getPointsForWinBySportName(sport);
 
-      if (winner === homeTeam) {
+      if (winner === "Default") {
+        collegeUpdateData[homeTeam] = {
+          games: admin.firestore.FieldValue.increment(-1),
+          forfeits: admin.firestore.FieldValue.increment(-1),
+          points: admin.firestore.FieldValue.increment(pointsForWin / -2),
+        };
+        collegeUpdateData[awayTeam] = {
+          games: admin.firestore.FieldValue.increment(-1),
+          forfeits: admin.firestore.FieldValue.increment(-1),
+          points: admin.firestore.FieldValue.increment(pointsForWin / -2),
+        };
+      } else if (winner === homeTeam) {
         collegeUpdateData[homeTeam] = {
           games: admin.firestore.FieldValue.increment(-1),
           wins: admin.firestore.FieldValue.increment(-1),
           points: admin.firestore.FieldValue.increment(-pointsForWin),
         };
-        collegeUpdateData[awayTeam] = {
-          games: admin.firestore.FieldValue.increment(-1),
-          losses: admin.firestore.FieldValue.increment(-1),
-        };
+        if (forfeit) {
+          collegeUpdateData[awayTeam] = {
+            games: admin.firestore.FieldValue.increment(-1),
+            forfeits: admin.firestore.FieldValue.increment(-1),
+          };
+        } else {
+          collegeUpdateData[awayTeam] = {
+            games: admin.firestore.FieldValue.increment(-1),
+            losses: admin.firestore.FieldValue.increment(-1),
+          };
+        }
       } else if (winner === awayTeam) {
-        collegeUpdateData[homeTeam] = {
-          games: admin.firestore.FieldValue.increment(-1),
-          losses: admin.firestore.FieldValue.increment(-1),
-        };
+        if (forfeit) {
+          collegeUpdateData[homeTeam] = {
+            games: admin.firestore.FieldValue.increment(-1),
+            forfeits: admin.firestore.FieldValue.increment(-1),
+          };
+        } else {
+          collegeUpdateData[homeTeam] = {
+            games: admin.firestore.FieldValue.increment(-1),
+            losses: admin.firestore.FieldValue.increment(-1),
+          };
+        }
         collegeUpdateData[awayTeam] = {
           games: admin.firestore.FieldValue.increment(-1),
           wins: admin.firestore.FieldValue.increment(-1),
@@ -140,7 +184,9 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
 
             const userRef = db
               .collection("users")
-              .doc(sanitizedEmail.replace(/_/g, "."));
+              .doc(sanitizedEmail.replace(/_/g, "."))
+              .collection("seasons")
+              .doc(year);
             rewardBatch.update(userRef, {
               points: admin.firestore.FieldValue.increment(-rewardAmount),
               correctPredictions: admin.firestore.FieldValue.increment(-1), // Increment correctPredictions field
@@ -157,8 +203,16 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
         winner: null,
       });
 
-      const homeCollegeRef = db.collection("colleges").doc(homeTeam);
-      const awayCollegeRef = db.collection("colleges").doc(awayTeam);
+      const homeCollegeRef = db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(year)
+        .doc(homeTeam);
+      const awayCollegeRef = db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(year)
+        .doc(awayTeam);
 
       const batch = db.batch();
       if (collegeUpdateData[homeTeam]) {
@@ -171,7 +225,11 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
       await batch.commit();
 
       // Recalculate college ranks
-      const collegesSnapshot = await db.collection("colleges").get();
+      const collegesSnapshot = await db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(year)
+        .get();
       const colleges: { id: string; points: number; wins: number }[] = [];
 
       collegesSnapshot.forEach((doc) => {
@@ -198,6 +256,8 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
       for (const [index, college] of colleges.entries()) {
         const collegeDoc = await db
           .collection("colleges")
+          .doc("seasons")
+          .collection(year)
           .doc(college.id)
           .get();
         const newRank = index + 1;
@@ -206,28 +266,42 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
           formattedCurrentDate !== collegeDoc.data()?.today;
 
         if (isDateDifferent) {
-          rankBatch.update(db.collection("colleges").doc(college.id), {
-            today: formattedCurrentDate,
-            prevRank: collegeDoc.data()?.rank,
-            rank: newRank,
-          });
+          rankBatch.update(
+            db
+              .collection("colleges")
+              .doc("seasons")
+              .collection(year)
+              .doc(college.id),
+            {
+              today: formattedCurrentDate,
+              prevRank: collegeDoc.data()?.rank,
+              rank: newRank,
+            }
+          );
         } else {
-          rankBatch.update(db.collection("colleges").doc(college.id), {
-            rank: newRank,
-          });
+          rankBatch.update(
+            db
+              .collection("colleges")
+              .doc("seasons")
+              .collection(year)
+              .doc(college.id),
+            {
+              rank: newRank,
+            }
+          );
         }
       }
 
       await rankBatch.commit();
 
-      return res
-        .status(200)
-        .send("Score match successfully undone and ranks updated.");
+      return res.status(200).json({
+        message: "Score match successfully undone and ranks updated.",
+      });
     } catch (error: any) {
       console.error("Error undoing score match:", error);
       return res
         .status(500)
-        .send({ message: "Internal Server Error", error: error.message });
+        .json({ message: "Internal Server Error", error: error.message });
     }
   });
 });

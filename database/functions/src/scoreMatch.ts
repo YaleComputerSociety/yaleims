@@ -1,9 +1,11 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import jwt from "jsonwebtoken";
+
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
-
 const db = admin.firestore();
 
 // interface Prediction {
@@ -17,12 +19,15 @@ const db = admin.firestore();
 // }
 
 const settleParlayLegs = async (matchId: string, winningTeam: string) => {
+  /*
+  TODO: update this part to be year specific, i'm thinking if we add a year field to the betArray
+  we can add a where("year", "==", year) to check for that
+  */
   const legsSnap = await db
     .collectionGroup("betArray")
     .where("matchId", "==", matchId)
     .where("won", "==", null)
     .get();
-
   await Promise.all(
     legsSnap.docs.map(async (legDoc) =>
       db.runTransaction(async (tx) => {
@@ -86,8 +91,31 @@ const getPointsForWinBySportName = async (sportName: string) => {
   return pointsForWin || 0;
 };
 
+const canScoreMatch = (role: string) => {
+  return role === "admin" || role === "dev";
+};
+
 export const scoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+    const idToken = authHeader.split("Bearer ")[1];
+    let decoded: any;
+    try {
+      decoded = jwt.verify(idToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    if (!isValidDecodedToken(decoded) || !canScoreMatch(decoded.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
     try {
       const {
         matchId,
@@ -95,14 +123,11 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         awayScore,
         homeForfeit,
         awayForfeit,
-        homeTeam,
-        awayTeam,
+        homeTeam: homeTeamInputted,
+        awayTeam: awayTeamInputted,
         sport,
+        year,
       } = req.body;
-
-      if (req.method !== "POST") {
-        return res.status(405).send("Method Not Allowed");
-      }
 
       // validate request parameters
       if (
@@ -111,25 +136,38 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
         typeof awayScore !== "number" ||
         typeof homeForfeit !== "boolean" ||
         typeof awayForfeit !== "boolean" ||
-        typeof homeTeam !== "string" ||
-        typeof awayTeam !== "string" ||
-        typeof sport !== "string"
+        typeof sport !== "string" ||
+        typeof year !== "string"
       ) {
-        return res.status(400).send("Error with parameters");
+        return res.status(400).json({ message: "Error with parameters" });
       }
 
       // Check if the match has already been scored
-      const matchRef = db.collection("matches").doc(matchId);
+      const matchRef = db
+        .collection("matches")
+        .doc("seasons")
+        .collection(year)
+        .doc(matchId);
       const matchDoc = await matchRef.get();
 
       if (!matchDoc.exists) {
-        return res.status(404).send("Match not found.");
+        return res.status(404).json({ message: "Match not found." });
       }
 
       const existingMatchData = matchDoc.data();
-      if (existingMatchData?.winner) {
-        return res.status(400).send("This match has already been scored.");
+
+      if (!existingMatchData) {
+        return res.status(404).json({ message: "Match not found." });
       }
+
+      if (existingMatchData?.winner) {
+        return res
+          .status(400)
+          .json({ message: "This match has already been scored." });
+      }
+
+      const homeTeam = existingMatchData.home_college || homeTeamInputted;
+      const awayTeam = existingMatchData.away_college || awayTeamInputted;
 
       let winningTeam: string;
       const doubleForfeit = homeForfeit && awayForfeit;
@@ -156,7 +194,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       // update college stats
       const collegeUpdateData: any = {};
-      const pointsForWin = await getPointsForWinBySportName(sport); // evetually change this to get from firestore - but right now the data is stored weird; change id to string of the sport name rather than a number
+      const pointsForWin = await getPointsForWinBySportName(sport);
 
       // all cases for updating college stats of win, loss, tie, forfeit, points (all cases increment games played)
       if (doubleForfeit) {
@@ -224,8 +262,16 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       }
 
       // doc refs
-      const awayCollegeRef = db.collection("colleges").doc(awayTeam); // change to colleges
-      const homeCollegeRef = db.collection("colleges").doc(homeTeam); // change to colleges
+      const awayCollegeRef = db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(year)
+        .doc(awayTeam);
+      const homeCollegeRef = db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(year)
+        .doc(homeTeam);
 
       // batch write
       const batch = db.batch();
@@ -238,13 +284,14 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       const matchDocData = matchDoc.data() || {};
 
-      // update next match in bracket (if a playoff match and there is a definitive winner, else will have to be manual?)
+      // update next match in bracket (if a playoff match and there is a definitive winner, else will have to be manual)
       const matchType = matchDocData.type;
 
       if (
         matchType &&
         matchType !== "Regular" &&
         matchType !== "Final" &&
+        winningTeam &&
         winningTeam !== "Default" &&
         winningTeam !== "Draw"
       ) {
@@ -255,18 +302,21 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
             ? matchDocData.home_seed
             : matchDocData.away_seed;
 
-        if (nextMatchId && matchBracketSlot) {
-          const nextMatchRef = db.collection("matches").doc(nextMatchId);
+        if (nextMatchId && matchBracketSlot && winnerSeed) {
+          const nextMatchRef = db
+            .collection("matches")
+            .doc("seasons")
+            .collection(year)
+            .doc(nextMatchId);
 
-          // Prepare update object
           let updateData: any = {};
           if (matchBracketSlot % 2 === 1) {
             // Odd slot: update away team/seed
-            updateData.away_team = winningTeam;
+            updateData.away_college = winningTeam;
             updateData.away_seed = winnerSeed;
           } else {
             // Even slot: update home team/seed
-            updateData.home_team = winningTeam;
+            updateData.home_college = winningTeam;
             updateData.home_seed = winnerSeed;
           }
 
@@ -275,7 +325,11 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       }
 
       // update ranks
-      const collegesSnapshot = await db.collection("colleges").get();
+      const collegesSnapshot = await db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(year)
+        .get();
       const colleges: { id: string; points: number; wins: number }[] = [];
 
       collegesSnapshot.forEach((doc) => {
@@ -303,6 +357,8 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       for (const [index, college] of colleges.entries()) {
         const collegeDoc = await db
           .collection("colleges")
+          .doc("seasons")
+          .collection(year)
           .doc(college.id)
           .get();
         const newRank = index + 1;
@@ -311,31 +367,57 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
           formattedCurrentDate !== collegeDoc.data()?.today;
 
         if (isDateDifferent) {
-          rankBatch.update(db.collection("colleges").doc(college.id), {
-            today: formattedCurrentDate,
-            prevRank: collegeDoc.data()?.rank,
-            rank: newRank,
-          });
+          rankBatch.update(
+            db
+              .collection("colleges")
+              .doc("seasons")
+              .collection(year)
+              .doc(college.id),
+            {
+              today: formattedCurrentDate,
+              prevRank: collegeDoc.data()?.rank,
+              rank: newRank,
+            }
+          );
         } else {
-          rankBatch.update(db.collection("colleges").doc(college.id), {
-            rank: newRank,
-          });
+          rankBatch.update(
+            db
+              .collection("colleges")
+              .doc("seasons")
+              .collection(year)
+              .doc(college.id),
+            {
+              rank: newRank,
+            }
+          );
         }
       }
 
       await rankBatch.commit();
 
       // reward singles and parlays after dat
-      const matchData = await db.collection("matches").doc(matchId).get();
+      const matchData = await db
+        .collection("matches")
+        .doc("seasons")
+        .collection(year)
+        .doc(matchId)
+        .get();
 
-      await settleParlayLegs(matchId, matchData.data()!.winner);
+      if (matchData.exists) {
+        await settleParlayLegs(matchId, matchData.data()!.winner);
+      }
 
-      return res
-        .status(200)
-        .send("Match, colleges, bets and parlays updated successfully.");
-    } catch (error) {
+      return res.status(200).json({
+        success: true,
+        message: "Match, colleges, bets and parlays updated successfully.",
+      });
+    } catch (error: any) {
       console.error("Error scoring match:", error);
-      return res.status(500).send("Internal Server Error");
+      return res.status(500).json({
+        success: false,
+        message: "Internal Server Error",
+        error: error.message,
+      });
     }
   });
 });
