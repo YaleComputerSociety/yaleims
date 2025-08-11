@@ -107,7 +107,7 @@ const NavBar: React.FC = () => {
         </div>
         <button
           onClick={onToggleCollapse}
-          className="mb-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md ml-auto mt-auto"
+          className={`mb-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md mt-auto ${collapsed? "items-center" : "ml-auto"}`}
           aria-label="Toggle Collapse"
         >
           {collapsed ? <MdOutlineKeyboardArrowRight size={24} /> : <MdOutlineKeyboardArrowLeft size={24} />}
