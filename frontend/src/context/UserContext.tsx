@@ -1,6 +1,8 @@
 "use client";
 
+import { doc, onSnapshot } from "firebase/firestore";
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { db } from "../../lib/firebase";
 
 interface User {
   name: string;
@@ -101,6 +103,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
     return authCheckPromise;
   }, [ casSignOut ]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const unsub = onSnapshot(doc(db, "users", user.email), snap => {
+      const d = snap.data(); if (!d) return;
+      setUser(prev => prev ? {
+        ...prev,
+        role: d.role,
+        username: d.username,
+      } : prev);
+      fetch(`/api/auth/verify?currentRole=${d.role}`);
+    });
+    return () => unsub();
+  }, [user?.email]);
+
 
   useEffect(() => {
     checkCasAuth();

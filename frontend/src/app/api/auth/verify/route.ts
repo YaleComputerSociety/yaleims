@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -21,7 +21,7 @@ function isValidDecodedToken(decoded: any): decoded is DecodedToken {
   );
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: Request): Promise<NextResponse> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
@@ -43,19 +43,37 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ isLoggedIn: false }, { status: 401 });
     }
 
-    return NextResponse.json({
-      isLoggedIn: true,
-      user: {
-        name: decoded.name,
-        netid: decoded.netid,
-        email: decoded.email,
-        role: decoded.role,
-        username: decoded.username,
-        college: decoded.college,
-        points: decoded.points,
-        matches_played: decoded.matches_played,        
-      },
-    });
+    const currentRole = new URL(req.url).searchParams.get("currentRole");
+
+    const shouldUpdateRole =
+      typeof currentRole === "string" &&
+      currentRole.length > 0 &&
+      currentRole !== decoded.role;
+
+    const mergedUser: DecodedToken = {
+      name: decoded.name,
+      netid: decoded.netid,
+      email: decoded.email,
+      role: shouldUpdateRole ? currentRole! : decoded.role,
+      username: decoded.username,
+      college: decoded.college,
+      points: decoded.points,
+      matches_played: decoded.matches_played,
+    };
+
+    const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
+
+    if (shouldUpdateRole) {
+      const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
+      res.cookies.set("token", newToken, {
+        secure: true, 
+        httpOnly: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+    return res
   } catch (error) {
     console.error("Authentication error:", error);
     const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });
