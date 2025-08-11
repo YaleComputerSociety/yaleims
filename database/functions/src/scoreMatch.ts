@@ -35,7 +35,6 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
         const leg = legDoc.data() as any;
 
         const parlayRef = legRef.parent.parent!;
-        const userRef = parlayRef.parent.parent!;
 
         const parlaySnap = await tx.get(parlayRef);
         const parlay = parlaySnap.data()!;
@@ -62,9 +61,10 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
           const payout = parlayWon ? parlay.betAmount * parlay.betOdds : 0;
 
           tx.update(parlayRef, { settled: true, won: parlayWon, payout });
+          const seasonDocRef = parlayRef.parent.parent!;
 
           if (payout > 0) {
-            tx.update(userRef, {
+            tx.update(seasonDocRef, {
               points: admin.firestore.FieldValue.increment(payout),
               correctPredictions: admin.firestore.FieldValue.increment(1),
             });

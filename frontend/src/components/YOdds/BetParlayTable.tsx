@@ -19,7 +19,7 @@ const BetParlayTable: React.FC<BetParlayTableProps> = ({ parlays }) => {
       {parlays.map((parlay) => {
         const { betId, createdAt, betArray, betAmount, totalOdds, won } = parlay;
         const returnValue = won
-          ? won === true ? parseFloat((betAmount * (1 + (1 - totalOdds) / totalOdds)).toFixed(2))
+          ? won === true ? parseFloat((betAmount * totalOdds).toFixed(2))
           : 0 : null;
 
         return (

@@ -43,6 +43,62 @@ const getPointsForWinBySportName = async (
   return sportData?.points_for_win || 0; // Default to 0 if undefined
 };
 
+const undoParlayLegs = async (matchId: string) => {
+  const legsSnap = await db
+    .collectionGroup("betArray")
+    .where("matchId", "==", matchId)
+    .where("won", "in", [true, false])
+    .get();
+
+  await Promise.all(
+    legsSnap.docs.map((legDoc) =>
+      db.runTransaction(async (tx) => {
+        const legRef = legDoc.ref;
+        const legSnap = await tx.get(legRef);
+        if (!legSnap.exists) return;
+
+        const leg = legSnap.data() as any;
+
+        const parlayRef = legRef.parent.parent!;    
+        const parlaySnap = await tx.get(parlayRef);
+        if (!parlaySnap.exists) return;
+
+        const parlay = parlaySnap.data() as any;
+
+        tx.update(legRef, { winner: null, won: null });
+
+        const currentCashed = Math.max(0, (parlay.currentCashed ?? 0) - 1);
+        const lostLegs =
+          Math.max(0, (parlay.lostLegs ?? 0) - (leg.won === false ? 1 : 0));
+
+        const wasSettled = parlay.settled === true;
+        const wasWin = parlay.won === true;
+        const payout = Number(parlay.payout ?? 0);
+
+        const seasonDocRef = parlayRef.parent.parent!;
+
+        if (wasSettled && wasWin && payout > 0) {
+          tx.update(seasonDocRef, {
+            points: admin.firestore.FieldValue.increment(-payout),
+            correctPredictions: admin.firestore.FieldValue.increment(-1),
+          });
+        }
+
+        tx.update(parlayRef, {
+          currentCashed,
+          lostLegs,
+          settled: null,
+          won: null,
+          payout: null,
+        });
+      })
+    )
+  );
+};
+
+
+
+
 export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     if (req.method !== "POST") {
@@ -92,7 +148,6 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
         winner,
         sport,
         forfeit,
-        predictions,
       } = matchData;
 
       if (
@@ -170,31 +225,6 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
           points: admin.firestore.FieldValue.increment(-(pointsForWin / 2)),
         };
       }
-
-      const rewardBatch = db.batch();
-      Object.entries(predictions || {}).forEach(
-        ([sanitizedEmail, prediction]) => {
-          if (prediction.betOption === winner) {
-            const rewardAmount = parseFloat(
-              (
-                prediction.betAmount *
-                (1 + (1 - prediction.betOdds) / prediction.betOdds)
-              ).toFixed(2)
-            );
-
-            const userRef = db
-              .collection("users")
-              .doc(sanitizedEmail.replace(/_/g, "."))
-              .collection("seasons")
-              .doc(year);
-            rewardBatch.update(userRef, {
-              points: admin.firestore.FieldValue.increment(-rewardAmount),
-              correctPredictions: admin.firestore.FieldValue.increment(-1), // Increment correctPredictions field
-            });
-          }
-        }
-      );
-      await rewardBatch.commit();
 
       await matchRef.update({
         home_college_score: null,
@@ -293,6 +323,7 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
       }
 
       await rankBatch.commit();
+      await undoParlayLegs(matchId);
 
       return res.status(200).json({
         message: "Score match successfully undone and ranks updated.",
