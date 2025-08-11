@@ -97,8 +97,6 @@ const undoParlayLegs = async (matchId: string) => {
 };
 
 
-
-
 export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     if (req.method !== "POST") {

@@ -104,7 +104,7 @@ const BetTemplate = (
           <h3 className="text-sm font-semibold mb-2 ml-2">
             Predict Game Results
           </h3>
-          <BetOption match={match} setSelectedOption={setSelectedOption} selectedOption={selectedOption} updateBetSlip={updateBetSlip}/>
+          <BetOption match={match} type="result" closeDropDown={setIsOpen} setSelectedOption={setSelectedOption} selectedOption={selectedOption} updateBetSlip={updateBetSlip}/>
         </div>
       </div>
     </div>

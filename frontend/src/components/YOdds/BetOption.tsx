@@ -2,15 +2,10 @@ import Image from "next/image";
 import { toCollegeName, emojiMap } from "@src/utils/helpers";
 import { Match, Bet } from "@src/types/components";
 import { useState } from "react";
-import { useUser } from "../../context/UserContext";
-import crypto from 'crypto';
 
-const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: { match: Match, setSelectedOption: Function, selectedOption: Bet | null, 
+const BetOption = ({ match, type, setSelectedOption, closeDropDown, selectedOption, updateBetSlip }: { match: Match, type: String, closeDropDown: Function, setSelectedOption: Function, selectedOption: Bet | null, 
   updateBetSlip?: (bet: Bet) => Bet[]}) => {
   const { home_college, away_college } = match;
-  
-  const { user } = useUser();
-  const [isBetAdded, setIsBetAdded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // const RadioOption = ({ value, college = null, label }: any) => (
@@ -47,7 +42,8 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
               matchTimestamp: match.timestamp,
               sport: match.sport,
               won: null,
-              betId: crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 10)
+              type: type,
+              betId: type + match.home_college + match.away_college + match.sport + e.target.value  // unique id for each option
             }); // Update both the option and odds
             // setSelectedOption(e.target.value.option);
             // setSelectedOdds(e.target.value.odds);
@@ -96,7 +92,7 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
                 college={home_college}
                 label={`${toCollegeName[home_college]} - ${
                   match.home_college_odds !== undefined
-                    ? `${(100 * match.home_college_odds).toFixed(1)}% likely, ${(1 + (1 - match.home_college_odds) / match.home_college_odds).toFixed(2)}x returns`
+                    ? `${(1 + (1 - match.home_college_odds) / match.home_college_odds).toFixed(2)}x`
                     : "Unknown odds"
                 }`}
               />
@@ -107,7 +103,7 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
                 college={away_college}
                 label={`${toCollegeName[away_college]} - ${
                   match.away_college_odds !== undefined
-                    ? `${(100 * match.away_college_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.away_college_odds) / match.away_college_odds)).toFixed(2)}x returns`
+                    ? `${(1 * (1 + (1 - match.away_college_odds) / match.away_college_odds)).toFixed(2)}x`
                     : "Unknown odds"
                 }`}
               />
@@ -122,7 +118,7 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
                 // value={JSON.stringify({ option: "Draw", odds: match.draw_odds })}
                 label={`Draw - ${
                   match.draw_odds !== undefined
-                    ? `${(100 * match.draw_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.draw_odds) / match.draw_odds)).toFixed(2)}x returns`
+                    ? `${(1 * (1 + (1 - match.draw_odds) / match.draw_odds)).toFixed(2)}x`
                     : "Unknown odds"
                 }`}
               />
@@ -133,7 +129,7 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
                 // value={JSON.stringify({ option: "Default", odds: match.default_odds })}
                 label={`Default - ${
                   match.default_odds !== undefined
-                    ? `${(100 * match.default_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.default_odds) / match.default_odds)).toFixed(2)}x returns`
+                    ? `${(1 * (1 + (1 - match.default_odds) / match.default_odds)).toFixed(2)}x`
                     : "Unknown odds"
                 }`}
               />
@@ -146,7 +142,8 @@ const BetOption = ({ match, setSelectedOption, selectedOption, updateBetSlip }: 
             onClick={() => {
               if (selectedOption) {
                 updateBetSlip && updateBetSlip(selectedOption);
-                setSelectedOption(null)
+                setSelectedOption(null);
+                closeDropDown(false)
                 // setIsBetAdded(true)
               }}}
             className={`mt-2 w-full md:w-32 px-4 py-1.5 rounded-md text-xs mg:text-mg font-medium

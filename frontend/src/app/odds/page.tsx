@@ -21,6 +21,8 @@ import BetParlayTable from "@src/components/YOdds/BetParlayTable";
 import { totalOddsCalc } from '@src/utils/helpers';
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
+import { toast } from "react-toastify";
+import { seasonSports } from "@src/utils/helpers";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -55,14 +57,20 @@ const YoddsPage: React.FC = () => {
   const [betAmount, setBetAmount] = useState<number | ''>('');
   const [totalOdds, setTotalOdds] = useState<number>(1);
   const [submitButtonClicked, setSubmitButtonClicked] = useState(0);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'submitted'>('idle');
+
   const { currentSeason } = useSeason();
-  
  
   const updateBetSlip = (bet: Bet): Bet[] => {
+    if (betslip.some((b) => b.betId === bet.betId)) {
+      toast("Selection already in Slip. Did not add bet");
+      return betslip;
+    }
+
     const updatedBetSlip = [...betslip, bet];
     setBetSlip(updatedBetSlip);
     setTotalOdds(totalOddsCalc(updatedBetSlip));
-    setBetCount(() => betCount + 1)
+    setBetCount((c) => c + 1);
     return updatedBetSlip;
   };
 
@@ -205,19 +213,6 @@ const YoddsPage: React.FC = () => {
 
     fetchPastBets();
   }, [userEmail]);
-  // console.log(pastBets)
-
-  // useEffect(() => {
-  //   if (!pendingBets.length) return;
-
-  //   setFilteredMatches((prevMatches) => {
-  //     const filtered = prevMatches.filter((match) => {
-  //       // Check if there is a prediction for the current match
-  //       return !pendingBets.some((bet) => bet.matchId == match.id);
-  //     });
-  //     return filtered;
-  //   });
-  // }, [pendingBets]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -289,16 +284,26 @@ const YoddsPage: React.FC = () => {
     }
 
     try {
+      setSubmitStatus('submitting');
       await addBet({
         betAmount: betAmount ? betAmount : 0,
         betArray: betslip,
         totalOdds: totalOdds,
       });
       setSubmitButtonClicked((prev) => prev + 1);
+      setSubmitStatus('submitted');
+      toast.success("Bet Submitted Succesfully!")
+      setTimeout(() => setSubmitStatus('idle'), 1800);
     } catch (error) {
-      alert("Failed to place bet. Please try again.");
+      toast.error("Failed to place bet. Please try again.");
+      setSubmitStatus('idle');
     }
   };
+
+  // under consideration
+  // const deleteBet = () => {
+
+  // }
 
   const sendToRankings = () => {
     setFilter({
@@ -339,12 +344,12 @@ const YoddsPage: React.FC = () => {
       <div className="w-full max-w-5xl p-5 mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-8 items-start rounded-lg pb-5">
         <div className="flex flex-col gap-y-2 md:gap-y-6 min-w-0 pb-4">
           <div className="w-full overflow-x-auto invisible-scrollbar gap-x-4">
-            <div className="flex w-max gap-3 px-2 py-3 items-center">
-              {sports.map((sport) => (
+            <div className="flex flex-row w-full gap-3 px-2 py-3 items-center justify-center">
+              {seasonSports[currentSeason!.season].map((sport) => (
               <SportCard
-                key={sport.id}
-                sport={sport.name}
-                active={sport.name === filter.sport}
+                key={sport}
+                sport={sport}
+                active={sport === filter.sport}
                 displayName={false}
                 handleClick={handleFilterChange}     
               />
@@ -412,9 +417,9 @@ const YoddsPage: React.FC = () => {
         </div>
       </div>
       
-      <p className="text-xs text-center text-gray-500">
+      {/* <p className="text-xs text-center text-gray-500">
         Predictions may only be canceled 24 hours or more before the game.
-      </p>
+      </p> */}
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Upcoming Games
@@ -581,10 +586,16 @@ const YoddsPage: React.FC = () => {
                 </div>
                 <div>
                   <button
-                    className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                    className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md transition transform duration-200 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
                     onClick={handleSubmitBet}
+                    disabled={submitStatus !== 'idle'}
+                    aria-busy={submitStatus === 'submitting'}
                   >
-                    Submit Bet
+                    {submitStatus === 'submitting'
+                      ? 'Submitting…'
+                      : submitStatus === 'submitted'
+                      ? 'Submitted!'
+                      : 'Submit Bet'}
                   </button>
                 </div>
               </div>
