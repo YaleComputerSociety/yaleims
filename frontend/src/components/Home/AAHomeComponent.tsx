@@ -12,7 +12,8 @@ import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import { useSeason } from "@src/context/SeasonContext";
 import PageHeading from "../PageHeading";
-import Page from "@src/app/hub/add-scores/page";
+import { collection, onSnapshot, orderBy, query, Unsubscribe } from "firebase/firestore";
+import { db } from "../../../lib/firebase";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
@@ -28,30 +29,31 @@ const AAHomeComponent: React.FC = () => {
   );
 
   useEffect(() => {
-    const fetchCollegesLeaderboard = async () => {
-      try {
-        setLoading(true);
-        if (selected === "All Time") return;
-        const response = await fetch(
-          `api/functions/getLeaderboardv2?seasonId=${selected}`
-        );
-        if (!response.ok) {
-          throw new Error(
-            `Error fetching colleges leaderboard: ${response.statusText}`
-          );
-        }
+    let unsub: Unsubscribe | undefined;
+    if (!selected || selected === "All Time") return
 
-        const data = await response.json();
-        const sorted = data.sort((a: any, b: any) => b.points - a.points);
-        setSortedColleges(() => sorted);
-      } catch (error) {
-        console.error("Failed to fetch colleges leaderboard:", error);
-      } finally {
+    setLoading(true);
+
+    const q = query(
+      collection(db, "colleges", "seasons", selected),
+      orderBy("rank", "asc")
+    );
+
+    unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        rows.sort((a, b) => Number(a.rank) - Number(b.rank));
+        setSortedColleges(rows);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Leaderboard listener error:", err);
         setLoading(false);
       }
-    };
+    );
 
-    fetchCollegesLeaderboard();
+    return () => unsub?.();
   }, [selected]);
 
   const handleCollegeClick = (collegeName: string) => {
