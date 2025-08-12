@@ -1,7 +1,7 @@
 import { seasonSports } from "@src/utils/helpers";
 import { useSeason } from "@src/context/SeasonContext";
 import { useEffect, useMemo, useState } from "react";
-import LoadingScreen from "@src/components/LoadingScreen";
+import LoadingSpinner from "@src/components/LoadingSpinner";
 
 interface User {
   email: string;
@@ -84,7 +84,7 @@ export default function AssignCaptain() {
       (c) => c.email === selectUser.email && c.sportsCaptainOf?.includes(selectSport)
     );
 
-  if (loading || !currentSeason) return <LoadingScreen />;
+  if (loading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
 
   const handleAction = async (assign: boolean) => {
     setNotice(null);

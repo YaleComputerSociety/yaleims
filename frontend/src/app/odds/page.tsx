@@ -459,7 +459,7 @@ const YoddsPage: React.FC = () => {
       </div>
       {viewBetHistory && (
         <div 
-          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
           onClick={() => setViewBetHistory(false)}
         >
           <div 
@@ -490,7 +490,7 @@ const YoddsPage: React.FC = () => {
       )}
       {viewPendingBets && (
         <div 
-          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
           onClick={() => setViewPendingBets(false)}
         >
           <div 
@@ -520,7 +520,7 @@ const YoddsPage: React.FC = () => {
       )}
       {viewBetSlip && (
         <div 
-          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
           onClick={() => setViewBetSlip(false)}
         >
           <div 

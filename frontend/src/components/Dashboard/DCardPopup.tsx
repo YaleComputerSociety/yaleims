@@ -33,7 +33,7 @@ export default function DCardPopup({ title, message, openInfo, CustomComponent }
             </button>
             {open && (
                 <div 
-                    className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
                     onClick={() => setOpen(false)}
                 >
                     <div 

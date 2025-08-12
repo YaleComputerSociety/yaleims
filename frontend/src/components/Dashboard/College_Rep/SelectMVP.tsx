@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import LoadingScreen from "@src/components/LoadingScreen";
 import { useSeason } from "@src/context/SeasonContext";
 import { seasonStart, getCurrentWeekId } from "@src/utils/helpers";
+import LoadingSpinner from "@src/components/LoadingSpinner";
 
 interface User {
   email: string;
@@ -57,7 +57,7 @@ export default function SelectMVP() {
     });
   }, [searchTerm, usersInCollege]);
 
-  if (loading || !currentSeason) return <LoadingScreen />;
+  if (loading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
 
   const selectMvp = async () => {
     setError(null);

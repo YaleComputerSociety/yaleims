@@ -18,10 +18,6 @@ const AddScoresPage: React.FC = () => {
   const year = currentSeason?.year || currentYear;
 
   useEffect(() => {
-    document.title = "Score Matches";
-  }, []);
-
-  useEffect(() => {
     const fetchMatches = async () => {
       setLoading(true);
       try {
