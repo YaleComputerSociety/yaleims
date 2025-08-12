@@ -56,7 +56,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setIsLoggedIn(false);
         setUser(null);
         setLoading(false)
-        window.location.href = "/"; // Force reload after logout
+        window.location.href = "/";
       }
     } catch (error) {
       setLoading(false)
