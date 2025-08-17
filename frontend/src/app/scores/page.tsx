@@ -92,8 +92,13 @@ const ScoresPage: React.FC = () => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams(getParams());
-        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
-        if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
+        const response = await fetch(
+          `/api/functions/getMatches?${params}&seasonId=${
+            currentSeason?.year || "2025-2026"
+          }`
+        );
+        if (!response.ok)
+          throw new Error(`Error fetching matches: ${response.statusText}`);
         const data = await response.json();
 
         setFilteredMatches(data.matches);

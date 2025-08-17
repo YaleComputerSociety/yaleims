@@ -5,6 +5,7 @@ import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import Link from "next/link";
+import UndoScoreMatchModal from "../AddScores/UndoScoreMatchModal";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,
@@ -12,6 +13,7 @@ const TableRow: React.FC<TableRowProps> = ({
   isFirst,
   isLast,
   handleSportClick,
+  isAdmin,
 }) => {
   const {
     home_college,
@@ -25,9 +27,11 @@ const TableRow: React.FC<TableRowProps> = ({
     draw_volume,
     default_volume,
     winner,
+    id: matchId,
   } = match;
 
   const [isOpen, setIsOpen] = useState(false);
+  const [undoScoreModalOpen, setUndoScoreModalOpen] = useState(false);
 
   // Check if prediction data exists
   const hasPredictionData =
@@ -125,11 +129,13 @@ const TableRow: React.FC<TableRowProps> = ({
     );
   };
 
+  const handleIdClick = () => {
+    setUndoScoreModalOpen(true);
+  };
+
   const isDraw = home_college_score === away_college_score;
   const homeWins = home_college_score > away_college_score;
   const points = isDraw ? sportsMap[sport] / 2 : sportsMap[sport];
-  
-  // console.log(correctPercentage, incorrectPercentage);
 
   return (
     <div
@@ -137,8 +143,18 @@ const TableRow: React.FC<TableRowProps> = ({
     ${isLast ? "rounded-b-lg" : ""}`}
     >
       <div className="block sm:hidden -mb-6">
-        <div className="pr-3 py-2 pb-4 text-xs font-extralight dark:text-gray-300 text-gray-900 w-full flex justify-between">
-          <span className="ml-11">{getTimeString(timestamp)}</span>
+        <div className="pr-3 py-2 pb-4 text-xs font-extralight dark:text-gray-300 text-gray-900 w-full flex justify-between items-center">
+          <span className="ml-11 flex items-center gap-2">
+            {getTimeString(timestamp)}
+            {isAdmin && (
+              <span
+                onClick={handleIdClick}
+                className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
+              >
+                ID: {matchId}
+              </span>
+            )}
+          </span>
           <span>
             {match.type} {match.type == "Regular" ? "Season" : "Round"}
           </span>
@@ -149,16 +165,29 @@ const TableRow: React.FC<TableRowProps> = ({
           {!isOpen ? (
             <SlArrowRight
               onClick={() => {
-                setIsOpen(!isOpen)
-                // console.log(match.id)
+                setIsOpen(!isOpen);
               }}
             />
           ) : (
             <SlArrowDown onClick={() => setIsOpen(!isOpen)} />
           )}
         </div>
-        <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700">
-          {getTimeString(timestamp).length < 8 ? <>&nbsp;{getTimeString(timestamp)}</> : getTimeString(timestamp)}
+        <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700 flex items-center gap-2">
+          <span>
+            {getTimeString(timestamp).length < 8 ? (
+              <>&nbsp;{getTimeString(timestamp)}</>
+            ) : (
+              getTimeString(timestamp)
+            )}
+          </span>
+          {isAdmin && (
+            <span
+              onClick={handleIdClick}
+              className="ml-2 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
+            >
+              ID: {matchId}
+            </span>
+          )}
         </div>
 
         <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
@@ -263,6 +292,13 @@ const TableRow: React.FC<TableRowProps> = ({
             </Link>
           </div>
         </div>
+      )}
+
+      {undoScoreModalOpen && (
+        <UndoScoreMatchModal
+          unscoreId={matchId}
+          setShowConfirmation={setUndoScoreModalOpen}
+        />
       )}
     </div>
   );

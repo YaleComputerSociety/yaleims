@@ -89,6 +89,7 @@ export interface TableRowProps {
   isLast?: boolean; // Optional prop to indicate if this is the last row
   handleSportClick: any; // Function to handle sport clicks
   availablePoints?: number;
+  isAdmin: boolean;
 }
 export interface YoddsTableRowProps {
   key?: number;

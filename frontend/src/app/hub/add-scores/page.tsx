@@ -7,6 +7,7 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import { useSeason } from "@src/context/SeasonContext";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
 import { currentYear } from "@src/utils/helpers";
+import UndoScoreMatchModal from "@src/components/AddScores/UndoScoreMatchModal";
 
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -14,6 +15,7 @@ const AddScoresPage: React.FC = () => {
   const [unscoreId, setUnscoreId] = useState<string>(""); // For unscore input
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false); // For confirmation modal
+  const [refreshKey, setRefreshKey] = useState(0); // For refetching matches
   const { currentSeason } = useSeason();
   const year = currentSeason?.year || currentYear;
 
@@ -37,38 +39,40 @@ const AddScoresPage: React.FC = () => {
     };
 
     fetchMatches();
-  }, []);
+  }, [refreshKey]);
 
-  const handleUnscoreMatch = async () => {
-    setLoading(true);
-    setUnscoreMessage(null);
+  // TODO: delete this
+  // const handleUnscoreMatch = async () => {
+  //   setLoading(true);
+  //   setUnscoreMessage(null);
 
-    try {
-      const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch("/api/functions/undoScoreMatch", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${userToken}`,
-        },
-        body: JSON.stringify({ matchId: unscoreId, year }),
-      });
+  //   try {
+  //     const userToken = sessionStorage.getItem("userToken");
+  //     const response = await fetch("/api/functions/undoScoreMatch", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${userToken}`,
+  //       },
+  //       body: JSON.stringify({ matchId: unscoreId, year }),
+  //     });
 
-      if (response.ok) {
-        setUnscoreMessage("Successfully unscored the match.");
-        setUnscoreId(""); // Clear input after success
-      } else {
-        const errorData = await response.json();
-        setUnscoreMessage(`Failed to unscore match: ${errorData.message}`);
-      }
-    } catch (error) {
-      console.error("Failed to unscore match:", error);
-      setUnscoreMessage("An error occurred. Please try again.");
-    } finally {
-      setLoading(false);
-      setShowConfirmation(false); // Hide modal after processing
-    }
-  };
+  //     if (response.ok) {
+  //       setUnscoreMessage("Successfully unscored the match.");
+  //       setUnscoreId(""); // Clear input after success
+  //       setRefreshKey((k) => k + 1); // Trigger refetch
+  //     } else {
+  //       const errorData = await response.json();
+  //       setUnscoreMessage(`Failed to unscore match: ${errorData.message}`);
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to unscore match:", error);
+  //     setUnscoreMessage("An error occurred. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //     setShowConfirmation(false); // Hide modal after processing
+  //   }
+  // };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,28 +142,13 @@ const AddScoresPage: React.FC = () => {
 
         {/* Confirmation Modal */}
         {showConfirmation && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-              <h3 className="text-lg font-semibold mb-4">
-                Are you sure you want to unscore this match?
-              </h3>
-              <p className="mb-6 text-gray-600">Match ID: {unscoreId}</p>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => setShowConfirmation(false)}
-                  className="bg-gray-300 px-4 py-2 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUnscoreMatch}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                >
-                  Confirm
-                </button>
-              </div>
-            </div>
-          </div>
+          <UndoScoreMatchModal
+            unscoreId={unscoreId}
+            setShowConfirmation={setShowConfirmation}
+            setUnscoreMessage={setUnscoreMessage}
+            setUnscoreId={setUnscoreId}
+            setRefreshKey={setRefreshKey}
+          />
         )}
       </div>
     </div>

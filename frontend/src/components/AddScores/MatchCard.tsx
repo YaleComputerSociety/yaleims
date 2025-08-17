@@ -57,43 +57,43 @@ const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
   const handleSubmit = async () => {
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      setScored(true);
-    }, 2000);
-
-    // try {
-    //   const response = await fetch("/api/functions/scoreMatch", {
-    //     method: "POST",
-    //     headers: { "Content-Type": "application/json" },
-    //     body: JSON.stringify({
-    //       matchId: match.id.toString(),
-    //       homeScore: homeScore === "" ? 0 : parseInt(homeScore),
-    //       awayScore: awayScore === "" ? 0 : parseInt(awayScore),
-    //       homeForfeit: homeForfeit,
-    //       awayForfeit: awayForfeit,
-    //       homeTeam: match.home_college,
-    //       awayTeam: match.away_college,
-    //       sport: match.sport,
-    //       year: year,
-    //     }),
-    //   });
-
-    //   if (!response.ok) {
-    //     const errorText = await response.text();
-    //     throw new Error(`Error: ${response.status} - ${errorText}`);
-    //   }
-
-    //   setScored(true);
-    // } catch (error) {
-    //   toast.error(
-    //     `Failed to submit score: ${
-    //       error instanceof Error ? error.message : String(error)
-    //     }`
-    //   );
-    // } finally {
+    // setTimeout(() => {
     //   setLoading(false);
-    // }
+    //   setScored(true);
+    // }, 2000);
+
+    try {
+      const response = await fetch("/api/functions/scoreMatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          matchId: match.id.toString(),
+          homeScore: homeScore === "" ? 0 : parseInt(homeScore),
+          awayScore: awayScore === "" ? 0 : parseInt(awayScore),
+          homeForfeit: homeForfeit,
+          awayForfeit: awayForfeit,
+          homeTeam: match.home_college,
+          awayTeam: match.away_college,
+          sport: match.sport,
+          year: year,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error: ${response.status} - ${errorText}`);
+      }
+
+      setScored(true);
+    } catch (error) {
+      toast.error(
+        `Failed to submit score: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const timestamp = match.timestamp;
