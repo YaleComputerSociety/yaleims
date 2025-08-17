@@ -423,7 +423,8 @@ export const isValidEmail = (input: string) => {
   return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(input);
 };
 
-export const currentYear = "2025-2026"; // TODO: make dynamic?
+// Fallback if year context fails
+export const currentYear = getYearFromTimestamp(new Date());
 
 export const validateBracketData = (bracketData: BracketData): boolean => {
   const matches = bracketData.matches;
@@ -680,3 +681,30 @@ export const toTimestamp = (
   const dateObj = new Date(year, mm - 1, dd, hh, min, 0, 0);
   return dateObj.toISOString();
 };
+
+// Returns the IM season string (e.g. "2024-2025") for a given timestamp
+export function getYearFromTimestamp(
+  timestamp: Date | string | number
+): string {
+  let date: Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else if (typeof timestamp === "string" || typeof timestamp === "number") {
+    date = new Date(timestamp);
+  } else {
+    throw new Error("Invalid timestamp type");
+  }
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // JS months are 0-based
+
+  // Aug-Dec: season starts this year, ends next year
+  if (month >= 8 && month <= 12) {
+    return `${year}-${year + 1}`;
+  }
+  // Jan-May: season started previous year, ends this year
+  if (month >= 1 && month <= 5) {
+    return `${year - 1}-${year}`;
+  }
+  // June/July: default to previous season (no games expected)
+  return `${year - 1}-${year}`;
+}
