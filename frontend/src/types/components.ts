@@ -60,7 +60,6 @@ export type Matchv2 = {
 
 export interface MatchCardProps {
   match: Matchv2;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export interface MatchesTableProps {

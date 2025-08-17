@@ -90,9 +90,7 @@ const AddScoresPage: React.FC = () => {
         {Array.isArray(matches) && matches.length === 0 ? (
           <p>No past matches to be scored</p>
         ) : Array.isArray(matches) ? (
-          matches.map((match) => (
-            <MatchCard key={match.id} match={match} setLoading={setLoading} />
-          ))
+          matches.map((match) => <MatchCard key={match.id} match={match} />)
         ) : (
           <p>Something went wrong. Please try again later.</p>
         )}
