@@ -57,11 +57,6 @@ const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
   const handleSubmit = async () => {
     setLoading(true);
 
-    // setTimeout(() => {
-    //   setLoading(false);
-    //   setScored(true);
-    // }, 2000);
-
     try {
       const response = await fetch("/api/functions/scoreMatch", {
         method: "POST",
