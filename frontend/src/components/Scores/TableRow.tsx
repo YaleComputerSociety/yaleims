@@ -27,11 +27,13 @@ const TableRow: React.FC<TableRowProps> = ({
     draw_volume,
     default_volume,
     winner,
+    forfeit,
     id: matchId,
   } = match;
 
   const [isOpen, setIsOpen] = useState(false);
   const [undoScoreModalOpen, setUndoScoreModalOpen] = useState(false);
+  const [unscored, setUnscored] = useState(false);
 
   // Check if prediction data exists
   const hasPredictionData =
@@ -133,9 +135,15 @@ const TableRow: React.FC<TableRowProps> = ({
     setUndoScoreModalOpen(true);
   };
 
-  const isDraw = home_college_score === away_college_score;
-  const homeWins = home_college_score > away_college_score;
+  const isDefault = winner === "Default";
+  const isDraw =
+    (!forfeit && home_college_score === away_college_score) || isDefault;
+  const homeWins = winner === home_college;
   const points = isDraw ? sportsMap[sport] / 2 : sportsMap[sport];
+
+  if (unscored) {
+    return;
+  }
 
   return (
     <div
@@ -298,6 +306,8 @@ const TableRow: React.FC<TableRowProps> = ({
         <UndoScoreMatchModal
           unscoreId={matchId}
           setShowConfirmation={setUndoScoreModalOpen}
+          match={match}
+          setUnscored={setUnscored}
         />
       )}
     </div>

@@ -59,7 +59,7 @@ const undoParlayLegs = async (matchId: string) => {
 
         const leg = legSnap.data() as any;
 
-        const parlayRef = legRef.parent.parent!;    
+        const parlayRef = legRef.parent.parent!;
         const parlaySnap = await tx.get(parlayRef);
         if (!parlaySnap.exists) return;
 
@@ -68,8 +68,10 @@ const undoParlayLegs = async (matchId: string) => {
         tx.update(legRef, { winner: null, won: null });
 
         const currentCashed = Math.max(0, (parlay.currentCashed ?? 0) - 1);
-        const lostLegs =
-          Math.max(0, (parlay.lostLegs ?? 0) - (leg.won === false ? 1 : 0));
+        const lostLegs = Math.max(
+          0,
+          (parlay.lostLegs ?? 0) - (leg.won === false ? 1 : 0)
+        );
 
         const wasSettled = parlay.settled === true;
         const wasWin = parlay.won === true;
@@ -95,7 +97,6 @@ const undoParlayLegs = async (matchId: string) => {
     )
   );
 };
-
 
 export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {

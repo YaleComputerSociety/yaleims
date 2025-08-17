@@ -6,7 +6,7 @@ import { currentYear, emojiMap, toCollegeName } from "@src/utils/helpers";
 import Image from "next/image";
 import { useSeason } from "@src/context/SeasonContext";
 import LoadingScreen from "../LoadingScreen";
-import { FaSpinner } from "react-icons/fa";
+import { FaSpinner, FaCheck } from "react-icons/fa";
 import { toast } from "react-toastify";
 
 const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
@@ -185,36 +185,60 @@ const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
           </div>
         </div>
         <div className="flex flex-col items-center gap-4 h-full justify-between">
-          <input
-            type="checkbox"
-            className={`appearance-none w-5 h-5 md:w-10 md:h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500
-              ${inputsDisabled ? "" : "hover:cursor-pointer"}
-              ${
-                awayForfeit
-                  ? "bg-blue-600 border-transparent"
-                  : "disabled:bg-gray-200 disabled:border-gray-200"
-              }
-              ${inputsDisabled ? "opacity-50" : ""}
-            `}
-            checked={awayForfeit}
-            disabled={inputsDisabled}
-            onChange={handleAwayCheckboxChange}
-          />
-          <input
-            type="checkbox"
-            className={`appearance-none w-5 h-5 md:w-10 md:h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500
-              ${inputsDisabled ? "" : "hover:cursor-pointer"}
-              ${
-                homeForfeit
-                  ? "bg-blue-600 border-transparent"
-                  : "disabled:bg-gray-200 disabled:border-gray-200"
-              }
-              ${inputsDisabled ? "opacity-50" : ""}
-            `}
-            checked={homeForfeit}
-            disabled={inputsDisabled}
-            onChange={handleHomeCheckboxChange}
-          />
+          <label className="relative flex items-center justify-center">
+            <input
+              type="checkbox"
+              className={`appearance-none w-5 h-5 md:w-10 md:h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500
+                ${inputsDisabled ? "" : "hover:cursor-pointer"}
+                ${
+                  awayForfeit
+                    ? "bg-blue-600 border-transparent"
+                    : "disabled:bg-gray-200 disabled:border-gray-200"
+                }
+                ${inputsDisabled ? "opacity-50" : ""}
+              `}
+              checked={awayForfeit}
+              disabled={inputsDisabled}
+              onChange={handleAwayCheckboxChange}
+            />
+            {awayForfeit && (
+              <FaCheck
+                className="absolute text-white text-xs md:text-lg pointer-events-none"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            )}
+          </label>
+          <label className="relative flex items-center justify-center">
+            <input
+              type="checkbox"
+              className={`appearance-none w-5 h-5 md:w-10 md:h-8 border border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500
+                ${inputsDisabled ? "" : "hover:cursor-pointer"}
+                ${
+                  homeForfeit
+                    ? "bg-blue-600 border-transparent"
+                    : "disabled:bg-gray-200 disabled:border-gray-200"
+                }
+                ${inputsDisabled ? "opacity-50" : ""}
+              `}
+              checked={homeForfeit}
+              disabled={inputsDisabled}
+              onChange={handleHomeCheckboxChange}
+            />
+            {homeForfeit && (
+              <FaCheck
+                className="absolute text-white text-xs md:text-lg pointer-events-none"
+                style={{
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            )}
+          </label>
         </div>
         <div className="flex flex-col items-center gap-4 h-full justify-between">
           <input
