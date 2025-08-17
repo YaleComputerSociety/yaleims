@@ -82,7 +82,7 @@ const UndoScoreMatchModal: React.FC<UndoScoreMatchModalProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg text-center border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg text-center border border-gray-200 dark:border-gray-700 mx-2 sm:mx-0 w-full max-w-xs sm:max-w-md">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
           Are you sure you want to unscore this match?
         </h3>
