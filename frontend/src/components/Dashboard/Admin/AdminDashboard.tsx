@@ -13,13 +13,13 @@ const AdminDashboard: React.FC = () => {
           title="Score Matches"
           link="/hub/add-scores"
           openLinkInfo="Click to update scores →"
-          message="5 matches left to scores. You've got this. You made a mistake? don't worry you can undo that score!"
+          message="Update/undo scores for matches that have been played!"
         />
         <DCardLink
           title="Upload Matches"
           link="/hub/upload-schedule"
           message="Upload schedules for upcoming sports seasons in CSV format!"
-          openLinkInfo="Click to upload match schedule!"
+          openLinkInfo="Click to upload match schedules →"
         />
       </div>
       {/* TODO: bracket interface -- will get when the bracket feature is pushed */}

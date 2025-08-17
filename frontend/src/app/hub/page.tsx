@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen pt-20">
       <PageHeading heading="Hub" />
       <div>
+        <AdminDashboard />
         {user?.role === "admin" && <AdminDashboard />}
         {user?.role === "user" && <UserDashboard />}
         {user?.role === "captain" && <CaptainDashboard />}

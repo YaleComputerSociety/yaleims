@@ -52,7 +52,7 @@ const AddScoresPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-10">
+    <div className="min-h-screen pt-10 px-4 sm:px-8 md:px-10">
       <PageHeading heading="Update Scores" />
       <div className="flex-col items-center mx-auto md:mx-20">
         <h1 className="md:text-2xl text-xl font-bold text-center mb-8 pt-8 text-blue-600">
@@ -70,7 +70,7 @@ const AddScoresPage: React.FC = () => {
           )}
 
           {/* Unscore Match Form */}
-          <div className="mt-8 p-4 w-full md:w-1/2">
+          <div className="mt-8 p-2 w-full md:w-1/2">
             <h2 className="text-xl font-bold mb-4 text-blue-600">
               Undo Scored Match
             </h2>
