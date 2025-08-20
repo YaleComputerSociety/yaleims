@@ -119,7 +119,7 @@ const SchedulePage: React.FC = () => {
         <div className="p-4 min-h-screen flex flex-col items-center">
           <PageHeading heading="Schedules" />
 
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl transition-all duration-300">
+          <div className="flex items-center flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl transition-all duration-300">
             {/* Filters and Calendar */}
             <div className="flex flex-col items-center lg:w-2/5">
               <Filters filter={filter} updateFilter={updateFilter} />
