@@ -68,7 +68,7 @@ const ViewTeamSignups = () => {
       pageSize: "10",
       sortOrder: "asc",
       college: user ? toCollegeAbbreviation[user.college] : "All",
-      date: "future",
+      date: new Date().toISOString(),
       sport: selectedSport || "", // safe default
     };
 

@@ -10,7 +10,7 @@ const CaptainDashboard = () => {
       <h2 className="text-2xl font-bold mb-4">
         Welcome to the Captain Hub
       </h2>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
         <DCardInfo 
           title="Sports you are a Captain of"
           CustomComponent={ViewCaptainSports}

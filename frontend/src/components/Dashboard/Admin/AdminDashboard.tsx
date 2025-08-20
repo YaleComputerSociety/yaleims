@@ -8,7 +8,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="p-6 justify-center">
       <h2 className="text-2xl font-medium mb-4">Welcome to the Admin Hub</h2>
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
         <DCardLink
           title="Score Matches"
           link="/hub/add-scores"

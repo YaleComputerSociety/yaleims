@@ -48,25 +48,25 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
       <table className="w-11/12 xs:max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200">
         <thead className="bg-white dark:bg-[#132750]">
           <tr className="hidden md:table-row">
-            <th className="px-6 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
               RANK
             </th>
-            <th className="px-6 py-3 text-left text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-left text-sm font-medium border border-gray-300 dark:border-gray-600">
               COLLEGE
             </th>
-            <th className="px-6 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
               WINS
             </th>
-            <th className="px-6 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
               TIES
             </th>
-            <th className="px-6 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
               LOSSES
             </th>
-            <th className="px-6 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
               FORFEITS
             </th>
-            <th className="px-6 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
+            <th className="px-5 py-3 text-center text-sm font-medium border border-gray-300 dark:border-gray-600">
               TOTAL PTS
             </th>
           </tr>
