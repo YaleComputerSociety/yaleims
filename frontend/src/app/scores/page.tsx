@@ -50,7 +50,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "All",
+    date: filter.date ? filter.date : "AllPast",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -60,7 +60,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "All",
+    date: filter.date ? filter.date : "AllPast",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -70,7 +70,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "All",
+    date: filter.date ? filter.date : "AllPast",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 

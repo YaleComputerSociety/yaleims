@@ -180,7 +180,7 @@ const TableRow: React.FC<TableRowProps> = ({
             <SlArrowDown onClick={() => setIsOpen(!isOpen)} />
           )}
         </div>
-        <div className="hidden sm:block px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <div className="px-2 lg:px-6 pl-2 py-2 text-xs xs:text-sm text-gray-500 border-r border-gray-200 dark:border-gray-700 sm:flex hidden items-center justify-center gap-2">
           <span>
             {getTimeString(timestamp).length < 8 ? (
               <>&nbsp;{getTimeString(timestamp)}</>

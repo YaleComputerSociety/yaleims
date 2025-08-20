@@ -90,20 +90,12 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
         const pageIndexNum = parseInt(pageIndex, 10) || 1;
 
         const currentDate = new Date();
-        const currentDateUTC = new Date(
-          Date.UTC(
-            currentDate.getUTCFullYear(),
-            currentDate.getUTCMonth(),
-            currentDate.getUTCDate()
-          )
-        );
         type DateFilterKey =
           | "today"
           | "yesterday"
           | "last7days"
           | "last30days"
           | "last60days"
-          | "future";
         const dateFilters: Record<DateFilterKey, Date> = {
           today: new Date(
             currentDate.getFullYear(),
@@ -130,7 +122,6 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
             currentDate.getMonth(),
             currentDate.getDate() - 60
           ),
-          future: currentDateUTC,
         };
 
         const sortOrderValidated = sortOrder as OrderByDirection;
@@ -158,10 +149,10 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
           };
         };
 
-        if (date === "future") {
+        if (date !== "AllPast" && date !== "today" && date !== "yesterday" && date !== "last7days" && date !== "last30days" && date !== "last60days") {
           if (!seasonId)
             return res.status(400).send("Missing required parameter: seasonId");
-
+          const cDate = new Date(date);
           let baseRef = db
             .collection("matches")
             .doc("seasons")
@@ -180,7 +171,7 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
             query = query.where("sport", "==", sport);
 
           query = query
-            .where("timestamp", ">=", currentDate)
+            .where("timestamp", ">=", cDate)
             .where("winner", "==", null);
 
           const totalResults = (await query.count().get()).data().count;
@@ -266,7 +257,7 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
 
         const now = currentDate;
         let filtered = all.filter((m) => {
-          if (date && date !== "All" && date !== "future") {
+          if (date && date !== "AllPast") {
             if (!(date in dateFilters)) return false;
             const start = dateFilters[date as DateFilterKey];
             return m.ts >= start && m.ts < now && m.data.winner != null;

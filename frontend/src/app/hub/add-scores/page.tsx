@@ -52,8 +52,9 @@ const AddScoresPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-10 px-4 sm:px-8 md:px-10">
+    <div className="min-h-screen ">
       <PageHeading heading="Update Scores" />
+      <div className="min-h-screen pt-10 px-4 sm:px-8 md:px-10">
       <div className="flex-col items-center mx-auto md:mx-20">
         <h1 className="md:text-2xl text-xl font-bold text-center mb-8 pt-8 text-blue-600">
           Matches To Be Scored
@@ -126,6 +127,7 @@ const AddScoresPage: React.FC = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

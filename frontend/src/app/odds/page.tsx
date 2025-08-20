@@ -103,7 +103,7 @@ const YoddsPage: React.FC = () => {
       pageSize: "20",
       sortOrder: "asc",
       college: "All",
-      date: "future",
+      date: new Date().toISOString(),
       sport: filter.sport ? filter.sport : "All",
     };
 

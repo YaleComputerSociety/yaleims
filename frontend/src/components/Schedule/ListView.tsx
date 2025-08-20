@@ -161,7 +161,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               data-date={date.toISOString()}
               ref={setDateRef}
             >
-              <div className="ml-4 text-xl font-semibold text-black dark:text-white">
+              <div className="text-xl font-semibold text-black dark:text-white">
                 {format(date, "EEEE, MMMM d, yyyy")}
               </div>
               {dateMatches.map((match: Match) => {

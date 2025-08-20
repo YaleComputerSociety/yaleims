@@ -1,11 +1,14 @@
 import { colleges } from "../../utils/helpers";
 import { sports } from "../../utils/helpers";
+import { FaBuildingColumns } from "react-icons/fa6";
+import { FcSportsMode } from "react-icons/fc";
+import { MdOutlineSportsHandball } from "react-icons/md";
 
 import { CalendarFiltersProps } from "@src/types/components";
 
 const Filters: React.FC<CalendarFiltersProps> = ({ filter, updateFilter }) => (
   <div className="flex justify-center space-x-4 mb-8 ">
-    <div className="py-1 px-1 text-xs font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
+    <div className="py-1 px-1 text-xs font-medium rounded-md uppercase items-center md:tracking-wider flex flex-row gap-x-2 hover:bg-yellow-400">
       <select
         value={filter.college}
         onChange={(e) => updateFilter("college", e.target.value)}
