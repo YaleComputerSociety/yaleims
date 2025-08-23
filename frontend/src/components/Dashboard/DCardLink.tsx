@@ -11,14 +11,14 @@ interface DCardLinkProps {
 export default function DCardLink({ title, link, message, openLinkInfo }: DCardLinkProps) {
   return (
     <div
-      className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md grid grid-rows-5"
+      className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md h-full flex flex-col"
     >
-      <h2 className="text-base md:text-lg font-semibold row-span-1">{title}</h2>
-      <div className="mt-2 md:mt-4 text-xs xs:text-sm row-span-3 ">{message}</div>
+      <h2 className="text-base md:text-lg font-semibold ">{title}</h2>
+      <div className="mt-2 md:mt-4 text-xs md:text-sm">{message}</div>
       {link && (
         <Link
           href={link}
-          className="row-span-1 pt-2 text-xs text-indigo-600 hover:underline"
+          className="mt-auto pt-2 text-xs text-indigo-600 hover:underline"
         >
           {openLinkInfo}
         </Link>

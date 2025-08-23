@@ -22,12 +22,12 @@ export default function DCardPopup({ title, message, openInfo, CustomComponent }
     }, [open]);
 
     return (
-        <div className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md grid grid-rows-7">
-            <h2 className="text-sm md:text-lg font-semibold row-span-1">{title}</h2>
-            <div className="mt-4 row-span-5 text-xs xs:text-sm">{message}</div>
+        <div className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md flex flex-col h-full">
+            <h2 className="text-sm md:text-lg font-semibold">{title}</h2>
+            <div className="mt-4 text-xs xs:text-sm">{message}</div>
             <button
                 onClick={() => setOpen(true)}
-                className="row-span-1 text-left inline-block text-xs text-indigo-600 hover:underline"
+                className="text-left inline-block text-xs mt-auto pt-2 text-indigo-600 hover:underline"
             >
                 {openInfo} →
             </button>

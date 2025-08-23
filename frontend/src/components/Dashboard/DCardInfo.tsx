@@ -10,9 +10,9 @@ interface DCardInfoProps {
 
 export default function DCardInfo ({ title, CustomComponent}: DCardInfoProps) {
   return (
-    <div className="bg-white/50 dark:bg-black/50 grid grid-rows-5 rounded-lg shadow p-6">
-        <h2 className="text-sm md:text-lg font-semibold row-span-1">{title}</h2>
-        <div className="row-span-4 mt-2">
+    <div className="bg-white/50 dark:bg-black/50 rounded-lg shadow p-6 flex flex-col h-full">
+        <h2 className="text-sm md:text-lg font-semibold">{title}</h2>
+        <div className="mt-auto">
           <CustomComponent />
         </div>
     </div>
