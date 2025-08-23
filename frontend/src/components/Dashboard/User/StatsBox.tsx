@@ -41,7 +41,7 @@ export default function StatsBox() {
             />
             <div className="mt-2 md:text-sm text-xs mg:text-base">
                 <h3 className="font-semibold">{user.college}</h3>
-                <p className="">Points: {userStats?.points.toFixed(0)}</p>
+                <p className="">YCoins: {userStats?.points.toFixed(0)}</p>
                 <p className="">Games Played: {userStats?.matches.length}</p>
                 <p className="">Correct Predictions: {userStats?.correctPredictions}</p>
             </div>
