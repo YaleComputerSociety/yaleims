@@ -506,7 +506,7 @@ const YoddsPage: React.FC = () => {
                 <MdClose />
               </button>
             </div>
-            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
               {pendingLoading ? (
                 <div className="flex justify-center items-center">
                   <FaSpinner className="animate-spin" />

@@ -4,12 +4,13 @@ import { useTheme } from 'next-themes';
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import { useNavbar } from '@src/context/NavbarContext';
 import { FaSignOutAlt } from "react-icons/fa";
-import { CgProfile } from "react-icons/cg";
 
 
 const UserMenu: React.FC<{ name: string }> = ({ name }) => {
   const first = (name ?? "").split(" ")[0] || "Friend";
   const { casSignOut } = useUser()
+
+
   return (
     <div className="relative group">
       <div
@@ -29,14 +30,14 @@ const UserMenu: React.FC<{ name: string }> = ({ name }) => {
         group-focus-within:opacity-100 group-focus-within:scale-100 group-focus-within:pointer-events-auto
         "
       >
-        <Link
-            href={"/profile"}    
+        {/* <Link
+            href={"/profile"} 
             className="flex text-left p-1 gap-x-2 items-center rounded-lg hover:bg-gray-200 text-sm w-full dark:hover:bg-slate-800" 
             role="menuitem"    
         > 
             <CgProfile />
             View Profile
-        </Link>
+        </Link> */}
         <button 
             className="flex text-left p-1 gap-x-2 items-center rounded-lg hover:bg-gray-200 text-sm w-full dark:hover:bg-slate-800" 
             role="menuitem"

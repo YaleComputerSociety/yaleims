@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
 
+
 type Person = {
   email: string;
   firstname?: string;
@@ -32,7 +33,6 @@ export default function ViewCaptainsCollegeRep() {
         );
         if (!response.ok) throw new Error("Error fetch captains");
         const json = await response.json();
-        console.log(json)
         setData(json);
       } catch (e: any) {
         setError(e.message ?? "Failed to load");
@@ -56,22 +56,22 @@ export default function ViewCaptainsCollegeRep() {
     })) ?? [];
 
   return (
-    <div className="rounded-2xl border dark:border-white/10 dark:bg-white/5 bg-white/90 border-white/95 p-2 md:p-4 overflow-y-auto">
+    <div className="rounded-2xl shadow-md dark:border-white/10 dark:bg-white/5 bg-white/90 border-white/95 p-2 md:p-4 overflow-y-auto">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex gap-2">
           <button
             onClick={() => setView("captains")}
             className={`rounded-lg p-2 md:px-3 md:py-1 text-xs md:text-sm transition
-              ${view === "captains" ? "dark:bg-white/20 dark:text-white bg-black/5" : "dark:bg-white/10 dark:text-gray-200 hover:dark:bg-white/15 bg-black/5"}`}
+              ${view === "captains" ? "bg-red-500" : "bg-red-500/50 hover:bg-red-500/65"}`}
           >
             Captains
           </button>
           <button
             onClick={() => setView("college_rep")}
             className={`rounded-lg p-2 md:px-3 md:py-1 text-xs md:text-sm transition
-              ${view === "college_rep" ? "dark:bg-white/20 dark:text-white bg-black/5" : "dark:bg-white/10 dark:text-gray-200 hover:dark:bg-white/15 bg-black/5"}`}
+              ${view === "college_rep" ? "bg-amber-500" : "bg-amber-500/50 hover:bg-amber-500/65"}`}
           >
-            College Rep
+            College Reps
           </button>
         </div>
       </div>
