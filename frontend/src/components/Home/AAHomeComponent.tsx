@@ -91,6 +91,10 @@ const AAHomeComponent: React.FC = () => {
           There are more specific things each role can do but this is the general overview.
           If you want to be a College Rep or Admin please contact ephraim.akai-nettey@yale.edu
         </p>
+        <h2 className=" text-teal-500 underline underline-offset-8">Brackets</h2>
+        <p className="mt-2">
+          The brackets page is now live! You can view the playoff brackets for various sports.
+        </p>
         <h2 className="text-fuchsia-500 underline underline-offset-8">Parlays!</h2>
         <p className="mt-2">
           Parlays are now live! You can create a parlay by going to the odds page.
@@ -107,7 +111,7 @@ const AAHomeComponent: React.FC = () => {
   return (
     <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
       <PageHeading heading="" />
-      <div className="fixed md:top-3 top-2 left-44  md:left-auto pl-3 z-50 ">
+      <div className="fixed md:top-3 top-2 left-16  md:left-auto md:pl-3 z-50 ">
         <PopUp title="What's New?" CustomComponent={NewInfo}/>
       </div>
       <Title
