@@ -78,6 +78,11 @@ const AAHomeComponent: React.FC = () => {
   function NewInfo() {
     return (
       <div className="p-2">
+        <h2 className=" text-amber-500 underline underline-offset-8">Leaderboard</h2>
+        <p className="mt-2">
+          Can view the leaderboard by year or all time now!
+          Previous years would be uploaded soon.
+        </p>
         <h2 className=" text-emerald-500 underline underline-offset-8">Role System</h2>
         <p className="mt-2">
           There are four roles: Admin, College Rep, Captain and User. 
