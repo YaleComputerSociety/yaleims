@@ -107,7 +107,7 @@ const AAHomeComponent: React.FC = () => {
   return (
     <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
       <PageHeading heading="" />
-      <div className="fixed top-3 left-auto pl-3 z-50 ">
+      <div className="fixed md:top-3 top-2 left-44  md:left-auto pl-3 z-50 ">
         <PopUp title="What's New?" CustomComponent={NewInfo}/>
       </div>
       <Title
