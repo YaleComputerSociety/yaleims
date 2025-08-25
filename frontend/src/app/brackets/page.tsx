@@ -110,7 +110,7 @@ const BracketsPage: React.FC = () => {
       {/* Welcome Message */}
       <div className="max-w-3xl mx-auto my-10 bg-white rounded-lg shadow px-6 py-4 text-center text-lg text-gray-700 mb-4">
         <p className="font-bold mb-2">
-          Welcome to YaleIMS's newest feature — the Brackets Page!
+          Welcome to the Brackets Page!
         </p>
         <p>
           To view upcoming, past, or current playoff matches, please select your
