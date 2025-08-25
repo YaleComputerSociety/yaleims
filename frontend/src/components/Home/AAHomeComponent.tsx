@@ -14,6 +14,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import PageHeading from "../PageHeading";
 import { collection, onSnapshot, orderBy, query, Unsubscribe } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import PopUp from "@src/components/PopUp";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
@@ -74,9 +75,18 @@ const AAHomeComponent: React.FC = () => {
     return <LoadingScreen />;
   }
 
+  function NewInfo() {
+    return (
+      <div>test</div>
+    )
+  }
+
   return (
     <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
       <PageHeading heading="" />
+      <div className="fixed top-3 left-auto pl-3 z-50 ">
+        <PopUp title="What's New?" CustomComponent={NewInfo}/>
+      </div>
       <Title
         selected={selected}
         lastUpdated={sortedColleges[0].today}

@@ -32,7 +32,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
         <SeasonProvider>{children}</SeasonProvider>                      
         <Footer />
       </div>    
-      <ToastContainer />
+      <ToastContainer />      
     </div>
   );
 }

@@ -52,6 +52,7 @@ const YoddsPage: React.FC = () => {
   const [viewPendingBets, setViewPendingBets] = useState(false);
   const [viewBetSlip, setViewBetSlip] = useState(false);
   const [viewBetHistory, setViewBetHistory] = useState(false);
+  const [viewRankings, setViewRankings] = useState(false);
   const [betslip, setBetSlip] = useState<Bet[]>([]);
   const [betCount, setBetCount] = useState(0);
   const [betAmount, setBetAmount] = useState<number | ''>('');
@@ -383,7 +384,9 @@ const YoddsPage: React.FC = () => {
             </button>
             <button
               className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-              onClick={sendToRankings}
+              onClick={() => {
+                setViewRankings(!viewRankings);
+              }}
             >
               See Rankings
             </button>
@@ -514,6 +517,29 @@ const YoddsPage: React.FC = () => {
               ) : (
                 <BetParlayTable parlays={pendingBets} />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {viewRankings && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
+          onClick={() => setViewRankings(false)}
+        >
+          <div 
+            className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
+              <h2 className="text-xl font-semibold">2025-2026 Odds Rankings</h2>
+              <button
+                onClick={() => setViewRankings(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
             </div>
           </div>
         </div>
