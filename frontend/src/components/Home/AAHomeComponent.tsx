@@ -77,7 +77,25 @@ const AAHomeComponent: React.FC = () => {
 
   function NewInfo() {
     return (
-      <div>test</div>
+      <div className="p-2">
+        <h2 className=" text-emerald-500 underline underline-offset-8">Role System</h2>
+        <p className="mt-2">
+          There are four roles: Admin, College Rep, Captain and User. 
+          Admins can do everything, College Reps can manage their college's roster and captains, 
+          Captains can manage their team's roster, and Users can only view information. 
+          There are more specific things each role can do but this is the general overview.
+          If you want to be a College Rep or Admin please contact ephraim.akai-nettey@yale.edu
+        </p>
+        <h2 className="text-fuchsia-500 underline underline-offset-8">Parlays!</h2>
+        <p className="mt-2">
+          Parlays are now live! You can create a parlay by going to the odds page.
+        </p>
+        <h2 className="text-sky-500 underline underline-offset-8">APIs</h2>
+        <p className="mt-2">
+          Visit the Api Page to see the new APIs available for use!
+        </p>
+
+      </div>
     )
   }
 
