@@ -5,47 +5,49 @@ import cors from "cors";
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
-interface User {
-  id: string;
+interface UserRow {
   username: string;
+  college: string;
   points: number;
   correctPredictions: number;
-  college: string;
 }
 
-export const getUserLeaderboard = functions.https.onRequest((req, res) => {
-  return corsHandler(req, res, async () => {
+export const getUserLeaderboard = functions.https.onRequest((req, res) =>
+  corsHandler(req, res, async () => {
+    const seasonId = (req.query.season as string) ?? "2025-2026";
+
     try {
-      console.log("Fetching leaderboard data...");
-      const leaderboardRef = db.collection("users");
-      const snapshot = await leaderboardRef
+      const seasonSnap = await db
+        .collectionGroup("seasons")
+        .where(admin.firestore.FieldPath.documentId(), "==", seasonId)
         .orderBy("points", "desc")
-        .orderBy("correctPredictions", "desc")
-        .orderBy("username", "asc")
         .limit(10)
         .get();
 
-      if (snapshot.empty) {
-        console.log("No users found in leaderboard.");
-        res.status(404).send("No users found");
+      if (seasonSnap.empty) {
+        res.status(404).send("No data for that season");
         return;
       }
 
-      const leaderboard: User[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        leaderboard.push({
-          username: data.username,
-          points: data.points,
-          correctPredictions: data.correctPredictions,
-          college: data.college,
-        } as User);
-      });
+      const rows: UserRow[] = await Promise.all(
+        seasonSnap.docs.map(async (sDoc) => {
+          const userRef = sDoc.ref.parent.parent!;      
+          const user = (await userRef.get()).data() ?? {};
+          const { points, correctPredictions } = sDoc.data();
 
-      res.status(200).json(leaderboard);
-    } catch (error) {
-      console.error("Error fetching leaderboard:", error);
-      res.status(500).send("Internal Server Error");
+          return {
+            username: user.username ?? userRef.id,
+            college: user.college ?? "N/A",
+            points,
+            correctPredictions,
+          };
+        })
+      );
+
+      res.status(200).json(rows);
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).send("Internal error");
     }
-  });
-});
+  })
+);
