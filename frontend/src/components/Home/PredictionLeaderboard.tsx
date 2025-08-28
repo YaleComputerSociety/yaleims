@@ -1,35 +1,49 @@
 import React, { useEffect, useState } from "react";
+import { useSeason } from "@src/context/SeasonContext";
+interface Users {
+  rank: number;
+  username: string;
+  points: number;
+  correctPredictions: number;
+}
 
-type PredictionLeaderboardProps = {
-  users: {
-    rank: number;
-    username: string;
-    points: number;
-    correctPredictions: number;
-  }[];
-};
+const PredictionLeaderboard = () => {
+  const [sortedUsers, setSortedUsers] = useState<Users[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const { currentSeason } = useSeason();
 
-const PredictionLeaderboard: React.FC<PredictionLeaderboardProps> = ({
-  users,
-}) => {
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 569px)");
-    const handleScreenChange = () => setIsSmallScreen(mediaQuery.matches);
+    async function fetchLeaderboard() {
+      setLoadingUsers(true);
+      try {
+        const response = await fetch(
+          `https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard?${currentSeason?.year}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-    // Set initial value and add event listener
-    handleScreenChange();
-    mediaQuery.addEventListener("change", handleScreenChange);
+        if (!response.ok) {
+          throw new Error(
+            `Error fetching users leaderboard: ${response.statusText}`
+          );
+        }
 
-    // Cleanup listener on unmount
-    return () => mediaQuery.removeEventListener("change", handleScreenChange);
+        const data = await response.json();
+        console.log(data)
+        setSortedUsers(() => data);
+      } catch (error) {
+        console.error("Failed to fetch users leaderboard:", error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    }
+    fetchLeaderboard();
   }, []);
-
-  // Slice the users list based on the screen size
-  const displayedUsers = isSmallScreen
-    ? users.slice(1, 10)
-    : users.slice(3, 10);
 
   return (
     <div className="overflow-x-auto">
@@ -55,10 +69,10 @@ const PredictionLeaderboard: React.FC<PredictionLeaderboardProps> = ({
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-[#132750] divide-y divide-gray-200">
-          {displayedUsers.map((user, index) => (
+          {sortedUsers.map((user, index) => (
             <tr key={index}>
               <td className="text-xs text-center px-2 py-3 border border-gray-300 dark:border-gray-600">
-                {isSmallScreen ? index + 2 : index + 4}
+                {index + 1}
               </td>
               <td className="text-xs text-left px-3 py-3 border border-gray-300 dark:border-gray-600">
                 {user.username}

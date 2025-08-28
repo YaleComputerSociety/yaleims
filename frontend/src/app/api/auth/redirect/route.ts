@@ -68,7 +68,7 @@ export async function GET(request: Request): Promise<NextResponse> {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, seasonId: "2025-2026" }),
         }
       );
       const result1 = await response1.json();

@@ -23,6 +23,7 @@ import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
 import { toast } from "react-toastify";
 import { seasonSports } from "@src/utils/helpers";
+import PredictionLeaderboard from "@src/components/Home/PredictionLeaderboard";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -218,15 +219,15 @@ const YoddsPage: React.FC = () => {
   useEffect(() => {
     const html = document.documentElement;
   
-    if (viewPendingBets || viewBetSlip || viewBetHistory) {  
+    if (viewPendingBets || viewBetSlip || viewBetHistory || viewRankings) {  
       html.classList.add("overflow-hidden");
     } else {
-      html.classList.remove("overflow-hidden");
+      html.classList.remove("overflow-hidden"); 
     }
     return () => {
       html.classList.remove("overflow-hidden");
     };
-  }, [viewPendingBets, viewBetSlip, viewBetHistory]);
+  }, [viewPendingBets, viewBetSlip, viewBetHistory, viewRankings]);
 
   const handleCollegeClick = (collegeName: string) => {
     // Implementation for betting functionality
@@ -306,15 +307,7 @@ const YoddsPage: React.FC = () => {
 
   // }
 
-  const sendToRankings = () => {
-    setFilter({
-      college: "",
-      sport: "",
-      date: "",
-      selected: "Prediction",
-    });
-    router.push("/");
-  };
+  
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -539,7 +532,8 @@ const YoddsPage: React.FC = () => {
                 <MdClose />
               </button>
             </div>
-            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
+            <div className="pl-4 pr- pt-4 overflow-y-auto custom-scrollbar h-full">
+              <PredictionLeaderboard />
             </div>
           </div>
         </div>
