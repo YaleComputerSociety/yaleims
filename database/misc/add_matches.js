@@ -2,9 +2,8 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE = "data/dodgeball.csv";
+const CSV_FILE = "data/Soccer_Fall_2025_schedule_formatted.csv";
 const SEASON_ID = "2025-2026"; // season we are inserting into
-const PREV_SEASON_ID = "2024-2025"; // immediately previous season id
 
 /** ✱ 2. FIREBASE SETUP ✱ */
 import { initializeApp } from "firebase/app";
@@ -14,7 +13,8 @@ import {
   doc,
   writeBatch,
   Timestamp,
-  getDocs,
+  getDoc,
+  increment,
 } from "firebase/firestore";
 import fs from "fs";
 import csvParser from "csv-parser";
@@ -43,17 +43,12 @@ const toTimestamp = (dateStr, timeStr, year = 2025) => {
 
 /** ✱ 4. MAIN PIPELINE ✱ */
 async function upsertMatches() {
-  /* 4‑A. figure out starting ID:
-         previous season count + current season existing count + 1 */
-  const prevSnap = await getDocs(
-    collection(db, "matches", "seasons", PREV_SEASON_ID)
-  );
-  const currSnap = await getDocs(
-    collection(db, "matches", "seasons", SEASON_ID)
-  );
-  const prevCount = prevSnap.size;
-  const currCount = currSnap.size;
-  let nextId = prevCount + currCount + 1; // first new match id
+  /* 4-A. figure out starting ID using the counter */
+  const counterRef = doc(db, "counters", "matches");          // /counters/matches
+  const counterSnap = await getDoc(counterRef);
+  const currentCount = counterSnap.exists() ? counterSnap.data().count ?? 0 : 0;
+
+  let nextId = currentCount + 1;  // first new match id
 
   /* 4‑B. read CSV into array */
   const matches = [];
@@ -98,11 +93,12 @@ async function upsertMatches() {
     const ref = doc(db, "matches", "seasons", SEASON_ID, m.id.toString());
     batch.set(ref, m, { merge: true });
   }
+  
+  batch.update(counterRef, { count: increment(matches.length) });
+
   await batch.commit();
   console.log(
-    `✅ Upserted ${matches.length} matches into ${SEASON_ID}. Starting ID was ${
-      prevCount + currCount + 1
-    }.`
+    `✅ Upserted ${matches.length} matches (IDs ${currentCount + 1}-${nextId - 1}).`
   );
 }
 

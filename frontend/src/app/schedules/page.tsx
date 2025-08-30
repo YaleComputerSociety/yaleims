@@ -132,11 +132,13 @@ const SchedulePage: React.FC = () => {
             <div className="lg:w-3/5 flex flex-col items-center">
               {filteredMatches.length > 0 ? (
                 <div className="flex flex-col">
-                  <ListView
+                  <div className="justify-center h-[500px] overflow-y-auto">
+                    <ListView
                     matches={filteredMatches}
                     topDate={topDate}
                     setTopDate={setTopDate}
-                  />
+                    />
+                  </div>
                   <Pagination
                     currentPageNumber={page}
                     totalPages={totalPages}

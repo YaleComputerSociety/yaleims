@@ -43,7 +43,7 @@ export const collegeNamesList = [
 ];
 
 // change this to actual season start before deploying
-export const seasonStart = new Date("2025-08-31T00:00:00Z");
+export const seasonStart = new Date("2025-09-10T00:00:00Z");
 
 export function getCurrentWeekId(seasonStart: Date): string {
   const now = new Date();
