@@ -2,7 +2,7 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE = "data/Soccer_Fall_2025_schedule_formatted.csv";
+const CSV_FILE = "data/Table_Tennis_Fall_2025_schedule_formatted (1).csv";
 const SEASON_ID = "2025-2026"; // season we are inserting into
 
 /** ✱ 2. FIREBASE SETUP ✱ */
