@@ -84,6 +84,7 @@ const SchedulePage: React.FC = () => {
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
         const data = await response.json();
+        console.log(data.matches)
         setFilteredMatches(data.matches);
         
         if (data.firstVisible) setFirstVisible(data.firstVisible);
