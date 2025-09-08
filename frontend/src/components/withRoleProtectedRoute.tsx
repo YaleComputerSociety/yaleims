@@ -14,9 +14,9 @@ const withRoleProtectedRoute = <P extends {}>(
     const { user, loading } = useUser();
     const router = useRouter();
 
+    const setRoles = new Set(user?.mRoles || []);
     useEffect(() => {
-      const hasAccess = user && allowedRoles.includes(user.role);
-
+      const hasAccess = allowedRoles.some(item => setRoles.has(item));
       if (!loading && !hasAccess) {
         router.push("/"); // push to home page
       }
@@ -25,8 +25,7 @@ const withRoleProtectedRoute = <P extends {}>(
     if (loading) {
       return <LoadingScreen />;
     }
-
-    const hasAccess = user && allowedRoles.includes(user.role);
+    const hasAccess = allowedRoles.some(item => setRoles.has(item));
     return hasAccess ? <WrappedComponent {...props} /> : null;
   };
 

@@ -1,28 +1,56 @@
-import { useUser } from "@src/context/UserContext";
+
 import { useEffect, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../../../lib/firebase";
+import { useUser } from "@src/context/UserContext";
 import SportCard from "@src/app/About/SportCard";
 
 export default function ViewCaptainSports() {
     const { user } = useUser();
     const [captainSports, setCaptainSports] = useState<string[]>([]);
-    const [sportsLoading, setSportsLoading] = useState<boolean>(true);
-
-    const fetchSports = async () => {
-        try {
-            const response = await fetch(`/api/functions/getCaptainSports?email=${user?.email}`)
-            if (!response.ok) return new Error("Error fetching captain sports")
-            const data = await response.json()
-            setCaptainSports(data)
-        } catch(error) {
-            console.error(error)
-        } finally {
-            setSportsLoading(false)
-        }
-    }
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchSports()
-    }, [])
+        if (!user?.email) return;                // wait for auth/context
+        const ref = doc(db, "users", user.email);
+
+        const unsub = onSnapshot(ref,
+            snap => {
+                if (!snap.exists()) {
+                setError("User not found");
+                setCaptainSports([]);
+                setLoading(false);
+                return;
+                }
+
+                const data = snap.data() as any;
+                const isCaptain = data.mRoles?.includes("captain");
+                const sportsArr = Array.isArray(data.sportsCaptainOf)
+                ? data.sportsCaptainOf
+                : [];
+
+                if (!isCaptain) {
+                setError("You are not a captain");
+                setCaptainSports([]);
+                } else {
+                setError(null);
+                setCaptainSports(sportsArr);
+                }
+                setLoading(false);
+            }, err => {
+                    console.error(err);
+                    setError("Listener failed");
+                    setLoading(false);
+                }
+            );
+
+        return () => unsub(); 
+    }, [user?.email]);
+
+
+    if (loading) return <div className="p-3 text-sm">Loading…</div>;
+    if (error)   return <div className="p-3 text-red-400 text-sm">{error}</div>;
 
     return (
         <div className="p-3 flex items-start flex-col gap-y-3">
