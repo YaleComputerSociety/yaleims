@@ -5,6 +5,7 @@ export interface DecodedToken {
   netid: string;
   email: string;
   role: string;
+  mRoles: string[];
   username: string;
   college: string;
   points: string;
