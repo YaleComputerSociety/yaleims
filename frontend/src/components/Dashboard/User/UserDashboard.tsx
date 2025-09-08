@@ -8,9 +8,10 @@ export default function UserDashboard() {
   const { currentSeason } = useSeason();
 
   return (
-    <div className="p-6 justify-center">
-      <h2 className="text-2xl font-bold mb-4">Welcome to the User Hub</h2>
-      <div className="grid mg:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
+    <>
+    {/* // <div className="p-6 justify-center">
+    //   <h2 className="text-2xl font-bold mb-4">Welcome to the User Hub</h2> */}
+      {/* <div className="grid mg:grid-cols-3 grid-cols-2 gap-3 md:gap-6"> */}
         <DCardInfo 
           title={`${currentSeason?.year} Season`}
           CustomComponent={StatsBox}
@@ -34,7 +35,8 @@ export default function UserDashboard() {
                    Sign up for games to increase your college's chances of winning the overall Title!"
         />
         
-      </div>
-    </div>
+      {/* </div> */}
+    {/* // </div> */}
+    </>
   );
 }

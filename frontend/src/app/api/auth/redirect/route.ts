@@ -77,6 +77,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         netid,
         email, 
         role: result1.user.role,
+        mRoles: result1.user.mRoles,
         username: result1.user.username,
         college: result1.user.college,
         points: result1.user.points,

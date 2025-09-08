@@ -35,8 +35,10 @@ import { getUsersInCollege } from "./getUsersInCollege.js";
 import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
 import { setMVP } from "./setMVP.js";
 import { addSchedule } from "./addSchedule.js";
+import { assignRemoveCaptainv2 } from "./assignRemoveCaptainv1.js";
 
 export {
+  assignRemoveCaptainv2,
   getLeaderboard,
   getUserMatches,
   scoreMatch,

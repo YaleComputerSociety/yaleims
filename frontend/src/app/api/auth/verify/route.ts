@@ -7,6 +7,7 @@ interface DecodedToken {
   netid: string;
   email: string;
   role: string;
+  mRoles: string[];
   username: string;
   college: string;
   points: string;
@@ -20,6 +21,15 @@ function isValidDecodedToken(decoded: any): decoded is DecodedToken {
     typeof decoded.email === "string"
   );
 }
+
+const parseRoles = (csv = ""): string[] =>
+  csv.split(",").map(r => r.trim()).filter(Boolean);
+
+const rolesEqual = (a: string[] = [], b: string[] = []): boolean => {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  return a.every(role => setB.has(role));
+};
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -43,18 +53,17 @@ export async function GET(req: Request): Promise<NextResponse> {
       return NextResponse.json({ isLoggedIn: false }, { status: 401 });
     }
 
-    const currentRole = new URL(req.url).searchParams.get("currentRole");
+    const currentRolesCSV = new URL(req.url).searchParams.get("currentRoles");
+    const currentRoles = parseRoles(currentRolesCSV || undefined);
 
-    const shouldUpdateRole =
-      typeof currentRole === "string" &&
-      currentRole.length > 0 &&
-      currentRole !== decoded.role;
+    const shouldUpdateRoles = currentRoles.length > 0 && !rolesEqual(currentRoles, decoded.mRoles ?? []);
 
     const mergedUser: DecodedToken = {
       name: decoded.name,
       netid: decoded.netid,
       email: decoded.email,
-      role: shouldUpdateRole ? currentRole! : decoded.role,
+      role: decoded.role,
+      mRoles: shouldUpdateRoles ? currentRoles! : decoded.mRoles,
       username: decoded.username,
       college: decoded.college,
       points: decoded.points,
@@ -63,7 +72,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
     const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
 
-    if (shouldUpdateRole) {
+    if (shouldUpdateRoles) {
       const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
       res.cookies.set("token", newToken, {
         secure: true, 

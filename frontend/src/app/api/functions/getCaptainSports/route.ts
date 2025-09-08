@@ -29,7 +29,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       : [];
 
     // Optional: enforce that they are actually a captain
-    if (userData?.role !== "captain") {
+    if (!userData?.mRoles.includes("captain")) {
       return NextResponse.json(
         {
           error: `User ${email} is not a captain`,

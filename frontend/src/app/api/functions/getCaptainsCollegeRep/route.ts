@@ -16,8 +16,8 @@ export async function GET(req: Request): Promise<NextResponse> {
     const usersRef = collection(db, "users");
 
     const [captainSnap, repSnap] = await Promise.all([
-      getDocs(query(usersRef, where("college", "==", college), where("role", "==", "captain"))),
-      getDocs(query(usersRef, where("college", "==", college), where("role", "==", "college_rep"))),
+      getDocs(query(usersRef, where("college", "==", college), where("mRoles", "array-contains-any", ["captain"]))),
+      getDocs(query(usersRef, where("college", "==", college), where("mRoles", "array-contains-any", ["college_rep"]))),
     ]);
 
     const toUser = (d: any) => {

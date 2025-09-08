@@ -51,7 +51,7 @@ export const getUsersInCollege = functions.https.onRequest(
           const data = doc.data();
           users.push(data);
 
-          if (data.role === "captain") {
+          if (data.mRoles.includes("captain") || data.role === "captain") {
             captains.push({ 
               firstName: data.firstname,
               lastName: data.lastname,

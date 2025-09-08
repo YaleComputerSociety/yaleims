@@ -9,6 +9,7 @@ interface User {
   netid: string;
   email: string;
   role: string;
+  mRoles: string[];
   username: string;
   college: string;
   points: string;
@@ -33,7 +34,7 @@ const UserContext = createContext<AuthContextType>({
   checkCasAuth: async () => {},
 });
 
-const LOGOUT_VERSION = "1"; // Increment this to force a new logout
+const LOGOUT_VERSION = "2"; // Increment this to force a new logout
 const LOGOUT_KEY = "logout_version";
 
 let authCheckPromise: Promise<void> | null = null;
@@ -85,6 +86,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         if (response.ok) {
           const data = await response.json();
           setIsLoggedIn(data.isLoggedIn);
+          console.log("User is logged in:", data.user);
           setUser(data.user);
         } else {
           setIsLoggedIn(false);
@@ -111,9 +113,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setUser(prev => prev ? {
         ...prev,
         role: d.role,
+        mRoles: d.mRoles,
         username: d.username,
       } : prev);
-      fetch(`/api/auth/verify?currentRole=${d.role}`);
+      const csv = d.mRoles?.join(",") ?? "";
+      fetch(`/api/auth/verify?currentRoles=${encodeURIComponent(csv)}`);
     });
     return () => unsub();
   }, [user?.email]);
