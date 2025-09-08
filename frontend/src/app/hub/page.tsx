@@ -20,7 +20,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen pt-20">
       <PageHeading heading="Hub" />
-      <div className="flex flex-col px-10">
+      <div className="flex flex-col px-10 pb-10">
         <h2 className="text-2xl font-bold mb-4">Welcome to the Hub</h2>
         <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
           {user?.mRoles.includes("user") && <UserDashboard />}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "../../../../lib/firebase";
 import { useUser } from "@src/context/UserContext";
-
 
 type Person = {
   email: string;
@@ -26,20 +27,40 @@ export default function ViewCaptainsCollegeRep() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCaptains = async () => {
-      try {
-        const response = await fetch(
-          `api/functions/getCaptainsCollegeRep?college=${user?.college}`
-        );
-        if (!response.ok) throw new Error("Error fetch captains");
-        const json = await response.json();
-        setData(json);
-      } catch (e: any) {
-        setError(e.message ?? "Failed to load");
-      }
-    };
-    fetchCaptains();
-  }, []); 
+    if (!user?.college) return; 
+    try {
+      const q = query(
+        collection(db, "users"),
+        where("college", "==", user.college),
+        where("mRoles", "array-contains-any", ["captain", "college_rep"])
+      );
+
+      const unsub = onSnapshot(q, snap => {
+        const captains: Person[]   = [];
+        const reps: Person[]       = [];
+
+        snap.forEach(d => {
+          const u = d.data() as any;
+          const person: Person = {
+            email: u.email ?? d.id,
+            firstName: u.firstname ?? u.firstName ?? "",
+            lastName: u.lastname ?? u.lastName ?? "",
+            sportsCaptainOf: u.sportsCaptainOf ?? [],
+          };
+
+          if (u.mRoles?.includes("captain"))      captains.push(person);
+          if (u.mRoles?.includes("college_rep")) reps.push({ ...person, sportsCaptainOf: [] });
+        });
+
+        setData({ captains, college_rep: reps });
+      });
+
+      return () => unsub(); 
+    } catch (e: any) {
+      console.error(e);
+      setError(e.message ?? "Listener failed");
+    }
+  }, [user?.college]);
 
   const captainRows =
     data?.captains?.flatMap((c) =>
