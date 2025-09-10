@@ -1,3 +1,134 @@
+// Helper to parse and validate bracket CSV for BracketCreateModal
+import { ParsedMatch } from "@src/types/components";
+
+/**
+ * Parses and validates a bracket CSV file for the bracket creation modal.
+ * Returns an array of ParsedMatch or throws an error with a user-friendly message.
+ * Expects columns: matchSlot,awayCollege,awaySeed,homeCollege,homeSeed,location,locationExtra,date,time,division
+ */
+export function parseBracketCSV(
+  csvText: string,
+  season: string
+): ParsedMatch[] {
+  const lines = csvText.trim().split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) throw new Error("CSV must have at least one data row.");
+  // Check header
+  const header = lines[0].toLowerCase().replace(/\s+/g, "");
+  const expectedColumns = [
+    "matchslot",
+    "awaycollege",
+    "awayseed",
+    "homecollege",
+    "homeseed",
+    "date",
+    "time",
+    "location",
+    "locationextra",
+    "division",
+  ];
+  const hasHeader = expectedColumns.every((col) => header.includes(col));
+  const startLine = hasHeader ? 1 : 0;
+  const validCollegeAbbrs = colleges.map((c) => c.id);
+  const matches: ParsedMatch[] = [];
+  for (let i = startLine; i < lines.length; i++) {
+    const row = lines[i].split(",").map((v) => v.trim());
+    const rowNum = i + 1;
+    if (row.length < 10) {
+      throw new Error(`Row ${rowNum}: Not enough columns (expected 10).`);
+    }
+    if (row.length > 10) {
+      throw new Error(`Row ${rowNum}: Too many columns (expected 10).`);
+    }
+    const [
+      matchSlot,
+      awayCollege,
+      awaySeed,
+      homeCollege,
+      homeSeed,
+      date,
+      time,
+      location,
+      locationExtra,
+      division,
+    ] = row;
+    // Validate match slot
+    const match_slot = Number(matchSlot);
+    if (isNaN(match_slot) || match_slot < 1 || match_slot > 15) {
+      throw new Error(`Row ${rowNum}: Invalid match slot (must be 1-15).`);
+    }
+    // Validate college abbreviations (allow TBD)
+    const away_college = awayCollege || "TBD";
+    const home_college = homeCollege || "TBD";
+    if (away_college !== "TBD" && !validCollegeAbbrs.includes(away_college)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid away college abbreviation: '${away_college}'.`
+      );
+    }
+    if (home_college !== "TBD" && !validCollegeAbbrs.includes(home_college)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid home college abbreviation: '${home_college}'.`
+      );
+    }
+    // Seeds
+    const away_seed = awaySeed ? Number(awaySeed) : -1;
+    const home_seed = homeSeed ? Number(homeSeed) : -1;
+    if (away_seed !== -1 && (away_seed < 1 || away_seed > 7)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid away seed (must be 1-7 or blank for -1).`
+      );
+    }
+    if (home_seed !== -1 && (home_seed < 1 || home_seed > 7)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid home seed (must be 1-7 or blank for -1).`
+      );
+    }
+    // Location
+    if (!location || location.length === 0) {
+      throw new Error(`Row ${rowNum}: Missing location.`);
+    }
+    // Date/time
+    const dateRegex = /^\d{1,2}\/\d{1,2}$/;
+    if (!dateRegex.test(date)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid date format (expected M/D or MM/DD).`
+      );
+    }
+    const timeRegex = /^\d{1,2}:\d{2}\s?(AM|PM)$/i;
+    if (!timeRegex.test(time)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid time format (expected H:MM AM/PM).`
+      );
+    }
+    const timestamp = toTimestamp(date, time, season);
+    if (!timestamp || isNaN(new Date(timestamp).getTime())) {
+      throw new Error(`Row ${rowNum}: Invalid date/time combination.`);
+    }
+    // Division
+    const div = division.toLowerCase();
+    if (!["blue", "green", "final"].includes(div)) {
+      throw new Error(
+        `Row ${rowNum}: Invalid division (must be blue, green, or final).`
+      );
+    }
+    const match: ParsedMatch = {
+      match_slot,
+      away_college,
+      away_seed,
+      home_college,
+      home_seed,
+      location,
+      ...(locationExtra && locationExtra.trim() !== ""
+        ? { location_extra: locationExtra }
+        : {}),
+      timestamp,
+      division: div,
+      date,
+      time,
+    };
+    matches.push(match);
+  }
+  return matches;
+}
 // Define types for the sports
 // Define types for the college map
 type CollegeMap = Record<string, string>; // Map of abbreviation to full name
@@ -43,7 +174,7 @@ export const collegeNamesList = [
 ];
 
 // change this to actual season start before deploying
-export const seasonStart = new Date("2025-09-10T00:00:00Z");
+export const seasonStart = new Date("2025-08-31T00:00:00Z");
 
 export function getCurrentWeekId(seasonStart: Date): string {
   const now = new Date();

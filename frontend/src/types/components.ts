@@ -244,8 +244,11 @@ export interface ParsedMatch {
   home_college: string;
   home_seed: number;
   location: string;
+  location_extra?: string;
   timestamp: string;
   division: string;
+  date?: string;
+  time?: string;
 }
 
 export interface CurrentSeason {

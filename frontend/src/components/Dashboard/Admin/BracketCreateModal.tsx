@@ -9,8 +9,12 @@ import {
   toCollegeAbbreviation,
   toCollegeName,
   validateBracketData,
+  currentYear,
+  parseBracketCSV,
+  toTimestamp,
 } from "@src/utils/helpers";
 import { toast } from "react-toastify";
+import { useSeason } from "@src/context/SeasonContext";
 
 const matchesInit: ParsedMatch[] = Array.from({ length: 15 }, (_, i) => ({
   match_slot: i + 1,
@@ -20,6 +24,9 @@ const matchesInit: ParsedMatch[] = Array.from({ length: 15 }, (_, i) => ({
   home_seed: 0,
   location: "",
   timestamp: "",
+  date: "",
+  time: "",
+  location_extra: "",
   division: i <= 5 || i == 12 ? "blue" : i == 14 ? "final" : "green",
 }));
 
@@ -32,6 +39,8 @@ const BracketModal: React.FC<BracketModalProps> = ({
   const [parsedMatches, setParsedMatches] =
     useState<ParsedMatch[]>(matchesInit);
   const [overrideValidation, setOverrideValidation] = useState(false);
+  const { currentSeason, seasonLoading } = useSeason();
+  const year = currentSeason?.year || currentYear;
 
   // Reset form when modal opens
   useEffect(() => {
@@ -56,11 +65,26 @@ const BracketModal: React.FC<BracketModalProps> = ({
       ...updatedMatches[index],
       [field]: numberFields.includes(field) ? Number(value) : value,
     };
-    console.log("Updated matches:", updatedMatches);
+    setParsedMatches(updatedMatches);
+  };
+
+  const updateTimestamps = () => {
+    const updatedMatches = parsedMatches.map((match) => {
+      if (match.date && match.time) {
+        const timestamp = toTimestamp(match.date, match.time, year);
+        if (timestamp !== null) {
+          return { ...match, timestamp: timestamp };
+        }
+      }
+      return match;
+    });
+
     setParsedMatches(updatedMatches);
   };
 
   const handleSubmit = () => {
+    updateTimestamps();
+
     const bracketData: BracketData = {
       sport,
       matches: parsedMatches,
@@ -82,39 +106,15 @@ const BracketModal: React.FC<BracketModalProps> = ({
       try {
         const csvText = e.target?.result as string;
         if (!csvText) return;
-
-        const lines = csvText
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-        if (lines.length === 0) return;
-        // Remove header if present
-        const header = lines[0].toLowerCase();
-        const hasHeader =
-          header.includes("matchslot") && header.includes("awaycollege");
-        const startLine = hasHeader ? 1 : 0;
-
-        const newParsedMatches: ParsedMatch[] = [];
-        for (let i = startLine; i < lines.length; i++) {
-          const values = lines[i].split(",");
-          if (values.length < 8) continue;
-          newParsedMatches.push({
-            match_slot: Number(values[0].trim()),
-            away_college: values[1].trim() || "TBD",
-            away_seed: Number(values[2].trim()) || -1,
-            home_college: values[3].trim() || "TBD",
-            home_seed: Number(values[4].trim()) || -1,
-            location: values[5].trim() || "TBD",
-            timestamp: values[6].trim() || "TBD",
-            division: values[7].trim().toLowerCase(),
-          });
-        }
-        if (newParsedMatches.length > 0) {
-          setParsedMatches(newParsedMatches);
-        }
+        const season = currentYear; // Replace with correct season if needed
+        const matches = parseBracketCSV(csvText, season);
+        console.log("Parsed matches from CSV:", matches);
+        setParsedMatches(matches);
         toast.success("CSV file uploaded!");
-      } catch (err) {
-        toast.error("Error parsing CSV file. Please check the format.");
+      } catch (err: any) {
+        toast.error(
+          err.message || "Error parsing CSV file. Please check the format."
+        );
       } finally {
         // Reset file input
         if (event.target) event.target.value = "";
@@ -123,7 +123,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
     reader.readAsText(file);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || seasonLoading) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -162,10 +162,16 @@ const BracketModal: React.FC<BracketModalProps> = ({
                   Home Seed
                 </th>
                 <th className="border border-gray-300 bg-gray-100 p-2 text-left">
-                  Timestamp
+                  Date
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Time
                 </th>
                 <th className="border border-gray-300 bg-gray-100 p-2 text-left">
                   Location
+                </th>
+                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                  Location Extra
                 </th>
                 <th className="border border-gray-300 bg-gray-100 p-2 text-left">
                   Division
@@ -266,10 +272,20 @@ const BracketModal: React.FC<BracketModalProps> = ({
                   <td className="border border-gray-300 p-2">
                     <input
                       className="w-full p-2 border border-gray-300 rounded"
-                      type="datetime-local"
-                      value={match.timestamp}
+                      type="text"
+                      value={match.date}
                       onChange={(e) =>
-                        handleChange(index, "timestamp", e.target.value)
+                        handleChange(index, "date", e.target.value)
+                      }
+                    />
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    <input
+                      className="w-full p-2 border border-gray-300 rounded"
+                      type="text"
+                      value={match.time}
+                      onChange={(e) =>
+                        handleChange(index, "time", e.target.value)
                       }
                     />
                   </td>
@@ -280,6 +296,16 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       value={match.location}
                       onChange={(e) =>
                         handleChange(index, "location", e.target.value)
+                      }
+                    />
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    <input
+                      className="w-full p-2 border border-gray-300 rounded"
+                      type="text"
+                      value={match.location_extra}
+                      onChange={(e) =>
+                        handleChange(index, "location_extra", e.target.value)
                       }
                     />
                   </td>

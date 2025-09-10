@@ -16,53 +16,7 @@ const BracketAdminPanel: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const scoreTesting = async () => {
-    try {
-      // call cloud function
-      const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/scoreMatchTesting",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify({
-            matchId: "playoff-79",
-            homeScore: 0,
-            awayScore: 4,
-            homeForfeit: false,
-            awayForfeit: false,
-            homeTeam: "BK",
-            awayTeam: "ES",
-            sport: "Volleyball",
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to score match");
-      }
-    } catch (error) {
-      toast.error(
-        "Error: " + (error instanceof Error ? error.message : "Unknown error")
-      );
-    }
-  };
-
   const handleSave = async (bracketData: BracketData): Promise<void> => {
-    // try {
-    //   scoreTesting();
-    //   toast.success("scored test match");
-    // } catch (err) {
-    //   toast.error(
-    //     "Error: " + (err instanceof Error ? err.message : "Unknown error")
-    //   );
-    // }
-
     try {
       const userToken = sessionStorage.getItem("userToken");
       const response = await fetch(
