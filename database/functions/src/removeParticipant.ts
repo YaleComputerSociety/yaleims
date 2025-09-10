@@ -36,12 +36,13 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
         return;
       }
 
-      // Query Firestore to find the match document by its ID
+      console.log(`Attempting to remove participant ${email} from match ${matchId} in season ${seasonId} as ${participantType}`);
+
       const matchRef = db
         .collection("matches")
         .doc("seasons")
         .collection(seasonId as string)
-        .doc(matchId as string)
+        .doc(`${matchId}` as string)
 
       const matchDoc = await matchRef.get()
 

@@ -103,6 +103,17 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     );
   }, [userMatches]);
 
+  const handleStatusChange = useCallback(
+    (matchId: string, signed: boolean) => {
+      setUserMatches(prev => {
+        return signed
+          ? [...prev, matches.find(m => m.id === matchId)!]
+          : prev.filter(m => m.id !== matchId);
+      });
+    },
+    [matches],
+  );
+
   useEffect(() => {
     if (!allDates.length) return;
 
@@ -181,6 +192,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
                 key={match.id}
                 match={match}
                 user={user}
+                onStatusChange={handleStatusChange}
                 isSignedUp={signedUpIds.has(
                   `${match.id}::${new Date(match.timestamp).getTime()}`,
                 )}
