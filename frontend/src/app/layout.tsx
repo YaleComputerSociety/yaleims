@@ -14,6 +14,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { SeasonProvider } from "@src/context/SeasonContext";
 import { NavbarProvider, useNavbar } from "@src/context/NavbarContext";
+import AnalyticsListener from "./AnalyticsListener";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </head>
             <body className={`${inter.className}`}>
               <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                <AnalyticsListener />
                 <InnerLayout>{children}</InnerLayout>
               </ThemeProvider>               
             </body>

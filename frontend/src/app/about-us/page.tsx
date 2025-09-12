@@ -7,11 +7,6 @@ import Link from "next/link";
 import PageHeading from "@src/components/PageHeading";
 
 const AboutUsPage: React.FC = () => {
-  // title of page
-  useEffect(() => {
-    document.title = "About";
-  }, []);
-
   // add college and grad year to display
 
   const pastMembers = [
