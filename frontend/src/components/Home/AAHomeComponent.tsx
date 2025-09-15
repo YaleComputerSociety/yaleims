@@ -12,7 +12,9 @@ import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import { useSeason } from "@src/context/SeasonContext";
 import PageHeading from "../PageHeading";
-import Page from "@src/app/add-scores/page";
+import { collection, onSnapshot, orderBy, query, Unsubscribe } from "firebase/firestore";
+import { db } from "../../../lib/firebase";
+import PopUp from "@src/components/PopUp";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
@@ -28,30 +30,31 @@ const AAHomeComponent: React.FC = () => {
   );
 
   useEffect(() => {
-    const fetchCollegesLeaderboard = async () => {
-      try {
-        setLoading(true);
-        if (selected === "All Time") return;
-        const response = await fetch(
-          `api/functions/getLeaderboardv2?seasonId=${selected}`
-        );
-        if (!response.ok) {
-          throw new Error(
-            `Error fetching colleges leaderboard: ${response.statusText}`
-          );
-        }
+    let unsub: Unsubscribe | undefined;
+    if (!selected || selected === "All Time") return
 
-        const data = await response.json();
-        const sorted = data.sort((a: any, b: any) => b.points - a.points);
-        setSortedColleges(() => sorted);
-      } catch (error) {
-        console.error("Failed to fetch colleges leaderboard:", error);
-      } finally {
+    setLoading(true);
+
+    const q = query(
+      collection(db, "colleges", "seasons", selected),
+      orderBy("rank", "asc")
+    );
+
+    unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+        rows.sort((a, b) => Number(a.rank) - Number(b.rank));
+        setSortedColleges(rows);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Leaderboard listener error:", err);
         setLoading(false);
       }
-    };
+    );
 
-    fetchCollegesLeaderboard();
+    return () => unsub?.();
   }, [selected]);
 
   const handleCollegeClick = (collegeName: string) => {
@@ -72,9 +75,45 @@ const AAHomeComponent: React.FC = () => {
     return <LoadingScreen />;
   }
 
+  function NewInfo() {
+    return (
+      <div className="p-2">
+        <h2 className=" text-amber-500 underline underline-offset-8">Leaderboard</h2>
+        <p className="mt-2">
+          Can view the leaderboard by year or all time now!
+          Previous years would be uploaded soon.
+        </p>
+        <h2 className=" text-emerald-500 underline underline-offset-8">Role System</h2>
+        <p className="mt-2">
+          There are four roles: Admin, College Rep, Captain and User. 
+          Admins can do everything, College Reps can manage their college&apos;s roster and captains, 
+          Captains can manage their team&apos;s roster, and Users can only view information. 
+          There are more specific things each role can do but this is the general overview.
+          If you want to be a College Rep or Admin please contact ephraim.akai-nettey@yale.edu
+        </p>
+        <h2 className=" text-teal-500 underline underline-offset-8">Brackets</h2>
+        <p className="mt-2">
+          The brackets page is now live! You can view the playoff brackets for various sports.
+        </p>
+        <h2 className="text-fuchsia-500 underline underline-offset-8">Parlays!</h2>
+        <p className="mt-2">
+          Parlays are now live! You can create a parlay by going to the odds page.
+        </p>
+        <h2 className="text-sky-500 underline underline-offset-8">APIs</h2>
+        <p className="mt-2">
+          Visit the Api Page to see the new APIs available for use!
+        </p>
+
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
       <PageHeading heading="" />
+      <div className="fixed md:top-3 top-2 left-16  md:left-auto md:pl-3 z-50 ">
+        <PopUp title="What's New?" CustomComponent={NewInfo}/>
+      </div>
       <Title
         selected={selected}
         lastUpdated={sortedColleges[0].today}

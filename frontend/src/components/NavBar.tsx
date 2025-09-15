@@ -17,12 +17,14 @@ import { useNavbar } from "@src/context/NavbarContext";
 import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
 import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineLeaderboard } from "react-icons/md";
+import { FaQuestionCircle } from "react-icons/fa";
+import { MdOutlineSportsScore } from "react-icons/md";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
     <Link
       href="/profile"
-      className="py-1 px-3 hover:text-blue-400 border rounded-lg border-blue-600 hover:border-blue-400 text-blue-600"
+      className="py-1 px-3 text-xs md:text-sm hover:text-blue-400 border rounded-lg border-blue-600 hover:border-blue-400 text-blue-600"
     >
       Welcome, {name.split(" ")[0]}!
     </Link>
@@ -68,6 +70,8 @@ const NavBar: React.FC = () => {
     { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
     { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
     { href: "/about-us", text: "About", icon: <IoInformationCircleOutline /> },
+    { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
+    { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
     { href: "https://yaleims.canny.io", text: "Feedback", icon: <VscFeedback /> },
   ];
   const widthClass = collapsed ? "md:w-[5%]" : "md:w-[16%]";
@@ -107,7 +111,7 @@ const NavBar: React.FC = () => {
         </div>
         <button
           onClick={onToggleCollapse}
-          className="mb-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md ml-auto mt-auto"
+          className={`mb-4 p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-md mt-auto ${collapsed? "items-center" : "ml-auto"}`}
           aria-label="Toggle Collapse"
         >
           {collapsed ? <MdOutlineKeyboardArrowRight size={24} /> : <MdOutlineKeyboardArrowLeft size={24} />}

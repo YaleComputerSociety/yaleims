@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     });
 
     const data = await response.json();
-    return Response.json(data, { status: response.status });
+    return Response.json(data);
   } catch (err) {
     console.error(err);
     return Response.json({ error: "internal error" }, { status: 500 });

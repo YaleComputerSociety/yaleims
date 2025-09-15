@@ -8,6 +8,7 @@ import BracketCell from "@src/components/Brackets/BracketCell";
 import { useSeason } from "@src/context/SeasonContext";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { useNavbar } from "@src/context/NavbarContext";
+import PageHeading from "@src/components/PageHeading";
 
 interface FirestoreBracketMatch {
   bracket_placement: number;
@@ -122,14 +123,12 @@ const BracketsPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-blue-100 py-10`}>
-      <h1 className="text-center text-4xl font-extrabold tracking-tight text-gray-800 mb-4">
-        Brackets
-      </h1>
+      <PageHeading heading="Brackets" />
 
       {/* Welcome Message */}
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow px-6 py-4 text-center text-lg text-gray-700 mb-4">
+      <div className="max-w-3xl mx-auto my-10 bg-white rounded-lg shadow px-6 py-4 text-center text-lg text-gray-700 mb-4">
         <p className="font-bold mb-2">
-          Welcome to YaleIMS's newest feature — the Brackets Page!
+          Welcome to the Brackets Page!
         </p>
         <p>
           To view upcoming, past, or current playoff matches, please select your
@@ -235,6 +234,7 @@ const BracketsPage: React.FC = () => {
                     Quarterfinals
                   </span>
                   <div className="ml-4 flex flex-col items-end justify-center space-y-80">
+
                     {leftQuarterIndices.map((index) => {
                       const match = bracket[index];
                       return (
@@ -266,6 +266,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Final */}
                 <div className="flex flex-col items-center space-y-24">
+
                   <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
                     Finals
                   </span>

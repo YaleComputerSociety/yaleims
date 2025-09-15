@@ -60,7 +60,6 @@ export type Matchv2 = {
 
 export interface MatchCardProps {
   match: Matchv2;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export interface MatchesTableProps {
@@ -90,6 +89,7 @@ export interface TableRowProps {
   isLast?: boolean; // Optional prop to indicate if this is the last row
   handleSportClick: any; // Function to handle sport clicks
   availablePoints?: number;
+  isAdmin: boolean;
 }
 export interface YoddsTableRowProps {
   key?: number;
@@ -212,7 +212,7 @@ export interface SportInfo {
 export interface SportCardProps {
   sport: string;
   displayName?: boolean;
-  handleClick: (sport: string) => void;
+  handleClick?: (sport: string) => void;
   active?: boolean;
 }
 

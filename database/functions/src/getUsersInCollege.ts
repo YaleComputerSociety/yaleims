@@ -22,7 +22,7 @@ export const getUsersInCollege = functions.https.onRequest(
       } catch {
         return res.status(401).json({ error: "Invalid token" });
       }
-      if (!isValidDecodedToken(decoded) || decoded.role !== "college_rep") {
+      if (!isValidDecodedToken(decoded) || decoded.mRoles.includes("college_rep") === false) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
@@ -51,7 +51,7 @@ export const getUsersInCollege = functions.https.onRequest(
           const data = doc.data();
           users.push(data);
 
-          if (data.role === "captain") {
+          if (data.mRoles.includes("captain") || data.role === "captain") {
             captains.push({ 
               firstName: data.firstname,
               lastName: data.lastname,

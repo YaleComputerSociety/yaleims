@@ -14,6 +14,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { SeasonProvider } from "@src/context/SeasonContext";
 import { NavbarProvider, useNavbar } from "@src/context/NavbarContext";
+import AnalyticsListener from "./AnalyticsListener";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,8 +38,8 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
       <div className="transition-all duration-200">
         <SeasonProvider>{children}</SeasonProvider>
         <Footer />
-      </div>
-      <ToastContainer />
+      </div>    
+      <ToastContainer />      
     </div>
   );
 }
@@ -49,21 +50,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>Yale IMs</title>
-        <link rel="icon" href="/favicon.ico" />
-        <meta property="og:title" content="Yale IMs" />
-      </head>
-      <body className={`${inter.className}`}>
-        <UserProvider>
-          <FiltersProvider>
-            <NavbarProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-              >
+    <UserProvider>      
+      <FiltersProvider>
+        <NavbarProvider>
+          <html lang="en" suppressHydrationWarning>
+            <head>
+              <title>Yale IMs</title>
+              <link rel="icon" href="/favicon.ico" />
+              <meta property="og:title" content="Yale IMs" />
+            </head>
+            <body className={`${inter.className}`}>
+              <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                <AnalyticsListener />
                 <InnerLayout>{children}</InnerLayout>
               </ThemeProvider>
             </NavbarProvider>

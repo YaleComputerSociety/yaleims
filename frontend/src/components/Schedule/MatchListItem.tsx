@@ -11,6 +11,7 @@ interface MatchListItemProps {
   match: Match;
   user: any;
   isSignedUp: boolean; // Pass initial state from parent
+  onStatusChange: (id: string, signed: boolean) => void;
 }
 
 import { Participant } from "@src/types/components";
@@ -20,9 +21,10 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   match,
   user,
   isSignedUp,
+  onStatusChange,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
+  // const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
   const [participantsShow, setParticipantsShow] = useState(false);
   const [participantionData, setParticipantionData] = useState({
@@ -60,8 +62,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to sign up for the match");
       }
-
-      setIsSignedUp(true);
+      onStatusChange(match.id, true);  
       // if (participantsShow) {
       //   const participant_data = await getMatchParticipants(
       //     match.id.toString()
@@ -101,7 +102,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   };
 
   const handleUnregister = async () => {
-    setIsLoading(true);    try {
+    setIsLoading(true);    
+    try {
       const response = await fetch(
         "/api/functions/removeMatchParticipant",
         {
@@ -110,7 +112,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            matchId: match.id,
+            matchId: match.id as string,
             participantType:
               toCollegeName[user.college] === toCollegeName[match.home_college]
                 ? "home_college_participants"
@@ -126,10 +128,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           errorData.error || "Failed to unregister from the match"
         );
       }
-
-      setIsSignedUp(false);
+      onStatusChange(match.id, false);  
       if (participantsShow) {
-        console.log(match.id);
         const participant_data = await getMatchParticipants(
           match.id.toString()
         );
@@ -227,14 +227,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             <>
               <button
                 onClick={() =>
-                  isSignedUpState ? handleUnregister() : handleSignUp()
+                  isSignedUp ? handleUnregister() : handleSignUp()
                 }
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 className={`ml-5 w-20 sm:w-36 text-xs sm:text-sm h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
                   isLoading || !isUserTeam
                     ? "bg-gray-400 cursor-not-allowed"
-                    : isSignedUpState
+                    : isSignedUp
                     ? "bg-green-600 hover:bg-red-600"
                     : "bg-blue-600 hover:scale-110"
                 }`}
@@ -244,7 +244,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
                   ? "Loading..."
                   : !isUserTeam
                   ? "Not Your College"
-                  : isSignedUpState
+                  : isSignedUp
                   ? isHovered
                     ? "Unregister"
                     : "Playing!"

@@ -13,6 +13,9 @@ import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
 
 import "react-loading-skeleton/dist/skeleton.css";
+import { currentYear } from "@src/utils/helpers";
+import { collection, doc, onSnapshot, orderBy, query, Unsubscribe } from "firebase/firestore";
+import { db } from "../../../lib/firebase";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
@@ -49,7 +52,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "All",
+    date: filter.date ? filter.date : "AllPast",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -59,7 +62,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "All",
+    date: filter.date ? filter.date : "AllPast",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -69,7 +72,7 @@ const ScoresPage: React.FC = () => {
     pageSize: "20",
     college: filter.college ? filter.college : "All",
     sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "All",
+    date: filter.date ? filter.date : "AllPast",
     sortOrder: sortOrder ? sortOrder : "desc",
   }).toString();
 
@@ -92,8 +95,13 @@ const ScoresPage: React.FC = () => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams(getParams());
-        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
-        if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
+        const response = await fetch(
+          `/api/functions/getMatches?${params}&seasonId=${
+            currentSeason?.year || currentYear
+          }`
+        );
+        if (!response.ok)
+          throw new Error(`Error fetching matches: ${response.statusText}`);
         const data = await response.json();
 
         setFilteredMatches(data.matches);
@@ -113,35 +121,31 @@ const ScoresPage: React.FC = () => {
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
-    const fetchCollegeStats = async () => {
+      let unsub: Unsubscribe | undefined;
+      if (!currentSeason) return;
       if (filter.college && filter.college !== "All") {
         setCollegeIsLoading(true);
-        try {
-          const response = await fetch(
-            `https://us-central1-yims-125a2.cloudfunctions.net/getCollege?collegeId=${filter.college}`
-          );
-          if (!response.ok) {
-            throw new Error(
-              `Error fetching college stats: ${response.statusText}`
-            );
+  
+        const q = doc(db, "colleges", "seasons", currentSeason?.year, filter.college);
+    
+        unsub = onSnapshot(
+          q,
+          (snap) => {
+            setCollegeStats(snap.exists() ? (snap.data() as CollegeStats) : null);
+            setCollegeIsLoading(false);
+          },
+          (err) => {
+            console.error("Leaderboard listener error:", err);
+            setCollegeIsLoading(false);
           }
-
-          const data = await response.json();
-          setCollegeStats(data); // Update college stats
-        } catch (error) {
-          console.error("Failed to fetch college stats:", error);
-        } finally {
-          setCollegeIsLoading(false);
-        }
+        );
       } else {
-        setCollegeStats(null); // Reset stats if "All" is selected
+        setCollegeStats(null);
       }
-    };
+  
+      return () => unsub?.();
+    }, [filter.college]);
 
-    fetchCollegeStats();
-  }, [filter.college]); // Re-fetch stats only when the college filter changes
-
-  // Handle filter change
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilter((prev) => ({

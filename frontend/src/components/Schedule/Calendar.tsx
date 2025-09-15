@@ -66,7 +66,7 @@ const Calendar: React.FC<MyCalendarProps> = ({
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   return (
-    <div className="p-6 bg-white dark:bg-black rounded-lg shadow-md w-[500px] max-w-full mx-auto aspect-square xs:pt-10">
+    <div className="p-6 bg-white dark:bg-black rounded-lg shadow-md max-w-full h-full mx-auto transition-all duration-300">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <button

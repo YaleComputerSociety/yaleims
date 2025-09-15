@@ -1,23 +1,30 @@
 import { cookies } from "next/headers";
- 
+
 export async function POST(req: Request) {
-    const { email, sport, assign, remove } = await req.json();
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
+  const { email, sport, assign, remove } = await req.json();
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  if (!token) {
+    return new Response(JSON.stringify({ error: "unauthenticated" }), {
+      status: 401,
+    });
+  }
+  const response = await fetch(
+    "https://assignremovecaptainv2-65477nrg6a-uc.a.run.app",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token.value}`,
+      },
+      body: JSON.stringify({ email, sport, assign, remove }),
     }
-    const response = await fetch("https://assignremovecaptain-65477nrg6a-uc.a.run.app", {
-            method: "POST",
-            headers: {"Content-Type": "application/json", Authorization: `Bearer ${token.value}`},
-            body: JSON.stringify({ email, sport, assign, remove }),
-        }
-    );
+  );
 
-    if (!response.ok) {
-        return new Response(await response.text(), { status: response.status });
-    }
+  if (!response.ok) {
+    return new Response(await response.text(), { status: response.status });
+  }
 
-    const data = await response.json();
-    return Response.json(data);
+  const data = await response.json();
+  return Response.json(data);
 }

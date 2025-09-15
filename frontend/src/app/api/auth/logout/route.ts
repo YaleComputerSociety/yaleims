@@ -1,3 +1,4 @@
+import { NextURL } from "next/dist/server/web/next-url";
 import { NextResponse } from "next/server";
 
 export async function GET(): Promise<NextResponse> {

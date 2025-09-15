@@ -120,10 +120,10 @@ export const addBetMod = functions.https.onRequest(async (req, res) => {
       });
 
       /* ---------- 6. Done ---------- */
-      return res.status(200).send("Parlay added successfully");
+      return res.status(200).json({message: "Parlay added successfully"});
     } catch (err) {
       console.error("Error adding parlay:", err);
-      return res.status(500).send("Internal Server Error");
+      return res.status(500).json("Internal Server Error");
     }
   });
 });

@@ -17,7 +17,7 @@ const Bracket: React.FC<BracketProps> = ({ matches }) => {
   return (
     <div className="flex flex-row flex-wrap gap-4">
       {matches.map((match) => (
-        <BracketCell matchId={match.match_id} />
+        <BracketCell key={match.match_id} matchId={match.match_id} />
       ))}
     </div>
   );

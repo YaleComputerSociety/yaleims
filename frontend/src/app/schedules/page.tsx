@@ -9,105 +9,118 @@ import { FaSpinner } from "react-icons/fa";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
+import { Match } from "@src/types/components";
+import Pagination from "@src/components/Scores/Pagination";
+import { toast } from "react-toastify";
 
 const PAGE_SIZE = "10";
 
-// TODO: calendar focus changes on scroll
-// PLAN:
-//  - move the selected date state to this component, pass into calendar component
-//  - top element component in here, pass into ListView
-//  - IntersectionObserver to detect what the top element is in view; update selected date state
-
 const SchedulePage: React.FC = () => {
-  const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
   const [filter, setFilter] = useState({
     college: "",
     sport: "",
-    date: new Date(),
+    date: new Date()
   });
 
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState<number>(1);
+  const [firstVisible, setFirstVisible] = useState<string>("");
   const [lastVisible, setLastVisible] = useState<string>("");
-  const [hasMoreMatches, setHasMoreMatches] = useState(true);
-  const [chunksLoaded, setChunksLoaded] = useState(0);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [queryType, setQueryType] = useState<string>("index");
+  const [totalPages, setTotalPages] = useState<number>(10);
+  const [sortOrder] = useState<string>("asc");
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const {currentSeason} = useSeason()
 
-  // state for calendar focus circle
-  const [topDate, setTopDate] = useState(new Date());
-
-  // Parse URL search parameters manually
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search); // Use `window.location.search`
-    const college = params.get("college");
-    if (college) {
-      setFilter((prev) => ({
-        ...prev,
-        college: toCollegeName[college] || "",
-      }));
-    }
-  }, []); // Runs only once when the component mounts
-
   const resetPaginationState = () => {
-    setFilteredMatches([]);
-    setHasMoreMatches(true);
+    setPage(1); // Reset page number when filter is changed
+    setQueryType("index");
+    setFirstVisible("");
     setLastVisible("");
-    setChunksLoaded(0);
   };
 
+  const getQueryParams = (type: string) => {
+    const baseParams = {
+      type: "index",
+      pageSize: PAGE_SIZE,
+      sortOrder: sortOrder,
+      college: filter.college ? toCollegeAbbreviation[filter.college] : "All",
+      date: filter.date.toISOString(),
+      sport: filter.sport ? filter.sport : "All",
+    };
+
+    if (type === "next" && lastVisible) {
+      return { ...baseParams, type, lastVisible };
+    }
+    if (type === "prev" && firstVisible) {
+      return { ...baseParams, type, firstVisible };
+    }
+    if (type === "index") {
+      return { ...baseParams, pageIndex: page.toString() };
+    }
+
+    return baseParams;
+  };
+
+  // Fetch matches with pagination
   useEffect(() => {
     const fetchMatches = async () => {
-      if (!hasMoreMatches) return;
-      try {
-        setIsLoadingMore(true);
-        const params = new URLSearchParams({
-          date: filter.date.toISOString(),
-          pageSize: PAGE_SIZE,
-          sport: filter.sport || "",
-          college: filter.college ? toCollegeAbbreviation[filter.college] : "",
-          lastVisible: lastVisible || "",
-
-        }).toString();
-        const response = await fetch(`/api/functions/getSchedule?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
+    setIsLoading(true);
+    try {
+      const currentDate = new Date();
+      const params = new URLSearchParams(getQueryParams(queryType));
+      const dateParam = params.get("date");
+      const yesterday = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth(),
+          currentDate.getDate() - 1
+        );
+      if (dateParam && new Date(dateParam) <= yesterday) {
+        toast.error("Cannot signUp for past matches.");
+        return;
+      }
+        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
+
         const data = await response.json();
-        setFilteredMatches((prev) => [...prev, ...data.matches]);
-        setLastVisible(data.lastVisible);
-        setHasMoreMatches(data.hasMoreMatches);        
+        // console.log(data.matches)
+        setFilteredMatches(data.matches);
+        
+        if (data.firstVisible) setFirstVisible(data.firstVisible);
+        if (data.lastVisible) setLastVisible(data.lastVisible);
+        if (data.totalPages) setTotalPages(data.totalPages);
+        
       } catch (error) {
         console.error("Failed to fetch matches:", error);
       } finally {
-        setIsLoadingMore(false);
-        setIsFirstLoad(false);
+        setIsLoading(false);
       }
     };
+
+    window.scrollTo(0, 0);
     fetchMatches();
-  }, [filter, chunksLoaded]);
-  // console.log(filteredMatches)
+  }, [page, queryType, filter]);
+
+  // state for calendar focus circle
+  const [topDate, setTopDate] = useState(new Date());
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
     resetPaginationState();
   };
 
-  const handleDateClick = (value: Date) => {
+  const handleDateClick = (value: any) => {
     setFilter((prev) => ({ ...prev, date: value }));
     resetPaginationState();
   };
 
-  const handleLoadMoreClick = () => {
-    setChunksLoaded(chunksLoaded + 1);
-  };
-
   return (
     <div className="pt-20">
-      {isFirstLoad ? (
-        <LoadingScreen />
-      ) : (
         <div className="p-4 min-h-screen flex flex-col items-center">
           <PageHeading heading="Schedules" />
 
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl">
+          <div className="flex items-center flex-col lg:flex-row gap-8 lg:gap-16 justify-center w-full max-w-7xl transition-all duration-300">
             {/* Filters and Calendar */}
             <div className="flex flex-col items-center lg:w-2/5">
               <Filters filter={filter} updateFilter={updateFilter} />
@@ -119,39 +132,29 @@ const SchedulePage: React.FC = () => {
             </div>
             <div className="lg:w-3/5 flex flex-col items-center">
               {filteredMatches.length > 0 ? (
-                <div className="sm:max-h-[700px] w-full sm:overflow-y-auto p-4 rounded-lg">
-                  <ListView
+                <div className="flex flex-col">
+                  <div className="justify-center h-[500px] overflow-y-auto">
+                    <ListView
                     matches={filteredMatches}
                     topDate={topDate}
                     setTopDate={setTopDate}
+                    />
+                  </div>
+                  <Pagination
+                    currentPageNumber={page}
+                    totalPages={totalPages}
+                    setPageNumber={setPage}
+                    setQueryType={setQueryType}
                   />
                 </div>
               ) : (
-                <div className="text-center mt-8 text-gray-600">
+                <div className="text-center text-gray-600">
                   No future matches found.
-                </div>
-              )}
-              {hasMoreMatches && (
-                <div className="w-full flex justify-center mt-4">
-                  {!isLoadingMore ? (
-                    <button
-                      className="bg-blue-600 text-white p-3 rounded-lg"
-                      onClick={handleLoadMoreClick}
-                    >
-                      Load More Matches
-                    </button>
-                  ) : (
-                    <div className="flex flex-row items-center justify-center space-x-2">
-                      <span>Loading</span>
-                      <FaSpinner className="animate-spin" />
-                    </div>
-                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 };

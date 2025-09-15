@@ -20,20 +20,20 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen pt-20">
       <PageHeading heading="Hub" />
-      <div>
-        {user?.role === "admin" && <AdminDashboard />}
-        {user?.role === "user" && <UserDashboard />}
-        {user?.role === "captain" && <CaptainDashboard />}
-        {user?.role === "college_rep" && <CollegeRepDashboard />}
-        {user?.role === "dev" && <DevDashboard />}
-        {!user && (
-          <div className="p-4">
-            <h2 className="text-2xl font-bold mb-4">
-              Welcome to the Hub
-            </h2>
-            <p>Please log in to access your Hub.</p>
-          </div>
-        )}
+      <div className="flex flex-col px-10 pb-10">
+        <h2 className="text-2xl font-bold mb-4">Welcome to the Hub</h2>
+        <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
+          {user?.mRoles.includes("user") && <UserDashboard />}
+          {user?.mRoles.includes("admin") && <AdminDashboard />}
+          {user?.mRoles.includes("college_rep") && <CollegeRepDashboard />}
+          {user?.mRoles.includes("captain") && <CaptainDashboard />}
+          {/* {user?.mRoles.includes("dev") && <DevDashboard />} */}
+          {!user && (
+            <div className="p-6">
+              <p>Please log in to access your Hub.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

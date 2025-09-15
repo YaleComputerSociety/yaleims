@@ -64,7 +64,6 @@ const Profile = () => {
     fetchUserMatches();
   }, [user, matches.length]);
 
-  // Fetch user points
   useEffect(() => {
     if (!userEmail) return;
 

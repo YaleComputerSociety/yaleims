@@ -21,6 +21,9 @@ import BetParlayTable from "@src/components/YOdds/BetParlayTable";
 import { totalOddsCalc } from '@src/utils/helpers';
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
+import { toast } from "react-toastify";
+import { seasonSports } from "@src/utils/helpers";
+import PredictionLeaderboard from "@src/components/Home/PredictionLeaderboard";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -50,19 +53,26 @@ const YoddsPage: React.FC = () => {
   const [viewPendingBets, setViewPendingBets] = useState(false);
   const [viewBetSlip, setViewBetSlip] = useState(false);
   const [viewBetHistory, setViewBetHistory] = useState(false);
+  const [viewRankings, setViewRankings] = useState(false);
   const [betslip, setBetSlip] = useState<Bet[]>([]);
   const [betCount, setBetCount] = useState(0);
   const [betAmount, setBetAmount] = useState<number | ''>('');
   const [totalOdds, setTotalOdds] = useState<number>(1);
   const [submitButtonClicked, setSubmitButtonClicked] = useState(0);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'submitted'>('idle');
+
   const { currentSeason } = useSeason();
-  
  
   const updateBetSlip = (bet: Bet): Bet[] => {
+    if (betslip.some((b) => b.betId === bet.betId)) {
+      toast("Selection already in Slip. Did not add bet");
+      return betslip;
+    }
+
     const updatedBetSlip = [...betslip, bet];
     setBetSlip(updatedBetSlip);
     setTotalOdds(totalOddsCalc(updatedBetSlip));
-    setBetCount(() => betCount + 1)
+    setBetCount((c) => c + 1);
     return updatedBetSlip;
   };
 
@@ -95,7 +105,7 @@ const YoddsPage: React.FC = () => {
       pageSize: "20",
       sortOrder: "asc",
       college: "All",
-      date: "future",
+      date: new Date().toISOString(),
       sport: filter.sport ? filter.sport : "All",
     };
 
@@ -205,32 +215,19 @@ const YoddsPage: React.FC = () => {
 
     fetchPastBets();
   }, [userEmail]);
-  // console.log(pastBets)
-
-  // useEffect(() => {
-  //   if (!pendingBets.length) return;
-
-  //   setFilteredMatches((prevMatches) => {
-  //     const filtered = prevMatches.filter((match) => {
-  //       // Check if there is a prediction for the current match
-  //       return !pendingBets.some((bet) => bet.matchId == match.id);
-  //     });
-  //     return filtered;
-  //   });
-  // }, [pendingBets]);
 
   useEffect(() => {
     const html = document.documentElement;
   
-    if (viewPendingBets || viewBetSlip || viewBetHistory) {  
+    if (viewPendingBets || viewBetSlip || viewBetHistory || viewRankings) {  
       html.classList.add("overflow-hidden");
     } else {
-      html.classList.remove("overflow-hidden");
+      html.classList.remove("overflow-hidden"); 
     }
     return () => {
       html.classList.remove("overflow-hidden");
     };
-  }, [viewPendingBets, viewBetSlip, viewBetHistory]);
+  }, [viewPendingBets, viewBetSlip, viewBetHistory, viewRankings]);
 
   const handleCollegeClick = (collegeName: string) => {
     // Implementation for betting functionality
@@ -289,26 +286,28 @@ const YoddsPage: React.FC = () => {
     }
 
     try {
+      setSubmitStatus('submitting');
       await addBet({
         betAmount: betAmount ? betAmount : 0,
         betArray: betslip,
         totalOdds: totalOdds,
       });
       setSubmitButtonClicked((prev) => prev + 1);
+      setSubmitStatus('submitted');
+      toast.success("Bet Submitted Succesfully!")
+      setTimeout(() => setSubmitStatus('idle'), 1800);
     } catch (error) {
-      alert("Failed to place bet. Please try again.");
+      toast.error("Failed to place bet. Please try again.");
+      setSubmitStatus('idle');
     }
   };
 
-  const sendToRankings = () => {
-    setFilter({
-      college: "",
-      sport: "",
-      date: "",
-      selected: "Prediction",
-    });
-    router.push("/");
-  };
+  // under consideration
+  // const deleteBet = () => {
+
+  // }
+
+  
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -339,12 +338,12 @@ const YoddsPage: React.FC = () => {
       <div className="w-full max-w-5xl p-5 mx-auto grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-8 items-start rounded-lg pb-5">
         <div className="flex flex-col gap-y-2 md:gap-y-6 min-w-0 pb-4">
           <div className="w-full overflow-x-auto invisible-scrollbar gap-x-4">
-            <div className="flex w-max gap-3 px-2 py-3 items-center">
-              {sports.map((sport) => (
+            <div className="flex flex-row w-full gap-3 px-2 py-3 items-center justify-center">
+              {seasonSports[currentSeason!.season].map((sport) => (
               <SportCard
-                key={sport.id}
-                sport={sport.name}
-                active={sport.name === filter.sport}
+                key={sport}
+                sport={sport}
+                active={sport === filter.sport}
                 displayName={false}
                 handleClick={handleFilterChange}     
               />
@@ -378,7 +377,9 @@ const YoddsPage: React.FC = () => {
             </button>
             <button
               className="px-2 py-1 mp:px-3 mp:py-2 text-xs xs:text-sm mp:text-lg bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-md mg:rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
-              onClick={sendToRankings}
+              onClick={() => {
+                setViewRankings(!viewRankings);
+              }}
             >
               See Rankings
             </button>
@@ -412,9 +413,9 @@ const YoddsPage: React.FC = () => {
         </div>
       </div>
       
-      <p className="text-xs text-center text-gray-500">
+      {/* <p className="text-xs text-center text-gray-500">
         Predictions may only be canceled 24 hours or more before the game.
-      </p>
+      </p> */}
 
       <p className="md:text-xl font-bold text-center mb-4 pt-6">
         Upcoming Games
@@ -454,7 +455,7 @@ const YoddsPage: React.FC = () => {
       </div>
       {viewBetHistory && (
         <div 
-          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
           onClick={() => setViewBetHistory(false)}
         >
           <div 
@@ -485,7 +486,7 @@ const YoddsPage: React.FC = () => {
       )}
       {viewPendingBets && (
         <div 
-          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
           onClick={() => setViewPendingBets(false)}
         >
           <div 
@@ -501,7 +502,7 @@ const YoddsPage: React.FC = () => {
                 <MdClose />
               </button>
             </div>
-            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full]">
+            <div className="pl-4 pr-4 overflow-y-auto custom-scrollbar h-full">
               {pendingLoading ? (
                 <div className="flex justify-center items-center">
                   <FaSpinner className="animate-spin" />
@@ -513,9 +514,33 @@ const YoddsPage: React.FC = () => {
           </div>
         </div>
       )}
+      {viewRankings && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
+          onClick={() => setViewRankings(false)}
+        >
+          <div 
+            className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
+              <h2 className="text-xl font-semibold">2025-2026 Odds Rankings</h2>
+              <button
+                onClick={() => setViewRankings(false)}
+                className="text-gray-600 hover:text-white text-xl font-bold"
+              >
+                <MdClose />
+              </button>
+            </div>
+            <div className="pl-4 pr- pt-4 overflow-y-auto custom-scrollbar h-full">
+              <PredictionLeaderboard />
+            </div>
+          </div>
+        </div>
+      )}
       {viewBetSlip && (
         <div 
-          className="fixed inset-0 z-50 flex items-center backdrop-blur-sm justify-center bg-black bg-opacity-70 backdrop-blur-xs w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-85 w-[100%] h-[100%] flex-col"
           onClick={() => setViewBetSlip(false)}
         >
           <div 
@@ -581,10 +606,16 @@ const YoddsPage: React.FC = () => {
                 </div>
                 <div>
                   <button
-                    className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md hover:scale-105 transition transform duration-200 ease-in-out"
+                    className="px-3 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white font-semibold rounded-lg shadow-md transition transform duration-200 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed"
                     onClick={handleSubmitBet}
+                    disabled={submitStatus !== 'idle'}
+                    aria-busy={submitStatus === 'submitting'}
                   >
-                    Submit Bet
+                    {submitStatus === 'submitting'
+                      ? 'Submitting…'
+                      : submitStatus === 'submitted'
+                      ? 'Submitted!'
+                      : 'Submit Bet'}
                   </button>
                 </div>
               </div>

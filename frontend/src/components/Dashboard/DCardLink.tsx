@@ -5,21 +5,22 @@ interface DCardLinkProps {
   title: string;
   link?: string;
   message?: string;
+  openLinkInfo: string;
 }
 
-export default function DCardLink({ title, link, message }: DCardLinkProps) {
+export default function DCardLink({ title, link, message, openLinkInfo }: DCardLinkProps) {
   return (
     <div
-      className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md grid grid-rows-7"
+      className="bg-white/50 dark:bg-black/50 rounded-lg p-7 shadow-md h-full flex flex-col"
     >
-      <h2 className="text-lg font-semibold row-span-1">{title}</h2>
-      <div className="mt-4 row-span-5 ">{message}</div>
+      <h2 className="text-base md:text-lg font-semibold ">{title}</h2>
+      <div className="mt-2 md:mt-4 text-xs md:text-sm">{message}</div>
       {link && (
         <Link
           href={link}
-          className="row-span-1 inline-block text-xs text-indigo-600 hover:underline"
+          className="mt-auto pt-2 text-xs text-indigo-600 hover:underline"
         >
-          Click to update scores →
+          {openLinkInfo}
         </Link>
       )}
     </div>

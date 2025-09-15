@@ -1,5 +1,3 @@
-import BracketAdminPanel from "./BracketAdminPanel";
-import EditMatches from "./EditMatches";
 import DCardLink from "../DCardLink";
 
 const AdminDashboard: React.FC = () => {
@@ -8,26 +6,24 @@ const AdminDashboard: React.FC = () => {
   // You can style things conditionally, You can also make the prop conditional!
 
   return (
-    <div className="p-4 justify-center">
-      <h2 className="text-2xl font-medium mb-4">Welcome to the Admin Hub</h2>
-      <div className="grid grid-cols-3 gap-10">
+  //   <div className="p-6 justify-center">
+  //     <h2 className="text-2xl font-medium mb-4">Welcome to the Admin Hub</h2>
+  //     <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
+  <>
         <DCardLink
           title="Score Matches"
-          link="/add-scores"
-          message="5 matches left to scores. You've got this. You made a mistake? don't worry you can undo that score!"
+          link="/hub/add-scores"
+          openLinkInfo="Click to update scores →"
+          message="Update/undo scores for matches that have been played!"
         />
         <DCardLink
           title="Upload Matches"
-          link="/add-scores"
-          message="You have uploaded schedules for 2 sports!"
+          link="/hub/upload-schedule"
+          message="Upload schedules for upcoming sports seasons in CSV format!"
+          openLinkInfo="Click to upload match schedules →"
         />
-      </div>
-
-      {/* <UpdateScores />
-      <EditMatches /> */}
-      {/* bracket interface -- will get when the bracket feature is pushed */}
-    </div>
-  );
+      </>
+  )
 };
 
 // export default withRoleProtectedRoute(AdminDashboard, ["admin"]);

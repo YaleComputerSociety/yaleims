@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -7,6 +7,7 @@ interface DecodedToken {
   netid: string;
   email: string;
   role: string;
+  mRoles: string[];
   username: string;
   college: string;
   points: string;
@@ -21,7 +22,16 @@ function isValidDecodedToken(decoded: any): decoded is DecodedToken {
   );
 }
 
-export async function GET(): Promise<NextResponse> {
+const parseRoles = (csv = ""): string[] =>
+  csv.split(",").map(r => r.trim()).filter(Boolean);
+
+const rolesEqual = (a: string[] = [], b: string[] = []): boolean => {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  return a.every(role => setB.has(role));
+};
+
+export async function GET(req: Request): Promise<NextResponse> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
@@ -43,19 +53,36 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ isLoggedIn: false }, { status: 401 });
     }
 
-    return NextResponse.json({
-      isLoggedIn: true,
-      user: {
-        name: decoded.name,
-        netid: decoded.netid,
-        email: decoded.email,
-        role: decoded.role,
-        username: decoded.username,
-        college: decoded.college,
-        points: decoded.points,
-        matches_played: decoded.matches_played,        
-      },
-    });
+    const currentRolesCSV = new URL(req.url).searchParams.get("currentRoles");
+    const currentRoles = parseRoles(currentRolesCSV || undefined);
+
+    const shouldUpdateRoles = currentRoles.length > 0 && !rolesEqual(currentRoles, decoded.mRoles ?? []);
+
+    const mergedUser: DecodedToken = {
+      name: decoded.name,
+      netid: decoded.netid,
+      email: decoded.email,
+      role: decoded.role,
+      mRoles: shouldUpdateRoles ? currentRoles! : decoded.mRoles,
+      username: decoded.username,
+      college: decoded.college,
+      points: decoded.points,
+      matches_played: decoded.matches_played,
+    };
+
+    const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
+
+    if (shouldUpdateRoles) {
+      const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
+      res.cookies.set("token", newToken, {
+        secure: true, 
+        httpOnly: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+    return res
   } catch (error) {
     console.error("Authentication error:", error);
     const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });

@@ -9,7 +9,7 @@ const db = admin.firestore();
 
 export const fetchOrAddUser = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
-    const { email } = req.body; // The email passed directly in the request
+    const { email, seasonId } = req.body; // The email passed directly in the request
 
     // Step 1: Check that the email is a Yale email
     if (!email || !email.endsWith("@yale.edu")) {
@@ -32,6 +32,7 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
           email: fullData?.email,
           college: fullData?.college,
           role: fullData?.role,
+          mRoles: fullData?.mRoles,
           matches_played: fullData?.matches_played,
           username: fullData?.username,
           points: fullData?.points,
@@ -95,15 +96,22 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         email: email,
         firstname: first_name,
         lastname: last_name,
-        matches: [],
-        points: 500,
+        TotalPoints: 2000,
         college: college || null,
         role: "user", // default role; otherwise "admin" can be set in firestore
-        username: generatedUsername,
-        correctPredictions: 0,
+        mRoles: ["user"],
+        username: generatedUsername
       };
 
       await userRef.set(newUser);
+      await userRef
+        .collection("seasons")
+        .doc(seasonId)
+        .set({
+          matches: [],
+          points: 2000,
+          correctPredictions: 0
+        });
       res
         .status(200)
         .json({ message: "User successfully added.", user: newUser });
