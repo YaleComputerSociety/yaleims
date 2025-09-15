@@ -71,15 +71,6 @@ interface BracketData {
   matches: ParsedMatch[];
 }
 
-// interface Team {
-//   college: string;
-//   seed: string | number;
-//   division: "green" | "blue" | "none";
-//   matchSlot: string | number;
-//   matchDatetime: string;
-//   location: string;
-// }
-
 interface ParsedMatch {
   match_slot: number;
   away_college: string;
@@ -87,104 +78,10 @@ interface ParsedMatch {
   home_college: string;
   home_seed: number;
   location: string;
+  location_extra?: string;
   timestamp: string;
   division: "green" | "blue" | "final" | "none";
 }
-
-/**
- * Parses BracketData into an array of ParsedMatch objects,
- * ensuring higher seeds are placed as home teams
- */
-// function parseTeamsToMatches(bracketData: BracketData): ParsedMatch[] {
-//   const { teams } = bracketData;
-
-//   // Group teams by matchSlot
-//   const matchSlotMap: Map<number, Team[]> = new Map();
-
-//   // Convert all matchSlots to numbers and create groups
-//   teams.forEach((team) => {
-//     // Skip teams without a valid matchSlot
-//     if (!team.matchSlot) return;
-
-//     const matchSlotNum = Number(team.matchSlot);
-//     if (isNaN(matchSlotNum)) return;
-
-//     // Get or create the array for this matchSlot
-//     const teamsForSlot = matchSlotMap.get(matchSlotNum) || [];
-//     teamsForSlot.push({
-//       ...team,
-//       // Convert seed to number
-//       seed:
-//         typeof team.seed === "string" ? parseInt(team.seed) || 0 : team.seed,
-//     });
-
-//     matchSlotMap.set(matchSlotNum, teamsForSlot);
-//   });
-
-//   // Create ParsedMatch objects from the grouped teams
-//   const parsedMatches: ParsedMatch[] = [];
-
-//   matchSlotMap.forEach((teamsInSlot, matchSlot) => {
-//     const matchRound = matchRounds[matchSlot];
-
-//     // ensure playoff games have 2 teams
-//     if (teamsInSlot.length !== 2 && matchRound === "Playoff") return;
-//     else if (matchRound !== "Playoff") {
-//       teamsInSlot.push(teamsInSlot[0]); // update formatting for other match types to be consistent
-//     }
-
-//     if (matchRound === "Playoff") {
-//       // Sort teams by seed (lower seed number = higher seed)
-//       teamsInSlot.sort((a, b) => {
-//         const seedA =
-//           typeof a.seed === "string" ? parseInt(a.seed) || 999 : a.seed;
-//         const seedB =
-//           typeof b.seed === "string" ? parseInt(b.seed) || 999 : b.seed;
-//         return seedA - seedB;
-//       });
-//     }
-
-//     // First team (index 0) is higher seeded (lower number), should be home
-//     const [higherSeed, lowerSeed] = teamsInSlot;
-
-//     // Determine if this is a final match or which division it belongs to
-//     let division: "green" | "blue" | "final" | "none" = "green";
-
-//     if (matchSlot === 15) {
-//       division = "final";
-//     } else if (
-//       (matchRound === "Playoff" || matchRound === "Bye") &&
-//       higherSeed.division === lowerSeed.division
-//     ) {
-//       division = higherSeed.division;
-//     } else {
-//       division = "none";
-//     }
-
-//     // Find the timestamp from either team (prefer the first one with a value)
-//     const timestamp = higherSeed.matchDatetime || lowerSeed.matchDatetime || "";
-
-//     // Find the location from either team (prefer the first one with a value)
-//     const location = higherSeed.location || lowerSeed.location || "";
-
-//     // Create the ParsedMatch object
-//     const parsedMatch: ParsedMatch = {
-//       match_slot: matchSlot,
-//       home_college: higherSeed.college,
-//       home_seed: Number(higherSeed.seed),
-//       away_college: lowerSeed.college,
-//       away_seed: Number(lowerSeed.seed),
-//       location,
-//       timestamp,
-//       division,
-//     };
-
-//     parsedMatches.push(parsedMatch);
-//   });
-
-//   // Sort the matches by matchSlot for consistency
-//   return parsedMatches.sort((a, b) => a.match_slot - b.match_slot);
-// }
 
 export const createBracket = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
@@ -373,6 +270,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
             home_volume: 0,
             id: matchId,
             location: parsedMatch ? parsedMatch.location : "",
+            location_extra: parsedMatch ? parsedMatch.location_extra : "",
             predictions: {},
             sport: sport,
             timestamp:
