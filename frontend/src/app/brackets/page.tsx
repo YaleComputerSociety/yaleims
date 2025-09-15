@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
 import { doc, getDoc } from "firebase/firestore";
@@ -13,6 +12,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import LoadingScreen from "@src/components/LoadingScreen";
 import withProtectedRoute from "@src/components/withProtectedRoute";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import { useNavbar } from "@src/context/NavbarContext";
 
 // const ubuntu = Ubuntu({
 //   subsets: ["latin"],
@@ -37,6 +37,7 @@ const rightSemiIndex = 13;
 const finalIndex = 14;
 
 const BracketsPage: React.FC = () => {
+  const { collapsed } = useNavbar(); 
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -176,7 +177,7 @@ const BracketsPage: React.FC = () => {
         </div>
       )}
       
-      <div className="pl-[320px] pr-6">
+      <div className={`{collapsed ? "pl-[80px] : "pl-[320px]"} pr-6`}>
         <div className="w-full overflow-x-auto">
           <div className="w-max">
           </div>
@@ -192,8 +193,11 @@ const BracketsPage: React.FC = () => {
           {/* Bracket Columns */}
           {bracket ? (
             <div className= "w-full overflow-x-auto">
-              <div className="flex w-fit pl-[350px]">
-                <div className=" grid grid-cols-7 gap-60 items-start">
+              <div className="flex w-fit">
+                <div className=" grid grid-cols-7 gap-50 items-start">
+
+                  {/* Desktop View */} 
+                  
 
                   <div className="flex flex-col items-center">
                     <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
@@ -214,11 +218,11 @@ const BracketsPage: React.FC = () => {
                 </div>
 
                   {/* Left Quarters */}
-                  <div className="flex flex-col items-center">
+                  <div className="space-y-24 flex flex-col items-center">
                     <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
                     Quarterfinals 
                     </span>
-                    <div className="ml-4 flex flex-col items-end justify-center space-y-36">
+                    <div className="ml-4 flex flex-col items-end justify-center space-y-80">
                       {leftQuarterIndices.map((index) => {
                         const match = bracket[index];
                         return (
@@ -231,38 +235,70 @@ const BracketsPage: React.FC = () => {
                   </div>
 
                   {/* Left Semis */}
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center space-y-60">
                     <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
                     Semifinals 
                     </span>
                     <div className="ml-6 flex flex-col items-end justify-center space-y-48">
-                      <div className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl" key={bracket[leftSemiIndex].match_id}>
+                      <div className="scale-75 space-y-48 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl" key={bracket[leftSemiIndex].match_id}>
                         <BracketCell matchId={bracket[leftSemiIndex].match_id} />
                       </div>
                     </div>
                   </div>
 
-                  {/* Final */}
-                  <div className="flex flex-col items-center">
-                    <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Finals 
-                    </span>
-                    <div className="flex flex-col items-center justify-center space-y-6">
-                      <img src="/trophy.png" alt="Trophy" className="w-14 h-14" />
-                      <div className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
-                        <BracketCell matchId={bracket[finalIndex].match_id} />
-                      </div>
+                {/* Final */}
+                <div className="flex flex-col items-center space-y-24">
+                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
+                    Finals
+                  </span>
+                  <div className="flex flex-col items-center justify-center space-y-6">
+
+                    {/* Trophy container */}
+                    <div className="relative flex items-center justify-center">
+                      {/* Trophy image */}
+                      <img
+                        src="/trophy.png"
+                        alt="Trophy"
+                        className="w-48 h-48 opacity-100 animate-pulse [animation-duration:4s] drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
+                      />
+
+                      {/* Overlay: winner flag or ? */}
+                      {bracket[finalIndex]?.winner ? ( 
+                        
+                      // TODO: Hook up to backend if we have a "first place" label. 
+                      // This should add the winner's flag over the trophy or have a question mark if not determined yet!
+                        <img
+                          src={`/flags/${bracket[finalIndex].winner}.png`} // adjust to the flag asset
+                          alt={`${bracket[finalIndex].winner} flag`}
+                          className="absolute w-20 h-20 rounded-full border-4 border-white shadow-lg"
+                        />
+                      ) : (
+                        <span className="absolute y-20 text-white text-6xl font-bold animate-pulse [animation-duration:4s] drop-shadow-[0_0_25px_rgba(59,130,246,0.9)]">
+                          ?
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Final match cell */}
+                    <div className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
+                      <BracketCell matchId={bracket[finalIndex].match_id} />
+                    </div>
+
+                    {/* Congrats message */}
+                    {bracket[finalIndex]?.winner && (
                       <div className="bg-white rounded-lg px-2 py-1 shadow text-center">
-                        <p className="text-base ">
-                          Congrats to the 2025 Champs, [College]!
+                        <p className="text-base font-semibold">
+                          Congrats to the 2025 Champs, {bracket[finalIndex].winner}!
                         </p>
                       </div>
-                    </div>
+                    )}
                   </div>
+                </div>
+
 
                   {/* Right Semis */}
-                  <div className="flex flex-col items-center">
-                    <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
+                  <div className="flex flex-col items-center space-y-60">
+                    <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm ">
                     Semifinals 
                     </span>
                     <div className="-ml-6 flex flex-col items-start justify-center space-y-48">
@@ -273,11 +309,11 @@ const BracketsPage: React.FC = () => {
                   </div>
 
                   {/* Right Quarters */}
-                  <div className="flex flex-col items-center">
+                  <div className="space-y-24 flex flex-col items-center">
                     <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
                     Quarterfinals 
                     </span>
-                    <div className="-ml-4 flex flex-col items-start justify-center space-y-36">
+                    <div className="-ml-4 flex flex-col items-start justify-center space-y-80">
                       {rightQuarterIndices.map((index) => {
                         const match = bracket[index];
                         return (
@@ -307,12 +343,22 @@ const BracketsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+                    {/* Mobile view (scaled + scrollable) */}
+              <div className="flex sm:hidden w-fit transform scale-50 origin-top-left">
+                <div className="grid grid-cols-7 gap-20 items-start">
+                  {/* Reuse same structure as desktop */}
+                  {/* You can literally copy all the same JSX from above into here */}
+                </div>
+              </div>
+
             </div>
             ) : (
               <p className="text-center text-gray-500 mt-10">No bracket available.</p>
             )}
           </div>
         </div>
+        // Ella TODO: Complete layout for Mobile viewing.
   );
 };
 
