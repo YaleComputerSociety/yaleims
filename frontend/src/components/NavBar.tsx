@@ -69,7 +69,7 @@ const NavBar: React.FC = () => {
     { href: "/scores", text: "Scores", icon: <MdOutlineScoreboard /> },
     { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
     { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
-    { href: "/about-us", text: "About", icon: <IoInformationCircleOutline /> },
+    { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
     { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
     { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
     { href: "https://yaleims.canny.io", text: "Feedback", icon: <VscFeedback /> },

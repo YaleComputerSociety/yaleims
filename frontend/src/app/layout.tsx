@@ -64,10 +64,10 @@ export default function RootLayout({
                 <AnalyticsListener />
                 <InnerLayout>{children}</InnerLayout>
               </ThemeProvider>
-            </NavbarProvider>
-          </FiltersProvider>
-        </UserProvider>
-      </body>
-    </html>
+            </body>
+          </html>
+        </NavbarProvider>
+      </FiltersProvider>
+    </UserProvider>
   );
 }
