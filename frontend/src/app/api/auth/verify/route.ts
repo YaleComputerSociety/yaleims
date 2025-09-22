@@ -54,9 +54,12 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
 
     const currentRolesCSV = new URL(req.url).searchParams.get("currentRoles");
+    const currentUserNameCSV = new URL(req.url).searchParams.get("currentUsername");
     const currentRoles = parseRoles(currentRolesCSV || undefined);
+    const currentUsername = currentUserNameCSV?.trim() || undefined;
 
     const shouldUpdateRoles = currentRoles.length > 0 && !rolesEqual(currentRoles, decoded.mRoles ?? []);
+    const shouldUpdateUsername = currentUsername && currentUsername !== decoded.username;
 
     const mergedUser: DecodedToken = {
       name: decoded.name,
@@ -64,7 +67,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       email: decoded.email,
       role: decoded.role,
       mRoles: shouldUpdateRoles ? currentRoles! : decoded.mRoles,
-      username: decoded.username,
+      username: shouldUpdateUsername? currentUsername : decoded.username,
       college: decoded.college,
       points: decoded.points,
       matches_played: decoded.matches_played,
@@ -72,7 +75,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
     const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
 
-    if (shouldUpdateRoles) {
+    if (shouldUpdateRoles || shouldUpdateUsername) {
       const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
       res.cookies.set("token", newToken, {
         secure: true, 
