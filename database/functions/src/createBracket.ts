@@ -313,7 +313,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
           };
 
           const matchRef = db
-            .collection("matches_testing")
+            .collection("matches")
             .doc("seasons")
             .collection(currentYear)
             .doc(matchId);

@@ -63,7 +63,6 @@ const BracketsPage: React.FC = () => {
     setSport(sport);
   };
 
-  // TODO Kaitlyn: move this into a function and api route for security
   useEffect(() => {
     if (!sport || !season) {
       setBracket(null);

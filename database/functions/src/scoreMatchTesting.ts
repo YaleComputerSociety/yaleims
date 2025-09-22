@@ -57,8 +57,14 @@ export const scoreMatchTesting = functions.https.onRequest(async (req, res) => {
         return res.status(400).json({ error: "Error with parameters" });
       }
 
+      const currentYear = "2025-2026";
+
       // Check if the match has already been scored
-      const matchRef = db.collection("matches_testing").doc(matchId);
+      const matchRef = db
+        .collection("matches_testing")
+        .doc("seasons")
+        .collection(currentYear)
+        .doc(matchId);
       const matchDoc = await matchRef.get();
 
       if (!matchDoc.exists) {
@@ -201,16 +207,11 @@ export const scoreMatchTesting = functions.https.onRequest(async (req, res) => {
         const winnerSeed =
           winningTeam === homeTeam ? matchData.home_seed : matchData.away_seed;
 
-        console.log("Next match info:", {
-          nextMatchId,
-          bracketPosition,
-          winnerSeed,
-          winningTeam,
-        });
-
         if (nextMatchId && bracketPosition !== null) {
           const nextMatchRef = db
             .collection("matches_testing")
+            .doc("seasons")
+            .collection(currentYear)
             .doc(nextMatchId);
 
           // Prepare update object
@@ -231,7 +232,6 @@ export const scoreMatchTesting = functions.https.onRequest(async (req, res) => {
             }
           }
 
-          console.log("Updating next match with:", updateData);
           batch.update(nextMatchRef, updateData);
         }
       }
