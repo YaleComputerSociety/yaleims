@@ -1,6 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import jwt from "jsonwebtoken";
+
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -83,11 +86,35 @@ interface ParsedMatch {
   division: "green" | "blue" | "final" | "none";
 }
 
+const canCreateBracket = (role: string) => {
+  return role === "admin" || role === "dev";
+};
+
 export const createBracket = functions.https.onRequest((req, res) => {
-  return corsHandler(req, res, async () => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    const idToken = authHeader.split("Bearer ")[1];
+    let decoded: any;
+    try {
+      decoded = jwt.verify(idToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    if (!isValidDecodedToken(decoded) || !canCreateBracket(decoded.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
     try {
       // Check if request body exists and is properly formatted
-      let rawData: BracketData | null = null;
+      let rawData = null;
 
       // Handle different ways the data might be sent
       if (req.method === "POST") {
@@ -97,30 +124,31 @@ export const createBracket = functions.https.onRequest((req, res) => {
             rawData = JSON.parse(req.body);
           } catch (e) {
             console.error("Error parsing JSON:", e);
-            res.status(400).json({ error: "Invalid JSON in request body." });
-            return;
+            return res
+              .status(400)
+              .json({ error: "Invalid JSON in request body." });
           }
         } else if (req.body && typeof req.body === "object") {
           // If body is already an object
-          rawData = req.body as BracketData;
+          rawData = req.body;
         }
       }
 
+      const bracketData = rawData.bracketData as BracketData;
+
       // Check if we have valid data
-      if (!rawData || !rawData.sport) {
-        res
+      if (!bracketData || !bracketData.sport || !bracketData.matches) {
+        return res
           .status(400)
           .json({ error: "Missing or invalid 'bracketData' parameter." });
-        return;
       }
 
-      const sport = String(rawData.sport);
+      const sport = String(bracketData.sport);
 
       if (!sport) {
-        res
+        return res
           .status(400)
           .json({ error: "Missing or invalid 'sport' parameter." });
-        return;
       }
 
       const currentSeasonInfo = await db
@@ -129,8 +157,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
         .get();
 
       if (!currentSeasonInfo.exists) {
-        res.status(500).json({ error: "Current season not found." });
-        return;
+        return res.status(500).json({ error: "Current season not found." });
       }
 
       const currentYear = currentSeasonInfo.data()?.year;
@@ -143,14 +170,13 @@ export const createBracket = functions.https.onRequest((req, res) => {
 
       const existingDoc = await bracketRef.get();
       if (existingDoc.exists) {
-        res
+        return res
           .status(409)
           .json({ error: `Bracket for '${sport}' already exists.` });
-        return;
       }
 
       // get parsedMatches from rawData
-      const parsedMatches: ParsedMatch[] = rawData.matches;
+      const parsedMatches: ParsedMatch[] = bracketData.matches;
 
       // Create a Map for easier lookup
       const parsedMatchMap = new Map<number, ParsedMatch>();
@@ -305,7 +331,8 @@ export const createBracket = functions.https.onRequest((req, res) => {
         .json({ message: `Bracket for '${sport}' created successfully.` });
     } catch (error) {
       console.error("Error creating bracket:", error);
-      res.status(500).send("Internal Server Error");
+      return res.status(500).send("Internal Server Error");
     }
+    return;
   });
 });

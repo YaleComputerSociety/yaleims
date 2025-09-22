@@ -221,6 +221,7 @@ export interface BracketModalProps {
   onClose: () => void;
   onSave: (data: BracketData) => void;
   sport: string;
+  loading: boolean;
 }
 
 export interface BracketData {

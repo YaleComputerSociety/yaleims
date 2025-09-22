@@ -15,6 +15,7 @@ import {
 } from "@src/utils/helpers";
 import { toast } from "react-toastify";
 import { useSeason } from "@src/context/SeasonContext";
+import { FaSpinner } from "react-icons/fa";
 
 const matchesInit: ParsedMatch[] = Array.from({ length: 15 }, (_, i) => ({
   match_slot: i + 1,
@@ -35,6 +36,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
   onClose,
   onSave,
   sport,
+  loading,
 }) => {
   const [parsedMatches, setParsedMatches] =
     useState<ParsedMatch[]>(matchesInit);
@@ -385,8 +387,13 @@ const BracketModal: React.FC<BracketModalProps> = ({
             <button
               onClick={handleSubmit}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              disabled={loading}
             >
-              Create Bracket
+              {loading ? (
+                <FaSpinner className="animate-spin" />
+              ) : (
+                "Create Bracket"
+              )}
             </button>
           </div>
         </div>

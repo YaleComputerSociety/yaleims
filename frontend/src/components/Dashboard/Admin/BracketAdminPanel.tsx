@@ -4,12 +4,13 @@ import React, { useState } from "react";
 import BracketCreateModal from "@src/components/Dashboard/Admin/BracketCreateModal";
 import BracketInterface from "@src/components/Dashboard/Admin/BracketInterface";
 import { BracketData } from "@src/types/components";
-import withProtectedRoute from "@src/components/withProtectedRoute";
 import { toast } from "react-toastify";
 
 const BracketAdminPanel: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedSport, setSelectedSport] = useState<string>("");
+  const [createBracketLoading, setCreateBracketLoading] =
+    useState<boolean>(false);
 
   const openModal = (sport: string): void => {
     setSelectedSport(sport);
@@ -18,18 +19,14 @@ const BracketAdminPanel: React.FC = () => {
 
   const handleSave = async (bracketData: BracketData): Promise<void> => {
     try {
-      const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/createBracket",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify(bracketData),
-        }
-      );
+      setCreateBracketLoading(true);
+      const response = await fetch("/api/functions/createBracket", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bracketData }),
+      });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Failed to create bracket");
@@ -40,6 +37,8 @@ const BracketAdminPanel: React.FC = () => {
       setIsModalOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setCreateBracketLoading(false);
     }
   };
 
@@ -49,21 +48,15 @@ const BracketAdminPanel: React.FC = () => {
   ) => {
     setDeleteLoading(true);
     try {
-      // call cloud function
       const dataToSend = { sport };
 
-      const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/deleteBracket",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify(dataToSend),
-        }
-      );
+      const response = await fetch("/api/functions/deleteBracket", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dataToSend),
+      });
 
       const data = await response.json();
 
@@ -91,6 +84,7 @@ const BracketAdminPanel: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         sport={selectedSport}
+        loading={createBracketLoading}
       />
     </div>
   );
