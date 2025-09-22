@@ -10,19 +10,20 @@ import Error from "next/error";
 
 interface BracketCellProps {
   matchId: string;
+  season: string;
   onClick?: () => void;
 }
 
 // UPDATED: Added assignable Medal styles
 const getMedalTextStyle = (medal: "gold" | "silver" | null) => {
   switch (medal) {
-    case "gold": 
+    case "gold":
       return "bg-gradient-to-r from-yellow-300 to-yellow-500 text-transparent bg-clip-text font-extrabold";
     case "silver":
       return "bg-gradient-to-r from-gray-300 to-gray-500 text-transparent bg-clip-text font-bold";
     default:
       return "text-black";
-    }
+  }
 };
 // Updated: for cute emojis
 const getMedalIcon = (medal: "gold" | "silver" | null) => {
@@ -36,51 +37,92 @@ const getMedalIcon = (medal: "gold" | "silver" | null) => {
   }
 };
 
-
-
-// UPDATED: Added Mapping for long names 
-const shortNames: Record<string, string> = {  
-  "Benjamin Franklin": "Ben Frank", 
-  "Ezra Stiles": "Stiles", 
-  "Jonathan Edwards": "JE", 
-  "Timothy Dwight": "TD", 
+// UPDATED: Added Mapping for long names
+const shortNames: Record<string, string> = {
+  "Benjamin Franklin": "Ben Frank",
+  "Ezra Stiles": "Stiles",
+  "Jonathan Edwards": "JE",
+  "Timothy Dwight": "TD",
   "Grace Hopper": "Hopper",
   "Pauli Murray": "Murray",
 };
 
-const formatCollegeName = (name: string): string =>
-  shortNames[name] || name;
+const formatCollegeName = (name: string): string => shortNames[name] || name;
 
-// UPDATED: Added Skeleton Bracket Cell because the skeleton in CollegeSummaryCard was rendering strange. 
+// UPDATED: Added Skeleton Bracket Cell because the skeleton in CollegeSummaryCard was rendering strange.
 const SkeletonBracketCell = () => (
   /* Top Section */
   <div className="relative bg-white rounded-3xl shadow-lg w-64 aspect-[288/155] flex flex-col justify-between p-4 text-black">
     <div className="absolute top-1/2 left-0 w-full h-[3px] bg-gray-300 transform -translate-y-1/2 z-20" />
     <div className="flex items-center justify-between z-10">
       <div className="flex items-center space-x-2">
-        <Skeleton circle height={24} width={24} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+        <Skeleton
+          circle
+          height={24}
+          width={24}
+          baseColor="#f3f4f6"
+          highlightColor="#e5e7eb"
+        />
         <div className="flex items-center space-x-1">
-          <Skeleton height={20} width={100} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
-          <Skeleton height={20} width={28} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton
+            height={20}
+            width={100}
+            baseColor="#f3f4f6"
+            highlightColor="#e5e7eb"
+          />
+          <Skeleton
+            height={20}
+            width={28}
+            baseColor="#f3f4f6"
+            highlightColor="#e5e7eb"
+          />
         </div>
       </div>
-      <Skeleton height={32} width={48} borderRadius={12} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+      <Skeleton
+        height={32}
+        width={48}
+        borderRadius={12}
+        baseColor="#f3f4f6"
+        highlightColor="#e5e7eb"
+      />
     </div>
-    
+
     <div className="flex items-center justify-between z-10">
       <div className="flex items-center space-x-2">
-        <Skeleton circle height={24} width={24} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+        <Skeleton
+          circle
+          height={24}
+          width={24}
+          baseColor="#f3f4f6"
+          highlightColor="#e5e7eb"
+        />
         <div className="flex items-center space-x-1">
-          <Skeleton height={20} width={100} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
-          <Skeleton height={20} width={28} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+          <Skeleton
+            height={20}
+            width={100}
+            baseColor="#f3f4f6"
+            highlightColor="#e5e7eb"
+          />
+          <Skeleton
+            height={20}
+            width={28}
+            baseColor="#f3f4f6"
+            highlightColor="#e5e7eb"
+          />
         </div>
       </div>
-      <Skeleton height={32} width={48} borderRadius={12} baseColor="#f3f4f6" highlightColor="#e5e7eb" />
+      <Skeleton
+        height={32}
+        width={48}
+        borderRadius={12}
+        baseColor="#f3f4f6"
+        highlightColor="#e5e7eb"
+      />
     </div>
   </div>
 );
 
-// UPDATED: Created errorbracketcell to handle cell generation for !match and error. 
+// UPDATED: Created errorbracketcell to handle cell generation for !match and error.
 const ErrorBracketCell = ({
   title,
   message,
@@ -101,10 +143,11 @@ const ErrorBracketCell = ({
   </div>
 );
 
-
-
-
-const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
+const BracketCell: React.FC<BracketCellProps> = ({
+  matchId,
+  season,
+  onClick,
+}) => {
   const [match, setMatch] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +157,13 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
       try {
         setLoading(true);
         setError(null);
-        const matchDocRef = doc(db, "matches_testing", matchId);
+        const matchDocRef = doc(
+          db,
+          "matches_testing",
+          "seasons",
+          season,
+          matchId
+        );
         const matchDoc = await getDoc(matchDocRef);
 
         if (!matchDoc.exists()) {
@@ -138,25 +187,22 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
 
   // UPDATED: styled Loading state
   if (loading) {
-  return <SkeletonBracketCell />;
+    return <SkeletonBracketCell />;
   }
 
   // UPDATED: styled error && !message states that use the ErrorBracketCell
   if (error) {
-    return ( 
-    <ErrorBracketCell 
-      title="🚫 Error"
-      message="Failed to load match."
-    />
-  );
+    return (
+      <ErrorBracketCell title="🚫 Error" message="Failed to load match." />
+    );
   }
 
   if (!match) {
     return (
-    <ErrorBracketCell 
-     title="🔎 Match not Found"
-     message={`Match ${matchId} not found.`} 
-    />
+      <ErrorBracketCell
+        title="🔎 Match not Found"
+        message={`Match ${matchId} not found.`}
+      />
     );
   }
 
@@ -173,8 +219,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
     ? match.winner === match.away_college
       ? "away"
       : "home"
-    : null; 
-
+    : null;
 
   // UPDATED: for medal rendering :)
   let topMedal: "gold" | "silver" | null = null;
@@ -214,10 +259,15 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
             />
           )}
           <div className="flex items-center space-x-1">
-          <span className={`font-semibold text-lg break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(topMedal)}`} title={awayCollegeName}>
-          <span>{getMedalIcon(topMedal)}</span>
-          <span>{formatCollegeName(awayCollegeName)}</span>
-          </span>
+            <span
+              className={`font-semibold text-lg break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(
+                topMedal
+              )}`}
+              title={awayCollegeName}
+            >
+              <span>{getMedalIcon(topMedal)}</span>
+              <span>{formatCollegeName(awayCollegeName)}</span>
+            </span>
 
             <div
               className={`bg-gray-100 text-base rounded-full px-2 py-[6px] w-[28px] h-[32px] flex items-center justify-center font-bold self-start`}
@@ -271,10 +321,15 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, onClick }) => {
                 />
               )}
               <div className="flex items-center space-x-1">
-              <span className={`font-semibold text-lg break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(bottomMedal)}`}title={homeCollegeName}>
-              <span>{getMedalIcon(bottomMedal)}</span>
-              <span>{formatCollegeName(homeCollegeName)}</span>
-              </span>
+                <span
+                  className={`font-semibold text-lg break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(
+                    bottomMedal
+                  )}`}
+                  title={homeCollegeName}
+                >
+                  <span>{getMedalIcon(bottomMedal)}</span>
+                  <span>{formatCollegeName(homeCollegeName)}</span>
+                </span>
 
                 <span
                   className={`bg-gray-100 text-base rounded-full px-2 py-[6px] w-[28px] h-[32px] flex items-center justify-center font-bold self-start`}

@@ -109,9 +109,7 @@ const BracketsPage: React.FC = () => {
 
       {/* Welcome Message */}
       <div className="max-w-3xl mx-auto my-10 bg-white rounded-lg shadow px-6 py-4 text-center text-lg text-gray-700 mb-4">
-        <p className="font-bold mb-2">
-          Welcome to the Brackets Page!
-        </p>
+        <p className="font-bold mb-2">Welcome to the Brackets Page!</p>
         <p>
           To view upcoming, past, or current playoff matches, please select your
           desired sport and year.
@@ -201,7 +199,10 @@ const BracketsPage: React.FC = () => {
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
                         >
-                          <BracketCell matchId={match.match_id} />
+                          <BracketCell
+                            matchId={match.match_id}
+                            season={season}
+                          />
                         </div>
                       );
                     })}
@@ -221,7 +222,10 @@ const BracketsPage: React.FC = () => {
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
                         >
-                          <BracketCell matchId={match.match_id} />
+                          <BracketCell
+                            matchId={match.match_id}
+                            season={season}
+                          />
                         </div>
                       );
                     })}
@@ -238,7 +242,10 @@ const BracketsPage: React.FC = () => {
                       className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                       key={bracket[leftSemiIndex].match_id}
                     >
-                      <BracketCell matchId={bracket[leftSemiIndex].match_id} />
+                      <BracketCell
+                        matchId={bracket[leftSemiIndex].match_id}
+                        season={season}
+                      />
                     </div>
                   </div>
                 </div>
@@ -251,7 +258,10 @@ const BracketsPage: React.FC = () => {
                   <div className="flex flex-col items-center justify-center space-y-6">
                     <img src="/trophy.png" alt="Trophy" className="w-14 h-14" />
                     <div className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
-                      <BracketCell matchId={bracket[finalIndex].match_id} />
+                      <BracketCell
+                        matchId={bracket[finalIndex].match_id}
+                        season={season}
+                      />
                     </div>
                     <div className="bg-white rounded-lg px-2 py-1 shadow text-center">
                       <p className="text-base ">
@@ -271,7 +281,10 @@ const BracketsPage: React.FC = () => {
                       className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                       key={bracket[rightSemiIndex].match_id}
                     >
-                      <BracketCell matchId={bracket[rightSemiIndex].match_id} />
+                      <BracketCell
+                        matchId={bracket[rightSemiIndex].match_id}
+                        season={season}
+                      />
                     </div>
                   </div>
                 </div>
@@ -289,7 +302,10 @@ const BracketsPage: React.FC = () => {
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
                         >
-                          <BracketCell matchId={match.match_id} />
+                          <BracketCell
+                            matchId={match.match_id}
+                            season={season}
+                          />
                         </div>
                       );
                     })}
@@ -309,7 +325,10 @@ const BracketsPage: React.FC = () => {
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
                         >
-                          <BracketCell matchId={match.match_id} />
+                          <BracketCell
+                            matchId={match.match_id}
+                            season={season}
+                          />
                         </div>
                       );
                     })}

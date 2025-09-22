@@ -87,7 +87,11 @@ export const deleteBracket = functions.https.onRequest((req, res) => {
 
       // delete all matches
       for (const matchId of matchIdsToDelete) {
-        const matchRef = db.collection("matches_testing").doc(matchId);
+        const matchRef = db
+          .collection("matches_testing")
+          .doc("seasons")
+          .collection(currentYear)
+          .doc(matchId);
         batch.delete(matchRef);
       }
 

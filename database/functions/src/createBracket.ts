@@ -312,7 +312,11 @@ export const createBracket = functions.https.onRequest((req, res) => {
             playoff_bracket_slot: i,
           };
 
-          const matchRef = db.collection("matches_testing").doc(matchId);
+          const matchRef = db
+            .collection("matches_testing")
+            .doc("seasons")
+            .collection(currentYear)
+            .doc(matchId);
           transaction.set(matchRef, matchData);
         }
 
