@@ -6,24 +6,30 @@ const AdminDashboard: React.FC = () => {
   // You can style things conditionally, You can also make the prop conditional!
 
   return (
-  //   <div className="p-6 justify-center">
-  //     <h2 className="text-2xl font-medium mb-4">Welcome to the Admin Hub</h2>
-  //     <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
-  <>
-        <DCardLink
-          title="Score Matches"
-          link="/hub/add-scores"
-          openLinkInfo="Click to update scores →"
-          message="Update/undo scores for matches that have been played!"
-        />
-        <DCardLink
-          title="Upload Matches"
-          link="/hub/upload-schedule"
-          message="Upload schedules for upcoming sports seasons in CSV format!"
-          openLinkInfo="Click to upload match schedules →"
-        />
-      </>
-  )
+    //   <div className="p-6 justify-center">
+    //     <h2 className="text-2xl font-medium mb-4">Welcome to the Admin Hub</h2>
+    //     <div className="grid md:grid-cols-3 grid-cols-2 gap-3 md:gap-6">
+    <>
+      <DCardLink
+        title="Score Matches"
+        link="/hub/add-scores"
+        openLinkInfo="Click to update scores →"
+        message="Update/undo scores for matches that have been played!"
+      />
+      <DCardLink
+        title="Upload Matches"
+        link="/hub/upload-schedule"
+        message="Upload schedules for upcoming sports seasons in CSV format!"
+        openLinkInfo="Click to upload match schedules →"
+      />
+      <DCardLink
+        title="Upload Brackets"
+        link="/hub/upload-brackets"
+        message="Upload or delete bracket information for upcoming playoff seasons!"
+        openLinkInfo="Click to upload bracket information →"
+      />
+    </>
+  );
 };
 
 // export default withRoleProtectedRoute(AdminDashboard, ["admin"]);

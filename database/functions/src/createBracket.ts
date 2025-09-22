@@ -1,6 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import jwt from "jsonwebtoken";
+
+import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -71,15 +74,6 @@ interface BracketData {
   matches: ParsedMatch[];
 }
 
-// interface Team {
-//   college: string;
-//   seed: string | number;
-//   division: "green" | "blue" | "none";
-//   matchSlot: string | number;
-//   matchDatetime: string;
-//   location: string;
-// }
-
 interface ParsedMatch {
   match_slot: number;
   away_college: string;
@@ -87,110 +81,40 @@ interface ParsedMatch {
   home_college: string;
   home_seed: number;
   location: string;
+  location_extra?: string;
   timestamp: string;
   division: "green" | "blue" | "final" | "none";
 }
 
-/**
- * Parses BracketData into an array of ParsedMatch objects,
- * ensuring higher seeds are placed as home teams
- */
-// function parseTeamsToMatches(bracketData: BracketData): ParsedMatch[] {
-//   const { teams } = bracketData;
-
-//   // Group teams by matchSlot
-//   const matchSlotMap: Map<number, Team[]> = new Map();
-
-//   // Convert all matchSlots to numbers and create groups
-//   teams.forEach((team) => {
-//     // Skip teams without a valid matchSlot
-//     if (!team.matchSlot) return;
-
-//     const matchSlotNum = Number(team.matchSlot);
-//     if (isNaN(matchSlotNum)) return;
-
-//     // Get or create the array for this matchSlot
-//     const teamsForSlot = matchSlotMap.get(matchSlotNum) || [];
-//     teamsForSlot.push({
-//       ...team,
-//       // Convert seed to number
-//       seed:
-//         typeof team.seed === "string" ? parseInt(team.seed) || 0 : team.seed,
-//     });
-
-//     matchSlotMap.set(matchSlotNum, teamsForSlot);
-//   });
-
-//   // Create ParsedMatch objects from the grouped teams
-//   const parsedMatches: ParsedMatch[] = [];
-
-//   matchSlotMap.forEach((teamsInSlot, matchSlot) => {
-//     const matchRound = matchRounds[matchSlot];
-
-//     // ensure playoff games have 2 teams
-//     if (teamsInSlot.length !== 2 && matchRound === "Playoff") return;
-//     else if (matchRound !== "Playoff") {
-//       teamsInSlot.push(teamsInSlot[0]); // update formatting for other match types to be consistent
-//     }
-
-//     if (matchRound === "Playoff") {
-//       // Sort teams by seed (lower seed number = higher seed)
-//       teamsInSlot.sort((a, b) => {
-//         const seedA =
-//           typeof a.seed === "string" ? parseInt(a.seed) || 999 : a.seed;
-//         const seedB =
-//           typeof b.seed === "string" ? parseInt(b.seed) || 999 : b.seed;
-//         return seedA - seedB;
-//       });
-//     }
-
-//     // First team (index 0) is higher seeded (lower number), should be home
-//     const [higherSeed, lowerSeed] = teamsInSlot;
-
-//     // Determine if this is a final match or which division it belongs to
-//     let division: "green" | "blue" | "final" | "none" = "green";
-
-//     if (matchSlot === 15) {
-//       division = "final";
-//     } else if (
-//       (matchRound === "Playoff" || matchRound === "Bye") &&
-//       higherSeed.division === lowerSeed.division
-//     ) {
-//       division = higherSeed.division;
-//     } else {
-//       division = "none";
-//     }
-
-//     // Find the timestamp from either team (prefer the first one with a value)
-//     const timestamp = higherSeed.matchDatetime || lowerSeed.matchDatetime || "";
-
-//     // Find the location from either team (prefer the first one with a value)
-//     const location = higherSeed.location || lowerSeed.location || "";
-
-//     // Create the ParsedMatch object
-//     const parsedMatch: ParsedMatch = {
-//       match_slot: matchSlot,
-//       home_college: higherSeed.college,
-//       home_seed: Number(higherSeed.seed),
-//       away_college: lowerSeed.college,
-//       away_seed: Number(lowerSeed.seed),
-//       location,
-//       timestamp,
-//       division,
-//     };
-
-//     parsedMatches.push(parsedMatch);
-//   });
-
-//   // Sort the matches by matchSlot for consistency
-//   return parsedMatches.sort((a, b) => a.match_slot - b.match_slot);
-// }
+const canCreateBracket = (role: string) => {
+  return role === "admin" || role === "dev";
+};
 
 export const createBracket = functions.https.onRequest((req, res) => {
-  return corsHandler(req, res, async () => {
+  corsHandler(req, res, async () => {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    const idToken = authHeader.split("Bearer ")[1];
+    let decoded: any;
+    try {
+      decoded = jwt.verify(idToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    if (!isValidDecodedToken(decoded) || !canCreateBracket(decoded.role)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
     try {
       // Check if request body exists and is properly formatted
-      let rawData: BracketData | null = null;
+      let rawData = null;
 
       // Handle different ways the data might be sent
       if (req.method === "POST") {
@@ -200,30 +124,31 @@ export const createBracket = functions.https.onRequest((req, res) => {
             rawData = JSON.parse(req.body);
           } catch (e) {
             console.error("Error parsing JSON:", e);
-            res.status(400).json({ error: "Invalid JSON in request body." });
-            return;
+            return res
+              .status(400)
+              .json({ error: "Invalid JSON in request body." });
           }
         } else if (req.body && typeof req.body === "object") {
           // If body is already an object
-          rawData = req.body as BracketData;
+          rawData = req.body;
         }
       }
 
+      const bracketData = rawData.bracketData as BracketData;
+
       // Check if we have valid data
-      if (!rawData || !rawData.sport) {
-        res
+      if (!bracketData || !bracketData.sport || !bracketData.matches) {
+        return res
           .status(400)
           .json({ error: "Missing or invalid 'bracketData' parameter." });
-        return;
       }
 
-      const sport = String(rawData.sport);
+      const sport = String(bracketData.sport);
 
       if (!sport) {
-        res
+        return res
           .status(400)
           .json({ error: "Missing or invalid 'sport' parameter." });
-        return;
       }
 
       const currentSeasonInfo = await db
@@ -232,8 +157,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
         .get();
 
       if (!currentSeasonInfo.exists) {
-        res.status(500).json({ error: "Current season not found." });
-        return;
+        return res.status(500).json({ error: "Current season not found." });
       }
 
       const currentYear = currentSeasonInfo.data()?.year;
@@ -246,14 +170,13 @@ export const createBracket = functions.https.onRequest((req, res) => {
 
       const existingDoc = await bracketRef.get();
       if (existingDoc.exists) {
-        res
+        return res
           .status(409)
           .json({ error: `Bracket for '${sport}' already exists.` });
-        return;
       }
 
       // get parsedMatches from rawData
-      const parsedMatches: ParsedMatch[] = rawData.matches;
+      const parsedMatches: ParsedMatch[] = bracketData.matches;
 
       // Create a Map for easier lookup
       const parsedMatchMap = new Map<number, ParsedMatch>();
@@ -373,6 +296,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
             home_volume: 0,
             id: matchId,
             location: parsedMatch ? parsedMatch.location : "",
+            location_extra: parsedMatch ? parsedMatch.location_extra : "",
             predictions: {},
             sport: sport,
             timestamp:
@@ -388,7 +312,11 @@ export const createBracket = functions.https.onRequest((req, res) => {
             playoff_bracket_slot: i,
           };
 
-          const matchRef = db.collection("matches_testing").doc(matchId);
+          const matchRef = db
+            .collection("matches_testing")
+            .doc("seasons")
+            .collection(currentYear)
+            .doc(matchId);
           transaction.set(matchRef, matchData);
         }
 
@@ -407,7 +335,8 @@ export const createBracket = functions.https.onRequest((req, res) => {
         .json({ message: `Bracket for '${sport}' created successfully.` });
     } catch (error) {
       console.error("Error creating bracket:", error);
-      res.status(500).send("Internal Server Error");
+      return res.status(500).send("Internal Server Error");
     }
+    return;
   });
 });
