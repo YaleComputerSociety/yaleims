@@ -235,7 +235,6 @@ const BracketsPage: React.FC = () => {
                     Quarterfinals
                   </span>
                   <div className="ml-4 flex flex-col items-end justify-center space-y-80">
-
                     {leftQuarterIndices.map((index) => {
                       const match = bracket[index];
                       return (
@@ -273,7 +272,6 @@ const BracketsPage: React.FC = () => {
 
                 {/* Final */}
                 <div className="flex flex-col items-center space-y-24">
-
                   <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
                     Finals
                   </span>
@@ -304,7 +302,10 @@ const BracketsPage: React.FC = () => {
                   </div>
                   {/* Final match cell */}
                   <div className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
-                    <BracketCell matchId={bracket[finalIndex].match_id} />
+                    <BracketCell
+                      matchId={bracket[finalIndex].match_id}
+                      season={season}
+                    />
                   </div>
                   {/* Congrats message */}
                   {/* {bracket[finalIndex]?.winner && (
