@@ -14,6 +14,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { SeasonProvider } from "@src/context/SeasonContext";
 import { NavbarProvider, useNavbar } from "@src/context/NavbarContext";
+import AnalyticsListener from "./AnalyticsListener";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,12 +25,18 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className={`flex flex-col transition-all duration-200 min-h-screen md:grid ${collapsed ? "md:grid-cols-[0.05fr_0.95fr]" : "md:grid-cols-[0.16fr_0.84fr]"}`}>
+    <div
+      className={`flex flex-col transition-all duration-200 min-h-screen md:grid ${
+        collapsed
+          ? "md:grid-cols-[0.05fr_0.95fr]"
+          : "md:grid-cols-[0.16fr_0.84fr]"
+      }`}
+    >
       <div className="transition-all duration-200">
         <NavBar />
       </div>
       <div className="transition-all duration-200">
-        <SeasonProvider>{children}</SeasonProvider>                      
+        <SeasonProvider>{children}</SeasonProvider>
         <Footer />
       </div>    
       <ToastContainer />      
@@ -37,7 +44,11 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode;}>) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <UserProvider>      
       <FiltersProvider>
@@ -50,8 +61,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </head>
             <body className={`${inter.className}`}>
               <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+                <AnalyticsListener />
                 <InnerLayout>{children}</InnerLayout>
-              </ThemeProvider>               
+              </ThemeProvider>
             </body>
           </html>
         </NavbarProvider>

@@ -117,7 +117,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         username: d.username,
       } : prev);
       const csv = d.mRoles?.join(",") ?? "";
-      fetch(`/api/auth/verify?currentRoles=${encodeURIComponent(csv)}`);
+      fetch(`/api/auth/verify?currentRoles=${encodeURIComponent(csv)}&currentUsername=${encodeURIComponent(d.username)}`);
     });
     return () => unsub();
   }, [user?.email]);

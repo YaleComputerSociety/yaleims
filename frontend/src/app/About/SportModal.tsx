@@ -102,7 +102,7 @@ const SportModal: React.FC<SportModalProps> = ({ sport, setSport }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-gray-800 bg-opacity-75 flex items-center justify-center"
       onClick={onExit}
     >
       <div

@@ -17,6 +17,8 @@ import { useNavbar } from "@src/context/NavbarContext";
 import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
 import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineLeaderboard } from "react-icons/md";
+import { FaQuestionCircle } from "react-icons/fa";
+import { MdOutlineSportsScore } from "react-icons/md";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -67,7 +69,9 @@ const NavBar: React.FC = () => {
     { href: "/scores", text: "Scores", icon: <MdOutlineScoreboard /> },
     { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
     { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
-    { href: "/about-us", text: "About", icon: <IoInformationCircleOutline /> },
+    { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
+    { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
+    { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
     { href: "https://yaleims.canny.io", text: "Feedback", icon: <VscFeedback /> },
   ];
   const widthClass = collapsed ? "md:w-[5%]" : "md:w-[16%]";

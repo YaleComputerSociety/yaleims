@@ -2,6 +2,7 @@
 
 import Dropdown from "@src/components/Faq/Dropdown";
 import Link from "next/link";
+import PageHeading from "@src/components/PageHeading";
 
 export default function Faq() {
   const sections = [
@@ -163,22 +164,9 @@ export default function Faq() {
   ];
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-10">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-lg sm:text-3xl font-bold text-center mb-2 sm:mb-6">
-          Frequently Asked Questions
-        </h1>
-        <p className="text-center mb-3">
-          Have another question?{" "}
-          <Link
-            className="text-blue-500"
-            href="https://yaleims.canny.io"
-            target="_blank"
-          >
-            Contact us
-          </Link>
-          .
-        </p>
+    <div className="min-h-screen">
+      <PageHeading heading="FAQ"/>
+      <div className="max-w-3xl py-8 px-4 sm:px-10 mx-auto pt-20">
         {sections.map((section, index) => (
           <div key={index} className="mb-8">
             <h2 className="text-lg sm:text-2xl font-semibold mb-4">
@@ -196,6 +184,16 @@ export default function Faq() {
             </div>
           </div>
         ))}
+        <p className="text-center mt-3">
+          Have another question?{" "}
+          <Link
+            className="text-blue-500"
+            href="https://yaleims.canny.io"
+            target="_blank"
+          >
+            Contact us
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -40,7 +40,7 @@ export const getUserMatches = functions.https.onRequest((req, res) => {
       const userData = userDoc.data();
       const matches = userData?.matches || []; // Default to empty array if no matches
 
-      // Filter matches to include only those happening in the future
+      // // Filter matches to include only those happening in the future
       const now = new Date();
       const futureMatches = matches.filter((match: any) => {
         const matchTimestamp = new Date(match.timestamp);

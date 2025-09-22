@@ -13,7 +13,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { FaSpinner } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MdClose } from "react-icons/md";
+import { MdClose, MdModeEditOutline } from "react-icons/md";
 import BetSlipRow from "@src/components/YOdds/BetSlipRow";
 import SportCard from "@src/app/About/SportCard";
 import { sports } from "@src/utils/helpers";
@@ -44,12 +44,16 @@ const YoddsPage: React.FC = () => {
   const [pastBets, setPastBets] = useState<BetParlay[]>([]);
   const [availablePoints, setAvailablePoints] = useState<number>(0);
 
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const userEmail = user ? user.email : null;
   const router = useRouter();
   const { filter, setFilter } = useContext(FiltersContext);
 
-  const [newUsername, setUsername] = useState("Anonymous");
+  const [newUsername, setUsername] = useState(user?.username || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
   const [viewPendingBets, setViewPendingBets] = useState(false);
   const [viewBetSlip, setViewBetSlip] = useState(false);
   const [viewBetHistory, setViewBetHistory] = useState(false);
@@ -62,7 +66,47 @@ const YoddsPage: React.FC = () => {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'submitted'>('idle');
 
   const { currentSeason } = useSeason();
- 
+  const handleEditUsername = async () => {
+    setEditLoading(true);
+    setError("");
+
+    try {
+      const userToken = sessionStorage.getItem("userToken")
+
+      const response = await fetch(
+        "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`
+          },
+          body: JSON.stringify({
+            userId: user?.email,
+            newUsername: newUsername.trim(),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setIsEditing(false); // Close the popup
+        } else {
+          setError("Failed to update username. Please try again.");
+        }
+      } else {
+        const errorMessage = await response.text();
+        setError(errorMessage || "An unexpected error occurred.");
+      }
+    } catch (error) {
+      console.error("Error updating username:", error);
+      setError("Failed to update username. Please try again.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const updateBetSlip = (bet: Bet): Bet[] => {
     if (betslip.some((b) => b.betId === bet.betId)) {
       toast("Selection already in Slip. Did not add bet");
@@ -302,13 +346,6 @@ const YoddsPage: React.FC = () => {
     }
   };
 
-  // under consideration
-  // const deleteBet = () => {
-
-  // }
-
-  
-
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -385,14 +422,57 @@ const YoddsPage: React.FC = () => {
             </button>
           </div>
         </div>
-        <div className="items-center justify-center my-auto mx-auto">
+        <div className="flex items-center justify-center my-auto mx-auto">
           <div
             className="p-3 mp:p-6 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white font-bold text-xs xs:text-sm mp:text-xl rounded-xl shadow-lg"
             style={{ maxWidth: "250px", minWidth: "100px" }}
           >
-            <p className="text-center">
-              <span className="text-yellow-300">{newUsername}</span> YCoins:
-            </p>
+            {isEditing && (
+              <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+                <div className="bg-white dark:bg-black p-6 rounded-lg shadow-lg w-80">
+                  <h2 className="text-lg font-bold mb-4">Edit Username</h2>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-md p-2 mb-4 dark:bg-black"
+                    value={newUsername}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter new username"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleEditUsername(); // Trigger the function on Enter key press
+                      }
+                    }}
+                  />
+                  {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                      onClick={handleEditUsername}
+                      disabled={editLoading}
+                    >
+                      {editLoading ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      className="bg-gray-300 dark:bg-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="text-center flex flex-wrap items-center justify-between">
+              <div className="items-center justify-center p-1">
+                <MdModeEditOutline
+                  style={{ fontSize: "20px" }}
+                  className="cursor-pointer hover:text-blue-700"
+                  onClick={() => setIsEditing(true)}
+                />
+              </div>
+              <div className="text-yellow-300">{newUsername}</div> 
+              <h3>YCoins:</h3>
+            </div>
             <div className="flex flex-row justify-center items-center gap-1">
               {coinsLoading ? (
                 <FaSpinner className="animate-spin" />

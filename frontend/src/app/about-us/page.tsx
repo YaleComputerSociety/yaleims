@@ -4,16 +4,12 @@ import React from "react";
 import { useEffect } from "react";
 import PersonCard from "@src/app/About/PersonCard";
 import Link from "next/link";
+import PageHeading from "@src/components/PageHeading";
 
 const AboutUsPage: React.FC = () => {
-  // title of page
-  useEffect(() => {
-    document.title = "About";
-  }, []);
-
   // add college and grad year to display
 
-  const teamMembers = [
+  const pastMembers = [
     {
       name: "Anna Xu",
       roles: ["Team Lead, Software Engineer"],
@@ -22,6 +18,57 @@ const AboutUsPage: React.FC = () => {
       linkedin: "https://www.linkedin.com/in/anna-wenxin-xu/",
       portfolio: "",
     },
+    {
+      name: "Diego Aspinwall",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Diego_Aspinwall.png",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Shankara Abbineni",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Shankara_Abbineni.jpeg",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Lleyton Emery",
+      roles: ["Software Engineer"],
+      image: "/dev_images/Lleyton_Emery.jpg",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Lily Lin",
+      roles: ["UI/UX Designer"],
+      image: "/dev_images/Lily_Lin.jpeg",
+      github: undefined,
+      linkedin: undefined,
+      portfolio: undefined,
+    },
+    {
+      name: "Naomi Ling",
+      roles: ["UI/UX Designer"],
+      image: "/dev_images/Naomi_Ling.jpeg",
+      github: undefined,
+      linkedin: "https://www.linkedin.com/in/naomi-ling/",
+      portfolio: "https://naomiling.super.site/",
+    },
+    {
+      name: "Asya Tarabar",
+      roles: ["UI/UX Designer"],
+      image: "/dev_images/Asya_Tarabar.jpeg",
+      github: "https://www.linkedin.com/in/asya-tarabar/",
+      linkedin: undefined,
+      portfolio: "https://asyatarabar.com/",
+    },
+  ]
+
+  const teamMembers = [
     {
       name: "Ephraim Akai-Nettey",
       roles: ["Team Lead, Software Engineer"],
@@ -77,55 +124,7 @@ const AboutUsPage: React.FC = () => {
       github: undefined,
       linkedin: "https://www.linkedin.com/in/vojtech-kysilka/",
       portfolio: undefined,
-    },
-    {
-      name: "Diego Aspinwall",
-      roles: ["Software Engineer"],
-      image: "/dev_images/Diego_Aspinwall.png",
-      github: undefined,
-      linkedin: undefined,
-      portfolio: undefined,
-    },
-    {
-      name: "Shankara Abbineni",
-      roles: ["Software Engineer"],
-      image: "/dev_images/Shankara_Abbineni.jpeg",
-      github: undefined,
-      linkedin: undefined,
-      portfolio: undefined,
-    },
-    {
-      name: "Lleyton Emery",
-      roles: ["Software Engineer"],
-      image: "/dev_images/Lleyton_Emery.jpg",
-      github: undefined,
-      linkedin: undefined,
-      portfolio: undefined,
-    },
-    {
-      name: "Lily Lin",
-      roles: ["UI/UX Designer"],
-      image: "/dev_images/Lily_Lin.jpeg",
-      github: undefined,
-      linkedin: undefined,
-      portfolio: undefined,
-    },
-    {
-      name: "Naomi Ling",
-      roles: ["UI/UX Designer"],
-      image: "/dev_images/Naomi_Ling.jpeg",
-      github: undefined,
-      linkedin: "https://www.linkedin.com/in/naomi-ling/",
-      portfolio: "https://naomiling.super.site/",
-    },
-    {
-      name: "Asya Tarabar",
-      roles: ["UI/UX Designer"],
-      image: "/dev_images/Asya_Tarabar.jpeg",
-      github: "https://www.linkedin.com/in/asya-tarabar/",
-      linkedin: undefined,
-      portfolio: "https://asyatarabar.com/",
-    },
+    }
   ];
 
   const specialThanks = [
@@ -181,10 +180,8 @@ const AboutUsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen p-2 xs:p-8 flex flex-col items-center w-11/12 sm:w-4/5 justify-center max-w-[1500px] mx-auto">
-      <h1 className="text-2xl sm:text-4xl font-bold text-center mb-4 sm:mb-8 pt-5 lg:-ml-6">
-        About Us
-      </h1>
-      <p>
+      <PageHeading heading="About Team" />
+      <p className="pt-20">
         Every school year Yale’s 14 colleges compete in intramural sports for
         the Tyng Cup. Learn more about how it all works{" "}
         <Link className="text-blue-600 dark:text-blue-300" href="/about-ims">

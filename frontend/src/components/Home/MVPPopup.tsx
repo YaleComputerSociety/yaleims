@@ -55,7 +55,7 @@ const MVPPopup = () => {
       <div>
         <button
           onClick={() => setIsOpen(true)}
-          className="absolute left-1 top-[0rem] flex flex-col items-center text-blue-600 underline font-medium text-sm hover:text-blue-800 transition w-20 h-46"
+          className="flex flex-col items-center text-blue-600 underline font-medium text-sm hover:text-blue-800 transition w-20 h-46"
         >
           <img
             src="/mvp_images/mvpicon.png"
@@ -149,7 +149,7 @@ const MVPPopup = () => {
               <div className="mt-4 text-center text-sm text-blue-800">
                 Know someone who deserves the spotlight?{" "}
                 <a href="/contact" className="underline font-semibold">
-                  Submit a teammate for MVP here 📩
+                  Contact your college representatitve!
                 </a>
               </div>
             </div>
