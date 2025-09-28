@@ -189,12 +189,11 @@ export function buildWeekOptions(start: Date): { value: string; label: string }[
 
   const firstWeekStart = new Date(start);
   const day = firstWeekStart.getDay();     // 0 = Sun … 6 = Sat
-  if (day !== 0) {
-    firstWeekStart.setDate(firstWeekStart.getDate() + (7 - day));
+  if (day !== 1) {
+    firstWeekStart.setDate(firstWeekStart.getDate() + (8 - day) % 7);
   }
 
-  const weekCount =
-    Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
+  const weekCount = Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
 
   const format = (d: Date) =>
     d.toLocaleDateString("en-US", {
