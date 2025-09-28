@@ -2,6 +2,7 @@
 
 import React from "react";
 import BracketCell from "./BracketCell";
+import { useSeason } from "@src/context/SeasonContext";
 
 interface FirestoreMatch {
   bracket_placement: number;
@@ -14,10 +15,15 @@ interface BracketProps {
 }
 
 const Bracket: React.FC<BracketProps> = ({ matches }) => {
+  const { currentSeason } = useSeason();
+
+  if (!currentSeason) {
+    return <div>Loading...</div>;
+  }
   return (
     <div className="flex flex-row flex-wrap gap-4">
       {matches.map((match) => (
-        <BracketCell key={match.match_id} matchId={match.match_id} />
+        <BracketCell season={currentSeason.year} key={match.match_id} matchId={match.match_id} />
       ))}
     </div>
   );
