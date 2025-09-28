@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSeason } from "@src/context/SeasonContext";
-import { seasonStart, getCurrentWeekId } from "@src/utils/helpers";
 import LoadingSpinner from "@src/components/LoadingSpinner";
+import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
+import { useUser } from "@src/context/UserContext";
 
 interface User {
   email: string;
   firstname?: string;  // handle both shapes
   lastname?: string;
-  firstName?: string;
-  lastName?: string;
   captain?: string[];
   college: string;
 }
@@ -26,8 +25,14 @@ export default function SelectMVP() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const [weekId, setWeekId] = useState(getCurrentWeekId(seasonStart));
+  const [mvps, setMvps]  = useState<Record<string, any> | null>(null);
+  const { user } = useUser();
+
+  const weeks = buildWeekOptions(seasonStart).reverse();
+
   const nameOf = (u: User) =>
-    `${u.firstName ?? u.firstname ?? ""} ${u.lastName ?? u.lastname ?? ""}`.trim();
+    `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,6 +48,26 @@ export default function SelectMVP() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!currentSeason) return;
+
+    const fetchMvps = async () => {
+      try {
+        const res = await fetch(
+          `/api/functions/getMVPs?seasonId=${currentSeason.year}&collegeId=${user?.college}`,
+        );
+        if (!res.ok) throw new Error(res.statusText);
+        setMvps(await res.json());
+      } catch (err) {
+        console.error(err);
+        setMvps(null);
+      }
+    };
+
+    fetchMvps();
+  }, [selectUser?.college, weekId]);
+
 
   useEffect(() => {
     fetchData();
@@ -64,8 +89,6 @@ export default function SelectMVP() {
     setNotice(null);
     if (!selectUser) return setError("Pick a student first.");
 
-    const weekId = getCurrentWeekId(seasonStart);
-
     try {
       setSettingMVP(true);
       await fetch("/api/functions/setMVP", {
@@ -76,6 +99,8 @@ export default function SelectMVP() {
           residentialCollege: selectUser.college,
           weekId: weekId,
           mvpEmail: selectUser.email,
+          mvpFName: selectUser.firstname,
+          mvpLName: selectUser.lastname
         }),
       });
       setNotice(`MVP set for week ${weekId}.`);
@@ -89,19 +114,30 @@ export default function SelectMVP() {
     }
   };
 
-  const currentWeekId = getCurrentWeekId(seasonStart);
-
   return (
     <div className="space-y-5 py-4">
       {/* Status banner */}
-      <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30 text-sm">
-        <strong>{currentWeekId}</strong>.{" "}
-        {selectUser ? (
-          <>Ready to set MVP for <strong>{nameOf(selectUser) || selectUser.email}</strong>.</>
-        ) : (
-          <>Pick a student to enable actions.</>
-        )}
+      <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30 text-sm space-y-2">
+      <div className="flex items-center gap-2">
+        <select
+          className="rounded-md border px-2 py-1 text-sm bg-white dark:bg-black"
+          value={weekId}
+          onChange={(e) => setWeekId(e.target.value)}
+        >
+          {weeks.map((w) => (
+            <option key={w.value} value={w.value}>
+              {w.label}
+            </option>
+          ))}
+        </select>
       </div>
+
+      {selectUser ? (
+        <>Ready to set MVP for <strong>{nameOf(selectUser) || selectUser.email}</strong>.</>
+      ) : (
+        <>Pick a student to enable actions.</>
+      )}
+    </div>
 
       {/* Alerts */}
       {error && (
@@ -117,6 +153,17 @@ export default function SelectMVP() {
 
       {/* Main panel */}
       <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40 space-y-4">
+        {/* Existing MVPs for the chosen week */}
+        {mvps && mvps[weekId] && (
+          <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-3 text-sm">
+            <p className="mb-2 font-semibold">Already selected for this week:</p>
+            {Object.entries(mvps[weekId]).map(([email, p]: any) => (
+              <p key={email}>
+                • {p.fname} {p.lname} <span className="text-xs text-gray-500">({email})</span>
+              </p>
+            ))}
+          </div>
+        )}
         <button
           className="px-3 py-2 text-sm bg-green-600 text-white rounded-md shadow hover:opacity-90 disabled:opacity-50"
           disabled={settingMVP || !selectUser}

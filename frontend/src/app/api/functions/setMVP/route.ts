@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
  
 export async function POST(req: Request) {
-    const { season, weekId, residentialCollege, mvpEmail } = await req.json();
+    const { season, weekId, residentialCollege, mvpEmail, mvpFName, mvpLName } = await req.json();
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
     if (!token) {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const response = await fetch("https://setmvp-65477nrg6a-uc.a.run.app", {
             method: "POST",
             headers: {"Content-Type": "application/json", Authorization: `Bearer ${token.value}`},
-            body: JSON.stringify({ season, weekId, residentialCollege, mvpEmail }),
+            body: JSON.stringify({ season, weekId, residentialCollege, mvpEmail, mvpFName, mvpLName }),
         }
     );
 

@@ -25,14 +25,16 @@ export const setMVP = functions.https.onRequest((req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid token" });
     }
-    if (!isValidDecodedToken(decoded) || decoded.role !== "college_rep") {
+    if (!isValidDecodedToken(decoded) || !decoded.mRoles.includes("college_rep")) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    const { season, residentialCollege, weekId, mvpEmail } = req.body;
-    if (!season || !residentialCollege || !weekId || !mvpEmail) {
+    const { season, residentialCollege, weekId, mvpEmail, mvpFName, mvpLName } = req.body;
+    if (!season || !residentialCollege || !weekId || !mvpEmail || !mvpFName || !mvpLName) {
       return res.status(400).json({ error: "Missing required field(s)" });
     }
+
+    console.log(mvpFName, mvpLName);
 
     const weekRef = db
       .collection("mvps")
@@ -40,11 +42,10 @@ export const setMVP = functions.https.onRequest((req, res) => {
       .collection(residentialCollege)
       .doc(weekId);
 
-    const [fname, lname] = decoded.name.split(' ');
     try {
       await weekRef.set(
         {
-          [mvpEmail]: { fname: fname, lname: lname }
+          [mvpEmail]: { fname: mvpFName, lname: mvpLName }
         },
         { merge: true }  
       );
