@@ -51,8 +51,6 @@ const MVPPopup = () => {
 
         const data = await response.json();
         setMvps(data);
-        console.log("mvps", data);
-        console.log(data[selectedWeek])
       }
     };
     fetchData();
@@ -115,11 +113,11 @@ const MVPPopup = () => {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex bg-black/70 items-center justify-center bg-black w-[100%] h-[100%] flex-col"
+          className="fixed inset-0 z-50 flex bg-black/60 items-center justify-center w-[100%] h-[100%] flex-col"
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="dark:bg-black bg-white rounded-3xl border border-blue-400 p-4 max-w-md w-full h-[80%] shadow-2xl"
+            className="dark:bg-custom_gray bg-white rounded-3xl  p-4 max-w-md w-full h-[80%] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -130,16 +128,16 @@ const MVPPopup = () => {
             </button>
 
             {user ?
-              <div>
+              <div className="flex flex-col h-[95%]">
                 <h2 className="text-2xl font-bold text-center">
                   MOST VALUABLE PLAYER 🏆
                 </h2>
 
                 <div className="flex justify-between items-center mb-4 p-4">
-                  <div className="font-semibold text-sm rounded-xl px-3 py-1 shadow">
+                  <div className="items-center text-sm rounded-xl shadow">
                     {weeks.length > 0 && (
                       <select 
-                        className="mt-4 w-full rounded-lg border p-2"
+                        className="w-full rounded-lg border p-2"
                         value={selectedWeek}
                         onChange={(e) => setSelectedWeek(e.target.value)}
                       >
@@ -151,7 +149,7 @@ const MVPPopup = () => {
                       </select>
                     )}
                   </div>
-                  <div>{user.college}</div>
+                  <div className="">{user.college}</div>
                 </div>
 
                 <div className="relative gap-4 bg-white rounded-2xl p-4 flex flex-col items-center">
@@ -162,14 +160,14 @@ const MVPPopup = () => {
                     width={400}
                     className="absolute left-[-17rem] top-[-3rem] drop-shadow-300w-10 z-50"
                   />
-                  <div className="bg-gray-100 text-lg text-black rounded-xl p-3 w-full">
+                  <div className="bg-gray-100 text-lg text-black rounded-xl p-3 w-full overflow-auto">
                     {getWeeklyMvps().length === 0 ? (
                       <p className="text-center text-gray-500">
                         No MVPs recorded for this week.
                       </p>
                     ) : (
                       getWeeklyMvps().map(({ email, data }) => (
-                        <div key={email} className="flex items-center space-x-4 mb-4">
+                        <div key={email} className="flex items-center space-x-4 p-1">
                           <img
                             src={data.photo ?? "/mvp_images/no_image.png"}
                             alt={`${data.fname} ${data.lname}`}
@@ -187,10 +185,10 @@ const MVPPopup = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 text-center text-sm text-blue-800">
+                <div className="mt-auto flex flex-col text-center text-sm text-blue-800">
                   Know someone who deserves the spotlight?{" "}
-                  <a href="/contact" className="underline font-semibold">
-                    Contact your college representatitve (can be found in the Hub)!
+                  <a href="/hub" className="underline font-semibold">
+                    Contact your college representatitve!
                   </a>
                 </div>
               </div> : 

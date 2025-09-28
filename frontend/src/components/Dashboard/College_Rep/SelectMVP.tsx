@@ -29,7 +29,7 @@ export default function SelectMVP() {
   const [mvps, setMvps]  = useState<Record<string, any> | null>(null);
   const { user } = useUser();
 
-  const weeks = buildWeekOptions(seasonStart).reverse();
+  const weeks = buildWeekOptions(seasonStart);
 
   const nameOf = (u: User) =>
     `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
@@ -103,7 +103,7 @@ export default function SelectMVP() {
           mvpLName: selectUser.lastname
         }),
       });
-      setNotice(`MVP set for week ${weekId}.`);
+      setNotice(`MVP set for ${weekId}.`);
       setSelectUser(null);
       setSearchTerm("");
     } catch (error) {
@@ -114,30 +114,31 @@ export default function SelectMVP() {
     }
   };
 
+  console.log(weeks)
   return (
     <div className="space-y-5 py-4">
       {/* Status banner */}
       <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30 text-sm space-y-2">
-      <div className="flex items-center gap-2">
-        <select
-          className="rounded-md border px-2 py-1 text-sm bg-white dark:bg-black"
-          value={weekId}
-          onChange={(e) => setWeekId(e.target.value)}
-        >
-          {weeks.map((w) => (
-            <option key={w.value} value={w.value}>
-              {w.label}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div className="flex items-center gap-2 pb-2">
+          <select
+            className="rounded-md border px-2 py-1 text-sm bg-white dark:bg-black"
+            value={weekId}
+            onChange={(e) => setWeekId(e.target.value)}
+          >
+            {weeks.map((w) => (
+              <option key={w.value} value={w.value}>
+                {w.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      {selectUser ? (
-        <>Ready to set MVP for <strong>{nameOf(selectUser) || selectUser.email}</strong>.</>
-      ) : (
-        <>Pick a student to enable actions.</>
-      )}
-    </div>
+        {selectUser ? (
+          <>Ready to set MVP for <strong>{nameOf(selectUser) || selectUser.email}</strong>.</>
+        ) : (
+          <>Pick a student to enable actions.</>
+        )}
+      </div>
 
       {/* Alerts */}
       {error && (
