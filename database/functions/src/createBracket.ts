@@ -204,7 +204,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
 
         const matchToID: Record<number, string> = {};
         for (let i = 1; i <= 15; i++) {
-          matchToID[i] = `playoff-${nextPlayoffNumber++}`;
+          matchToID[i] = `${nextPlayoffNumber++}`;
         }
 
         // Create all 15 matches with proper IDs
@@ -313,7 +313,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
           };
 
           const matchRef = db
-            .collection("matches")
+            .collection("matches_testing")
             .doc("seasons")
             .collection(currentYear)
             .doc(matchId);

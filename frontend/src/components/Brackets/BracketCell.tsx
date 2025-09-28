@@ -151,7 +151,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, season }) => {
       try {
         setLoading(true);
         setError(null);
-        const matchDocRef = doc(db, "matches", "seasons", season, matchId);
+        const matchDocRef = doc(db, "matches_testing", "seasons", season, matchId);
         const matchDoc = await getDoc(matchDocRef);
 
         if (!matchDoc.exists()) {

@@ -57,7 +57,7 @@ const NavbarContext = createContext<NavBarProps>({
 });
 
 export const NavbarProvider = ({ children }: { children: ReactNode }) => {
-  console.log("NavbarProvider is mounting..."); // 👈 runs every render
+  // console.log("NavbarProvider is mounting..."); // 👈 runs every render
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -65,8 +65,8 @@ export const NavbarProvider = ({ children }: { children: ReactNode }) => {
     const shouldCollapse = pathname?.startsWith("/brackets");
     setCollapsed(!!shouldCollapse);
   
-    console.log("PATHNAME:", pathname);
-    console.log("Collapsed state just set to:", !!shouldCollapse);
+    // console.log("PATHNAME:", pathname);
+    // console.log("Collapsed state just set to:", !!shouldCollapse);
   }, [pathname]);
   
 

@@ -173,14 +173,46 @@ export const collegeNamesList = [
   "Trumbull",
 ];
 
-// change this to actual season start before deploying
-export const seasonStart = new Date("2025-08-31T00:00:00Z");
+export const seasonStart = new Date("2025-09-08T00:00:00Z");
 
 export function getCurrentWeekId(seasonStart: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - seasonStart.getTime();
   const weekNumber = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
   return `week_${weekNumber}`;
+}
+
+const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+
+export function buildWeekOptions(start: Date): { value: string; label: string }[] {
+  const now = new Date();
+
+  const firstWeekStart = new Date(start);
+  const day = firstWeekStart.getDay();     // 0 = Sun … 6 = Sat
+  if (day !== 0) {
+    firstWeekStart.setDate(firstWeekStart.getDate() + (7 - day));
+  }
+
+  const weekCount =
+    Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
+
+  const format = (d: Date) =>
+    d.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+    });
+
+  const options = [];
+  for (let i = 0; i < weekCount; i++) {
+    const weekStart = new Date(firstWeekStart.getTime() + i * msPerWeek);
+    const weekEnd = new Date(weekStart.getTime() + msPerWeek);
+    options.push({
+      value: `week_${i + 1}`,
+      label: `Week ${i + 1}: ${format(weekStart)} – ${format(weekEnd)}`,
+    });
+  }
+  return options.reverse();   
 }
 
 export const seasonSports: SeasonSportsMap = {

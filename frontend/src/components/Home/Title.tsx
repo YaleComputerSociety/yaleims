@@ -28,7 +28,7 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
           {selected === "All Time" && "ALL-TIME STANDINGS"}
           {pastSeasons?.years?.includes(selected) && `${selected} STANDINGS`}
         </h1>
-        <div className="hidden xs:grid text-right grid-cols-2">
+        <div className="hidden xs:grid text-right ml-10 grid-cols-2">
           <div>
             <MVPPopup />
           </div>

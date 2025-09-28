@@ -86,7 +86,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         if (response.ok) {
           const data = await response.json();
           setIsLoggedIn(data.isLoggedIn);
-          console.log("User is logged in:", data.user);
           setUser(data.user);
         } else {
           setIsLoggedIn(false);

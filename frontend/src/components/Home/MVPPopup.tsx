@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { useUser } from "@src/context/UserContext";
+import { useSeason } from "@src/context/SeasonContext";
+import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
 
 const MVPPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [college, setCollege] = useState("Trumbull");
+  const { user } = useUser();
+  const { currentSeason } = useSeason();
+  const [mvps, setMvps] = useState<any>(null);
+  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekId(seasonStart));  
+
+  const weeks = buildWeekOptions(seasonStart);
+
+  function getWeeklyMvps(): { email: string; data: any }[] {
+    if (!mvps || !mvps[selectedWeek]) return [];
+    return Object.entries(mvps[selectedWeek]).map(([email, data]) => ({
+      email,
+      data,
+    }));
+  }
+
   const [mvpData, setMvpData] = useState({
     fname: "Julien",
     lname: "Yang",
@@ -11,6 +29,35 @@ const MVPPopup = () => {
     year: "Junior",
     major: "Computer Science",
   });
+
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isOpen) { html.classList.add("overflow-hidden")}
+    else { html.classList.remove("overflow-hidden")}
+    return () => {
+      html.classList.remove("overflow-hidden");
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (currentSeason) {
+        const response = await fetch(`/api/functions/getMVPs?seasonId=${currentSeason.year}&collegeId=${user?.college}`, {
+          method: "GET"
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setMvps(data);
+        console.log("mvps", data);
+        console.log(data[selectedWeek])
+      }
+    };
+    fetchData();
+  }, [currentSeason, user]);
+  
 
   // useEffect(() => {
   //   fetch("https://yalies.io/graphql", {
@@ -51,7 +98,7 @@ const MVPPopup = () => {
   // }, []);
 
   return (
-    <>
+    <div>
       <div>
         <button
           onClick={() => setIsOpen(true)}
@@ -60,103 +107,99 @@ const MVPPopup = () => {
           <img
             src="/mvp_images/mvpicon.png"
             alt="MVP Icon"
-            className="w-20 h-30 filter drop-shadow-[0_4px_6px_rgba(59,130,246,0.6)]"
+            className="w-15 h-20 filter drop-shadow-[0_4px_6px_rgba(59,130,246,0.6)]"
           />
           View MVP
         </button>
       </div>
 
       {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-            onClick={() => setIsOpen(false)}
-          />
+        <div
+          className="fixed inset-0 z-50 flex bg-black/70 items-center justify-center bg-black w-[100%] h-[100%] flex-col"
+          onClick={() => setIsOpen(false)}
+        >
+          <div 
+            className="dark:bg-black bg-white rounded-3xl border border-blue-400 p-4 max-w-md w-full h-[80%] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsOpen(false)}
+              className=" text-gray-500 hover:text-gray-800"
+            >
+              ✕
+            </button>
 
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
-            <div className="bg-gradient-to-b from-[#E8F0FF] to-[#BBD3FF] rounded-3xl p-4 max-w-md w-full relative shadow-2xl">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
-              >
-                ✕
-              </button>
+            {user ?
+              <div>
+                <h2 className="text-2xl font-bold text-center">
+                  MOST VALUABLE PLAYER 🏆
+                </h2>
 
-              <h2 className="text-2xl font-bold text-center text-blue-800">
-                MOST VALUABLE PLAYER 🏆
-              </h2>
-
-              <div className="flex justify-between items-center mb-4 p-4">
-                <div className="bg-white text-blue-800 font-semibold text-sm rounded-xl px-3 py-1 shadow">
-                  {new Date().toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                <div className="flex justify-between items-center mb-4 p-4">
+                  <div className="font-semibold text-sm rounded-xl px-3 py-1 shadow">
+                    {weeks.length > 0 && (
+                      <select 
+                        className="mt-4 w-full rounded-lg border p-2"
+                        value={selectedWeek}
+                        onChange={(e) => setSelectedWeek(e.target.value)}
+                      >
+                        {weeks.map(({ value, label }) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  <div>{user.college}</div>
                 </div>
-                <select
-                  className="border border-blue-500 rounded-xl px-2 py-1 text-blue-800 font-semibold shadow"
-                  value={college}
-                  onChange={(e) => setCollege(e.target.value)}
-                >
-                  <option>Benjamin Franklin</option>
-                  <option>Branford</option>
-                  <option>Davenport</option>
-                  <option>Ezra Stiles</option>
-                  <option>Grace Hopper</option>
-                  <option>Jonathan Edwards</option>
-                  <option>Morse</option>
-                  <option>Pauli Murray</option>
-                  <option>Pierson</option>
-                  <option>Saybrook</option>
-                  <option>Silliman</option>
-                  <option>Timothy Dwight</option>
-                  <option>Trumbull</option>
-                </select>
-              </div>
 
-              <div className="relative gap-4 bg-white rounded-2xl p-4 flex flex-col items-center">
-                <img
-                  src="/mvp_images/newmedal.png"
-                  alt="MVP Badge"
-                  className="absolute left-[-15rem] top-[-3rem] drop-shadow-300w-10 z-50"
-                />
-
-                {mvpData.photo ? (
-                  <img
-                    src={mvpData.photo}
-                    alt={`${mvpData.fname} ${mvpData.lname}`}
-                    className="w-52 h-40 rounded-lg object-cover mb-3"
+                <div className="relative gap-4 bg-white rounded-2xl p-4 flex flex-col items-center">
+                  <Image
+                    src="/mvp_images/newmedal.png"
+                    alt="MVP Badge"
+                    height={500}
+                    width={400}
+                    className="absolute left-[-17rem] top-[-3rem] drop-shadow-300w-10 z-50"
                   />
-                ) : (
-                  <div className="w-24 h-24 bg-gray-200 rounded-lg mb-3" />
-                )}
-
-                <div className="bg-gray-100 text-lg text-black rounded-xl p-3 w-full">
-                  Congratulations to{" "}
-                  <strong className="text-blue-600">
-                    {mvpData.fname} {mvpData.lname}
-                  </strong>
-                  , a{" "}
-                  <strong className="text-blue-600">{mvpData.year}</strong> in{" "}
-                  <strong className="text-blue-600">{mvpData.college}</strong>{" "}
-                  College studying{" "}
-                  <strong className="text-blue-600">{mvpData.major}</strong>, for being named this week&apos;s Most Valuable Player. 🏅 Keep up the great work{" "}
-                  <strong className="text-blue-600">{mvpData.fname}</strong>!
+                  <div className="bg-gray-100 text-lg text-black rounded-xl p-3 w-full">
+                    {getWeeklyMvps().length === 0 ? (
+                      <p className="text-center text-gray-500">
+                        No MVPs recorded for this week.
+                      </p>
+                    ) : (
+                      getWeeklyMvps().map(({ email, data }) => (
+                        <div key={email} className="flex items-center space-x-4 mb-4">
+                          <img
+                            src={data.photo ?? "/mvp_images/no_image.png"}
+                            alt={`${data.fname} ${data.lname}`}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div>
+                            <p className="font-semibold">
+                              {data.fname} {data.lname}
+                            </p>
+                            {/* add more fields if you store them */}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-4 text-center text-sm text-blue-800">
-                Know someone who deserves the spotlight?{" "}
-                <a href="/contact" className="underline font-semibold">
-                  Contact your college representatitve!
-                </a>
-              </div>
-            </div>
+                <div className="mt-4 text-center text-sm text-blue-800">
+                  Know someone who deserves the spotlight?{" "}
+                  <a href="/contact" className="underline font-semibold">
+                    Contact your college representatitve (can be found in the Hub)!
+                  </a>
+                </div>
+              </div> : 
+              <div>Please log in to view MVP details.</div>
+            }
           </div>
-        </>
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

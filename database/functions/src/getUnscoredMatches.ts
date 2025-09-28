@@ -8,8 +8,8 @@ const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
 
-const userCanAccess = (role: string) => {
-  return role === "admin" || role === "dev";
+const userCanAccess = (mRoles: string[]) => {
+  return mRoles.includes("admin") || mRoles.includes("dev");
 };
 
 // gets unscored matches (winner is null) that have already occurred (timestamp is in the past)
@@ -28,12 +28,12 @@ export const getUnscoredMatches = functions.https.onRequest(
           console.error("Invalid token structure");
           return res.status(401).json({ error: "Invalid Token Structure" });
         }
-        const { role } = decoded as { role: string };
+        // const { role } = decoded as { role: string };
         const seasonId = req.query.seasonId as string;
         if (!seasonId)
           return res.status(400).json({ error: "SeasonId must be a query" });
 
-        if (!userCanAccess(role)) {
+        if (!userCanAccess(decoded.mRoles)) {
           return res.status(401).json({ error: "Unauthorized User" });
         }
         const currentDate = admin.firestore.Timestamp.now();

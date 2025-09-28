@@ -40,14 +40,17 @@ export const setMVP = functions.https.onRequest((req, res) => {
       .collection(residentialCollege)
       .doc(weekId);
 
+    const [fname, lname] = decoded.name.split(' ');
     try {
-        await weekRef.set({
-            MVP: mvpEmail,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            },
-        { merge: true }
+      await weekRef.set(
+        {
+          [mvpEmail]: { fname: fname, lname: lname }
+        },
+        { merge: true }  
       );
+
       return res.status(200).json({ success: true, weekId });
+
     } catch (error) {
       console.error("Error setting MVP:", error);
       return res.status(500).json({ error: "Internal Server Error" });

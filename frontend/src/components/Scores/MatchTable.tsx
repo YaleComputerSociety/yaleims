@@ -15,7 +15,7 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
   const test = groupByDate(filteredMatches);
   const { user, loading } = useUser();
 
-  const isAdmin = user?.role === "admin" || user?.role === "dev";
+  const isAdmin = user?.mRoles.includes("admin") || user?.mRoles.includes("dev");
 
   if (loading) {
     return <LoadingScreen />;
