@@ -132,7 +132,6 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 
 ## Main Contributers
 
-- Anna Xu ('24.5)
 - Daniel Morales ('27)
 - Ephraim Akai-Nettey ('27)
 - Kaitlyn Oikle ('27)
@@ -140,5 +139,5 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 - Vojtech Kysilka ('28)
 - Farhan Baig ('27)
 - Ella White ('27)
-=======
+- Claire Guo ('29)
 >>>>>>> main
