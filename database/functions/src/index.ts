@@ -36,6 +36,7 @@ import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
 import { setMVP } from "./setMVP.js";
 import { addSchedule } from "./addSchedule.js";
 import { assignRemoveCaptainv2 } from "./assignRemoveCaptainv1.js";
+import { testEloOdds } from "./test_elo_odds.js";
 
 export {
   assignRemoveCaptainv2,
@@ -76,4 +77,5 @@ export {
   assignRemoveCaptain,
   setMVP,
   addSchedule,
+  testEloOdds,
 };

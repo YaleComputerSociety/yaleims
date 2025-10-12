@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 
 import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
 import { Timestamp } from "firebase-admin/firestore";
+import { calculateInitialEloOdds } from "./elo_initial_odds.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -78,7 +79,8 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
         .doc("seasons")
         .collection(season);
 
-      matches.forEach((match: ScheduleMatch) => {
+      // Process matches sequentially to calculate ELO-based odds
+      for (const match of matches as ScheduleMatch[]) {
         const docRef = scheduleCollection.doc(nextId.toString());
 
         let firestoreTimestamp = null;
@@ -90,6 +92,14 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
         } else {
           firestoreTimestamp = Timestamp.fromDate(dateObj);
         }
+
+        // Calculate initial ELO-based odds
+        const initialOdds = await calculateInitialEloOdds(
+          match.homeCollege,
+          match.awayCollege,
+          sport,
+          season
+        );
 
         batch.set(docRef, {
           id: nextId++,
@@ -106,8 +116,11 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
           timestamp: firestoreTimestamp,
           type: "Regular",
           winner: null,
+          // Add ELO-based initial odds
+          ...initialOdds,
+          predictions: {},
         });
-      });
+      }
 
       // Update the counter for next match ID
       batch.set(

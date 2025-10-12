@@ -4,6 +4,8 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 
 import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import { updateEloRatings } from "./elo_system.js";
+import { updateMatchOddsAfterEloChange } from "./elo_initial_odds.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -282,6 +284,25 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await batch.commit();
 
+      // Update ELO ratings after match is scored
+      try {
+        await updateEloRatings({
+          homeTeam,
+          awayTeam,
+          sport,
+          winner: winningTeam,
+          matchType: "Regular", // You might want to determine this from match data
+          timestamp: admin.firestore.Timestamp.now()
+        }, year, matchId);
+
+        // Update odds for future matches involving these teams
+        // This is optional - you might want to update odds for upcoming matches
+        console.log(`Updated ELO ratings for ${homeTeam} vs ${awayTeam} in ${sport}`);
+      } catch (eloError) {
+        console.error("Error updating ELO ratings:", eloError);
+        // Don't fail the entire operation if ELO update fails
+      }
+
       const matchDocData = matchDoc.data() || {};
 
       // update next match in bracket (if a playoff match and there is a definitive winner, else will have to be manual)
@@ -309,15 +330,46 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
             .collection(year)
             .doc(nextMatchId);
 
+          // Get the next match data to determine both teams
+          const nextMatchDoc = await nextMatchRef.get();
+          const nextMatchData = nextMatchDoc.data();
+
           let updateData: any = {};
+          let homeTeamNext: string;
+          let awayTeamNext: string;
+
           if (matchBracketSlot % 2 === 1) {
             // Odd slot: update away team/seed
             updateData.away_college = winningTeam;
             updateData.away_seed = winnerSeed;
+            homeTeamNext = nextMatchData?.home_college || "TBD";
+            awayTeamNext = winningTeam;
           } else {
             // Even slot: update home team/seed
             updateData.home_college = winningTeam;
             updateData.home_seed = winnerSeed;
+            homeTeamNext = winningTeam;
+            awayTeamNext = nextMatchData?.away_college || "TBD";
+          }
+
+          // Calculate ELO-based odds if both teams are now determined
+          if (homeTeamNext !== "TBD" && awayTeamNext !== "TBD") {
+            try {
+              const nextMatchOdds = await updateMatchOddsAfterEloChange(
+                homeTeamNext,
+                awayTeamNext,
+                sport,
+                year
+              );
+              
+              // Add the odds to the update data
+              Object.assign(updateData, nextMatchOdds);
+              
+              console.log(`Updated odds for next match ${nextMatchId}: ${homeTeamNext} vs ${awayTeamNext}`);
+            } catch (oddsError) {
+              console.error(`Error updating odds for next match ${nextMatchId}:`, oddsError);
+              // Continue with the update even if odds calculation fails
+            }
           }
 
           await nextMatchRef.update(updateData);
