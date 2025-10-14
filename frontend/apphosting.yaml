@@ -12,7 +12,7 @@ env:
   # Configure environment variables.
   # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
   - variable: BASE_URL
-    value: https://yaleims.com/
+    value: https://yaleims.com
     availability:
       - BUILD
       - RUNTIME
