@@ -65,6 +65,19 @@ env:
       - BUILD
       - RUNTIME
 
+  - variable: JWT_SECRET
+    value: wp[rkfwprk0pki942j4e-9j1o[jfcm2lv;24p[2p0-1i0]]]
+    availability:
+      - BUILD
+      - RUNTIME
+  
+  - variable: YALIES_API_KEY
+    value: e784BztDa6V5DQ88sIBqBXBP5i-rYjy-ix7Mu-kPLKQP4EDpdwelKA
+    availability:
+      - BUILD
+      - RUNTIME
+
+
 
 
   # Grant access to secrets in Cloud Secret Manager.
