@@ -66,13 +66,13 @@ env:
       - RUNTIME
 
   - variable: JWT_SECRET
-    value: wp[rkfwprk0pki942j4e-9j1o[jfcm2lv;24p[2p0-1i0]]]
+    value: JWT_SECRET
     availability:
       - BUILD
       - RUNTIME
   
   - variable: YALIES_API_KEY
-    value: e784BztDa6V5DQ88sIBqBXBP5i-rYjy-ix7Mu-kPLKQP4EDpdwelKA
+    value: YALIES_API_KEY
     availability:
       - BUILD
       - RUNTIME
