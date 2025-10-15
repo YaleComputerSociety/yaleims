@@ -3,7 +3,8 @@ import admin from "./firebaseAdmin.js";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
-import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import { isValidDecodedToken } from "./helpers.js";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -17,6 +18,15 @@ export const getUsersInCollege = functions.https.onRequest(
       }
       let decoded: any;
       try {
+        const client = new SecretManagerServiceClient();
+        const [version] = await client.accessSecretVersion({
+          name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
+        });
+        if (!version.payload || !version.payload.data) {
+          console.error("JWT secret payload is missing");
+          return res.status(500).send("Internal Server Error");
+        }
+        const JWT_SECRET = version.payload.data.toString();
         const token = authHeader.split("Bearer ")[1];
         decoded = jwt.verify(token, JWT_SECRET);
       } catch {

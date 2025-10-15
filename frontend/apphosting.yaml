@@ -24,7 +24,7 @@ env:
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: AIzaSyB4ja4JXughIwxLPEt42mNClHH53sN0D6Q
+    secret: FIREBASE_API_KEY
     availability:
       - BUILD
       - RUNTIME
@@ -76,9 +76,6 @@ env:
     availability:
       - BUILD
       - RUNTIME
-
-
-
 
   # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters

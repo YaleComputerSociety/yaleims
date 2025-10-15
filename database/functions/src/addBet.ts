@@ -1,143 +1,140 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import jwt from "jsonwebtoken";
+import { isValidDecodedToken } from "./helpers.js";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
 const corsHandler = cors({ origin: true });
-
 const db = admin.firestore();
-interface AddBetRequestBody {
-  email: string;
-  matchId: string;
-  betAmount: number;
+
+
+interface Bet {
+  away_college: string;
   betOdds: number;
   betOption: string;
-  away_college: string;
   home_college: string;
+  matchId: string;
   sport: string;
+  winner?: string;
+  won?: boolean;
+  matchTimestamp: string;
+  betId: number
+}
+
+interface AddBetRequestBody {
+  betAmount: number;
+  betArray: Bet[];
+  totalOdds: number
 }
 
 export const addBet = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
-    const {
-      email,
-      matchId,
-      betAmount,
-      betOdds,
-      betOption,
-      away_college,
-      home_college,
-      sport,
-    }: AddBetRequestBody = req.body;
-
-    if (
-      !email ||
-      !matchId ||
-      !betAmount ||
-      !betOption ||
-      !betOdds ||
-      !away_college ||
-      !home_college ||
-      !sport
-    ) {
-      return res.status(400).send("Missing required fields");
+    const authHeader = req.headers.authorization || ""
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({error: "No token provided"});
     }
-
-    // uncomment and redeploy once new frontend changes are deployed
-    // const authHeader = req.headers.authorization || ""
-    // if (!authHeader.startsWith("Bearer ")) {
-    //   return res.status(401).json({error: "No token provided"});
-    // }
-    // //   // getting token passed from request
-    // const idToken = authHeader.split("Bearer ")[1];
-    // // //   //verifying the token using firebase admin
-    // let decoded;
-    // try {
-    //   decoded = await admin.auth().verifyIdToken(idToken);
-    //   if (!decoded) {
-    //     return res.status(401).json({error: "Invalid Token"})
-    //   }
-    // } catch (error) {
-    //   return res.status(401).json({error: "Invalid Token"})
-    // } 
-    //get rid of email in the query and use the decoded users email
-
-    if (betAmount <= 0) {
-      return res.status(400).send("Bet amount must be greater than 0");
+    
+    const client = new SecretManagerServiceClient();
+    const [version] = await client.accessSecretVersion({
+      name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
+    });
+    if (!version.payload || !version.payload.data) {
+      console.error("JWT secret payload is missing");
+      return res.status(500).send("Internal Server Error");
     }
+    const JWT_SECRET = version.payload.data.toString();
 
+    const token = authHeader.split("Bearer ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!isValidDecodedToken(decoded)) {
+      console.error("Invalid token structure");
+      return res.status(401).json({error: "Invalid Token Structure"})
+    }
+    const email = decoded.email;
+    const { seasonId } = req.query as { seasonId: string };
+    const { betAmount, betArray, totalOdds } = req.body as AddBetRequestBody;
+    const currentCashed = 0 
+
+    if (!email || !Array.isArray(betArray) || betArray.length === 0)
+      {console.log("must supply bets")
+      return res.status(400).send("Must supply email and ≥1 bets");}
+
+    const finalOdds = totalOdds;
     try {
-      const userRef = db.collection("users").doc(email);
-      const userDoc = await userRef.get();
+      const userSeasonRef = db.collection("users").doc(email).collection("seasons").doc(seasonId);
+      const userSnap = await userSeasonRef.get();
+      if (!userSnap.exists) return res.status(404).send("User not found");
 
-      if (!userDoc.exists) {
-        return res.status(404).send("User not found");
-      }
+      await Promise.all(
+        betArray.map(async (leg) => {
+          const mSnap = await db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId).get();
+          if (!mSnap.exists)
+            throw new Error(`Match not found: ${leg.matchId}`);
+        })
+      );
 
-      const currentPoints = userDoc.data()?.points || 0;
-
-      if (currentPoints < betAmount) {
-        return res.status(400).send("Insufficient points for this bet");
-      }
-
-      const matchRef = db.collection("matches").doc(matchId);
-      const matchDoc = await matchRef.get();
-      if (!matchDoc.exists) {
-        return res.status(404).send("Match not found");
-      }
-
-      await db.runTransaction(async (transaction) => {
-        const bet = {
-          matchId,
-          betAmount,
-          betOption,
-          betOdds,
-          away_college,
-          home_college,
-          sport,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        };
-
-        // Replace dots in email with underscores to prevent nesting
-        const sanitizedEmail = email.replace(/\./g, "_");
-
-        // Update predictions map for the match
-        const predictionsUpdate = {
-          [`predictions.${sanitizedEmail}`]: { betOption, betAmount, betOdds },
-        };
-
-        transaction.update(matchRef, predictionsUpdate);
-
-        transaction.update(userRef, {
-          points: admin.firestore.FieldValue.increment(-betAmount),
+      await db.runTransaction(async (tx) => {
+        tx.update(userSeasonRef, {
+          "points": admin.firestore.FieldValue.increment(-betAmount),
         });
 
-        transaction.set(userRef.collection("bets").doc(), bet);
+        const parlayRef = userSeasonRef.collection("bets").doc();
+        tx.set(parlayRef, {
+          betAmount,
+          betOdds: finalOdds,
+          currentCashed,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          won: null,
+          legCount: betArray.length,
+        });
 
-        if (betOption === "Default") {
-          transaction.update(matchRef, {
-            default_volume: admin.firestore.FieldValue.increment(betAmount),
+        const sanitizedEmail = email.replace(/\./g, "_");
+
+        for (const leg of betArray) {
+          /* i.   Store the leg under /betArray */
+          
+          const legRef = parlayRef.collection("betArray").doc();
+          tx.set(legRef, leg);
+
+          /* ii.  Update predictions + volume on the match doc */
+          const matchRef = db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId);
+
+          tx.update(matchRef, {
+            [`predictions.${sanitizedEmail}.${parlayRef.id}`]: {
+              betOption: leg.betOption,
+              betAmount: betAmount,
+              betOdds: leg.betOdds,
+              isParlay: betArray.length > 1,
+              legId: legRef.id,
+            },
           });
-        } else if (betOption === "Draw") {
-          transaction.update(matchRef, {
-            draw_volume: admin.firestore.FieldValue.increment(betAmount),
+
+          const volField =
+            leg.betOption === "Default"
+              ? "default_volume"
+              : leg.betOption === "Draw"
+              ? "draw_volume"
+              : leg.betOption === leg.away_college
+              ? "away_volume"
+              : leg.betOption === leg.home_college
+              ? "home_volume"
+              : null;
+
+          if (!volField) throw new Error(`Invalid betOption: ${leg.betOption}`);
+
+          tx.update(matchRef, {
+            [volField]: admin.firestore.FieldValue.increment(betAmount),
           });
-        } else if (betOption === away_college) {
-          transaction.update(matchRef, {
-            away_volume: admin.firestore.FieldValue.increment(betAmount),
-          });
-        } else if (betOption === home_college) {
-          transaction.update(matchRef, {
-            home_volume: admin.firestore.FieldValue.increment(betAmount),
-          });
-        } else {
-          throw new Error("Invalid betOption");
         }
       });
 
-      return res.status(200).send("Bet added successfully");
-    } catch (error) {
-      console.error("Error adding bet:", error);
-      return res.status(500).send("Internal Server Error");
+      /* ---------- 6. Done ---------- */
+      return res.status(200).json({message: "Parlay added successfully"});
+    } catch (err) {
+      console.error("Error adding parlay:", err);
+      return res.status(500).json("Internal Server Error");
     }
   });
 });

@@ -1,8 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import { isValidDecodedToken } from "./helpers.js";
 import jwt from "jsonwebtoken";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
 const corsHandler = cors({ origin: true });
 
@@ -21,6 +22,15 @@ export const getUnscoredMatches = functions.https.onRequest(
         if (!authHeader.startsWith("Bearer ")) {
           return res.status(401).json({ error: "No token provided" });
         }
+        const client = new SecretManagerServiceClient();
+        const [version] = await client.accessSecretVersion({
+          name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
+        });
+        if (!version.payload || !version.payload.data) {
+          console.error("JWT secret payload is missing");
+          return res.status(500).send("Internal Server Error");
+        }
+        const JWT_SECRET = version.payload.data.toString();
         const token = authHeader.split("Bearer ")[1];
         const decoded = jwt.verify(token, JWT_SECRET);
 
