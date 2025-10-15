@@ -7,7 +7,7 @@ export async function GET(req: Request) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
     const response= await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints",
+        "https://getmyavailablepoints-65477nrg6a-uc.a.run.app",
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
     );
 

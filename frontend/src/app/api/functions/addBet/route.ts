@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     }
     const { betAmount, betArray, totalOdds } = await req.json();
     const seasonId = new URL(req.url).searchParams.get("seasonId") ?? "2025-2026";
-    const response = await fetch(`https://addbetmod-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`, {
+    const response = await fetch(`https://addbet-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,5 +1,3 @@
-export const JWT_SECRET="wp[rkfwprk0pki942j4e-9j1o[jfcm2lv;24p[2p0-1i0]]]"
-
 export interface DecodedToken {
   name: string;
   netid: string;

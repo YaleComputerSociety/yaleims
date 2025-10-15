@@ -3,7 +3,8 @@ import admin from "./firebaseAdmin.js";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
-import { JWT_SECRET, isValidDecodedToken } from "./helpers.js";
+import { isValidDecodedToken } from "./helpers.js";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -19,6 +20,15 @@ export const assignRemoveCaptain = functions.https.onRequest(
         if (!authHeader.startsWith("Bearer ")) {
           return res.status(401).json({ error: "No token provided" });
         }
+        const client = new SecretManagerServiceClient();
+        const [version] = await client.accessSecretVersion({
+          name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
+        });
+        if (!version.payload || !version.payload.data) {
+          console.error("JWT secret payload is missing");
+          return res.status(500).send("Internal Server Error");
+        }
+        const JWT_SECRET = version.payload.data.toString();
         const token = authHeader.split("Bearer ")[1];
         const decoded = jwt.verify(token, JWT_SECRET);
         if (!isValidDecodedToken(decoded)) {
@@ -43,39 +53,52 @@ export const assignRemoveCaptain = functions.https.onRequest(
 
         const userRef = db.collection("users").doc(email);
 
-        await db.runTransaction(async (tx) => {
-          const snap = await tx.get(userRef);
-          if (!snap.exists) {
-            throw new Error("User not found");
-          }
+        await db.runTransaction(async tx => {
+            const snap = await tx.get(userRef);
+            if (!snap.exists) throw new Error("User not found");
 
-          const data = snap.data()!;
-          const currentRole = data.role as string;
-          const currentArray = Array.isArray(data.sportsCaptainOf)
-            ? (data.sportsCaptainOf as string[])
-            : [];
+            const sportsArr: string[] = Array.isArray(snap.get("sportsCaptainOf"))
+                ? [...snap.get("sportsCaptainOf")]
+                : [];
 
-          let newArray = [...currentArray];
-          let newRole = currentRole;
+            const rolesArr: string[] = Array.isArray(snap.get("mRoles"))
+                ? [...snap.get("mRoles")]
+                : ["user"];
 
-          if (assign) {
-            if (!newArray.includes(sport)) newArray.push(sport);
-            if (currentRole !== "captain") newRole = "captain";
-          } else if (remove) {
-            newArray = newArray.filter((s) => s !== sport);
-            if (newArray.length === 0) {
-              newRole = "user";
+            if (!rolesArr.includes("user")) rolesArr.push("user");
+
+            /* ── 2. Mutate copies ── */
+            if (assign) {
+                if (!sportsArr.includes(sport)) sportsArr.push(sport);
+                if (!rolesArr.includes("captain")) rolesArr.push("captain");
             }
-          }
 
-          const updates: any = { role: newRole };
-          if (newArray.length > 0) {
-            updates.sportsCaptainOf = newArray;
-          } else {
-            updates.sportsCaptainOf = admin.firestore.FieldValue.delete();
-          }
+            if (remove) {
+                const idx = sportsArr.indexOf(sport);
+                if (idx !== -1) sportsArr.splice(idx, 1);
 
-          tx.update(userRef, updates);
+                if (sportsArr.length === 0) {
+                const capIdx = rolesArr.indexOf("captain");
+                if (capIdx !== -1) rolesArr.splice(capIdx, 1);
+                }
+            }
+
+            /* ► Guarantee “user” is still present after mutations */
+            if (!rolesArr.includes("user")) rolesArr.push("user");
+
+            /* ── 3. Prepare updates ── */
+            const updates: Record<string, any> = {
+                sportsCaptainOf:
+                sportsArr.length > 0 ? sportsArr : admin.firestore.FieldValue.delete(),
+
+                /** ► Never delete mRoles: always write current list */
+                mRoles: rolesArr,
+            };
+
+            // optional legacy scalar:
+            // updates.role = rolesArr.includes("captain") ? "captain" : "user";
+
+            tx.update(userRef, updates);
         });
 
         return res.json({ success: true });

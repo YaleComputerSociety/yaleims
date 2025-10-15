@@ -1,6 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import jwt from "jsonwebtoken";
+import { isValidDecodedToken } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -10,34 +13,35 @@ const db = admin.firestore();
 export const updateUsername = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
+      const authHeader = req.headers.authorization || ""
+        if (!authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "No token provided" });
+      }
+      const client = new SecretManagerServiceClient();
+      const [version] = await client.accessSecretVersion({
+        name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
+      });
+      if (!version.payload || !version.payload.data) {
+        console.error("JWT secret payload is missing");
+        return res.status(500).send("Internal Server Error");
+      }
+      const JWT_SECRET = version.payload.data.toString();
+      const token = authHeader.split("Bearer ")[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
 
-      // uncomment and redeploy once new frontend changes are deployed
-      // const authHeader = req.headers.authorization || ""
-      // if (!authHeader.startsWith("Bearer ")) {
-      //   return res.status(401).json({error: "No token provided"});
-      // }
-      // //   // getting token passed from request
-      // const idToken = authHeader.split("Bearer ")[1];
-      // // //   //verifying the token using firebase admin
-      // let decoded;
-      // try {
-      //   decoded = await admin.auth().verifyIdToken(idToken);
-      //   if (!decoded) {
-      //     return res.status(401).json({error: "Invalid Token"})
-      //   }
-      // } catch (error) {
-      //   return res.status(401).json({error: "Invalid Token"})
-      // } 
-      //get rid of email in the query and use the decoded users email
+      if (!isValidDecodedToken(decoded)) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      const userId = decoded.email;
 
-      const { userId, newUsername } = req.body;
+      const { newUsername } = req.body;
 
       // Validate input
-      if (!userId || !newUsername) {
+      if (!newUsername) {
         return res
           .status(400)
           .send(
-            `Missing 'userId' or 'newUsername' in request body ${userId}, ${newUsername}`
+            `Missing 'userId' or 'newUsername' in request body ${newUsername}`
           );
       }
 
