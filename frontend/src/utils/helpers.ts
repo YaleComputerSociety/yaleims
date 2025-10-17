@@ -184,16 +184,19 @@ export function getCurrentWeekId(seasonStart: Date): string {
 
 const msPerWeek = 7 * 24 * 60 * 60 * 1000;
 
-export function buildWeekOptions(start: Date): { value: string; label: string }[] {
+export function buildWeekOptions(
+  start: Date
+): { value: string; label: string }[] {
   const now = new Date();
 
   const firstWeekStart = new Date(start);
-  const day = firstWeekStart.getDay();     // 0 = Sun … 6 = Sat
+  const day = firstWeekStart.getDay(); // 0 = Sun … 6 = Sat
   if (day !== 1) {
-    firstWeekStart.setDate(firstWeekStart.getDate() + (8 - day) % 7);
+    firstWeekStart.setDate(firstWeekStart.getDate() + ((8 - day) % 7));
   }
 
-  const weekCount = Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
+  const weekCount =
+    Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
 
   const format = (d: Date) =>
     d.toLocaleDateString("en-US", {
@@ -211,7 +214,7 @@ export function buildWeekOptions(start: Date): { value: string; label: string }[
       label: `Week ${i + 1}: ${format(weekStart)} – ${format(weekEnd)}`,
     });
   }
-  return options.reverse();   
+  return options.reverse();
 }
 
 export const seasonSports: SeasonSportsMap = {
@@ -844,7 +847,7 @@ export const toTimestamp = (
   return dateObj.toISOString();
 };
 
-// Returns the IM season string (e.g. "2024-2025") for a given timestamp
+/** Returns the IM season string (e.g. "2024-2025") for a given timestamp */
 export function getYearFromTimestamp(
   timestamp: Date | string | number
 ): string {

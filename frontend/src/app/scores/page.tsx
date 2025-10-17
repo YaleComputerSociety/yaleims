@@ -14,7 +14,14 @@ import { useSeason } from "@src/context/SeasonContext";
 
 import "react-loading-skeleton/dist/skeleton.css";
 import { currentYear } from "@src/utils/helpers";
-import { collection, doc, onSnapshot, orderBy, query, Unsubscribe } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  Unsubscribe,
+} from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
 const ScoresPage: React.FC = () => {
@@ -121,30 +128,36 @@ const ScoresPage: React.FC = () => {
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
-      let unsub: Unsubscribe | undefined;
-      if (!currentSeason) return;
-      if (filter.college && filter.college !== "All") {
-        setCollegeIsLoading(true);
-  
-        const q = doc(db, "colleges", "seasons", currentSeason?.year, filter.college);
-    
-        unsub = onSnapshot(
-          q,
-          (snap) => {
-            setCollegeStats(snap.exists() ? (snap.data() as CollegeStats) : null);
-            setCollegeIsLoading(false);
-          },
-          (err) => {
-            console.error("Leaderboard listener error:", err);
-            setCollegeIsLoading(false);
-          }
-        );
-      } else {
-        setCollegeStats(null);
-      }
-  
-      return () => unsub?.();
-    }, [filter.college]);
+    let unsub: Unsubscribe | undefined;
+    if (!currentSeason) return;
+    if (filter.college && filter.college !== "All") {
+      setCollegeIsLoading(true);
+
+      const q = doc(
+        db,
+        "colleges",
+        "seasons",
+        currentSeason?.year,
+        filter.college
+      );
+
+      unsub = onSnapshot(
+        q,
+        (snap) => {
+          setCollegeStats(snap.exists() ? (snap.data() as CollegeStats) : null);
+          setCollegeIsLoading(false);
+        },
+        (err) => {
+          console.error("Leaderboard listener error:", err);
+          setCollegeIsLoading(false);
+        }
+      );
+    } else {
+      setCollegeStats(null);
+    }
+
+    return () => unsub?.();
+  }, [filter.college]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;

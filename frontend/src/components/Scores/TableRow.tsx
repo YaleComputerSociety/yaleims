@@ -5,7 +5,9 @@ import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import Link from "next/link";
-import UndoScoreMatchModal from "../AddScores/UndoScoreMatchModal";
+import UndoScoreMatchModal from "@src/components/AddScores/UndoScoreMatchModal";
+import EditMatchModal from "@src/components/Dashboard/Admin/EditMatchModal";
+import { FaEdit } from "react-icons/fa";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,
@@ -32,7 +34,7 @@ const TableRow: React.FC<TableRowProps> = ({
   } = match;
 
   const [isOpen, setIsOpen] = useState(false);
-  const [undoScoreModalOpen, setUndoScoreModalOpen] = useState(false);
+  const [editMatchModalOpen, setEditMatchModalOpen] = useState(false);
   const [unscored, setUnscored] = useState(false);
 
   // Check if prediction data exists
@@ -131,8 +133,8 @@ const TableRow: React.FC<TableRowProps> = ({
     );
   };
 
-  const handleIdClick = () => {
-    setUndoScoreModalOpen(true);
+  const handleEditClick = () => {
+    setEditMatchModalOpen(true);
   };
 
   const isDefault = winner === "Default";
@@ -156,10 +158,10 @@ const TableRow: React.FC<TableRowProps> = ({
             {getTimeString(timestamp)}
             {isAdmin && (
               <span
-                onClick={handleIdClick}
+                onClick={handleEditClick}
                 className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
               >
-                ID: {matchId}
+                <FaEdit className="inline" />
               </span>
             )}
           </span>
@@ -190,10 +192,10 @@ const TableRow: React.FC<TableRowProps> = ({
           </span>
           {isAdmin && (
             <span
-              onClick={handleIdClick}
+              onClick={handleEditClick}
               className="ml-2 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
             >
-              ID: {matchId}
+              <FaEdit className="inline text-base" />
             </span>
           )}
         </div>
@@ -302,10 +304,10 @@ const TableRow: React.FC<TableRowProps> = ({
         </div>
       )}
 
-      {undoScoreModalOpen && (
-        <UndoScoreMatchModal
+      {editMatchModalOpen && (
+        <EditMatchModal
           unscoreId={matchId}
-          setShowConfirmation={setUndoScoreModalOpen}
+          setShowConfirmation={setEditMatchModalOpen}
           match={match}
           setUnscored={setUnscored}
         />
