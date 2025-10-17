@@ -39,7 +39,7 @@ export async function PATCH(req: Request) {
     }
 
     // Update the match document in Firestore
-    const matchRef = doc(db, "matches_testing", "seasons", year, matchId);
+    const matchRef = doc(db, "matches", "seasons", year, matchId);
     await updateDoc(matchRef, fields);
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err: any) {

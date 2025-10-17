@@ -1,5 +1,6 @@
 // Helper to parse and validate bracket CSV for BracketCreateModal
 import { ParsedMatch } from "@src/types/components";
+import { User } from "@src/types/components";
 
 /**
  * Parses and validates a bracket CSV file for the bracket creation modal.
@@ -156,6 +157,10 @@ export const colleges = [
   { id: "TC", name: "Trumbull" },
 ];
 
+export const isValidCollegeAbbrev = (college: string): boolean => {
+  return colleges.some((c) => college === c.id);
+};
+
 export const collegeNamesList = [
   "Benjamin Franklin",
   "Berkeley",
@@ -228,6 +233,10 @@ export const seasonSports: SeasonSportsMap = {
     "Pickleball",
     "Table Tennis",
   ],
+};
+
+export const isValidSport = (sport: string): boolean => {
+  return sports.some((s) => s.name === sport);
 };
 
 // List of sports with the proper type
@@ -873,3 +882,12 @@ export function getYearFromTimestamp(
   // June/July: default to previous season (no games expected)
   return `${year - 1}-${year}`;
 }
+
+export const userIsAdminOrDev = (user: User | null): boolean => {
+  if (!user) return false;
+
+  const isAdmin =
+    user?.mRoles.includes("admin") || user?.mRoles.includes("dev");
+
+  return isAdmin;
+};

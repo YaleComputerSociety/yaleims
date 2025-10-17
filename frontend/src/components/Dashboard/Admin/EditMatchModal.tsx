@@ -1,43 +1,108 @@
 "use client";
 
 import { useSeason } from "@src/context/SeasonContext";
-import { currentYear, getYearFromTimestamp } from "@src/utils/helpers";
-import React from "react";
+import {
+  currentYear,
+  getYearFromTimestamp,
+  isValidCollegeAbbrev,
+  isValidSport,
+  userIsAdminOrDev,
+} from "@src/utils/helpers";
+import React, { useState } from "react";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { toast } from "react-toastify";
-import { FaSpinner } from "react-icons/fa";
+import { FaEdit, FaSpinner } from "react-icons/fa";
 import { Match } from "@src/types/components";
+import { useUser } from "@src/context/UserContext";
 
 interface EditMatchModalProps {
-  unscoreId: string;
-  setShowConfirmation: (value: React.SetStateAction<boolean>) => void;
+  setModalOpen: (value: React.SetStateAction<boolean>) => void;
   match?: Match;
   setUnscored?: (value: React.SetStateAction<boolean>) => void;
-
-  // these will only be used if it's coming from the add scores page
-  setUnscoreMessage?: (value: React.SetStateAction<string | null>) => void;
-  setUnscoreId?: (value: React.SetStateAction<string>) => void;
-  setRefreshKey?: (value: React.SetStateAction<number>) => void;
 }
 
-const EditMatchModal: React.FC<EditMatchModalProps> = ({
-  unscoreId,
-  setShowConfirmation,
-  setUnscoreMessage,
-  setUnscoreId,
-  setRefreshKey,
+interface EditMatchButtonProps {
+  match: Match;
+  setUnscored?: (value: React.SetStateAction<boolean>) => void;
+}
+
+export const EditMatchButton: React.FC<EditMatchButtonProps> = ({
   match,
   setUnscored,
 }) => {
-  const [loading, setLoading] = React.useState<boolean>(false);
+  const { user } = useUser();
+  const isAdmin = userIsAdminOrDev(user);
+  const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
+
+  const handleEditClick = () => {
+    console.log(match);
+    setEditModalOpen(true);
+  };
+
+  if (!isAdmin) return null;
+
+  return (
+    <>
+      <span
+        onClick={handleEditClick}
+        className="ml-2 p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
+      >
+        <FaEdit className="inline text-base" />
+      </span>
+
+      {editModalOpen && (
+        <EditMatchModal
+          match={match}
+          setModalOpen={setEditModalOpen}
+          setUnscored={setUnscored}
+        />
+      )}
+    </>
+  );
+};
+
+export const EditMatchModal: React.FC<EditMatchModalProps> = ({
+  setModalOpen,
+  match,
+  setUnscored,
+}) => {
+  const [editLoading, setEditLoading] = useState<boolean>(false);
+  const [undoLoading, setUndoLoading] = useState<boolean>(false);
   const { currentSeason, seasonLoading } = useSeason();
   const year =
     (match && getYearFromTimestamp(match?.timestamp)) ||
     currentSeason?.year ||
     currentYear;
 
+  const matchId = match?.id || null;
+
+  const validateEditInput = (
+    homeCollege: string,
+    awayCollege: string,
+    sport: string
+  ) => {
+    if (!isValidCollegeAbbrev(homeCollege)) {
+      toast.error("Invalid home college abbreviation");
+      return false;
+    }
+    if (!isValidCollegeAbbrev(awayCollege)) {
+      toast.error("Invalid away college abbreviation");
+      return false;
+    }
+    if (!isValidSport(sport)) {
+      toast.error("Invalid sport");
+      return false;
+    }
+    return true;
+  };
+
   const handleUnscoreMatch = async () => {
-    setLoading(true);
+    setUndoLoading(true);
+
+    if (!matchId) {
+      toast.error("Error fetching match id");
+      return;
+    }
 
     try {
       const userToken = sessionStorage.getItem("userToken");
@@ -48,18 +113,14 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
           Authorization: `Bearer ${userToken}`,
         },
         body: JSON.stringify({
-          matchId: String(unscoreId).trim(),
+          matchId: String(matchId).trim(),
           year: String(year),
         }),
       });
 
       if (response.ok) {
-        if (setUnscoreMessage)
-          setUnscoreMessage("Successfully unscored the match.");
-        else toast.success("Successfully unscored the match.");
-        if (setUnscoreId) setUnscoreId(""); // Clear input after success
-        if (setRefreshKey) setRefreshKey((k) => k + 1); // Trigger refetch
-        else if (setUnscored) setUnscored(true); // set unscored to hide table row
+        if (setUnscored) setUnscored(true); // set unscored to hide table row
+        toast.success("Successfully unscored match");
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message);
@@ -68,22 +129,21 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
       const errorMessage =
         "Undo score failed: " + (error as Error)?.message ||
         "An unknown error occurred. Please try again.";
-      if (setUnscoreMessage) setUnscoreMessage(errorMessage);
-      else toast.error(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setLoading(false);
-      setShowConfirmation(false); // Hide modal after processing
+      setUndoLoading(false);
+      setModalOpen(false); // Hide modal after processing
     }
   };
 
-  // Handler for editing a match: sends data to /api/editMatch
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     if (!match) {
       toast.error("No match data available for editing.");
       return;
     }
+
     e.preventDefault();
-    setLoading(true);
+    setEditLoading(true);
     const form = e.currentTarget;
     const formData = new FormData(form);
     // Collect all fields
@@ -91,6 +151,8 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
     formData.forEach((value, key) => {
       if (key === "forfeit") {
         data[key] = true;
+      } else if (key === "timestamp") {
+        data[key] = new Date(String(value));
       } else {
         data[key] = value;
       }
@@ -99,7 +161,16 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
       data["forfeit"] = false;
     }
 
-    data["id"] = 1;
+    data["id"] = match.id;
+
+    const home_college = data["home_college"];
+    const away_college = data["away_college"];
+    const sport = data["sport"];
+
+    if (!validateEditInput(home_college, away_college, sport)) {
+      setEditLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/functions/editMatch", {
@@ -113,14 +184,13 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
         throw new Error(err.error || "Failed to update match");
       }
 
-      toast.success("Match updated successfully!");
+      toast.success("Match updated successfully! Reload page to view changes!");
 
-      if (setRefreshKey) setRefreshKey((k) => k + 1);
-      setShowConfirmation(false);
+      setModalOpen(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to update match");
     } finally {
-      setLoading(false);
+      setEditLoading(false);
     }
   };
 
@@ -132,7 +202,20 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
     return null;
   }
 
+  const scoringSectionEnabled = false;
+
   const matchIsScored = match.winner !== null;
+
+  // get local timestamp for modal
+  const dt = match.timestamp ? new Date(match.timestamp) : null;
+  const localDateTime = dt
+    ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(dt.getDate()).padStart(2, "0")}T${String(
+        dt.getHours()
+      ).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`
+    : "";
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
@@ -195,11 +278,7 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
                 <input
                   className="w-full border rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                   type="datetime-local"
-                  defaultValue={
-                    match.timestamp
-                      ? new Date(match.timestamp).toISOString().slice(0, 16)
-                      : ""
-                  }
+                  defaultValue={localDateTime}
                   name="timestamp"
                 />
               </div>
@@ -215,8 +294,8 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
               </div>
             </div>
 
-            {/* Conditionally render scoring section if match is scored */}
-            {match && matchIsScored && (
+            {/* Conditionally render scoring section if match is scored. For now it is just disabled. */}
+            {scoringSectionEnabled && match && matchIsScored && (
               <div className="border rounded p-3 bg-gray-50 dark:bg-gray-900 mt-2">
                 <h4 className="text-sm font-semibold mb-2 text-gray-800 dark:text-gray-200">
                   Scoring
@@ -266,16 +345,16 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
               <button
                 type="button"
                 className="flex-1 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-4 py-2 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
-                onClick={() => setShowConfirmation(false)}
+                onClick={() => setModalOpen(false)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 border border-blue-700"
-                disabled={loading}
+                disabled={editLoading}
               >
-                {loading ? (
+                {editLoading ? (
                   <FaSpinner className="animate-spin inline" />
                 ) : (
                   "Save"
@@ -295,9 +374,9 @@ const EditMatchModal: React.FC<EditMatchModalProps> = ({
               <button
                 onClick={handleUnscoreMatch}
                 className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 border border-red-700 dark:border-red-800"
-                disabled={loading}
+                disabled={undoLoading}
               >
-                {loading ? (
+                {undoLoading ? (
                   <FaSpinner className="animate-spin text-lg mx-auto" />
                 ) : (
                   "Confirm"

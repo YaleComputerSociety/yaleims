@@ -5,9 +5,7 @@ import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import Link from "next/link";
-import UndoScoreMatchModal from "@src/components/AddScores/UndoScoreMatchModal";
-import EditMatchModal from "@src/components/Dashboard/Admin/EditMatchModal";
-import { FaEdit } from "react-icons/fa";
+import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,
@@ -15,7 +13,6 @@ const TableRow: React.FC<TableRowProps> = ({
   isFirst,
   isLast,
   handleSportClick,
-  isAdmin,
 }) => {
   const {
     home_college,
@@ -30,11 +27,9 @@ const TableRow: React.FC<TableRowProps> = ({
     default_volume,
     winner,
     forfeit,
-    id: matchId,
   } = match;
 
   const [isOpen, setIsOpen] = useState(false);
-  const [editMatchModalOpen, setEditMatchModalOpen] = useState(false);
   const [unscored, setUnscored] = useState(false);
 
   // Check if prediction data exists
@@ -133,10 +128,6 @@ const TableRow: React.FC<TableRowProps> = ({
     );
   };
 
-  const handleEditClick = () => {
-    setEditMatchModalOpen(true);
-  };
-
   const isDefault = winner === "Default";
   const isDraw =
     (!forfeit && home_college_score === away_college_score) || isDefault;
@@ -156,14 +147,7 @@ const TableRow: React.FC<TableRowProps> = ({
         <div className="pr-3 py-2 pb-4 text-xs font-extralight dark:text-gray-300 text-gray-900 w-full flex justify-between items-center">
           <span className="ml-11 flex items-center gap-2">
             {getTimeString(timestamp)}
-            {isAdmin && (
-              <span
-                onClick={handleEditClick}
-                className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
-              >
-                <FaEdit className="inline" />
-              </span>
-            )}
+            <EditMatchButton match={match} setUnscored={setUnscored} />
           </span>
           <span>
             {match.type} {match.type == "Regular" ? "Season" : "Round"}
@@ -190,14 +174,7 @@ const TableRow: React.FC<TableRowProps> = ({
               getTimeString(timestamp)
             )}
           </span>
-          {isAdmin && (
-            <span
-              onClick={handleEditClick}
-              className="ml-2 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 font-mono text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
-            >
-              <FaEdit className="inline text-base" />
-            </span>
-          )}
+          <EditMatchButton match={match} setUnscored={setUnscored} />
         </div>
 
         <div className="text-left lg:px-4 py-4 px-3 text-xs xs:text-sm grid lg:grid-cols-[0.6fr_0.4fr_0.6fr] lg:grid-rows-1 grid-rows-2 grid-flow-col gap-2 items-center">
@@ -302,15 +279,6 @@ const TableRow: React.FC<TableRowProps> = ({
             </Link>
           </div>
         </div>
-      )}
-
-      {editMatchModalOpen && (
-        <EditMatchModal
-          unscoreId={matchId}
-          setShowConfirmation={setEditMatchModalOpen}
-          match={match}
-          setUnscored={setUnscored}
-        />
       )}
     </div>
   );
