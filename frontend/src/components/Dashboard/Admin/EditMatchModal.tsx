@@ -258,7 +258,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
               </div>
               <div className="flex-1">
                 <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
-                  Location Extra
+                  Location Extra (field number, etc.)
                 </label>
                 <input
                   className="w-full border rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
