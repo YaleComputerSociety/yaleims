@@ -1,20 +1,16 @@
 "use client";
 
 import { doc, onSnapshot } from "firebase/firestore";
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
 import { db } from "../../lib/firebase";
-
-interface User {
-  name: string;
-  netid: string;
-  email: string;
-  role: string;
-  mRoles: string[];
-  username: string;
-  college: string;
-  points: string;
-  matches_played: number;
-}
+import { User } from "@src/types/components";
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -46,21 +42,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const casSignOut = useCallback(async () => {
     if (!isLoggedIn) {
-      setLoading(false)
+      setLoading(false);
       return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const response = await fetch("/api/auth/logout");
       if (response.ok) {
         setIsLoggedIn(false);
         setUser(null);
-        setLoading(false)
+        setLoading(false);
         window.location.href = "/";
       }
     } catch (error) {
-      setLoading(false)
+      setLoading(false);
       console.error("Logout error:", error);
     }
   }, [isLoggedIn]);
@@ -79,8 +75,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     if (authCheckPromise) {
       return authCheckPromise;
     }
-    
-    setLoading(true)
+
+    setLoading(true);
     authCheckPromise = fetch("/api/auth/verify")
       .then(async (response) => {
         if (response.ok) {
@@ -99,28 +95,36 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       })
       .finally(() => {
         authCheckPromise = null;
-        setLoading(false)
+        setLoading(false);
       });
 
     return authCheckPromise;
-  }, [ casSignOut ]);
+  }, [casSignOut]);
 
   useEffect(() => {
     if (!user?.email) return;
-    const unsub = onSnapshot(doc(db, "users", user.email), snap => {
-      const d = snap.data(); if (!d) return;
-      setUser(prev => prev ? {
-        ...prev,
-        role: d.role,
-        mRoles: d.mRoles,
-        username: d.username,
-      } : prev);
+    const unsub = onSnapshot(doc(db, "users", user.email), (snap) => {
+      const d = snap.data();
+      if (!d) return;
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              role: d.role,
+              mRoles: d.mRoles,
+              username: d.username,
+            }
+          : prev
+      );
       const csv = d.mRoles?.join(",") ?? "";
-      fetch(`/api/auth/verify?currentRoles=${encodeURIComponent(csv)}&currentUsername=${encodeURIComponent(d.username)}`);
+      fetch(
+        `/api/auth/verify?currentRoles=${encodeURIComponent(
+          csv
+        )}&currentUsername=${encodeURIComponent(d.username)}`
+      );
     });
     return () => unsub();
   }, [user?.email]);
-
 
   useEffect(() => {
     checkCasAuth();
@@ -128,7 +132,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <UserContext.Provider
-      value={{ user, isLoggedIn, checkCasAuth, casSignOut, setUser: setUser, loading }}
+      value={{
+        user,
+        isLoggedIn,
+        checkCasAuth,
+        casSignOut,
+        setUser: setUser,
+        loading,
+      }}
     >
       {children}
     </UserContext.Provider>

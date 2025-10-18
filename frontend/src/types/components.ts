@@ -26,7 +26,7 @@ export type Match = {
   sport: string; // The sport played in the match (e.g., "Flag Football")
   timestamp: string; // Date and time of the match, in ISO format or UNIX timestamp
   location: string; // The location where the match was played (optional)
-  location_extra: string;
+  location_extra?: string;
   type: string; // Regular, Bye, Playoff, Quarterfinal, Semifinal, Final
   division?: string;
   winner: string | null; // Determines the winner, or if it's a draw
@@ -89,7 +89,6 @@ export interface TableRowProps {
   isLast?: boolean; // Optional prop to indicate if this is the last row
   handleSportClick: any; // Function to handle sport clicks
   availablePoints?: number;
-  isAdmin: boolean | undefined  ;
 }
 export interface YoddsTableRowProps {
   key?: number;
@@ -259,4 +258,16 @@ export interface CurrentSeason {
 
 export interface PastSeasons {
   years: string[];
+}
+
+export interface User {
+  name: string;
+  netid: string;
+  email: string;
+  role: string;
+  mRoles: string[];
+  username: string;
+  college: string;
+  points: string;
+  matches_played: number;
 }

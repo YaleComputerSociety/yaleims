@@ -3,8 +3,6 @@ import { groupByDate } from "@src/utils/helpers";
 import TableRow from "./TableRow";
 
 import { MatchesTableProps } from "@src/types/components";
-import { useUser } from "@src/context/UserContext";
-import LoadingScreen from "../LoadingScreen";
 
 // Main MatchesTable Component
 const MatchesTable: React.FC<MatchesTableProps> = ({
@@ -13,13 +11,6 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
   handleSportClick,
 }) => {
   const test = groupByDate(filteredMatches);
-  const { user, loading } = useUser();
-
-  const isAdmin = user?.mRoles.includes("admin") || user?.mRoles.includes("dev");
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
 
   return (
     <>
@@ -44,7 +35,6 @@ const MatchesTable: React.FC<MatchesTableProps> = ({
                 isLast={index === items.length - 1} // Check if it's the last row
                 handleCollegeClick={handleCollegeClick}
                 handleSportClick={handleSportClick}
-                isAdmin={isAdmin}
               />
             ))}
           </div>

@@ -4,6 +4,7 @@ import {
   toCollegeName,
   emojiMap,
   generateGoogleCalendarLink,
+  userIsAdminOrDev,
 } from "@src/utils/helpers";
 import { Match } from "@src/types/components";
 
@@ -16,6 +17,7 @@ interface MatchListItemProps {
 
 import { Participant } from "@src/types/components";
 import { useSeason } from "@src/context/SeasonContext";
+import { EditMatchButton } from "../Dashboard/Admin/EditMatchModal";
 
 const MatchListItem: React.FC<MatchListItemProps> = ({
   match,
@@ -32,7 +34,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     away_college_participants: match.away_college_participants,
   });
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
-  const { currentSeason } = useSeason()
+  const { currentSeason } = useSeason();
+
+  const isAdmin = userIsAdminOrDev(user);
 
   // Check if match is in the past
   const isPastMatch = match.timestamp
@@ -42,7 +46,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("api/functions/addMatchParticipant",  {
+      const response = await fetch("api/functions/addMatchParticipant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,7 +66,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to sign up for the match");
       }
-      onStatusChange(match.id, true);  
+      onStatusChange(match.id, true);
       // if (participantsShow) {
       //   const participant_data = await getMatchParticipants(
       //     match.id.toString()
@@ -102,25 +106,22 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   };
 
   const handleUnregister = async () => {
-    setIsLoading(true);    
+    setIsLoading(true);
     try {
-      const response = await fetch(
-        "/api/functions/removeMatchParticipant",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            matchId: match.id as string,
-            participantType:
-              toCollegeName[user.college] === toCollegeName[match.home_college]
-                ? "home_college_participants"
-                : "away_college_participants",
-            seasonId: "2025-2026"
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/removeMatchParticipant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: match.id as string,
+          participantType:
+            toCollegeName[user.college] === toCollegeName[match.home_college]
+              ? "home_college_participants"
+              : "away_college_participants",
+          seasonId: "2025-2026",
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -128,7 +129,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           errorData.error || "Failed to unregister from the match"
         );
       }
-      onStatusChange(match.id, false);  
+      onStatusChange(match.id, false);
       if (participantsShow) {
         const participant_data = await getMatchParticipants(
           match.id.toString()
@@ -186,6 +187,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             ) : (
               <>(BYE)</>
             )}
+            <EditMatchButton match={match} />
           </div>
 
           {/* Match Sport */}
