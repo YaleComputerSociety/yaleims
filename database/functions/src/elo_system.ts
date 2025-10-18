@@ -1,10 +1,10 @@
 import admin from "./firebaseAdmin.js";
 
+const inc = admin.firestore.FieldValue.increment;
 const db = admin.firestore();
 
 // Elo rating configuration
 export const ELO_CONFIG = {
-  INITIAL_RATING: 1500,
   K_FACTOR: {
     REGULAR: 32,      // Regular season matches
     PLAYOFF: 48,      // Playoff matches (higher weight)
@@ -29,13 +29,6 @@ export const ELO_CONFIG = {
   }
 };
 
-export interface EloRating {
-  college: string;
-  sport: string;
-  rating: number;
-  gamesPlayed: number;
-  lastUpdated: admin.firestore.Timestamp;
-}
 
 export interface EloMatchResult {
   homeTeam: string;
@@ -44,16 +37,8 @@ export interface EloMatchResult {
   winner: string; // college abbreviation or "Draw" or "Default"
   matchType: "Regular" | "Playoff" | "Final";
   timestamp: admin.firestore.Timestamp;
-}
-
-/**
- * Calculate the expected score for a team based on Elo ratings
- * @param teamRating - The Elo rating of the team
- * @param opponentRating - The Elo rating of the opponent
- * @returns Expected score (0 to 1)
- */
-export function calculateExpectedScore(teamRating: number, opponentRating: number): number {
-  return 1 / (1 + Math.pow(10, (opponentRating - teamRating) / 400));
+  home_college_score?: number;
+  away_college_score?: number;
 }
 
 /**
@@ -64,15 +49,14 @@ export function calculateExpectedScore(teamRating: number, opponentRating: numbe
  * @param kFactor - K-factor for this match
  * @returns Object with new ratings for both teams
  */
-export function calculateNewRatings(
+function calculateNewRatings(
   homeRating: number,
   awayRating: number,
   result: number, // 1 = home win, 0.5 = draw, 0 = away win
   kFactor: number
 ): { newHomeRating: number; newAwayRating: number } {
-  const homeExpected = calculateExpectedScore(homeRating, awayRating);
-  const awayExpected = calculateExpectedScore(awayRating, homeRating);
-  
+  const {Pwin: homeExpected, Pdraw: drawExpected, Ploss: awayExpected} = calculateExpectedScore(homeRating, awayRating);
+  // TODO: Use drawExpected
   const homeActual = result;
   const awayActual = 1 - result; // If home gets 1, away gets 0; if home gets 0.5, away gets 0.5
   
@@ -91,7 +75,7 @@ export function calculateNewRatings(
  * @param sport - Sport name
  * @returns K-factor for this match
  */
-export function getKFactor(matchType: string, sport: string): number {
+function getKFactor(matchType: string, sport: string): number {
   const baseKFactor = ELO_CONFIG.K_FACTOR[matchType as keyof typeof ELO_CONFIG.K_FACTOR] || ELO_CONFIG.K_FACTOR.REGULAR;
   const sportModifier = ELO_CONFIG.SPORT_MODIFIERS[sport as keyof typeof ELO_CONFIG.SPORT_MODIFIERS] || 1.0;
   
@@ -99,55 +83,47 @@ export function getKFactor(matchType: string, sport: string): number {
 }
 
 /**
- * Get or create Elo rating for a college in a specific sport
+ * Get Elo rating for a college in a specific sport
+ * Assumes that Elo exists
  * @param college - College abbreviation
  * @param sport - Sport name
- * @param year - Season year
  * @returns Elo rating data
  */
-export async function getEloRating(college: string, sport: string, year: string): Promise<EloRating> {
-  const eloRef = db
-    .collection("elo_ratings")
-    .doc("seasons")
-    .collection(year)
-    .doc(`${sport}_${college}`);
-  
-  const eloDoc = await eloRef.get();
-  
-  if (!eloDoc.exists) {
-    // Create new Elo rating with initial value
-    const initialRating: EloRating = {
-      college,
-      sport,
-      rating: ELO_CONFIG.INITIAL_RATING,
-      gamesPlayed: 0,
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
-    };
-    
-    await eloRef.set(initialRating);
-    return initialRating;
-  }
-  
-  return eloDoc.data() as EloRating;
+async function getEloRating(
+  college: string,
+  sport: string,
+  seasonId: string
+): Promise<number> {
+  const docSnap = await db
+    .collection("elo").doc(seasonId)
+    .collection("sports").doc(sport)
+    .collection("colleges").doc(college)
+    .get();
+
+  // assuming it exists:
+  return (docSnap.data() as { elo_rating: number }).elo_rating;
 }
+
+// Helper to cap form at 5 (FIFO)
+const nextForm = (prev: unknown, letter: string) => {
+  const arr = Array.isArray(prev) ? [...prev] : [];
+  arr.push(letter);
+  if (arr.length > 5) arr.splice(0, arr.length - 5);
+  return arr;
+};
 
 /**
  * Update Elo ratings after a match result
  * @param matchResult - The match result data
- * @param year - Season year
  * @param matchId - Optional match ID for logging
  */
-export async function updateEloRatings(matchResult: EloMatchResult, year: string, matchId?: string): Promise<void> {
-  const { homeTeam, awayTeam, sport, winner, matchType } = matchResult;
+export async function updateEloRatings(matchResult: EloMatchResult, season: string): Promise<void> {
+  const { homeTeam, awayTeam, sport, winner, matchType, home_college_score, away_college_score} = matchResult;
   
   // Skip Elo updates for forfeits (Default) - they don't reflect skill
   if (winner === "Default") {
     return;
   }
-  
-  // Get current ratings
-  const homeRating = await getEloRating(homeTeam, sport, year);
-  const awayRating = await getEloRating(awayTeam, sport, year);
   
   // Determine match result (1 = home win, 0.5 = draw, 0 = away win)
   let result: number;
@@ -161,71 +137,103 @@ export async function updateEloRatings(matchResult: EloMatchResult, year: string
     // Unknown winner, skip update
     return;
   }
-  
+
+  // Get current ratings
+  const homeRating = await getEloRating(homeTeam, sport, season);
+  const awayRating = await getEloRating(awayTeam, sport, season);
+
   // Calculate K-factor
   const kFactor = getKFactor(matchType, sport);
   
   // Calculate new ratings
   const { newHomeRating, newAwayRating } = calculateNewRatings(
-    homeRating.rating,
-    awayRating.rating,
+    homeRating,
+    awayRating,
     result,
     kFactor
   );
   
-  // Update ratings in Firestore
-  const batch = db.batch();
-  
-  const homeEloRef = db
-    .collection("elo_ratings")
-    .doc("seasons")
-    .collection(year)
-    .doc(`${sport}_${homeTeam}`);
-  
-  const awayEloRef = db
-    .collection("elo_ratings")
-    .doc("seasons")
-    .collection(year)
-    .doc(`${sport}_${awayTeam}`);
-  
-  batch.update(homeEloRef, {
-    rating: newHomeRating,
-    gamesPlayed: admin.firestore.FieldValue.increment(1),
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-  });
-  
-  batch.update(awayEloRef, {
-    rating: newAwayRating,
-    gamesPlayed: admin.firestore.FieldValue.increment(1),
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-  });
-  
-  await batch.commit();
+  const now = admin.firestore.FieldValue.serverTimestamp();
 
-  // Log the change to history if matchId is provided
-  if (matchId) {
-    try {
-      const historyRef = db.collection("elo_history").doc();
-      await historyRef.set({
-        matchId,
-        homeTeam,
-        awayTeam,
-        sport,
-        winner,
-        homeRatingBefore: homeRating.rating,
-        awayRatingBefore: awayRating.rating,
-        homeRatingAfter: newHomeRating,
-        awayRatingAfter: newAwayRating,
-        homeChange: newHomeRating - homeRating.rating,
-        awayChange: newAwayRating - awayRating.rating,
-        matchType,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
-      });
-    } catch (historyError) {
-      console.error("Error logging Elo history:", historyError);
-      // Don't fail the main operation if history logging fails
-    }
-  }
+  // Refs for new structure
+  const seasonRef = db.collection("elo").doc(season);
+  const sportRef = seasonRef.collection("sports").doc(sport);
+  const homeRef = sportRef.collection("colleges").doc(homeTeam);
+  const awayRef = sportRef.collection("colleges").doc(awayTeam);
+
+  // Read current docs so we can update "form" (keep last 5)
+  const [homeSnap, awaySnap] = await Promise.all([homeRef.get(), awayRef.get()]);
+  const homeData = (homeSnap.exists ? homeSnap.data() : {}) as { form?: string[] };
+  const awayData = (awaySnap.exists ? awaySnap.data() : {}) as { form?: string[] };
+
+  // Result letters for form / counters
+  const homeLetter = winner === "Draw" ? "D" : winner === homeTeam ? "W" : "L";
+  const awayLetter = winner === "Draw" ? "D" : winner === awayTeam ? "W" : "L";
+
+  // Scores (support either naming you use)
+  const homeScore = home_college_score ?? 0;
+  const awayScore = away_college_score ?? 0;
+
+  // Build increments
+  const homeWins = homeLetter === "W" ? 1 : 0;
+  const homeLosses = homeLetter === "L" ? 1 : 0;
+  const homeDraws = homeLetter === "D" ? 1 : 0;
+
+  const awayWins = awayLetter === "W" ? 1 : 0;
+  const awayLosses = awayLetter === "L" ? 1 : 0;
+  const awayDraws = awayLetter === "D" ? 1 : 0;
+
+  const batch = db.batch();
+
+  // HOME updates
+  batch.set(
+    homeRef,
+    {
+      elo_rating: newHomeRating,
+      matches_played: inc(1),
+      season_wins: inc(homeWins),
+      season_losses: inc(homeLosses),
+      season_draws: inc(homeDraws),
+      // if you track defaults here, add: season_defaults: inc(winner === "Default" ? 1 : 0),
+      total_scored: inc(homeScore),
+      total_conceded: inc(awayScore),
+      form: nextForm(homeData?.form, homeLetter),
+      lastUpdated: now,
+    },
+    { merge: true }
+  );
+
+  // AWAY updates
+  batch.set(
+    awayRef,
+    {
+      elo_rating: newAwayRating,
+      matches_played: inc(1),
+      season_wins: inc(awayWins),
+      season_losses: inc(awayLosses),
+      season_draws: inc(awayDraws),
+      total_scored: inc(awayScore),
+      total_conceded: inc(homeScore),
+      form: nextForm(awayData?.form, awayLetter),
+      lastUpdated: now,
+    },
+    { merge: true }
+  );
+
+  // SPORT updates
+  batch.set(
+    sportRef,
+    {
+      matches_played: inc(1),
+      draws: inc(winner === "Draw" ? 1 : 0),
+      defaults: inc(winner === "Default" ? 1 : 0),
+      total_points: inc(homeScore + awayScore), // will divide later
+      total_score_diff: inc(Math.abs(homeScore - awayScore)), // will divide later
+    },
+    { merge: true }
+  );
+
+  await batch.commit();
 }
 
 /**
@@ -233,87 +241,26 @@ export async function updateEloRatings(matchResult: EloMatchResult, year: string
  * @param homeTeam - Home team abbreviation
  * @param awayTeam - Away team abbreviation
  * @param sport - Sport name
- * @param year - Season year
  * @returns Object with win probabilities for home, away, and draw
  */
 export async function getEloWinProbabilities(
   homeTeam: string,
   awayTeam: string,
   sport: string,
-  year: string
-): Promise<{ homeWin: number; awayWin: number; draw: number }> {
-  const homeRating = await getEloRating(homeTeam, sport, year);
-  const awayRating = await getEloRating(awayTeam, sport, year);
-  
-  // Calculate expected scores
-  const awayExpected = calculateExpectedScore(awayRating.rating, homeRating.rating);
-  
-  // Add home field advantage (typically 30-50 Elo points)
-  const homeFieldAdvantage = 40;
-  const adjustedHomeExpected = calculateExpectedScore(homeRating.rating + homeFieldAdvantage, awayRating.rating);
-  
-  // Normalize probabilities to account for draws
-  // In sports where draws are possible, we need to adjust the probabilities
-  const totalExpected = adjustedHomeExpected + awayExpected;
-  const drawProbability = 0.1; // Base draw probability (can be sport-specific)
-  
-  const homeWin = adjustedHomeExpected * (1 - drawProbability) / totalExpected;
-  const awayWin = awayExpected * (1 - drawProbability) / totalExpected;
-  const draw = drawProbability;
-  
-  return {
-    homeWin: Math.max(0.05, Math.min(0.95, homeWin)), // Clamp between 5% and 95%
-    awayWin: Math.max(0.05, Math.min(0.95, awayWin)),
-    draw: Math.max(0.05, Math.min(0.2, draw)) // Draw probability between 5% and 20%
-  };
-}
+  season: string
+): Promise<{ PHome: number; PDraw: number; PAway: number }> {
+  const homeRating = await getEloRating(homeTeam, sport, season);
+  const awayRating = await getEloRating(awayTeam, sport, season);
 
-/**
- * Bulk initialize Elo ratings for all colleges in a sport for a season
- * @param colleges - Array of college abbreviations
- * @param sport - Sport name
- * @param year - Season year
- */
-export async function initializeEloRatings(colleges: string[], sport: string, year: string): Promise<void> {
-  const batch = db.batch();
-  
-  for (const college of colleges) {
-    const eloRef = db
-      .collection("elo_ratings")
-      .doc("seasons")
-      .collection(year)
-      .doc(`${sport}_${college}`);
-    
-    const initialRating: Omit<EloRating, 'lastUpdated'> = {
-      college,
-      sport,
-      rating: ELO_CONFIG.INITIAL_RATING,
-      gamesPlayed: 0
-    };
-    
-    batch.set(eloRef, {
-      ...initialRating,
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-    });
-  }
-  
-  await batch.commit();
-}
+  const Ea = 1 / (1 + 10 ** ((awayRating - homeRating) / 400));
 
-/**
- * Get all Elo ratings for a sport in a season
- * @param sport - Sport name
- * @param year - Season year
- * @returns Array of Elo ratings sorted by rating (descending)
- */
-export async function getEloLeaderboard(sport: string, year: string): Promise<EloRating[]> {
-  const eloQuery = db
-    .collection("elo_ratings")
-    .doc("seasons")
-    .collection(year)
-    .where("sport", "==", sport)
-    .orderBy("rating", "desc");
-  
-  const snapshot = await eloQuery.get();
-  return snapshot.docs.map(doc => doc.data() as EloRating);
+  const Dmax = 0.1;   // TODO: base draw rate
+  const k = 0.002;    // TODO: sensitivity to rating difference
+  const diff = Math.abs(awayRating - homeRating);
+
+  const PDraw = Dmax * Math.exp(-k * diff);
+  const PHome = (1 - PDraw) * Ea;
+  const PAway = (1 - PDraw) * (1 - Ea);
+
+  return { PHome, PDraw, PAway};
 }
