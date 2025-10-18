@@ -2,16 +2,18 @@ import { getYearFromTimestamp } from "@src/utils/helpers";
 import { db } from "../../../../../lib/firebase";
 import { doc, Timestamp, updateDoc } from "firebase/firestore";
 import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { userTokenHasRoles } from "@src/utils/auth-helpers";
 
 export async function PATCH(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-      return Response.json({ error: "unauthenticated" }, { status: 401 });
-    }
+    const hasRoles = await userTokenHasRoles(["admin", "dev"]);
 
-    // TODO: check that user is admin? I'm not sure how our security is working right now
+    if (!hasRoles) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 403,
+      });
+    }
 
     const matchData = await req.json();
     const { id, ...fields } = matchData;
