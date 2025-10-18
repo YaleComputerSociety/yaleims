@@ -35,7 +35,6 @@ export const EditMatchButton: React.FC<EditMatchButtonProps> = ({
   const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
 
   const handleEditClick = () => {
-    console.log(match);
     setEditModalOpen(true);
   };
 
@@ -151,8 +150,6 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
     formData.forEach((value, key) => {
       if (key === "forfeit") {
         data[key] = true;
-      } else if (key === "timestamp") {
-        data[key] = new Date(String(value));
       } else {
         data[key] = value;
       }

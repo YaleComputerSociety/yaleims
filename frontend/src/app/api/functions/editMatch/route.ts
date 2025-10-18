@@ -1,6 +1,6 @@
 import { getYearFromTimestamp } from "@src/utils/helpers";
 import { db } from "../../../../../lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, Timestamp, updateDoc } from "firebase/firestore";
 import { cookies } from "next/headers";
 
 export async function PATCH(req: Request) {
@@ -36,6 +36,11 @@ export async function PATCH(req: Request) {
       return new Response(JSON.stringify({ error: "Error calculating year" }), {
         status: 400,
       });
+    }
+
+    // convert timestamp to Firestore Timestamp
+    if (fields.timestamp) {
+      fields.timestamp = Timestamp.fromDate(new Date(fields.timestamp));
     }
 
     // Update the match document in Firestore
