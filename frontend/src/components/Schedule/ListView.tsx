@@ -45,7 +45,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
           `/api/functions/getUserMatches?seasonId=${
             currentSeason?.year || currentYear
           }`,
-          { signal: controller.signal },
+          { signal: controller.signal }
         );
 
         if (!res.ok) throw new Error("Failed to fetch user matches");
@@ -74,7 +74,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
           : typeof m.timestamp === "string"
           ? new Date(m.timestamp)
           : // Firestore Timestamp – handle both {seconds,nanoseconds} and .toDate()
-            (m as any).timestamp?.toDate
+          (m as any).timestamp?.toDate
           ? (m as any).timestamp.toDate()
           : new Date((m as any).timestamp);
 
@@ -84,7 +84,8 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     });
 
     return [...byId.values()].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   }, [matches]);
 
@@ -92,26 +93,28 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     if (!uniqueMatches.length) return [];
 
     const start = startOfDay(new Date(uniqueMatches[0].timestamp));
-    const end = startOfDay(new Date(uniqueMatches[uniqueMatches.length - 1].timestamp));
+    const end = startOfDay(
+      new Date(uniqueMatches[uniqueMatches.length - 1].timestamp)
+    );
 
     return eachDayOfInterval({ start, end });
   }, [uniqueMatches]);
 
   const signedUpIds = useMemo(() => {
     return new Set(
-      userMatches.map((m) => `${m.id}::${new Date(m.timestamp).getTime()}`),
+      userMatches.map((m) => `${m.id}::${new Date(m.timestamp).getTime()}`)
     );
   }, [userMatches]);
 
   const handleStatusChange = useCallback(
     (matchId: string, signed: boolean) => {
-      setUserMatches(prev => {
+      setUserMatches((prev) => {
         return signed
-          ? [...prev, matches.find(m => m.id === matchId)!]
-          : prev.filter(m => m.id !== matchId);
+          ? [...prev, matches.find((m) => m.id === matchId)!]
+          : prev.filter((m) => m.id !== matchId);
       });
     },
-    [matches],
+    [matches]
   );
 
   useEffect(() => {
@@ -129,7 +132,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
           setTopDate(new Date(dateIso));
         });
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
 
     observer.current = io;
@@ -171,7 +174,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
 
       {allDates.map((date) => {
         const dayMatches = uniqueMatches.filter((m) =>
-          isSameDay(m.timestamp, date),
+          isSameDay(m.timestamp, date)
         );
 
         if (!dayMatches.length) return null;
@@ -187,14 +190,14 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               {format(date, "EEEE, MMMM d, yyyy")}
             </div>
 
-              {dayMatches.map((match) => (
+            {dayMatches.map((match) => (
               <MatchListItem
                 key={match.id}
                 match={match}
                 user={user}
                 onStatusChange={handleStatusChange}
                 isSignedUp={signedUpIds.has(
-                  `${match.id}::${new Date(match.timestamp).getTime()}`,
+                  `${match.id}::${new Date(match.timestamp).getTime()}`
                 )}
               />
             ))}
