@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { useRef } from "react";
 import BracketCell from "@src/components/Brackets/BracketCell";
@@ -14,6 +14,7 @@ interface FirestoreBracketMatch {
   bracket_placement: number;
   match_id: string;
   round: string;
+  timestamp: Timestamp;
 }
 
 // mapping index in bracket array to the type of location of the match in the bracket
@@ -121,26 +122,17 @@ const BracketsPage: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-blue-100 py-10`}>
+    <div className={`min-h-screen pt-16 pb-5`}>
       <PageHeading heading="Brackets" />
 
-      {/* Welcome Message */}
-      <div className="max-w-3xl mx-auto my-10 bg-white rounded-lg shadow px-6 py-4 text-center text-lg text-gray-700 mb-4">
-        <p className="font-bold mb-2">Welcome to the Brackets Page!</p>
-        <p>
-          To view upcoming, past, or current playoff matches, please select your
-          desired sport and year.
-        </p>
-      </div>
-
       {/* Sport Selector & Actions */}
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow px-6 py-4 flex flex-wrap justify-between items-center text-gray-700 mb-28 gap-4">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-black rounded-lg shadow px-6 py-2 flex flex-wrap justify-between items-center mb-4 gap-4">
         <div className="flex justify-between w-full">
           {/* Sport on left */}
           <div className="flex items-center gap-4">
-            <span className="text-lg font-semibold">Sport:</span>
+            <span className="text-base font-semibold">Sport:</span>
             <select
-              className="border border-gray-300 rounded px-3 py-1"
+              className="bg-gray-100 dark:bg-gray-800 rounded px-3 py-1"
               value={sport}
               onChange={(e) => handleSportChange(e.target.value)}
             >
@@ -155,9 +147,9 @@ const BracketsPage: React.FC = () => {
 
           {/* Year on right */}
           <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold">Year:</span>
+            <span className="text-base font-semibold">Year:</span>
             <select
-              className="border border-gray-300 rounded px-3 py-1"
+              className="bg-gray-100 dark:bg-gray-800 rounded px-3 py-1"
               value={season}
               onChange={(e) => handleSeasonChange(e.target.value)}
             >
@@ -178,39 +170,24 @@ const BracketsPage: React.FC = () => {
         </div>
       </div>
 
-      {/*Dynamic Bracket Title */}
-      {sport && season && (
-        <div className="text-center mt-2 mb-10 pb-4">
-          <h2 className="text-3xl font-bold text-gray-800">
-            {sports.find((s) => s.name === sport)?.emoji} {sport} {season}
-          </h2>
-        </div>
-      )}
-
-      <div className={`{collapsed ? "pl-[80px] : "pl-[320px]"} pr-6`}>
-        <div className="w-full overflow-x-auto">
-          <div className="w-max"></div>
-        </div>
-      </div>
-
       {/* Column Titles Row */}
-      <div className="relative z-0">
-        <div className="absolute inset-0 bg-[url('/bracket-overlay.png')] bg-cover bg-center opacity-45 z-0 pointer-events-none mt-12 backdrop-blur-3xl"></div>
+      <section className="flex flex-col justify-center items-center">
+        {/* <div className="absolute inset-0 bg-[url('/bracket-overlay.png')] bg-cover bg-center opacity-45 z-0 pointer-events-none mt-12 backdrop-blur-3xl"></div> */}
 
         {/* Bracket Columns */}
         {bracket ? (
-          <div className="w-full overflow-x-auto">
-            <div className="flex w-fit">
-              <div className=" grid grid-cols-7 gap-50 items-start">
+          <div className="w-[100%] flex flex-col justify-center items-center max-w-screen-2xl">
+            <div className={`${collapsed ? "w-[90%]" : "w-[100%]"}  mx-auto relative`}>
+              <div className=" grid grid-cols-7 h-full items-start">
                 {/* Desktop View */}
 
                 <div className="flex flex-col items-center">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Playoffs
+                  <span className="bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Playoffs {bracket[0].timestamp.toDate().getDate()}/{bracket[0].timestamp.toDate().getMonth() + 1}/{bracket[0].timestamp.toDate().getFullYear()}
                   </span>
 
                   {/* Left Playoffs */}
-                  <div className="flex flex-col items-end space-y-20">
+                  <div className="flex flex-col items-end space-y-5">
                     {leftPlayoffIndices.map((index) => {
                       const match = bracket[index];
                       return (
@@ -221,6 +198,7 @@ const BracketsPage: React.FC = () => {
                           <BracketCell
                             matchId={match.match_id}
                             season={season}
+                            time={match.timestamp.toDate().toString()}
                           />
                         </div>
                       );
@@ -229,11 +207,11 @@ const BracketsPage: React.FC = () => {
                 </div>
 
                 {/* Left Quarters */}
-                <div className="space-y-24 flex flex-col items-center">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Quarterfinals
+                <div className="flex flex-col items-center justify-center">
+                  <span className="bg-blue-300 mb-[70px] text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Quarter-Finals {bracket[5].timestamp.toDate().getDate()}/{bracket[5].timestamp.toDate().getMonth() + 1}/{bracket[5].timestamp.toDate().getFullYear()}
                   </span>
-                  <div className="ml-4 flex flex-col items-end justify-center space-y-80">
+                  <div className="flex flex-col items-center justify-center space-y-40">
                     {leftQuarterIndices.map((index) => {
                       const match = bracket[index];
                       return (
@@ -244,6 +222,7 @@ const BracketsPage: React.FC = () => {
                           <BracketCell
                             matchId={match.match_id}
                             season={season}
+                            time={match.timestamp.toDate().toString()}
                           />
                         </div>
                       );
@@ -252,96 +231,70 @@ const BracketsPage: React.FC = () => {
                 </div>
 
                 {/* Left Semis */}
-                <div className="flex flex-col items-center space-y-60">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Semifinals
+                <div className="flex flex-col items-center space-y-52">
+                  <span className="bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Semi-Finals {bracket[12].timestamp.toDate().getDate()}/{bracket[12].timestamp.toDate().getMonth() + 1}/{bracket[12].timestamp.toDate().getFullYear()}
                   </span>
-                  <div className="ml-6 flex flex-col items-end justify-center space-y-48">
                     <div
-                      className="scale-75 space-y-48 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
+                      className="scale-75 space-y-22 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                       key={bracket[leftSemiIndex].match_id}
                     >
                       <BracketCell
                         matchId={bracket[leftSemiIndex].match_id}
                         season={season}
+                        time={bracket[leftSemiIndex].timestamp.toDate().toString()}
                       />
                     </div>
-                  </div>
                 </div>
 
                 {/* Final */}
-                <div className="flex flex-col items-center space-y-24">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Finals
+                <div className="flex flex-col items-center space-y-14">
+                  <span className="bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Final {bracket[14].timestamp.toDate().getDate()}/{bracket[14].timestamp.toDate().getMonth() + 1}/{bracket[14].timestamp.toDate().getFullYear()}
                   </span>
-                  <div className="flex flex-col items-center justify-center space-y-6">
-                    {/* Trophy container */}
-                    {/* <div className="relative flex items-center justify-center"> */}
-                    {/* Trophy image */}
+
+                  {/* Trophy container */}
+                  <div className="relative flex items-center justify-center">
                     <img
                       src="/trophy.png"
                       alt="Trophy"
-                      className="w-48 h-48 opacity-100 animate-pulse [animation-duration:4s] drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
-                    />{" "}
-                    */
-                    {/* Overlay: winner flag or ? */}
-                    {/* {bracket[finalIndex]?.winner ? (
-                      // TODO: Hook up to backend if we have a "first place" label.
-                      // This should add the winner's flag over the trophy or have a question mark if not determined yet!
-                      <img
-                        src={`/flags/${bracket[finalIndex].winner}.png`} // adjust to the flag asset
-                        alt={`${bracket[finalIndex].winner} flag`}
-                        className="absolute w-20 h-20 rounded-full border-4 border-white shadow-lg"
-                      />
-                    ) : (
-                      <span className="absolute y-20 text-white text-6xl font-bold animate-pulse [animation-duration:4s] drop-shadow-[0_0_25px_rgba(59,130,246,0.9)]">
-                        ?
-                      </span>
-                    )} */}
-                  </div>
-                  {/* Final match cell */}
-                  <div className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
-                    <BracketCell
-                      matchId={bracket[finalIndex].match_id}
-                      season={season}
+                      className="w-48 h-48 opacity-100 drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
                     />
+
+                    {/* Overlayed final match cell */}
+                    <div className="absolute scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
+                      <BracketCell
+                        matchId={bracket[finalIndex].match_id}
+                        season={season}
+                        time={bracket[finalIndex].timestamp.toDate().toString()}
+                      />
+                    </div>
                   </div>
-                  {/* Congrats message */}
-                  {/* {bracket[finalIndex]?.winner && (
-                      <div className="bg-white rounded-lg px-2 py-1 shadow text-center">
-                        <p className="text-base font-semibold">
-                          Congrats to the 2025 Champs,{" "}
-                          {bracket[finalIndex].winner}!
-                        </p>
-                      </div>
-                    )} */}
-                  {/* </div> */}
                 </div>
 
                 {/* Right Semis */}
-                <div className="flex flex-col items-center space-y-60">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm ">
-                    Semifinals
+                <div className="flex flex-col items-center space-y-52">
+                  <span className=" bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Semi-Finals {bracket[13].timestamp.toDate().getDate()}/{bracket[13].timestamp.toDate().getMonth() + 1}/{bracket[13].timestamp.toDate().getFullYear()}
                   </span>
-                  <div className="-ml-6 flex flex-col items-start justify-center space-y-48">
-                    <div
-                      className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                      key={bracket[rightSemiIndex].match_id}
-                    >
-                      <BracketCell
-                        matchId={bracket[rightSemiIndex].match_id}
-                        season={season}
-                      />
-                    </div>
+                  <div
+                    className="scale-75 space-y-22 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
+                    key={bracket[rightSemiIndex].match_id}
+                  >
+                    <BracketCell
+                      matchId={bracket[rightSemiIndex].match_id}
+                      season={season}
+                      time={bracket[rightSemiIndex].timestamp.toDate().toString()}
+                    />
                   </div>
                 </div>
 
                 {/* Right Quarters */}
-                <div className="space-y-24 flex flex-col items-center">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Quarterfinals
+                <div className="flex flex-col items-center">
+                  <span className=" bg-blue-300 mb-[70px] text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Quarter-Finals {bracket[10].timestamp.toDate().getDate()}/{bracket[10].timestamp.toDate().getMonth() + 1}/{bracket[10].timestamp.toDate().getFullYear()}
                   </span>
-                  <div className="-ml-4 flex flex-col items-start justify-center space-y-80">
+                  <div className=" flex flex-col items-start justify-center space-y-40">
                     {rightQuarterIndices.map((index) => {
                       const match = bracket[index];
                       return (
@@ -352,19 +305,19 @@ const BracketsPage: React.FC = () => {
                           <BracketCell
                             matchId={match.match_id}
                             season={season}
+                            time={match.timestamp.toDate().toString()}
                           />
-                        </div>
-                      );
-                    })}
+                        </div>);
+                      })}
                   </div>
                 </div>
 
                 {/* Right Playoffs */}
                 <div className="flex flex-col items-center">
-                  <span className="mb-4 bg-blue-300 text-blue-900 text-m font-semibold px-4 py-1 rounded-full shadow-sm">
-                    Playoffs
+                  <span className=" bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                    Playoffs {bracket[6].timestamp.toDate().getDate()}/{bracket[6].timestamp.toDate().getMonth() + 1}/{bracket[6].timestamp.toDate().getFullYear()}
                   </span>
-                  <div className="flex flex-col items-start space-y-20">
+                  <div className="flex flex-col items-start space-y-5">
                     {rightPlayoffIndices.map((index) => {
                       const match = bracket[index];
                       return (
@@ -375,13 +328,65 @@ const BracketsPage: React.FC = () => {
                           <BracketCell
                             matchId={match.match_id}
                             season={season}
+                            time={match.timestamp.toDate().toString()}
                           />
                         </div>
                       );
                     })}
                   </div>
                 </div>
+
               </div>
+              <svg
+                className="absolute inset-0 w-full h-full text-yellow-500 pointer-events-none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 1000 1000"
+                preserveAspectRatio="none"
+              >
+                {/* === LEFT SIDE === */}
+                {/* Playoffs (8 lines) */}
+                <path d="M136 149 H214" stroke="currentColor" strokeWidth="5" />
+                <path d="M213 147 V193" stroke="currentColor" strokeWidth="2.5" />
+                <path d="M136 398 H214" stroke="currentColor" strokeWidth="5" />
+                <path d="M213 400 V354" stroke="currentColor" strokeWidth="2.5" />
+
+                <path d="M136 645 H214" stroke="currentColor" strokeWidth="5" />
+                <path d="M213 643 V688" stroke="currentColor" strokeWidth="2.5" />
+                <path d="M136 894 H214" stroke="currentColor" strokeWidth="5" />
+                <path d="M213 896 V848" stroke="currentColor" strokeWidth="2.5" />
+
+                {/* Quarterfinals (4 lines) */}
+                <path d="M279.3 273.5 H361.2" stroke="currentColor" strokeWidth="5" />
+                <path d="M360 272 V436" stroke="currentColor" strokeWidth="2.5" />
+                <path d="M279.3 768 H361.2" stroke="currentColor" strokeWidth="5" />
+                <path d="M360 770 V596.5" stroke="currentColor" strokeWidth="2.5" />
+
+
+                {/* === RIGHT SIDE === */}
+                {/* Playoffs (8 lines) */}
+                <path d="M864.4 149 H786" stroke="currentColor" strokeWidth="5" />
+                <path d="M787 147 V193" stroke="currentColor" strokeWidth="2.5" />
+                <path d="M864.4 398 H786" stroke="currentColor" strokeWidth="5" />
+                <path d="M787 400 V354" stroke="currentColor" strokeWidth="2.5" />
+
+                <path d="M864.4 645 H786" stroke="currentColor" strokeWidth="5" />
+                <path d="M787 643 V688" stroke="currentColor" strokeWidth="2.5" />
+                <path d="M864.4 894 H786" stroke="currentColor" strokeWidth="5" />
+                <path d="M787 896 V848" stroke="currentColor" strokeWidth="2.5" />
+
+
+                {/* Quarterfinals (4 lines) */}
+                <path d="M721 273.5 H638.8" stroke="currentColor" strokeWidth="5" />
+                <path d="M640 272 V436" stroke="currentColor" strokeWidth="2.5" />
+                <path d="M721 768 H638.8" stroke="currentColor" strokeWidth="5" />
+                <path d="M640 770 V596.5" stroke="currentColor" strokeWidth="2.5" />
+
+
+                {/* === SEMIS → FINAL (2 lines) === */}
+                <path d="M422.1 516.7 H501.2" stroke="currentColor" strokeWidth="5" />
+                <path d="M498.8 516.7 H578.3" stroke="currentColor" strokeWidth="5" />
+                <path d="M500 518.6 V396" stroke="currentColor" strokeWidth="2.5" />
+              </svg>
             </div>
 
             {/* Mobile view (scaled + scrollable) */}
@@ -397,7 +402,7 @@ const BracketsPage: React.FC = () => {
             No bracket available.
           </p>
         )}
-      </div>
+      </section>
     </div>
   );
 };

@@ -6,7 +6,6 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
 import Pagination from "@src/components/Scores/Pagination";
 import MatchesTable from "@src/components/YOdds/MatchTable";
-import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
 import { Match, Bet, BetParlay } from "@src/types/components";
 import { useUser } from "@src/context/UserContext";
 import "react-loading-skeleton/dist/skeleton.css";

@@ -30,7 +30,7 @@ async function createSeasonDocs() {
 
   for (const c of colleges) {
     // Path: colleges/seasons/{seasonId}/{ABBREV}
-    const seasonCollectionRef = collection(firestore, 'colleges', 'seasons', seasonId);
+    const seasonCollectionRef = collection(firestore, 'colleges_testing', 'seasons', seasonId);
     const collegeSeasonDocRef = doc(seasonCollectionRef, c.abbreviation);
 
     const seasonData = {
