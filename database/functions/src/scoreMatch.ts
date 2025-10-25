@@ -76,7 +76,7 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
   );
 };
 
-const getPointsForWinBySportName = async (sportName: string) => {
+export const getPointsForWinBySportName = async (sportName: string) => {
   const sportsRef = db.collection("sports");
   const querySnapshot = await sportsRef.where("name", "==", sportName).get();
 
@@ -319,7 +319,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
             .collection("matches")
             .doc("seasons")
             .collection(year)
-            .doc(nextMatchId);
+            .doc(`${nextMatchId}`);
 
           let updateData: any = {};
           if (matchBracketSlot % 2 === 1) {

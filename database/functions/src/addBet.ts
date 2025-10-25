@@ -75,6 +75,31 @@ export const addBet = functions.https.onRequest(async (req, res) => {
         })
       );
 
+      const now = new Date();
+      for (const leg of betArray) {
+        const matchRef = db
+          .collection("matches")
+          .doc("seasons")
+          .collection(seasonId)
+          .doc(leg.matchId);
+
+        const matchSnap = await matchRef.get();
+        if (!matchSnap.exists) {
+          return res.status(404).json({ error: `Match not found: ${leg.matchId}` });
+        }
+
+        const matchData = matchSnap.data();
+        if (!matchData?.timestamp) {
+          return res.status(500).json({ error: `Timestamp missing for match ${leg.matchId}` });
+        }
+        const matchDate = matchData.timestamp.toDate();
+        if (now >= matchDate) {
+          return res.status(400).json({
+            error: `Betting period has ended for one or more matches (${leg.matchId})`,
+          });
+        }
+      }
+
       await db.runTransaction(async (tx) => {
         tx.update(userSeasonRef, {
           "points": admin.firestore.FieldValue.increment(-betAmount),
@@ -93,12 +118,8 @@ export const addBet = functions.https.onRequest(async (req, res) => {
         const sanitizedEmail = email.replace(/\./g, "_");
 
         for (const leg of betArray) {
-          /* i.   Store the leg under /betArray */
-          
           const legRef = parlayRef.collection("betArray").doc();
           tx.set(legRef, leg);
-
-          /* ii.  Update predictions + volume on the match doc */
           const matchRef = db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId);
 
           tx.update(matchRef, {
@@ -130,7 +151,6 @@ export const addBet = functions.https.onRequest(async (req, res) => {
         }
       });
 
-      /* ---------- 6. Done ---------- */
       return res.status(200).json({message: "Parlay added successfully"});
     } catch (err) {
       console.error("Error adding parlay:", err);

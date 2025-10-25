@@ -1,4 +1,12 @@
 {
+  "apphosting": {
+    "build": {
+      "cache": {
+        "npm": true
+      }
+    }
+  },
+
   "functions": {
     "source": "functions"
   }

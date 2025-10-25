@@ -19,6 +19,7 @@ import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineLeaderboard } from "react-icons/md";
 import { FaQuestionCircle } from "react-icons/fa";
 import { MdOutlineSportsScore } from "react-icons/md";
+import { TbBrackets } from "react-icons/tb";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -68,6 +69,7 @@ const NavBar: React.FC = () => {
     { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard />},
     { href: "/scores", text: "Scores", icon: <MdOutlineScoreboard /> },
     { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
+    { href: "/brackets", text: "Brackets", icon: <TbBrackets /> },
     { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
     { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
     { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
