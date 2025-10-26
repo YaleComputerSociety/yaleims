@@ -17,7 +17,7 @@ interface FirestoreBracketMatch {
   timestamp: Timestamp;
 }
 
-export const glowIdsForConnection: Record<string, string[]> = {
+const glowIdsForConnection: Record<string, string[]> = {
   // === LEFT SIDE ===
   // Playoffs → Quarterfinals (top half)
   "1-5": ["1a", "1b"],
