@@ -262,13 +262,13 @@ const BracketsPage: React.FC = () => {
 
         {/* Bracket Columns */}
         {bracket ? (
-          <div className="w-[100%] flex flex-col justify-center items-center max-w-screen-2xl">
+          <div className="w-[100%] flex flex-col justify-center items-center max-w-[1650px]">
             <div className={`${collapsed ? "w-[90%]" : "w-[100%]"}  mx-auto relative`}>
               <div className=" grid grid-cols-7 h-full items-start">
                 {/* Desktop View */}
 
                 <div className="flex flex-col items-center">
-                  <span className="bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Playoffs {bracket[0].timestamp.toDate().getDate()}/{bracket[0].timestamp.toDate().getMonth() + 1}/{bracket[0].timestamp.toDate().getFullYear()}
                   </span>
 
@@ -294,7 +294,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Left Quarters */}
                 <div className="flex flex-col items-center justify-center">
-                  <span className="bg-blue-300 mb-[70px] text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-300 mb-[70px] text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Quarter-Finals {bracket[5].timestamp.toDate().getDate()}/{bracket[5].timestamp.toDate().getMonth() + 1}/{bracket[5].timestamp.toDate().getFullYear()}
                   </span>
                   <div className="flex flex-col items-center justify-center space-y-40">
@@ -318,7 +318,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Left Semis */}
                 <div className="flex flex-col items-center space-y-52">
-                  <span className="bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Semi-Finals {bracket[12].timestamp.toDate().getDate()}/{bracket[12].timestamp.toDate().getMonth() + 1}/{bracket[12].timestamp.toDate().getFullYear()}
                   </span>
                     <div
@@ -335,7 +335,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Final */}
                 <div className="flex flex-col items-center space-y-14">
-                  <span className="bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Final {bracket[14].timestamp.toDate().getDate()}/{bracket[14].timestamp.toDate().getMonth() + 1}/{bracket[14].timestamp.toDate().getFullYear()}
                   </span>
 
@@ -360,7 +360,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Right Semis */}
                 <div className="flex flex-col items-center space-y-52">
-                  <span className=" bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className=" bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Semi-Finals {bracket[13].timestamp.toDate().getDate()}/{bracket[13].timestamp.toDate().getMonth() + 1}/{bracket[13].timestamp.toDate().getFullYear()}
                   </span>
                   <div
@@ -377,7 +377,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Right Quarters */}
                 <div className="flex flex-col items-center">
-                  <span className=" bg-blue-300 mb-[70px] text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className=" bg-blue-300 mb-[70px] text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Quarter-Finals {bracket[10].timestamp.toDate().getDate()}/{bracket[10].timestamp.toDate().getMonth() + 1}/{bracket[10].timestamp.toDate().getFullYear()}
                   </span>
                   <div className=" flex flex-col items-start justify-center space-y-40">
@@ -400,7 +400,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Right Playoffs */}
                 <div className="flex flex-col items-center">
-                  <span className=" bg-blue-300 text-blue-900 text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className=" bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
                     Playoffs {bracket[6].timestamp.toDate().getDate()}/{bracket[6].timestamp.toDate().getMonth() + 1}/{bracket[6].timestamp.toDate().getFullYear()}
                   </span>
                   <div className="flex flex-col items-start space-y-5">
