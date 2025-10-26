@@ -32,6 +32,27 @@ body {
   --foreground: #e5e7eb; /* Text color for dark mode */
 }
 
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(0, 255, 255, 0.6))
+            drop-shadow(0 0 6px rgba(0, 255, 255, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8))
+            drop-shadow(0 0 18px rgba(0, 255, 255, 0.7));
+  }
+}
+
+.glow-line {
+  transition: stroke 0.25s ease, opacity 0.25s ease;
+}
+
+.glow-line.active {
+  stroke: #00ffff;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.9));
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
 html,
 body {
   margin: 0;

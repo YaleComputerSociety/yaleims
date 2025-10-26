@@ -8,9 +8,9 @@ import SkeletonBracketCell from "./SkeletonBracketCell";
 import "react-loading-skeleton/dist/skeleton.css";
 
 interface BracketCellProps {
-  matchId: string;
-  season: string;
+  match: any;
   time: string;
+  setHoveredTeam: (team: string | null) => void;
 }
 
 // UPDATED: Added assignable Medal styles
@@ -79,56 +79,29 @@ const ErrorBracketCell = ({
   </div>
 );
 
-const BracketCell: React.FC<BracketCellProps> = ({ matchId, season, time }) => {
-  const [match, setMatch] = useState<any | null>(null);
+const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   // console.log(time)
   const displayTime = getTimeString(time)
-  useEffect(() => {
-    const fetchMatch = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const matchDocRef = doc(db, "matches", "seasons", season, `${matchId}`);
-        const matchDoc = await getDoc(matchDocRef);
-
-        if (!matchDoc.exists()) {
-          setError(`Match ${matchId} not found.`);
-          setMatch(null);
-        } else {
-          setMatch(matchDoc.data());
-        }
-      } catch (err) {
-        console.error(`Error fetching match ${matchId}:`, err);
-        setError("Failed to load match.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (matchId) {
-      fetchMatch();
-    }
-  }, [matchId]);
 
   // UPDATED: styled Loading state
-  if (loading) {
-    return <SkeletonBracketCell />;
-  }
+  // if (loading) {
+  //   return <SkeletonBracketCell />;
+  // }
 
-  // UPDATED: styled error && !message states that use the ErrorBracketCell
-  if (error) {
-    return (
-      <ErrorBracketCell title="🚫 Error" message="Failed to load match." />
-    );
-  }
+  // // UPDATED: styled error && !message states that use the ErrorBracketCell
+  // if (error) {
+  //   return (
+  //     <ErrorBracketCell title="🚫 Error" message="Failed to load match." />
+  //   );
+  // }
 
   if (!match) {
     return (
       <ErrorBracketCell
         title="🔎 Match not Found"
-        message={`Match ${matchId} not found.`}
+        message={`Match ${match.match_id} not found.`}
       />
     );
   }
@@ -169,7 +142,11 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, season, time }) => {
 
       {/* Top team */}
       <div className="flex items-center justify-between z-10">
-        <div className="flex items-center space-x-1">
+        <div 
+          className="flex items-center space-x-1"
+          onMouseEnter={() => setHoveredTeam(match.away_college)}
+          onMouseLeave={() => setHoveredTeam(null)} 
+        >
           {/* only show image if college not TBD */}
           {awayCollegeName !== "TBD" && (
             <img
@@ -180,10 +157,10 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, season, time }) => {
           )}
           <div className="flex items-center space-x-1">
             <span
-              className={`font-semibold text-sm break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(
+              className={`font-semibold cursor-pointer text-sm break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(
                 topMedal
               )}`}
-              title={awayCollegeName}
+              title={awayCollegeName}             
             >
               <span>{getMedalIcon(topMedal)}</span>
               <span>{formatCollegeName(awayCollegeName)}</span>
@@ -231,7 +208,11 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, season, time }) => {
 
           {/* Bottom team name/seed */}
           <div className="flex items-center justify-between z-10">
-            <div className="flex items-center space-x-1">
+            <div 
+              className="flex items-center space-x-1"
+              onMouseEnter={() => setHoveredTeam(match.home_college)}
+              onMouseLeave={() => setHoveredTeam(null)}
+            >
               {/* only show image if college not TBD */}
               {homeCollegeName !== "TBD" && (
                 <img
@@ -242,7 +223,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ matchId, season, time }) => {
               )}
               <div className="flex items-center space-x-1">
                 <span
-                  className={`font-semibold text-sm break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(
+                  className={`font-semibold cursor-pointer text-sm break-words max-w-[120px] leading-tight text-left flex items-center space-x-1 ${getMedalTextStyle(
                     bottomMedal
                   )}`}
                   title={homeCollegeName}
