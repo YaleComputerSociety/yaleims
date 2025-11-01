@@ -4,6 +4,7 @@ import Dropdown from "@src/components/Faq/Dropdown";
 import Link from "next/link";
 import PageHeading from "@src/components/PageHeading";
 
+
 export default function Faq() {
   const sections = [
     {
@@ -184,16 +185,20 @@ export default function Faq() {
             </div>
           </div>
         ))}
-        <p className="text-center mt-3">
-          Have another question?{" "}
-          <Link
-            className="text-blue-500"
-            href="https://yaleims.canny.io"
-            target="_blank"
-          >
-            Contact us
-          </Link>
-        </p>
+        <div className= "mt-16 flex justify-center">
+          <div className= "rounded-full bg-[#e5eef9]/25 text-center px-8 py-8 shadow-sm hover:shadow-[0_0_15px_#72CBF9]/40 w-full sm:w-3/4 md:w-2/3 lg:w-1/2 transition-all">
+            <p className="text-center mt-1">
+              Have another question?{" "}
+              <Link
+                className="text-blue-500"
+                href="https://yaleims.canny.io"
+                target="_blank"
+              >
+                Contact us📩
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
