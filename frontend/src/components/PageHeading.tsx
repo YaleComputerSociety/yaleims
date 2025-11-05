@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import { useNavbar } from '@src/context/NavbarContext';
 import { FaSignOutAlt } from "react-icons/fa";
+import { useEffect, useState } from "react";
 
 
 const UserMenu: React.FC<{ name: string }> = ({ name }) => {
@@ -51,58 +52,85 @@ const UserMenu: React.FC<{ name: string }> = ({ name }) => {
   );
 };
 
+// Helper Functions to detect mobile page + add special heading
+function useIsMobile(threshold = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < threshold);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [threshold]);
+  return isMobile;
+}
 
+function MobileHeading({ heading }: { heading: string }) {
+  return (
+    <div className="mt-[65px] mb-2 px-2 text-center">
+      <p className="text-black dark:text-white text-5xl font-bold leading-[1.05] tracking-tight py-1">
+        {heading}
+      </p>
+    </div>
+  );
+}
 
 interface PageHeadingProps {
     heading: string;
 }
 
 export default function PageHeading({ heading }: PageHeadingProps) {
-    const { user, loading } = useUser();
-    const { theme, setTheme } = useTheme();
-    const { collapsed } = useNavbar()
+  const { user, loading } = useUser();
+  const { theme, setTheme } = useTheme();
+  const { collapsed } = useNavbar();
+  const isMobile = useIsMobile();
 
-    return (
-        <div className={`transition-all duration-200 md:fixed md:top-0 md:z-50 flex flex-row ${collapsed ? "w-[95%]" : "w-[84%]"} md:p-3 md:px-6 p-4 px-4 backdrop-blur-sm`}>
-            <div className='w-full flex flex-row justify-between items-center'>
-                <h1 className="md:text-3xl text-2xl font-bold">{heading}</h1>
-                <div className="hidden md:flex flex-row gap-x-5 items-center">
-                    <button
-                        onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
-                        className="rounded transition-colors text-center"
-                        aria-label="Toggle Light/Dark Mode"
-                    >
-                        {theme === "light" ? (
-                        <MdOutlineLightMode
-                            className="text-gray-800 hover:text-blue-400"
-                            size={24}
-                        />) : (         
-                        <MdDarkMode
-                            className="text-gray-100 hover:text-yellow-300"
-                            size={24}
-                        />)
-                        }
-                    </button>
-                    {loading ? (
-                        <div className="animate-pulse text-gray-800 dark:text-gray-300">
-                            Loading...
-                        </div>
-                    ) : user ? (
-                        <UserMenu name={user.name} />
-                    ) : (
-                        <Link
-                            className={`px-3 rounded border cursor-pointer ${
-                                theme === "light"
-                                ? "border-black hover:border-gray-400 hover:text-gray-400"
-                                : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
-                            }`}
-                            href='api/auth/login'
-                        >
-                            Sign In
-                        </Link>
-                    )}
+  return (
+    <>
+      {/* main navbar heading (desktop) */}
+      {!isMobile && (
+        <div
+            className={`transition-all duration-200 md:fixed md:top-0 md:z-50 flex flex-row 
+            ${collapsed ? "w-[95%]" : "w-[84%]"} md:p-3 md:px-6 p-4 px-4 backdrop-blur-sm`}
+        >
+            <div className="w-full flex flex-row justify-between items-center">
+            <h1 className="md:text-3xl text-2xl font-bold text-black">{heading}</h1>
+            <div className="hidden md:flex flex-row gap-x-5 items-center">
+                <button
+                onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
+                className="rounded transition-colors text-center"
+                aria-label="Toggle Light/Dark Mode"
+                >
+                {theme === "light" ? (
+                    <MdOutlineLightMode className="text-gray-800 hover:text-blue-400" size={24} />
+                ) : (
+                    <MdDarkMode className="text-gray-100 hover:text-yellow-300" size={24} />
+                )}
+                </button>
+                {loading ? (
+                <div className="animate-pulse text-gray-800 dark:text-gray-300">
+                    Loading...
                 </div>
-            </div>
+                ) : user ? (
+                <UserMenu name={user.name} />
+                ) : (
+                <Link
+                    className={`px-3 rounded border cursor-pointer ${
+                    theme === "light"
+                        ? "border-black hover:border-gray-400 hover:text-gray-400"
+                        : "border-gray-200 hover:border-gray-400 hover:text-gray-400 text-gray-100"
+                    }`}
+                    href="api/auth/login"
+                >
+                    Sign In
+                </Link>
+                )}
+          </div>
         </div>
-    )
+      </div>
+      )}
+
+      {/*  Show the black mobile heading bar when on mobile */}
+      {isMobile && <MobileHeading heading={heading} />}
+    </>
+  );
 }
