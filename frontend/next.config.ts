@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value: "public, max-age=7776000, immutable", // 3 months
           },
         ],
       },
@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=59",
+            value: "public, max-age=86400, s-maxage=7776000, stale-while-revalidate=59", // 3 months at the CDN
           },
         ],
       },
@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value: "public, max-age=7776000, immutable", // 3 months
           },
         ],
       },
@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value: "public, max-age=7776000, immutable", // 3 months
           },
         ],
       },
