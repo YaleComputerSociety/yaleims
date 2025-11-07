@@ -124,6 +124,7 @@ const BracketsPage: React.FC = () => {
           const matches = bracketDoc.data()?.matches as FirestoreBracketMatch[];
           matches.sort((a, b) => a.bracket_placement - b.bracket_placement);
           setBracket(matches);
+          // console.log("Fetched Bracket:", matches);
         
           const matchDocs = await Promise.all(
             matches.map(async (m) => {
@@ -137,7 +138,12 @@ const BracketsPage: React.FC = () => {
           matchDocs.forEach(({ id, data }) => {
             matchDataMap[id] = data;
           });
+          // matchDataMap["1039"].winner = "SY"
+          // matchDataMap["1042"].away_college = "SY"
+          // matchDataMap["1042"].winner = "SY"
+          // matchDataMap["1043"].away_college = "SY"
           setMatchDetails(matchDataMap);
+          console.log("Fetched Match Details:", matchDataMap);
         }
       } catch (err) {
         console.error(`Error fetching bracket for ${sport} (${season}):`, err);
