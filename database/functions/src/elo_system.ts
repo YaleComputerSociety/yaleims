@@ -10,7 +10,8 @@
 // elo/{season}/sports/{sport}                      -> sport-level stats
 // elo/{season}/sports/{sport}/colleges/{college}   -> team-level stats
 // -----------------------------------------------------------------------------
-
+// TODO: Incorporte in upload matches and upload brackets - for each match, it gives the correct odds when added
+// TODO: make sure that odds are not set for matches that are still TBD / not fully filled out yet
 import admin from "./firebaseAdmin.js";
 
 const db = admin.firestore();
