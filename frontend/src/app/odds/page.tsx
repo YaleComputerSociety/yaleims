@@ -6,7 +6,6 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
 import Pagination from "@src/components/Scores/Pagination";
 import MatchesTable from "@src/components/YOdds/MatchTable";
-import MatchesTablePending from "@src/components/YOdds/MatchTablePending";
 import { Match, Bet, BetParlay } from "@src/types/components";
 import { useUser } from "@src/context/UserContext";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -71,23 +70,7 @@ const YoddsPage: React.FC = () => {
     setError("");
 
     try {
-      const userToken = sessionStorage.getItem("userToken")
-
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
-          },
-          body: JSON.stringify({
-            userId: user?.email,
-            newUsername: newUsername.trim(),
-          }),
-        }
-      );
-
+      const response = await fetch(`/api/functions/updateUsername?newUsername=${encodeURIComponent(newUsername)}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -222,7 +205,7 @@ const YoddsPage: React.FC = () => {
     const fetchPendingBets = async () => {
       try {
         setPendingLoading(true);
-        const response = await fetch(`/api/functions/getBetsv2?seasonId=${currentSeason?.year || '2025-2026'}&history=false&pending=true`)
+        const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason?.year || '2025-2026'}&history=false&pending=true`)
         if (!response.ok)
           throw new Error(`Error fetching pending bets: ${response.statusText}`);
         const data = await response.json();
@@ -244,7 +227,7 @@ const YoddsPage: React.FC = () => {
     const fetchPastBets = async () => {
       try {
         setPendingLoading(true);
-        const response = await fetch(`/api/functions/getBetsv2?seasonId=${currentSeason?.year || '2025-2026'}&history=true&pending=false`)
+        const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason?.year || '2025-2026'}&history=true&pending=false`)
         if (!response.ok)
           throw new Error(`Error fetching pending bets: ${response.statusText}`);
         const data = await response.json();

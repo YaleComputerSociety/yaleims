@@ -118,7 +118,7 @@ const nextForm = (prev: unknown, letter: string) => {
  * @param matchId - Optional match ID for logging
  */
 export async function updateEloRatings(matchResult: EloMatchResult, season: string): Promise<void> {
-  const { homeTeam, awayTeam, sport, winner, matchType, home_college_score, away_college_score} = matchResult;
+  const { homeTeam, awayTeam, sport, winner, matchType, home_college_score, away_college_score } = matchResult;
   
   // Skip Elo updates for forfeits (Default) - they don't reflect skill
   if (winner === "Default") {

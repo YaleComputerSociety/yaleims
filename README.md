@@ -13,14 +13,16 @@ Additionally, the app allows for real-time updates and scoring of games, keeping
 
 ## Table of Contents
 
-- [Contribution Guide](#contribution-guide)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+- [Yale Intramural Sports App](#yale-intramural-sports-app)
+  - [Table of Contents](#table-of-contents)
+  - [Contribution Guide](#contribution-guide)
+  - [Tech Stack](#tech-stack)
+  - [Installation](#installation)
+    - [Prerequisites](#prerequisites)
+    - [Backend Setup](#backend-setup)
+    - [Frontend Setup](#frontend-setup)
+  - [Project Structure](#project-structure)
+  - [Main Contributers](#main-contributers)
 
 ## Contribution Guide
 
@@ -132,7 +134,6 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 
 ## Main Contributers
 
-- Anna Xu ('24.5)
 - Daniel Morales ('27)
 - Ephraim Akai-Nettey ('27)
 - Kaitlyn Oikle ('27)
@@ -140,5 +141,6 @@ There are also additional typescript components ('Footer.tsx', 'LoadingScreen.ts
 - Vojtech Kysilka ('28)
 - Farhan Baig ('27)
 - Ella White ('27)
-=======
+- Claire Guo ('29)
+- Ben Le ('29)
 >>>>>>> main

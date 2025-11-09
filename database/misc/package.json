@@ -17,6 +17,7 @@
     "dotenv": "^16.4.5",
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
+    "json2csv": "^6.0.0-alpha.2",
     "luxon": "^3.5.0"
   }
 }

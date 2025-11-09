@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@g-loot/react-tournament-brackets": "^1.0.31-rc",
     "@gsap/react": "^2.1.2",
     "@headlessui/react": "^2.2.2",
     "@react-oauth/google": "^0.12.1",

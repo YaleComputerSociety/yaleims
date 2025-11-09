@@ -10,11 +10,12 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "18"
+    "node": "22"
   },
   "main": "lib/index.js",
   "type": "module",
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
     "express": "^5.1.0",

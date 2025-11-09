@@ -147,7 +147,7 @@ export async function hybridOddsCalculator(
     const Pdefault = forfeitProbability(homeForfeits, homeMatches, awayForfeits, awayMatches, sportForfeits, sportMatches);
 
     // Get Elo-based probabilities
-    const {PHome: eloHome, PDraw: eloDraw, PAway: eloAway} = await getEloWinProbabilities(homeTeam, awayTeam, sport, season);
+    let {PHome: eloHome, PDraw: eloDraw, PAway: eloAway} = await getEloWinProbabilities(homeTeam, awayTeam, sport, season);
     eloHome = eloHome * (1 - Pdefault);
     eloAway = eloAway * (1 - Pdefault);
     eloDraw = eloDraw * (1 - Pdefault);

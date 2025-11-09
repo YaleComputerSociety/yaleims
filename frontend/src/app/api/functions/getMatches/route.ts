@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     }
 
     const response = await fetch(
-        `https://getmatchespaginatedv2-65477nrg6a-uc.a.run.app?${forwardParams.toString()}`
+        `https://getmatchespaginated-65477nrg6a-uc.a.run.app?${forwardParams.toString()}`
     );
 
     if (!response.ok) {

@@ -1,5 +1,6 @@
 // Helper to parse and validate bracket CSV for BracketCreateModal
 import { ParsedMatch } from "@src/types/components";
+import { User } from "@src/types/components";
 
 /**
  * Parses and validates a bracket CSV file for the bracket creation modal.
@@ -156,6 +157,10 @@ export const colleges = [
   { id: "TC", name: "Trumbull" },
 ];
 
+export const isValidCollegeAbbrev = (college: string): boolean => {
+  return colleges.some((c) => college === c.id);
+};
+
 export const collegeNamesList = [
   "Benjamin Franklin",
   "Berkeley",
@@ -184,16 +189,19 @@ export function getCurrentWeekId(seasonStart: Date): string {
 
 const msPerWeek = 7 * 24 * 60 * 60 * 1000;
 
-export function buildWeekOptions(start: Date): { value: string; label: string }[] {
+export function buildWeekOptions(
+  start: Date
+): { value: string; label: string }[] {
   const now = new Date();
 
   const firstWeekStart = new Date(start);
-  const day = firstWeekStart.getDay();     // 0 = Sun … 6 = Sat
+  const day = firstWeekStart.getDay(); // 0 = Sun … 6 = Sat
   if (day !== 1) {
-    firstWeekStart.setDate(firstWeekStart.getDate() + (8 - day) % 7);
+    firstWeekStart.setDate(firstWeekStart.getDate() + ((8 - day) % 7));
   }
 
-  const weekCount = Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
+  const weekCount =
+    Math.floor((now.getTime() - firstWeekStart.getTime()) / msPerWeek) + 1;
 
   const format = (d: Date) =>
     d.toLocaleDateString("en-US", {
@@ -211,7 +219,7 @@ export function buildWeekOptions(start: Date): { value: string; label: string }[
       label: `Week ${i + 1}: ${format(weekStart)} – ${format(weekEnd)}`,
     });
   }
-  return options.reverse();   
+  return options.reverse();
 }
 
 export const seasonSports: SeasonSportsMap = {
@@ -225,6 +233,10 @@ export const seasonSports: SeasonSportsMap = {
     "Pickleball",
     "Table Tennis",
   ],
+};
+
+export const isValidSport = (sport: string): boolean => {
+  return sports.some((s) => s.name === sport);
 };
 
 // List of sports with the proper type
@@ -844,7 +856,7 @@ export const toTimestamp = (
   return dateObj.toISOString();
 };
 
-// Returns the IM season string (e.g. "2024-2025") for a given timestamp
+/** Returns the IM season string (e.g. "2024-2025") for a given timestamp */
 export function getYearFromTimestamp(
   timestamp: Date | string | number
 ): string {
@@ -870,3 +882,12 @@ export function getYearFromTimestamp(
   // June/July: default to previous season (no games expected)
   return `${year - 1}-${year}`;
 }
+
+export const userIsAdminOrDev = (user: User | null): boolean => {
+  if (!user) return false;
+
+  const isAdmin =
+    user?.mRoles.includes("admin") || user?.mRoles.includes("dev");
+
+  return isAdmin;
+};
