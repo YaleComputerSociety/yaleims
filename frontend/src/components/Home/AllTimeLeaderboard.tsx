@@ -24,6 +24,7 @@ const AllTimeLeaderboard: React.FC = () => {
 
   return (
     <div className="overflow-x-auto">
+
       <table className="w-11/12 xs:max-w-[90%] mx-auto border-collapse border border-gray-300 dark:border-gray-800 divide-y divide-gray-200">
         <thead className="bg-white dark:bg-[#132750]">
           <tr>
