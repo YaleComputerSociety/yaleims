@@ -20,10 +20,15 @@ export async function GET(request: Request): Promise<NextResponse> {
   const from = searchParams.get("from") || "/";
 
   if (ticket) {
-    const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${from}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${from}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
-    const ticketQuery = `https://secure.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
-    
+
+    let ticketQuery;
+    if (BASE_URL === "http://localhost:3000") {
+      ticketQuery = `https://secure-tst.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
+    } else {
+      ticketQuery = `https://secure.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
+    }
     const response = await fetch(ticketQuery);
     const xml = await response.text();
 
@@ -86,17 +91,6 @@ export async function GET(request: Request): Promise<NextResponse> {
         expiresIn: "7d",
       });
       
-      if (BASE_URL === "http://localhost:3000") {
-        const redirectResponse = NextResponse.redirect("http://localhost:3000");
-        redirectResponse.cookies.set("token", token, {
-          secure: false,
-          path: "/",
-          maxAge: 60 * 60 * 24 * 7,
-          httpOnly: true,
-          sameSite: "none"
-        });
-        return redirectResponse;
-      }
       const redirectResponse = NextResponse.redirect(`${BASE_URL}`);
       redirectResponse.cookies.set("token", token, {
         secure: true,
@@ -111,8 +105,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${BASE_URL}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${BASE_URL}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
+    
+    if (BASE_URL === "http://localhost:3000") {
+      return NextResponse.redirect(
+        `http://secure-tst.its.yale.edu/cas/login?service=${encodedServiceUrl}`
+      );
+    }
+
     return NextResponse.redirect(
       `https://secure.its.yale.edu/cas/login?service=${encodedServiceUrl}`
     );

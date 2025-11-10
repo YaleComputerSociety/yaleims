@@ -5,11 +5,16 @@ export async function GET(): Promise<NextResponse> {
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
   }
-  
-  // Pass BASE_URL as the 'from' parameter so redirect knows where to send user
-  const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${encodeURIComponent(BASE_URL)}`;
+  const from = "/";
+  const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${from}`;
   const encodedServiceUrl = encodeURIComponent(serviceUrl);
   
+  if (BASE_URL === "http://localhost:3000") {
+    return NextResponse.redirect(
+      `http://secure-tst.its.yale.edu/cas/login?service=${encodedServiceUrl}`
+    );
+  }
+
   return NextResponse.redirect(
     `https://secure.its.yale.edu/cas/login?service=${encodedServiceUrl}`
   );
