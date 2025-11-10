@@ -86,8 +86,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         expiresIn: "7d",
       });
       
-      if (BASE_URL == "http://localhost:3000") {
-        const redirectResponse = NextResponse.redirect(`${BASE_URL}`);
+      if (BASE_URL === "http://localhost:3000") {
+        const redirectResponse = NextResponse.redirect("http://localhost:3000");
         redirectResponse.cookies.set("token", token, {
           secure: false,
           path: "/",
