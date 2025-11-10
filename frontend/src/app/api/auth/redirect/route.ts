@@ -20,7 +20,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const from = searchParams.get("from") || "/";
 
   if (ticket) {
-    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${from}`;
+    const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${from}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
     const ticketQuery = `https://secure.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
     
