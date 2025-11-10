@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Match } from "@src/types/components";
 import { FaCalendar } from "react-icons/fa";
 import {
+  currentYear,
   emojiMap,
   generateGoogleCalendarLink,
   groupByDate,
   toCollegeName,
 } from "@src/utils/helpers";
 import { useUser } from "@src/context/UserContext";
+import { useSeason } from "@src/context/SeasonContext";
+import LoadingSpinner from "@src/components/LoadingSpinner";
 
 interface MatchListItemProps {
   match: Match;
@@ -19,11 +22,7 @@ interface MatchListItemProps {
  *
  * Props:
  * - match: Match object to display
- * - indexInList: the zero-based index of this match inside the parent list.
- *     Use -1 when this item represents the last element in the list.
- *     This field is optional; when not provided the component will treat
- *     the value as -1. Callers should pass the actual index so the
- *     component (or its parent) can apply list-specific behavior/styling.
+ * - roundedClass (optional): gives the appropriate rounded corners class based on position in list; otherwise has no rounding
  */
 const MatchListItem: React.FC<MatchListItemProps> = ({
   match,
@@ -229,6 +228,14 @@ const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
     return "";
   };
 
+  if (matches.length === 0) {
+    return (
+      <div className="text-center text-gray-500 dark:text-gray-200 p-6">
+        No matches found.
+      </div>
+    );
+  }
+
   return (
     <div>
       {Object.entries(matchesByDate).map(([date, matches]) => (
@@ -261,146 +268,41 @@ const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
 };
 
 const UserMatches = () => {
-  const matches: Match[] = [
-    {
-      id: "m1",
-      home_college: "MC",
-      away_college: "ES",
-      home_college_score: 0,
-      away_college_score: 0,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Flag Football",
-      timestamp: new Date(
-        new Date().getTime() + 5 * 24 * 60 * 60 * 1000
-      ).toISOString(), // 5 days from now
-      location: "Payne-Whitney Field",
-      location_extra: "Upper turf",
-      type: "Regular",
-      division: "blue",
-      winner: null,
-      forfeit: false,
-      home_college_odds: 1.8,
-      away_college_odds: 2.0,
-      default_odds: 1.9,
-      home_volume: 120,
-      away_volume: 80,
-    },
-    {
-      id: "m2",
-      home_college: "BK",
-      away_college: "MC",
-      home_college_score: 21,
-      away_college_score: 14,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Broomball",
-      timestamp: new Date(
-        new Date().getTime() - 20 * 24 * 60 * 60 * 1000
-      ).toISOString(), // 20 days ago
-      location: "Ingalls Rink",
-      type: "Regular",
-      division: "green",
-      winner: "BRO",
-      forfeit: false,
-      home_college_odds: 1.4,
-      away_college_odds: 3.1,
-      home_volume: 300,
-      away_volume: 50,
-    },
-    {
-      id: "m3",
-      home_college: "MC",
-      away_college: "BK",
-      home_college_score: 10,
-      away_college_score: 10,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Soccer",
-      timestamp: new Date().toISOString(),
-      location: "Davenport",
-      type: "Regular",
-      division: "blue",
-      winner: null,
-      forfeit: false,
-      draw_odds: 2.5,
-      default_odds: 2.0,
-    },
-    {
-      id: "m4",
-      home_college: "ES",
-      away_college: "MC",
-      home_college_score: 1,
-      away_college_score: 0,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Broomball",
-      timestamp: new Date(
-        new Date().getTime() - 2 * 24 * 60 * 60 * 1000
-      ).toISOString(), // 2 days ago
-      location: "Recreational Center",
-      type: "Regular",
-      division: "green",
-      winner: "ES",
-      forfeit: true,
-      home_college_odds: 1.2,
-      away_college_odds: 4.0,
-    },
-    {
-      id: "m5",
-      home_college: "MC",
-      away_college: "MY",
-      home_college_score: 0,
-      away_college_score: 0,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Cornhole",
-      timestamp: new Date(
-        new Date().getTime() + 10 * 24 * 60 * 60 * 1000
-      ).toISOString(), // 10 days from now
-      location: "Sterling",
-      type: "Playoff",
-      division: "none",
-      winner: null,
-      forfeit: false,
-      playoff_bracket_slot: 2,
-      next_match_id: "m6",
-    },
-    {
-      id: "m6",
-      home_college: "SY",
-      away_college: "MC",
-      home_college_score: 0,
-      away_college_score: 0,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Cornhole",
-      timestamp: new Date(
-        new Date().getTime() + 15 * 24 * 60 * 60 * 1000
-      ).toISOString(), // 15 days from now
-      location: "Sterling",
-      type: "Playoff",
-      division: "none",
-      winner: null,
-      forfeit: false,
-    },
-    {
-      id: "m7",
-      home_college: "MC",
-      away_college: "ES",
-      home_college_score: 0,
-      away_college_score: 0,
-      home_college_participants: [],
-      away_college_participants: [],
-      sport: "Flag Football",
-      timestamp: new Date().toISOString(),
-      location: "",
-      type: "Bye",
-      division: "none",
-      winner: null,
-      forfeit: false,
-    },
-  ];
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { currentSeason } = useSeason();
+
+  useEffect(() => {
+    // Fetch user matches
+    const fetchUserMatches = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `/api/functions/getUserMatches?seasonId=${
+            currentSeason?.year || currentYear
+          }`
+        );
+        if (!response.ok)
+          throw new Error(`Error fetching matches: ${response.statusText}`);
+        const data = await response.json();
+
+        setMatches(data);
+      } catch (error) {
+        console.error("Failed to fetch user matches:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUserMatches();
+  }, [currentSeason, currentYear]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center pt-10">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
