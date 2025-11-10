@@ -5,6 +5,7 @@ import {
   emojiMap,
   generateGoogleCalendarLink,
   userIsAdminOrDev,
+  currentYear,
 } from "@src/utils/helpers";
 import { Match } from "@src/types/components";
 
@@ -38,6 +39,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const isAdmin = userIsAdminOrDev(user);
 
+  const currentSeasonId = currentSeason ? currentSeason.year : currentYear;
+
   // Check if match is in the past
   const isPastMatch = match.timestamp
     ? new Date(match.timestamp) < new Date()
@@ -52,7 +55,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          seasonId: currentSeason?.year || "2025-2026",
+          seasonId: currentSeasonId,
           matchId: match.id,
           matchTimestamp: match.timestamp,
           participantType:
@@ -119,7 +122,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             toCollegeName[user.college] === toCollegeName[match.home_college]
               ? "home_college_participants"
               : "away_college_participants",
-          seasonId: "2025-2026",
+          seasonId: currentSeasonId,
         }),
       });
 
