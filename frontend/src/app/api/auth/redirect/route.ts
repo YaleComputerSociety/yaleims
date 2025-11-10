@@ -3,7 +3,7 @@ import { parseString } from "xml2js";
 import jwt from "jsonwebtoken";
 
 export async function GET(request: Request): Promise<NextResponse> {
-  const BASE_URL = "https://yaleims.com";
+  const BASE_URL = process.env.BASE_URL;
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
   }
@@ -85,10 +85,19 @@ export async function GET(request: Request): Promise<NextResponse> {
       }, JWT_SECRET, {
         expiresIn: "7d",
       });
-
-      const redirectPath = from && from.includes("/profile") ? "/profile" : "/";
-
-      const redirectResponse = NextResponse.redirect(`http://localhost:3000/`);
+      
+      if (from.includes("localhost")) {
+        const redirectResponse = NextResponse.redirect(`http://localhost:3000`);
+        redirectResponse.cookies.set("token", token, {
+          secure: false,
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+          httpOnly: true,
+          sameSite: "lax",
+        });
+        return redirectResponse;
+      }
+      const redirectResponse = NextResponse.redirect(`${BASE_URL}`);
       redirectResponse.cookies.set("token", token, {
         secure: true,
         path: "/",
@@ -102,7 +111,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `http://localhost:3000/api/auth/redirect?from=${from}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${from}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
     return NextResponse.redirect(
       `https://secure.its.yale.edu/cas/login?service=${encodedServiceUrl}`
