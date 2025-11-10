@@ -89,11 +89,11 @@ export async function GET(request: Request): Promise<NextResponse> {
       if (from.includes("localhost")) {
         const redirectResponse = NextResponse.redirect(`http://localhost:3000`);
         redirectResponse.cookies.set("token", token, {
-          secure: false,
+          secure: true,
           path: "/",
           maxAge: 60 * 60 * 24 * 7,
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "none",
         });
         return redirectResponse;
       }
@@ -111,7 +111,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${from}`;
+    const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${BASE_URL}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
     return NextResponse.redirect(
       `https://secure.its.yale.edu/cas/login?service=${encodedServiceUrl}`
