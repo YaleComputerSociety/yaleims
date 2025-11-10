@@ -88,8 +88,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
               user?.college === match.home_college
                 ? "home_college_participants"
                 : "away_college_participants",
-            user, // Pass the full user object
-            selectedMatch: match, // Pass the full match object
+            user,
+            selectedMatch: match,
           }),
         }
       );
