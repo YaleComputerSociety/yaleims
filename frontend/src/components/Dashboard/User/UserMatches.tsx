@@ -15,6 +15,7 @@ import LoadingSpinner from "@src/components/LoadingSpinner";
 interface MatchListItemProps {
   match: Match;
   roundedClass?: string;
+  seasonId?: string;
 }
 
 /**
@@ -23,39 +24,38 @@ interface MatchListItemProps {
  * Props:
  * - match: Match object to display
  * - roundedClass (optional): gives the appropriate rounded corners class based on position in list; otherwise has no rounding
+ * - seasonId (optional): the current season ID; defaults to current year
  */
 const MatchListItem: React.FC<MatchListItemProps> = ({
   match,
   roundedClass = "",
+  seasonId = currentYear,
 }) => {
   const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
+  const userCollege = user ? toCollegeName[user.college] : "None";
+
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
-      const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch(
-        "https://addparticipant-65477nrg6a-uc.a.run.app",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify({
-            matchId: match.id,
-            participantType:
-              user?.college === match.home_college
-                ? "home_college_participants"
-                : "away_college_participants",
-            user,
-            selectedMatch: match,
-          }),
-        }
-      );
+      const response = await fetch("api/functions/addMatchParticipant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          seasonId: seasonId,
+          matchId: match.id,
+          matchTimestamp: match.timestamp,
+          participantType:
+            toCollegeName[userCollege] == toCollegeName[match.home_college]
+              ? "home_college_participants"
+              : "away_college_participants",
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -73,26 +73,20 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const handleUnregister = async () => {
     setIsLoading(true);
     try {
-      const userToken = sessionStorage.getItem("userToken");
-      const response = await fetch(
-        "https://removeparticipant-65477nrg6a-uc.a.run.app",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify({
-            matchId: match.id,
-            participantType:
-              user?.college === match.home_college
-                ? "home_college_participants"
-                : "away_college_participants",
-            user,
-            selectedMatch: match,
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/removeMatchParticipant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          matchId: match.id as string,
+          participantType:
+            toCollegeName[userCollege] === toCollegeName[match.home_college]
+              ? "home_college_participants"
+              : "away_college_participants",
+          seasonId: seasonId,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -211,7 +205,10 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   );
 };
 
-const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
+const MatchList: React.FC<{ matches: Match[]; seasonId: string }> = ({
+  matches,
+  seasonId,
+}) => {
   const matchesByDate = groupByDate(matches);
 
   const getRoundedClass = (matchesLength: number, matchIndex: number) => {
@@ -257,6 +254,7 @@ const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
                   key={index}
                   match={match}
                   roundedClass={getRoundedClass(matches.length, index)}
+                  seasonId={seasonId}
                 />
               ))}
             </ul>
@@ -271,6 +269,7 @@ const UserMatches = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { currentSeason } = useSeason();
+  const currentSeasonId = currentSeason ? currentSeason.year : currentYear;
 
   useEffect(() => {
     // Fetch user matches
@@ -278,9 +277,7 @@ const UserMatches = () => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/functions/getUserMatches?seasonId=${
-            currentSeason?.year || currentYear
-          }`
+          `/api/functions/getUserMatchObjects?seasonId=${currentSeasonId}`
         );
         if (!response.ok)
           throw new Error(`Error fetching matches: ${response.statusText}`);
@@ -306,7 +303,7 @@ const UserMatches = () => {
 
   return (
     <div className="p-4">
-      <MatchList matches={matches} />
+      <MatchList matches={matches} seasonId={currentSeasonId} />
     </div>
   );
 };
