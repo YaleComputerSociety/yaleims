@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import PersonCard from "@src/app/About/PersonCard";
 import Link from "next/link";
 import PageHeading from "@src/components/PageHeading";
+import { getDevImage } from "@/utils/versionedImages";
 
 const AboutUsPage: React.FC = () => {
   // add college and grad year to display
@@ -13,7 +14,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Anna Xu",
       roles: ["Team Lead, Software Engineer"],
-      image: "/dev_images/Anna_Xu.jpeg",
+      image: getDevImage("Anna_Xu.jpeg"),
       github: "https://github.com/annaxu9",
       linkedin: "https://www.linkedin.com/in/anna-wenxin-xu/",
       portfolio: "",
@@ -21,7 +22,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Diego Aspinwall",
       roles: ["Software Engineer"],
-      image: "/dev_images/Diego_Aspinwall.png",
+      image: getDevImage("Diego_Aspinwall.png"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -29,7 +30,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Shankara Abbineni",
       roles: ["Software Engineer"],
-      image: "/dev_images/Shankara_Abbineni.jpeg",
+      image: getDevImage("Shankara_Abbineni.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -37,7 +38,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Lleyton Emery",
       roles: ["Software Engineer"],
-      image: "/dev_images/Lleyton_Emery.jpg",
+      image: getDevImage("Lleyton_Emery.jpg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -45,7 +46,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Lily Lin",
       roles: ["UI/UX Designer"],
-      image: "/dev_images/Lily_Lin.jpeg",
+      image: getDevImage("Lily_Lin.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -53,7 +54,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Naomi Ling",
       roles: ["UI/UX Designer"],
-      image: "/dev_images/Naomi_Ling.jpeg",
+      image: getDevImage("Naomi_Ling.jpeg"),
       github: undefined,
       linkedin: "https://www.linkedin.com/in/naomi-ling/",
       portfolio: "https://naomiling.super.site/",
@@ -61,7 +62,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Asya Tarabar",
       roles: ["UI/UX Designer"],
-      image: "/dev_images/Asya_Tarabar.jpeg",
+      image: getDevImage("Asya_Tarabar.jpeg"),
       github: "https://www.linkedin.com/in/asya-tarabar/",
       linkedin: undefined,
       portfolio: "https://asyatarabar.com/",
@@ -72,7 +73,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Ephraim Akai-Nettey",
       roles: ["Team Lead, Software Engineer"],
-      image: "/dev_images/Ephraim_Akai-Nettey.jpg",
+      image: getDevImage("Ephraim_Akai-Nettey.jpg"),
       github: "https://github.com/dennisephraim",
       linkedin: "https://www.linkedin.com/in/ephraim-akai-nettey/",
       portfolio: undefined,
@@ -80,7 +81,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Kaitlyn Oikle",
       roles: ["Software Engineer"],
-      image: "/dev_images/Kaitlyn_Oikle.jpg",
+      image: getDevImage("Kaitlyn_Oikle.jpg"),
       github: "https://github.com/kjoikle",
       linkedin: "https://www.linkedin.com/in/kaitlyn-oikle/",
       portfolio: undefined,
@@ -88,7 +89,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Daniel Morales",
       roles: ["Software Engineer"],
-      image: "/dev_images/Daniel_Morales.jpg",
+      image: getDevImage("Daniel_Morales.jpg"),
       github: "https://github.com/dmo7567",
       linkedin: "https://www.linkedin.com/in/dmorales7567/",
       portfolio: undefined,
@@ -96,7 +97,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Brian Di Bassinga",
       roles: ["Software Engineer"],
-      image: "/dev_images/Brian_Di_Bassinga.jpeg",
+      image: getDevImage("Brian_Di_Bassinga.jpeg"),
       github: "https://github.com/btd2026",
       linkedin: "https://www.linkedin.com/in/brian-di-bassinga-2399661a5?m",
       portfolio: undefined,
@@ -104,7 +105,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Ella White",
       roles: ["Software Engineer"],
-      image: "/dev_images/Ella_White.png",
+      image: getDevImage("Ella_White.png"),
       github: undefined,
       linkedin: "https://www.linkedin.com/in/ella-white-707012243/",
       portfolio: undefined,
@@ -112,7 +113,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Farhan Baig",
       roles: ["Software Engineer"],
-      image: "/dev_images/Farhan_Baig.jpeg",
+      image: getDevImage("Farhan_Baig.jpeg"),
       github: undefined,
       linkedin: "https://www.linkedin.com/in/baig-farhan/",
       portfolio: undefined,
@@ -120,7 +121,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Vojtech Kysilka",
       roles: ["Software Engineer"],
-      image: "/dev_images/Vojtech_Kysilka.jpeg",
+      image: getDevImage("Vojtech_Kysilka.jpeg"),
       github: undefined,
       linkedin: "https://www.linkedin.com/in/vojtech-kysilka/",
       portfolio: undefined,
@@ -131,7 +132,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Alejandro Gonzalez",
       roles: ["Software Engineer"],
-      image: "/dev_images/Alejandro_Gonzalez.jpeg",
+      image: getDevImage("Alejandro_Gonzalez.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -139,7 +140,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Mary Jiang",
       roles: ["Software Engineer"],
-      image: "/dev_images/Mary_Jiang.jpeg",
+      image: getDevImage("Mary_Jiang.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -147,7 +148,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Cierra Ouellette",
       roles: ["Software Engineer"],
-      image: "/dev_images/Cierra_Ouellette.jpeg",
+      image: getDevImage("Cierra_Ouellette.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -155,7 +156,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Kelly Qiang",
       roles: ["Software Engineer"],
-      image: "/dev_images/Kelly_Qiang.png",
+      image: getDevImage("Kelly_Qiang.png"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -163,7 +164,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Bienn Viquiera",
       roles: ["Software Engineer"],
-      image: "/dev_images/Bienn_Viquiera.jpeg",
+      image: getDevImage("Bienn_Viquiera.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,
@@ -171,7 +172,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Edward Yang",
       roles: ["Software Engineer"],
-      image: "/dev_images/Edward_Yang.jpeg",
+      image: getDevImage("Edward_Yang.jpeg"),
       github: undefined,
       linkedin: undefined,
       portfolio: undefined,

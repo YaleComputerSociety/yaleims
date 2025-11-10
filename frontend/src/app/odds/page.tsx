@@ -23,6 +23,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import { toast } from "react-toastify";
 import { seasonSports } from "@src/utils/helpers";
 import PredictionLeaderboard from "@src/components/Home/PredictionLeaderboard";
+import { getVersionedImage } from "@/utils/versionedImages";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -465,7 +466,7 @@ const YoddsPage: React.FC = () => {
                 </p>
               )}
               <Image
-                src="/YCoin.png"
+                src={getVersionedImage("/YCoin.png")}
                 alt="YCoin"
                 height={30}
                 width={30}

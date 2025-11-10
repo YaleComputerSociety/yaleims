@@ -9,6 +9,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { useNavbar } from "@src/context/NavbarContext";
 import PageHeading from "@src/components/PageHeading";
+import { getVersionedImage } from "@/utils/versionedImages";
 
 interface FirestoreBracketMatch {
   bracket_placement: number;
@@ -348,7 +349,7 @@ const BracketsPage: React.FC = () => {
                   {/* Trophy container */}
                   <div className="relative flex items-center justify-center">
                     <img
-                      src="/trophy.png"
+                      src={getVersionedImage("/trophy.png")}
                       alt="Trophy"
                       className="w-48 h-48 opacity-100 drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
                     />

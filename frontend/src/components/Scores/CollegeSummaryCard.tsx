@@ -1,6 +1,7 @@
 import Skeleton from "react-loading-skeleton";
 import Image from "next/image";
 import { CollegeSummaryCardProps } from "@src/types/components";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 import { getPlace, getRatioAsString } from "@src/utils/helpers";
 
@@ -40,7 +41,7 @@ const CollegeSummaryCard: React.FC<CollegeSummaryCardProps> = ({
           <p className="text-gray-700">{stats?.games} games played</p>
         </div>
         <Image
-          src={`/college_flags/${stats?.name}.png`}
+          src={getCollegeFlag(stats?.name || "")}
           alt={`${stats?.name}_flag`}
           width="64"
           height="64"

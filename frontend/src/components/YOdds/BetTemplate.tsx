@@ -6,6 +6,7 @@ import { SlArrowRight } from "react-icons/sl";
 import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import BetOption from "./BetOption";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 const BetTemplate = (
     {match, isFirst, isLast, updateBetSlip} : 
@@ -23,7 +24,7 @@ const BetTemplate = (
       className={`cursor-pointer flex items-center flex-row$`}
     >
       <Image
-        src={`/college_flags/${toCollegeName[college]}.png`}
+        src={getCollegeFlag(toCollegeName[college])}
         alt={college}
         width={20}
         height={20}

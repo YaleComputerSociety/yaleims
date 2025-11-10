@@ -1,11 +1,12 @@
 import React from "react";
 import AllTimePodium from "./AllTimePodium";
 import { allTimeStandings } from "@src/utils/helpers";
+import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
 
 const overlaySources = [
-  "/college_flags/bronze_overlay.png", // 3rd place
-  "/college_flags/gold_overlay.png", // 1st place
-  "/college_flags/silver_overlay.png", // 2nd place
+  getVersionedImage("/college_flags/bronze_overlay.png"), // 3rd place
+  getVersionedImage("/college_flags/gold_overlay.png"), // 1st place
+  getVersionedImage("/college_flags/silver_overlay.png"), // 2nd place
 ];
 
 const positions = [
@@ -48,7 +49,7 @@ export const AllTimePodiums: React.FC = () => {
           rank={positions[index].rank}
           tyngWins={Number(tyngWins)} // Ensure tyngWins is a number
           college={String(college)}
-          imgSrc={`/college_flags/${college}.png`}
+          imgSrc={getCollegeFlag(String(college))}
           overlaySrc={overlaySources[index]}
           posHeight={positions[index].posHeight}
           imgsConfig="mg:h-[170px] h-[150px]"

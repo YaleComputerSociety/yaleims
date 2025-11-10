@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
+import { getMVPImage } from "@/utils/versionedImages";
 
 const MVPPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,7 +25,7 @@ const MVPPopup = () => {
   const [mvpData, setMvpData] = useState({
     fname: "Julien",
     lname: "Yang",
-    photo: "/mvp_images/no_image.png",
+    photo: getMVPImage("no_image.png"),
     college: "Branford",
     year: "Junior",
     major: "Computer Science",
@@ -103,7 +104,7 @@ const MVPPopup = () => {
           className="flex flex-col items-center text-blue-600 underline font-medium text-sm hover:text-blue-800 transition w-20 h-46"
         >
           <img
-            src="/mvp_images/mvpicon.png"
+            src={getMVPImage("mvpicon.png")}
             alt="MVP Icon"
             className="w-15 h-20 filter drop-shadow-[0_4px_6px_rgba(59,130,246,0.6)]"
           />
@@ -154,7 +155,7 @@ const MVPPopup = () => {
 
                 <div className="relative gap-4 bg-white rounded-2xl p-4 flex flex-col items-center">
                   <Image
-                    src="/mvp_images/newmedal.png"
+                    src={getMVPImage("newmedal.png")}
                     alt="MVP Badge"
                     height={500}
                     width={400}
@@ -169,7 +170,7 @@ const MVPPopup = () => {
                       getWeeklyMvps().map(({ email, data }) => (
                         <div key={email} className="flex items-center space-x-4 p-1">
                           <img
-                            src={data.photo ?? "/mvp_images/no_image.png"}
+                            src={data.photo ?? getMVPImage("no_image.png")}
                             alt={`${data.fname} ${data.lname}`}
                             className="w-12 h-12 rounded-full object-cover"
                           />

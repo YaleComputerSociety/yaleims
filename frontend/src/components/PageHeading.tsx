@@ -93,7 +93,7 @@ export default function PageHeading({ heading }: PageHeadingProps) {
             ${collapsed ? "w-[95%]" : "w-[84%]"} md:p-3 md:px-6 p-4 px-4 backdrop-blur-sm`}
         >
             <div className="w-full flex flex-row justify-between items-center">
-            <h1 className="md:text-3xl text-2xl font-bold text-black">{heading}</h1>
+            <h1 className="md:text-3xl text-2xl font-bold text-black dark:text-white">{heading}</h1>
             <div className="hidden md:flex flex-row gap-x-5 items-center">
                 <button
                 onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}

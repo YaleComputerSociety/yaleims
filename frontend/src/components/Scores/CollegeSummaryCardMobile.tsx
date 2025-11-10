@@ -1,6 +1,7 @@
 import Skeleton from "react-loading-skeleton";
 import Image from "next/image";
 import { CollegeSummaryCardProps } from "@src/types/components";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 import { getPlace, getRatioAsString } from "@src/utils/helpers";
 
@@ -29,7 +30,7 @@ const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
     <div className="flex-col items-center justify-between h-fit pb-20 p-10 mb-4 bg-white dark:bg-black rounded-xl">
       <div className="flex justify-between items-center mb-4">
         <Image
-          src={`/college_flags/${stats?.name}.png`}
+          src={getCollegeFlag(stats?.name || "")}
           alt={`${stats?.name}_flag`}
           width="64"
           height="64"

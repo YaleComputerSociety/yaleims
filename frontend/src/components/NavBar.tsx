@@ -18,6 +18,7 @@ import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
 import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineLeaderboard } from "react-icons/md";
 import { FaQuestionCircle } from "react-icons/fa";
+import { getVersionedImage } from "@/utils/versionedImages";
 import { MdOutlineSportsScore } from "react-icons/md";
 import { TbBrackets } from "react-icons/tb";
 
@@ -82,9 +83,9 @@ const NavBar: React.FC = () => {
     <nav className={`transition-all duration-200 ${collapsed ? 'mg:p-2' : 'mg:p-5'} p-2 z-50 items-center ${widthClass} md:h-full w-full fixed backdrop-blur-sm bg-white/50 dark:bg-black/50`}>
       <div className={`md:flex md:flex-col justify-between h-full ${collapsed ? "items-center" : "items-left"} hidden`}>
         <div className="text-base pb-10 flex flex-row justify-between ">
-            {collapsed ? <Image className="pt-6" src="/favicon.ico" width={40} height={40} alt="Logo"/> :
+            {collapsed ? <Image className="pt-6" src={getVersionedImage("/favicon.ico")} width={40} height={40} alt="Logo"/> :
             <Image 
-              src="/LOGO.png" 
+              src={getVersionedImage("/LOGO.png")}
               width={130} 
               height={130} 
               alt="YALE IMS"

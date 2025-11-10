@@ -2,6 +2,7 @@ import Image from "next/image";
 import { toCollegeName, emojiMap } from "@src/utils/helpers";
 import { Match, Bet } from "@src/types/components";
 import { useState } from "react";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 const BetOption = ({ match, type, setSelectedOption, closeDropDown, selectedOption, updateBetSlip }: { match: Match, type: String, closeDropDown: Function, setSelectedOption: Function, selectedOption: Bet | null, 
   updateBetSlip?: (bet: Bet) => Bet[]}) => {
@@ -57,7 +58,7 @@ const BetOption = ({ match, type, setSelectedOption, closeDropDown, selectedOpti
         <div className="flex items-center min-w-0 max-w-full">
           {college && (
             <Image
-              src={`/college_flags/${toCollegeName[college]}.png`}
+              src={getCollegeFlag(toCollegeName[college])}
               alt={college}
               width={15}
               height={15}

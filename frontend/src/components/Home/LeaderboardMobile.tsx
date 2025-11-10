@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LoadingScreen from "../LoadingScreen";
 import { toCollegeAbbreviation } from "@src/utils/helpers";
+import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
 
 import { FiltersContext } from "@src/context/FiltersContext";
 
@@ -100,10 +101,7 @@ const Leaderboard: React.FC = () => {
               >
                 {/* Main College Flag */}
                 <Image
-                  src={`/college_flags/${college.name.replace(
-                    /\s+/g,
-                    " "
-                  )}.png`}
+                  src={getCollegeFlag(college.name.replace(/\s+/g, " "))}
                   alt={college.name}
                   width={size === "large" ? 160 : 96}
                   height={size === "large" ? 160 : 96}
@@ -112,7 +110,7 @@ const Leaderboard: React.FC = () => {
 
                 {/* Overlay Image */}
                 <Image
-                  src={`/college_flags/${place}.png`}
+                  src={getVersionedImage(`/college_flags/${place}.png`)}
                   alt={`${place} Place Overlay`}
                   width={size === "large" ? 400 : 50}
                   height={size === "large" ? 400 : 50}
@@ -162,10 +160,7 @@ const Leaderboard: React.FC = () => {
               </td>
               <td className="px-6 py-4 text-sm text-gray-900 flex items-center">
                 <Image
-                  src={`/college_flags/${college.name.replace(
-                    /\s+/g,
-                    " "
-                  )}.png`}
+                  src={getCollegeFlag(college.name.replace(/\s+/g, " "))}
                   alt={college.name}
                   width={24}
                   height={24}

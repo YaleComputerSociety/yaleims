@@ -6,6 +6,7 @@ import { db } from "../../../lib/firebase"; // Your Firebase config
 import { toCollegeName } from "@src/utils/helpers";
 import SkeletonBracketCell from "./SkeletonBracketCell";
 import "react-loading-skeleton/dist/skeleton.css";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 interface BracketCellProps {
   match: any;
@@ -150,7 +151,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
           {/* only show image if college not TBD */}
           {awayCollegeName !== "TBD" && (
             <img
-              src={`/college_flags/${awayCollegeName}.png`}
+              src={getCollegeFlag(awayCollegeName)}
               alt={awayCollegeName}
               className="w-6 h-6"
             />
@@ -216,7 +217,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
               {/* only show image if college not TBD */}
               {homeCollegeName !== "TBD" && (
                 <img
-                  src={`/college_flags/${homeCollegeName}.png`}
+                  src={getCollegeFlag(homeCollegeName)}
                   alt={homeCollegeName}
                   className="w-6 h-6"
                 />

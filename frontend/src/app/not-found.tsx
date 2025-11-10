@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { getVersionedImage } from "@/utils/versionedImages";
 
 export default function NotFound() {
   return (
@@ -16,7 +17,7 @@ export default function NotFound() {
       </div>
       <div>
         <Image
-          src={"404.png"}
+          src={getVersionedImage("404.png")}
           width={450}
           height={450}
           alt="404 illustration"

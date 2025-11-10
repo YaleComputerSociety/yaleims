@@ -9,6 +9,7 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
+import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();
@@ -202,7 +203,7 @@ const Profile = () => {
               </h2>
               <div className="flex justify-center items-center space-x-4">
                 <Image
-                  src={`/college_flags/${user.college}.png`}
+                  src={getCollegeFlag(user.college)}
                   alt={user.college}
                   width={100}
                   height={100}
@@ -225,7 +226,7 @@ const Profile = () => {
                     YCoins: {availablePoints.toFixed(2) || 0}
                   </p>
                   <Image
-                    src="/YCoin.png"
+                    src={getVersionedImage("/YCoin.png")}
                     alt="YCoin"
                     height={25} // Retains the specified height
                     width={25} // Retains the specified width

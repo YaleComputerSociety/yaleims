@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";
 import { resolve } from "path";
 import { Bet } from "@src/types/components";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 interface BetSlipProps {
   bet: Bet;
@@ -69,7 +70,7 @@ const BetSlipRow: FC<BetSlipProps> = ({
           }`}
         >
           <Image
-            src={`/college_flags/${toCollegeName[college]}.png`}
+            src={getCollegeFlag(toCollegeName[college])}
             alt={college}
             width={20}
             height={20}
