@@ -5,8 +5,9 @@ export async function GET(): Promise<NextResponse> {
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
   }
-  const from = BASE_URL;
-  const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${from}`;
+  
+  // Pass BASE_URL as the 'from' parameter so redirect knows where to send user
+  const serviceUrl = `https://yaleims.com/api/auth/redirect?from=${encodeURIComponent(BASE_URL)}`;
   const encodedServiceUrl = encodeURIComponent(serviceUrl);
   
   return NextResponse.redirect(

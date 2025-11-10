@@ -86,24 +86,17 @@ export async function GET(request: Request): Promise<NextResponse> {
         expiresIn: "7d",
       });
       
-      if (from == "http://localhost:3000") {
-        const redirectResponse = NextResponse.redirect(`http://localhost:3000`);
-        redirectResponse.cookies.set("token", token, {
-          secure: true,
-          path: "/",
-          maxAge: 60 * 60 * 24 * 7,
-          httpOnly: true,
-          sameSite: "none",
-        });
-        return redirectResponse;
-      }
-      const redirectResponse = NextResponse.redirect(`${BASE_URL}`);
+      // Check if 'from' is localhost
+      const isLocalhost = from.includes("localhost");
+      const redirectUrl = from.startsWith("http") ? from : BASE_URL;
+      
+      const redirectResponse = NextResponse.redirect(redirectUrl);
       redirectResponse.cookies.set("token", token, {
-        secure: true,
+        secure: !isLocalhost,  // false for localhost, true for production
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: isLocalhost ? "lax" : "none",  // lax for localhost, none for cross-site
       });
 
       return redirectResponse;
