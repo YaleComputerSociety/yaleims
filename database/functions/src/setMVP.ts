@@ -52,6 +52,8 @@ export const setMVP = functions.https.onRequest((req, res) => {
       .collection(residentialCollege)
       .doc(weekId);
 
+    const mailRef = db.collection("mail");
+
     try {
       await weekRef.set(
         {
@@ -59,6 +61,16 @@ export const setMVP = functions.https.onRequest((req, res) => {
         },
         { merge: true }  
       );
+
+      await mailRef.add({
+        to: [mvpEmail],
+        message: {
+          subject: `[YaleIMS] Congratulations, ${mvpFName}!`,
+          text: `Hello ${mvpFName},\n\nYou have been selected as MVP for week ${weekId} in ${season} for ${residentialCollege}!`,
+          html: `<p>Hello ${mvpFName},</p>
+                <p>You have been selected as <strong>MVP</strong> for week ${weekId} in ${season} for ${residentialCollege}!</p>`
+        }
+      });
 
       return res.status(200).json({ success: true, weekId });
 

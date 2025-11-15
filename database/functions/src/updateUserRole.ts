@@ -16,6 +16,7 @@ export const updateUserRole = functions.https.onRequest(async (req, res) => {
       }
 
       const userRef = db.collection("users").doc(email);
+      const mailRef = db.collection("mail");
 
       const userDoc = await userRef.get();
       if (!userDoc.exists) {
@@ -37,6 +38,15 @@ export const updateUserRole = functions.https.onRequest(async (req, res) => {
           teams_captain_of: admin.firestore.FieldValue.delete(),
         });
       }
+
+      await mailRef.add({
+        to: [email],
+        message: {
+          subject: `[YaleIMs] Your role has been updated`,
+          text: `Hello, your role is now "${role}".`,
+          html: `<p>Hello, your role is now <strong>${role}</strong>.</p>`
+        }
+      });
 
       return res.status(200).send({ success: true });
     } catch (error) {
