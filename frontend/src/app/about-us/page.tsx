@@ -125,6 +125,22 @@ const AboutUsPage: React.FC = () => {
       github: undefined,
       linkedin: "https://www.linkedin.com/in/vojtech-kysilka/",
       portfolio: undefined,
+    },
+    {
+      name: "Claire Guo",
+      roles: ["Software Engineer"],
+      image: getDevImage("Claire_Guo.JPG"),
+      github: undefined,
+      linkedin: "https://www.linkedin.com/in/claire-guo-881bb2287/",
+      portfolio: undefined,
+    },
+        {
+      name: "Ben Le",
+      roles: ["Software Engineer"],
+      image: getDevImage("Ben_Le.png"),
+      github: "https://github.com/le-benjamin",
+      linkedin: "https://www.linkedin.com/in/benjamin-le-b836ba274/ ",
+      portfolio: undefined,
     }
   ];
 
@@ -236,13 +252,35 @@ const AboutUsPage: React.FC = () => {
       </div>
       <div className="mb-8 p-5 rounded-lg">
         <p className="text-lg sm:text-3xl font-semibold pb-5 md:-ml-6 text-center">
+          Past Members
+        </p>
+        <div className="flex justify-center">
+          <div className="grid lg:grid-cols-6 md:grid-cols-4 grid-cols-2 xs:grid-cols-2 gap-4 sm:gap-8">
+            {pastMembers.map((member, index) => (
+              <PersonCard
+                key={`past-${index}`}
+                name={member.name}
+                roles={member.roles}
+                image={member.image}
+                github={member.github}
+                linkedin={member.linkedin}
+                portfolio={member.portfolio}
+                specialThanks={false}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-8 p-5 rounded-lg">
+        <p className="text-lg sm:text-3xl font-semibold pb-5 md:-ml-6 text-center">
           Special Thanks
         </p>
         <div className="flex justify-center">
           <div className="grid lg:grid-cols-6 md:grid-cols-4 grid-cols-2 xs:grid-cols-2 gap-4 sm:gap-8">
             {specialThanks.map((member, index) => (
               <PersonCard
-                key={index}
+                key={`thanks-${index}`}
                 name={member.name}
                 roles={member.roles}
                 image={member.image}
