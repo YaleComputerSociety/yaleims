@@ -261,11 +261,15 @@ export interface PastSeasons {
 }
 
 export interface User {
+  id?: string;
+  firstname?: string;
+  lastname?: string;
   name: string;
   netid: string;
   email: string;
   role: string;
   mRoles: string[];
+  sportsCaptainOf?: string[];
   username: string;
   college: string;
   points: string;
