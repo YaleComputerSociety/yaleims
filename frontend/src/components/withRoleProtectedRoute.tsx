@@ -6,6 +6,12 @@ import { useUser } from "@src/context/UserContext";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "./LoadingScreen";
 
+/**
+ * Higher-order component to protect routes based on user roles
+ * @param WrappedComponent component to lock behind role permissions
+ * @param allowedRoles array of strings for roles allowed to view the component
+ * @returns protected route
+ */
 const withRoleProtectedRoute = <P extends {}>(
   WrappedComponent: ComponentType<P>,
   allowedRoles: string[]
@@ -16,7 +22,7 @@ const withRoleProtectedRoute = <P extends {}>(
 
     const setRoles = new Set(user?.mRoles || []);
     useEffect(() => {
-      const hasAccess = allowedRoles.some(item => setRoles.has(item));
+      const hasAccess = allowedRoles.some((item) => setRoles.has(item));
       if (!loading && !hasAccess) {
         router.push("/"); // push to home page
       }
@@ -25,7 +31,7 @@ const withRoleProtectedRoute = <P extends {}>(
     if (loading) {
       return <LoadingScreen />;
     }
-    const hasAccess = allowedRoles.some(item => setRoles.has(item));
+    const hasAccess = allowedRoles.some((item) => setRoles.has(item));
     return hasAccess ? <WrappedComponent {...props} /> : null;
   };
 

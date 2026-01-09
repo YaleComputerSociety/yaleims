@@ -28,6 +28,12 @@ const AdminDashboard: React.FC = () => {
         message="Upload or delete bracket information for upcoming playoff seasons!"
         openLinkInfo="Click to upload bracket information →"
       />
+      <DCardLink
+        title="Manage User Roles"
+        link="/hub/manage-user-roles"
+        message="Add, remove, or modify user roles and permissions!"
+        openLinkInfo="Click to manage user roles →"
+      />
     </>
   );
 };
