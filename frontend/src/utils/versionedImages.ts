@@ -46,6 +46,10 @@ export function getLoaderAnimation(animationName: string, version?: string): str
   return getVersionedImage(`/loader_animations/${animationName}`, version);
 }
 
+export function getYCoinImage(version?: string): string {
+  return getVersionedImage(`/YCoin.png`, version);
+}
+
 // You can also read version from package.json if you prefer
 // import packageJson from '../../package.json';
 // const IMAGE_VERSION = packageJson.version;

@@ -227,8 +227,8 @@ const MatchList: React.FC<{ matches: Match[]; seasonId: string }> = ({
 
   if (matches.length === 0) {
     return (
-      <div className="text-center text-gray-500 dark:text-gray-200 p-6">
-        No matches found.
+      <div className="text-center text-gray-400 py-4 text-sm">
+        No upcoming matches. Sign up on the Schedules page!
       </div>
     );
   }
@@ -295,14 +295,14 @@ const UserMatches = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center pt-10">
+      <div className="flex items-center justify-center py-8">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="p-4">
+    <div className="max-h-64 overflow-y-auto">
       <MatchList matches={matches} seasonId={currentSeasonId} />
     </div>
   );
