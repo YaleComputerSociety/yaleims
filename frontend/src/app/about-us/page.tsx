@@ -20,6 +20,14 @@ const AboutUsPage: React.FC = () => {
       portfolio: "",
     },
     {
+      name: "Brian Di Bassinga",
+      roles: ["Software Engineer"],
+      image: getDevImage("Brian_Di_Bassinga.jpeg"),
+      github: "https://github.com/briandibasinga",
+      linkedin: "https://www.linkedin.com/in/brian-di-basinga/",
+      portfolio: undefined,
+    },
+    {
       name: "Diego Aspinwall",
       roles: ["Software Engineer"],
       image: getDevImage("Diego_Aspinwall.png"),
@@ -72,7 +80,7 @@ const AboutUsPage: React.FC = () => {
   const teamMembers = [
     {
       name: "Ephraim Akai-Nettey",
-      roles: ["Team Lead, Software Engineer"],
+      roles: ["Lead Software Engineer"],
       image: getDevImage("Ephraim_Akai-Nettey.jpg"),
       github: "https://github.com/dennisephraim",
       linkedin: "https://www.linkedin.com/in/ephraim-akai-nettey/",
@@ -92,14 +100,6 @@ const AboutUsPage: React.FC = () => {
       image: getDevImage("Daniel_Morales.jpg"),
       github: "https://github.com/dmo7567",
       linkedin: "https://www.linkedin.com/in/dmorales7567/",
-      portfolio: undefined,
-    },
-    {
-      name: "Brian Di Bassinga",
-      roles: ["Software Engineer"],
-      image: getDevImage("Brian_Di_Bassinga.jpeg"),
-      github: "https://github.com/btd2026",
-      linkedin: "https://www.linkedin.com/in/brian-di-bassinga-2399661a5?m",
       portfolio: undefined,
     },
     {
@@ -196,7 +196,7 @@ const AboutUsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen p-2 xs:p-8 flex flex-col items-center w-11/12 sm:w-4/5 justify-center max-w-[1500px] mx-auto">
+    <div className="min-h-screen p-2 xs:p-8 flex flex-col items-center w-11/12 sm:w-[90%] justify-center max-w-[1600px] mx-auto">
       <PageHeading heading="About Team" />
       <p className="pt-20">
         Every school year Yale’s 14 colleges compete in intramural sports for

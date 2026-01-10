@@ -230,9 +230,10 @@ const YoddsPage: React.FC = () => {
         setPendingLoading(true);
         const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason?.year || '2025-2026'}&history=true&pending=false`)
         if (!response.ok)
-          throw new Error(`Error fetching pending bets: ${response.statusText}`);
+          throw new Error(`Error fetching past bets: ${response.statusText}`);
         const data = await response.json();
-        const betsData = Object.values(data).flat() as BetParlay[];
+        // Reverse the keys so most recent season comes first, then flatten
+        const betsData = Object.keys(data).reverse().flatMap(key => data[key]) as BetParlay[];
         setPastBets(betsData);
       } catch (error) {
         console.error("Failed to fetch past bets:", error);

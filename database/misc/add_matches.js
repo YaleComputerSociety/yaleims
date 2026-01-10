@@ -2,7 +2,7 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE = "data/Table_Tennis_Fall_2025_schedule_formatted (1).csv";
+const CSV_FILE = "data//2025-2026/2026_W-Hoops_Schedule_formatted.csv";
 const SEASON_ID = "2025-2026"; // season we are inserting into
 
 /** ✱ 2. FIREBASE SETUP ✱ */
@@ -31,7 +31,7 @@ initializeApp(firebaseConfig);
 const db = getFirestore();
 
 /** ✱ 3. UTIL: "1/23" + "7:30 PM" → Firestore Timestamp ✱ */
-const toTimestamp = (dateStr, timeStr, year = 2025) => {
+const toTimestamp = (dateStr, timeStr, year = 2026) => {
   if (!dateStr || !timeStr) return null;
   const [mm, dd] = dateStr.split("/").map(Number);
   const [clock, part] = timeStr.split(" ");
