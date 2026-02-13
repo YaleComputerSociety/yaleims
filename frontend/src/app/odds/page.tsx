@@ -161,6 +161,7 @@ const YoddsPage: React.FC = () => {
 
         const data = await response.json();
         setFilteredMatches(data.matches);
+        console.log(data.matches)
         
         if (data.firstVisible) setFirstVisible(data.firstVisible);
         if (data.lastVisible) setLastVisible(data.lastVisible);

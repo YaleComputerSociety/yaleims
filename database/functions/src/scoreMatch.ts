@@ -92,8 +92,8 @@ export const getPointsForWinBySportName = async (sportName: string) => {
   return pointsForWin || 0;
 };
 
-const canScoreMatch = (role: string) => {
-  return role === "admin" || role === "dev";
+const canScoreMatch = (mRoles: string[]) => {
+  return mRoles.includes("admin") || mRoles.includes("dev");
 };
 
 export const scoreMatch = functions.https.onRequest(async (req, res) => {
@@ -124,7 +124,7 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid token" });
     }
-    if (!isValidDecodedToken(decoded) || !canScoreMatch(decoded.role)) {
+    if (!isValidDecodedToken(decoded) || !canScoreMatch(decoded.mRoles)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 

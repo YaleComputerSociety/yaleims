@@ -2,67 +2,10 @@ import { Filter, OrderByDirection } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { oddsCalculator } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
-
-interface Odds {
-  team1Win: number;
-  team2Win: number;
-  draw: number;
-  forfeit: number;
-}
-
-function oddsCalculator(
-  team1WinPercentage: number,
-  team2WinPercentage: number,
-  bettingVolume: {
-    team1: number;
-    team2: number;
-    draw: number;
-    forfeit: number;
-  },
-  team1ForfeitRate: number,
-  team2ForfeitRate: number
-): Odds {
-  const def = { team1Win: 0.35, team2Win: 0.35, draw: 0.1, forfeit: 0.2 };
-  const total =
-    bettingVolume.team1 +
-    bettingVolume.team2 +
-    bettingVolume.draw +
-    bettingVolume.forfeit;
-  const weight = total > 0 ? 1 : 0;
-  const share = {
-    team1: total ? bettingVolume.team1 / total : def.team1Win,
-    team2: total ? bettingVolume.team2 / total : def.team2Win,
-    draw: total ? bettingVolume.draw / total : def.draw,
-    forfeit: total ? bettingVolume.forfeit / total : def.forfeit,
-  };
-  const pastW = 5;
-  const rawDraw = 1 - team1WinPercentage - team2WinPercentage;
-  const e1 = Math.exp(team1WinPercentage),
-    e2 = Math.exp(team2WinPercentage),
-    eD = Math.exp(rawDraw);
-  const sum = e1 + e2 + eD;
-  const n1 = e1 / sum,
-    n2 = e2 / sum,
-    nD = eD / sum;
-  const remForfeit = Math.max(0.05, 1 - n1 - n2 - nD);
-  const nF = Math.max(0.05, remForfeit - team1ForfeitRate - team2ForfeitRate);
-  const mix = (perf: number, s: number) =>
-    (perf * pastW + s * weight) / (pastW + weight || 1);
-  const t1 = mix(n1, share.team1),
-    t2 = mix(n2, share.team2),
-    dr = mix(nD, share.draw),
-    fr = mix(nF, share.forfeit),
-    tot = t1 + t2 + dr + fr;
-  return {
-    team1Win: tot ? t1 / tot : def.team1Win,
-    team2Win: tot ? t2 / tot : def.team2Win,
-    draw: tot ? dr / tot : def.draw,
-    forfeit: tot ? fr / tot : def.forfeit,
-  };
-}
 
 export const getMatchesPaginated = functions.https.onRequest(
   async (req, res) => {
