@@ -86,8 +86,8 @@ interface ParsedMatch {
   division: "green" | "blue" | "final" | "none";
 }
 
-const canCreateBracket = (role: string) => {
-  return role === "admin" || role === "dev";
+const canCreateBracket = (mRoles: string[]) => {
+  return mRoles.includes("admin") || mRoles.includes("dev");
 };
 
 export const createBracket = functions.https.onRequest((req, res) => {
@@ -118,7 +118,7 @@ export const createBracket = functions.https.onRequest((req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid token" });
     }
-    if (!isValidDecodedToken(decoded) || !canCreateBracket(decoded.role)) {
+    if (!isValidDecodedToken(decoded) || !canCreateBracket(decoded.mRoles)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
