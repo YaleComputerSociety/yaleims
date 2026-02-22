@@ -21,6 +21,7 @@ import { FaQuestionCircle } from "react-icons/fa";
 import { getVersionedImage } from "@/utils/versionedImages";
 import { MdOutlineSportsScore } from "react-icons/md";
 import { TbBrackets } from "react-icons/tb";
+import { IoGameController } from "react-icons/io5";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -68,6 +69,7 @@ const NavBar: React.FC = () => {
   const links = [
     { href: "/hub", text: "Hub", icon: <LuLayoutDashboard /> },
     { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard />},
+    { href: "/games", text: "Games", icon: <IoGameController /> },
     { href: "/scores", text: "Scores", icon: <MdOutlineScoreboard /> },
     { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
     { href: "/brackets", text: "Brackets", icon: <TbBrackets /> },

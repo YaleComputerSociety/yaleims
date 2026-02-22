@@ -15,6 +15,14 @@ import SelectMVP from "@src/components/Dashboard/College_Rep/SelectMVP";
 import ViewCaptainSports from "@src/components/Dashboard/Captain/ViewCaptainSports";
 import ViewTeamSignups from "@src/components/Dashboard/Captain/ViewTeamSignups";
 
+type HubAction = {
+  title: string;
+  link: string;
+  icon: string;
+  description: string;
+  gradient: string;
+};
+
 const Dashboard: React.FC = () => {
   const { user, loading } = useUser();
 
@@ -33,7 +41,7 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const userActions = [
+  const userActions: HubAction[] = [
     {
       title: "Sign Up for Games",
       link: "/schedules",
@@ -64,7 +72,7 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const adminActions = [
+  const adminActions: HubAction[] = [
     {
       title: "Score Matches",
       link: "/hub/add-scores",
@@ -95,17 +103,21 @@ const Dashboard: React.FC = () => {
     },
   ];
 
+  const isAdmin = user?.mRoles.includes("admin");
+  const isCollegeRep = user?.mRoles.includes("college_rep");
+  const isCaptain = user?.mRoles.includes("captain");
+
   return (
-    <div className="min-h-screen pt-20 pb-10">
+    <div className="min-h-screen pt-20 pb-12">
       <PageHeading heading="Hub" />
-      <div className="max-w-6xl mx-auto px-2">
+      <div className="max-w-6xl mx-auto px-2 md:px-4">
         {/* Hero Stats Section */}
         <HeroStats />
 
         {/* Quick Actions */}
-        <div className="mb-8">
+        <section className="mb-8">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span>⚡</span> Quick Actions
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-400" /> Quick Actions
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {userActions.map((action) => (
@@ -119,7 +131,7 @@ const Dashboard: React.FC = () => {
               />
             ))}
           </div>
-        </div>
+        </section>
 
         {/* Info Sections */}
         <div className="grid md:grid-cols-2 gap-4 mb-8">
@@ -133,10 +145,10 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Admin Section */}
-        {user?.mRoles.includes("admin") && (
-          <div className="mb-8">
+        {isAdmin && (
+          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 md:p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span>🔧</span> Admin Tools
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-400" /> Admin Tools
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {adminActions.map((action) => (
@@ -150,14 +162,14 @@ const Dashboard: React.FC = () => {
                 />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* College Rep Section */}
-        {user?.mRoles.includes("college_rep") && (
-          <div className="mb-8">
+        {isCollegeRep && (
+          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 md:p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span>🏛️</span> College Rep Tools
+              <span className="inline-block w-2 h-2 rounded-full bg-indigo-400" /> College Rep Tools
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <PopupActionCard
@@ -175,14 +187,14 @@ const Dashboard: React.FC = () => {
                 CustomComponent={SelectMVP}
               />
             </div>
-          </div>
+          </section>
         )}
 
         {/* Captain Section */}
-        {user?.mRoles.includes("captain") && (
-          <div className="mb-8">
+        {isCaptain && (
+          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 md:p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span>🎖️</span> Captain Tools
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" /> Captain Tools
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <PopupActionCard
@@ -200,6 +212,12 @@ const Dashboard: React.FC = () => {
                 CustomComponent={ViewTeamSignups}
               />
             </div>
+          </section>
+        )}
+
+        {!isAdmin && !isCollegeRep && !isCaptain && (
+          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 text-sm text-gray-700 dark:text-gray-300">
+            You have standard user access. Quick actions and personal stats are available above.
           </div>
         )}
       </div>

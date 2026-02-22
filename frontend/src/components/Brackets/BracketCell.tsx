@@ -65,15 +65,12 @@ const ErrorBracketCell = ({
   title: string;
   message: string;
 }) => (
-  <div className="relative bg-white dark:bg-black rounded-3xl shadow-lg w-56 aspect-[288/155] flex flex-col justify-center items-center border border-red-400 dark:border-red-500">
+  <div className="relative bg-white dark:bg-gray-950 rounded-3xl shadow-lg w-56 aspect-[288/155] flex flex-col justify-center items-center border border-gray-200 dark:border-gray-800">
     <div className="z-20 flex flex-col items-center justify-center space-y-2 text-center">
-      {/* Title Badge */}
-      <div className="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 font-semibold text-xs px-3 py-1 rounded-full">
+      <div className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold text-xs px-3 py-1 rounded-full">
         {title}
       </div>
-
-      {/* Message Badge */}
-      <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[11px] font-medium px-3 py-1 rounded-full max-w-[80%]">
+      <div className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-[11px] font-medium px-3 py-1 rounded-full max-w-[80%]">
         {message}
       </div>
     </div>
@@ -137,8 +134,8 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
   }
 
   return (
-    <div className="relative transition-all bg-white dark:bg-black rounded-3xl shadow-lg w-56
-     aspect-[288/155] flex flex-col justify-between p-4 ">
+    <div className="relative transition-all bg-white dark:bg-gray-950 rounded-3xl shadow-lg w-56
+     aspect-[288/155] flex flex-col justify-between p-4 border border-gray-200 dark:border-gray-800">
       <div className="absolute top-1/2 left-0 w-full h-[1px] bg-gray-300 dark:bg-gray-700 transform -translate-y-1/2 z-20" />
 
       {/* Top team */}
@@ -192,14 +189,14 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
             <div className="bg-gray-100 dark:bg-gray-800 rounded-3xl px-1 py-3 flex flex-col justify-center items-center w-12 h-31 text-base font-extrabold space-y-2">
               <span
                 className={
-                  winningTeam === "away" ? "text-black dark:text-gray-300" : "text-gray-400 dark:text-black"
+                  winningTeam === "away" ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-600"
                 }
               >
                 {matchScored ? match.away_college_score : "?"}
               </span>
               <span
                 className={
-                  winningTeam === "home" ? "text-black dark:text-gray-300" : "text-gray-400 dark:text-black"
+                  winningTeam === "home" ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-600"
                 }
               >
                 {matchScored ? match.home_college_score : "?"}

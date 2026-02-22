@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
+import GlassDropdown from "@src/components/ui/GlassDropdown";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { useRef } from "react";
@@ -173,11 +174,13 @@ const BracketsPage: React.FC = () => {
 
       const nextMatchData = matchDetails[nextMatch.match_id];
       if (nextMatchData) {
-        const appearsInNext = nextMatchData.home_college === match.winner || nextMatchData.away_college === match.winner;
-        const wonNext = !nextMatchData.winner || nextMatchData.winner === match.winner;
+        const appearsInNext =
+          nextMatchData.home_college === match.winner ||
+          nextMatchData.away_college === match.winner;
 
-
-        if (appearsInNext && wonNext) {
+        // Track connection for the winner advancing, regardless of
+        // whether they win or lose the next round (fixes eliminated team glow)
+        if (appearsInNext) {
           if (!connections[match.winner]) connections[match.winner] = [];
           connections[match.winner].push({
             from: b.bracket_placement,
@@ -185,7 +188,6 @@ const BracketsPage: React.FC = () => {
           });
         }
       }
-
     });
 
     setTeamConnections(connections);
@@ -198,16 +200,20 @@ const BracketsPage: React.FC = () => {
   // TODO: remove when mobile view is ready
   if (isMobile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-100">
-        <div className="text-center bg-white rounded-lg shadow px-6 py-8 max-w-sm mx-auto">
-          <h1 className="text-2xl font-bold mb-4 text-blue-700">
-            Brackets Mobile View
-          </h1>
-          <p className="text-lg text-gray-700">
-            Brackets mobile view coming soon.
-            <br />
-            Check it out on desktop!
-          </p>
+      <div className="min-h-screen flex flex-col">
+        <PageHeading heading="Brackets" />
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center bg-gray-50 dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800 px-8 py-10 max-w-sm mx-auto">
+            <div className="text-5xl mb-4">📱</div>
+            <h1 className="text-xl font-bold mb-2 text-gray-800 dark:text-white">
+              Desktop Only
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Brackets are best viewed on a larger screen.
+              <br />
+              Check it out on desktop!
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -219,46 +225,35 @@ const BracketsPage: React.FC = () => {
       {/* <div>{hoveredTeam}</div> */}
 
       {/* Sport Selector & Actions */}
-      <div className="max-w-3xl mx-auto bg-white dark:bg-black rounded-lg shadow px-6 py-2 flex flex-wrap justify-between items-center mb-4 gap-4">
+      <div className="relative z-30 max-w-3xl mx-auto rounded-2xl px-6 py-3 flex flex-wrap justify-between items-center mb-4 gap-4 bg-white/70 dark:bg-slate-900/80 backdrop-blur-md border border-blue-200/60 dark:border-blue-400/10 shadow-lg shadow-blue-100/50 dark:shadow-blue-500/5">
         <div className="flex justify-between w-full">
           {/* Sport on left */}
-          <div className="flex items-center gap-4">
-            <span className="text-base font-semibold">Sport:</span>
-            <select
-              className="bg-gray-100 dark:bg-gray-800 rounded px-3 py-1"
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-blue-400 dark:text-gray-500 uppercase tracking-wide">Sport</span>
+            <GlassDropdown
+              placeholder="Select Sport"
               value={sport}
-              onChange={(e) => handleSportChange(e.target.value)}
-            >
-              <option value="">Select Sport</option>
-              {sports.map((sport) => (
-                <option key={sport.name} value={sport.name}>
-                  {sport.emoji} {sport.name}
-                </option>
-              ))}
-            </select>
+              options={sports.map((s) => ({ value: s.name, label: s.name, icon: <span>{s.emoji}</span> }))}
+              onChange={handleSportChange}
+              allowReset={false}
+            />
           </div>
 
           {/* Year on right */}
-          <div className="flex items-center gap-2">
-            <span className="text-base font-semibold">Year:</span>
-            <select
-              className="bg-gray-100 dark:bg-gray-800 rounded px-3 py-1"
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-blue-400 dark:text-gray-500 uppercase tracking-wide">Year</span>
+            <GlassDropdown
+              placeholder={currentSeason?.year || currentYear}
               value={season}
-              onChange={(e) => handleSeasonChange(e.target.value)}
-            >
-              <option value={currentSeason?.year || currentYear}>
-                {currentSeason?.year || currentYear}
-              </option>
-              {pastYears
-                .filter(
-                  (y: string) => y !== (currentSeason?.year || currentYear)
-                )
-                .map((y: string) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-            </select>
+              options={[
+                { value: currentSeason?.year || currentYear, label: `${currentSeason?.year || currentYear} (Current)` },
+                ...pastYears
+                  .filter((y: string) => y !== (currentSeason?.year || currentYear))
+                  .map((y: string) => ({ value: y, label: y })),
+              ]}
+              onChange={handleSeasonChange}
+              allowReset={false}
+            />
           </div>
         </div>
       </div>
@@ -275,7 +270,7 @@ const BracketsPage: React.FC = () => {
                 {/* Desktop View */}
 
                 <div className="flex flex-col items-center">
-                  <span className="bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
                     Playoffs {bracket[0].timestamp.toDate().getDate()}/{bracket[0].timestamp.toDate().getMonth() + 1}/{bracket[0].timestamp.toDate().getFullYear()}
                   </span>
 
@@ -301,7 +296,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Left Quarters */}
                 <div className="flex flex-col items-center justify-center">
-                  <span className="bg-blue-300 mb-[70px] text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 mb-[70px] text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
                     Quarter-Finals {bracket[5].timestamp.toDate().getDate()}/{bracket[5].timestamp.toDate().getMonth() + 1}/{bracket[5].timestamp.toDate().getFullYear()}
                   </span>
                   <div className="flex flex-col items-center justify-center space-y-40">
@@ -325,7 +320,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Left Semis */}
                 <div className="flex flex-col items-center space-y-52">
-                  <span className="bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
                     Semi-Finals {bracket[12].timestamp.toDate().getDate()}/{bracket[12].timestamp.toDate().getMonth() + 1}/{bracket[12].timestamp.toDate().getFullYear()}
                   </span>
                     <div
@@ -342,7 +337,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Final */}
                 <div className="flex flex-col items-center space-y-14">
-                  <span className="bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-yellow-100 dark:bg-yellow-600/40 backdrop-blur-md text-yellow-700 dark:text-yellow-200 text-[10px] font-bold px-3 py-1 rounded-full border border-yellow-300 dark:border-yellow-400/20 shadow-sm shadow-yellow-100/30 dark:shadow-yellow-500/15">
                     Final {bracket[14].timestamp.toDate().getDate()}/{bracket[14].timestamp.toDate().getMonth() + 1}/{bracket[14].timestamp.toDate().getFullYear()}
                   </span>
 
@@ -367,7 +362,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Right Semis */}
                 <div className="flex flex-col items-center space-y-52">
-                  <span className=" bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
                     Semi-Finals {bracket[13].timestamp.toDate().getDate()}/{bracket[13].timestamp.toDate().getMonth() + 1}/{bracket[13].timestamp.toDate().getFullYear()}
                   </span>
                   <div
@@ -384,7 +379,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Right Quarters */}
                 <div className="flex flex-col items-center">
-                  <span className=" bg-blue-300 mb-[70px] text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 mb-[70px] text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
                     Quarter-Finals {bracket[10].timestamp.toDate().getDate()}/{bracket[10].timestamp.toDate().getMonth() + 1}/{bracket[10].timestamp.toDate().getFullYear()}
                   </span>
                   <div className=" flex flex-col items-start justify-center space-y-40">
@@ -407,7 +402,7 @@ const BracketsPage: React.FC = () => {
 
                 {/* Right Playoffs */}
                 <div className="flex flex-col items-center">
-                  <span className=" bg-blue-300 text-blue-900 text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
                     Playoffs {bracket[6].timestamp.toDate().getDate()}/{bracket[6].timestamp.toDate().getMonth() + 1}/{bracket[6].timestamp.toDate().getFullYear()}
                   </span>
                   <div className="flex flex-col items-start space-y-5">
@@ -656,9 +651,17 @@ const BracketsPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <p className="text-center text-gray-500 mt-10">
-            No bracket available.
-          </p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="text-5xl mb-4">🏆</div>
+            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-1">
+              {error || (!sport ? "Select a sport to view brackets" : "No bracket available")}
+            </h3>
+            <p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs">
+              {!sport
+                ? "Choose a sport and season above to see the playoff bracket."
+                : "Try a different sport or season."}
+            </p>
+          </div>
         )}
       </section>
     </div>
