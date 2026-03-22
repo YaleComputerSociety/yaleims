@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import PageHeading from "@src/components/PageHeading";
 import { Match } from "@src/types/components";
 import { useSeason } from "@src/context/SeasonContext";
 import { useUser } from "@src/context/UserContext";
-import { toCollegeName, currentYear } from "@src/utils/helpers";
+import { toCollegeName, toCollegeAbbreviation, currentYear, getPlace } from "@src/utils/helpers";
 import GameCard, { getMatchStatus } from "@src/components/Games/GameCard";
 import DateScroller from "@src/components/Games/DateScroller";
 import GamesFilterBar from "@src/components/Games/GamesFilterBar";
@@ -84,6 +85,7 @@ function seasonEndDate(seasonYear: string, isCurrent: boolean): Date {
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 const GamesPage: React.FC = () => {
+  const searchParams = useSearchParams();
   const { currentSeason, pastSeasons } = useSeason();
   const defaultSeasonYear = currentSeason?.year ?? currentYear;
   const pastYears: string[] = pastSeasons?.years || [];
@@ -102,12 +104,24 @@ const GamesPage: React.FC = () => {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [seasonLoading, setSeasonLoading] = useState(true);
 
+  // ── fetch leaderboard (same source as standings page) for college stats ─────────
+  type LeaderboardCollege = {
+    id: string;
+    name: string;
+    games: number;
+    wins: number;
+    ties: number;
+    losses: number;
+    forfeits: number;
+    points: number;
+    rank: number;
+  };
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardCollege[]>([]);
+
   useEffect(() => {
     const fetchAllMatches = async () => {
       setSeasonLoading(true);
       try {
-        // v2 endpoint: single query for all matches (scored + unscored)
-        // in the selected season
         const params = new URLSearchParams({
           seasonId: selectedSeason,
           type: "index",
@@ -118,7 +132,6 @@ const GamesPage: React.FC = () => {
           college: "All",
           sport: "All",
         });
-
         const res = await fetch(`/api/functions/getMatchesv2?${params}`);
         const data = res.ok ? await res.json() : { matches: [] };
         setAllMatches(data.matches ?? []);
@@ -130,6 +143,22 @@ const GamesPage: React.FC = () => {
       }
     };
     fetchAllMatches();
+  }, [selectedSeason]);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch(
+          `https://us-central1-yims-125a2.cloudfunctions.net/getLeaderboard?seasonId=${selectedSeason}`
+        );
+        const data = res.ok ? await res.json() : [];
+        setLeaderboardData(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch leaderboard:", err);
+        setLeaderboardData([]);
+      }
+    };
+    fetchLeaderboard();
   }, [selectedSeason]);
 
   // ── dates that have at least one game (for DateScroller dots) ────────────────
@@ -223,6 +252,12 @@ const GamesPage: React.FC = () => {
   const [sportFilter, setSportFilter] = useState<string>("");
   const [collegeFilter, setCollegeFilter] = useState<string>("");
 
+  // Sync college filter from URL (e.g. when navigating from leaderboard)
+  useEffect(() => {
+    const college = searchParams.get("college");
+    setCollegeFilter(college ? decodeURIComponent(college) : "");
+  }, [searchParams]);
+
   // ── matches for the selected day (client-side filter) ───────────────────────
   const dayMatches = useMemo<Match[]>(
     () => allMatches.filter((m) => isSameDay(parseTimestamp(m.timestamp), selectedDate)),
@@ -275,12 +310,162 @@ const GamesPage: React.FC = () => {
 
   const groupedByTime = useMemo(() => groupByTime(displayMatches), [displayMatches]);
 
+  // ── filter stats (season-wide, for the stats card) ─────────────────────────────
+  // When college-only: use leaderboard (same as standings page). When college+sport or sport-only: compute from matches.
+  const filterStats = useMemo(() => {
+    const hasCollege = !!collegeFilter;
+    const hasSport = !!sportFilter;
+    if (!hasCollege && !hasSport) return null;
+
+    // Base filter: all matches in season, optionally filtered by sport
+    let base = allMatches.filter((m) => {
+      if (hasSport && m.sport !== sportFilter) return false;
+      if (m.away_college === "Bye" || m.home_college === "Bye") return false;
+      return true;
+    });
+
+    if (hasCollege) {
+      const collegeAbbr = toCollegeAbbreviation[collegeFilter];
+      if (!collegeAbbr) return null;
+      base = base.filter(
+        (m) => m.home_college === collegeAbbr || m.away_college === collegeAbbr
+      );
+    }
+
+    const now = Date.now();
+    const completed = base.filter((m) => {
+      const hasResult =
+        m.winner !== null ||
+        (m.home_college_score ?? 0) > 0 ||
+        (m.away_college_score ?? 0) > 0 ||
+        m.forfeit;
+      return hasResult;
+    });
+    const upcoming = base.filter((m) => parseTimestamp(m.timestamp).getTime() > now);
+
+    // College-only: use leaderboard stats (same source as standings page)
+    if (hasCollege && !hasSport) {
+      const lbCollege = leaderboardData.find(
+        (c) => c.name === collegeFilter || c.id === toCollegeAbbreviation[collegeFilter]
+      );
+      if (lbCollege) {
+        const upcomingCount = base.filter(
+          (m) => parseTimestamp(m.timestamp).getTime() > now
+        ).length;
+        const completedCount =
+          (lbCollege.wins ?? 0) + (lbCollege.losses ?? 0) + (lbCollege.ties ?? 0);
+        return {
+          mode: "college" as const,
+          collegeName: collegeFilter,
+          sportName: undefined,
+          totalGames: completedCount + upcomingCount,
+          wins: lbCollege.wins ?? 0,
+          losses: lbCollege.losses ?? 0,
+          ties: lbCollege.ties ?? 0,
+          forfeits: lbCollege.forfeits ?? 0,
+          completed: completedCount,
+          upcoming: upcomingCount,
+          rank: lbCollege.rank,
+          points: lbCollege.points ?? 0,
+        };
+      }
+    }
+
+    // College+sport or sport-only: compute from matches
+    if (hasCollege) {
+      const collegeAbbr = toCollegeAbbreviation[collegeFilter];
+      let wins = 0;
+      let losses = 0;
+      let ties = 0;
+      let forfeits = 0;
+      const isDraw = (m: Match) =>
+        m.winner === "Draw" ||
+        m.winner === "Tie" ||
+        (!m.forfeit &&
+          Number(m.home_college_score ?? 0) === Number(m.away_college_score ?? 0));
+      completed.forEach((m) => {
+        if (m.home_college !== collegeAbbr && m.away_college !== collegeAbbr) return;
+        const won = m.winner === collegeAbbr;
+        const drew = isDraw(m);
+        const lost =
+          m.winner !== null &&
+          m.winner !== "Tie" &&
+          m.winner !== "Draw" &&
+          m.winner !== "Default" &&
+          m.winner !== collegeAbbr;
+        if (won) wins++;
+        if (drew) ties++;
+        if (lost) {
+          losses++;
+          if (m.forfeit) forfeits++;
+        }
+      });
+      const lbCollege = leaderboardData.find(
+        (c) => c.name === collegeFilter || c.id === collegeAbbr
+      );
+      return {
+        mode: "college" as const,
+        collegeName: collegeFilter,
+        sportName: hasSport ? sportFilter : undefined,
+        totalGames: base.length,
+        wins,
+        losses,
+        ties,
+        forfeits,
+        completed: completed.length,
+        upcoming: upcoming.length,
+        rank: lbCollege?.rank,
+        points: lbCollege?.points ?? 0,
+      };
+    }
+
+    // Sport only
+    const forfeitCount = base.filter((m) => m.forfeit).length;
+    const tieCount = completed.filter(
+      (m) =>
+        m.winner === "Draw" ||
+        m.winner === "Tie" ||
+        (!m.forfeit &&
+          Number(m.home_college_score ?? 0) === Number(m.away_college_score ?? 0))
+    ).length;
+    return {
+      mode: "sport" as const,
+      sportName: sportFilter,
+      totalGames: base.length,
+      completed: completed.length,
+      upcoming: upcoming.length,
+      ties: tieCount,
+      forfeits: forfeitCount,
+    };
+  }, [allMatches, collegeFilter, sportFilter, leaderboardData]);
+
   // ── handlers ──────────────────────────────────────────────────────────────────
   const handleCollegeClick = (college: string) =>
     setCollegeFilter((prev) => (prev === college ? "" : college));
 
   const handleSportClick = (sport: string) =>
     setSportFilter((prev) => (prev === sport ? "" : sport));
+
+  const handleSportChange = useCallback(
+    (newSport: string) => {
+      setSportFilter(newSport);
+      if (newSport && allMatches.length > 0) {
+        const sportMatches = allMatches.filter((m) => m.sport === newSport);
+        if (sportMatches.length > 0) {
+          const dates = sportMatches
+            .map((m) => parseTimestamp(m.timestamp))
+            .filter((d) => !isNaN(d.getTime()));
+          if (dates.length > 0) {
+            dates.sort((a, b) => a.getTime() - b.getTime());
+            const firstDate = new Date(dates[0]);
+            firstDate.setHours(0, 0, 0, 0);
+            setSelectedDate(firstDate);
+          }
+        }
+      }
+    },
+    [allMatches]
+  );
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
@@ -405,10 +590,19 @@ const GamesPage: React.FC = () => {
           <GamesFilterBar
             sportFilter={sportFilter}
             collegeFilter={collegeFilter}
-            onSportChange={setSportFilter}
+            onSportChange={handleSportChange}
             onCollegeChange={setCollegeFilter}
           />
         </div>
+
+        {/* ── Filter stats card (slides down when college or sport selected) ────── */}
+        {filterStats && (
+          <FilterStatsCard
+            stats={filterStats}
+            isLoading={seasonLoading}
+            seasonYear={selectedSeason}
+          />
+        )}
 
         {/* ── Tab bar ──────────────────────────────────────────────────── */}
         <div className="flex gap-1 mb-5 bg-gray-200 dark:bg-gray-950 rounded-xl p-1">
@@ -473,6 +667,125 @@ const GamesPage: React.FC = () => {
     </div>
   );
 };
+
+// ─── filter stats card (slide-down) ───────────────────────────────────────────
+type FilterStats =
+  | {
+      mode: "college";
+      collegeName: string;
+      sportName?: string;
+      totalGames: number;
+      wins: number;
+      losses: number;
+      ties: number;
+      forfeits: number;
+      completed: number;
+      upcoming: number;
+      rank?: number;
+      points?: number;
+    }
+  | {
+      mode: "sport";
+      sportName: string;
+      totalGames: number;
+      completed: number;
+      upcoming: number;
+      ties: number;
+      forfeits: number;
+    };
+
+const FilterStatsCard: React.FC<{
+  stats: FilterStats;
+  isLoading: boolean;
+  seasonYear?: string;
+}> = ({ stats, isLoading, seasonYear }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 10);
+    return () => clearTimeout(id);
+  }, []);
+
+  if (isLoading) return null;
+
+  const hasRankAndPoints =
+    stats.mode === "college" &&
+    stats.rank != null &&
+    stats.points != null;
+  const headerTitle =
+    stats.mode === "college"
+      ? stats.sportName
+        ? `${stats.collegeName} · ${stats.sportName}`
+        : stats.collegeName
+      : stats.sportName;
+
+  const headerText = hasRankAndPoints
+    ? `${seasonYear ? `${seasonYear}: ` : ""}${headerTitle} in ${getPlace(stats.rank)} place with ${stats.points} points`
+    : `${headerTitle} — Season Stats`;
+
+  return (
+    <div
+      className="overflow-hidden transition-all duration-300 ease-out"
+      style={{
+        maxHeight: mounted ? 400 : 0,
+        opacity: mounted ? 1 : 0,
+      }}
+    >
+      <div className="mb-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden bg-gray-50 dark:bg-gray-950">
+        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+          <MdSportsScore size={16} className="text-blue-500" />
+          <h3 className="text-sm font-bold text-gray-800 dark:text-white">
+            {headerText}
+          </h3>
+        </div>
+        <div className="flex flex-wrap gap-4 p-4">
+          <StatPill label="Total games" value={stats.totalGames} />
+          <StatPill label="Completed" value={stats.completed} />
+          {stats.mode === "college" && (
+            <>
+              <StatPill label="Wins" value={stats.wins} variant="win" />
+              <StatPill label="Ties" value={stats.ties} variant="tie" />
+              <StatPill label="Losses" value={stats.losses} variant="loss" />
+              <StatPill label="Forfeits" value={stats.forfeits} variant="forfeit" />
+            </>
+          )}
+          {stats.mode === "sport" && (
+            <>
+              <StatPill label="Ties" value={stats.ties} variant="tie" />
+              <StatPill label="Upcoming" value={stats.upcoming} />
+              <StatPill label="Forfeits" value={stats.forfeits} variant="forfeit" />
+            </>
+          )}
+          {stats.mode === "college" && (
+            <StatPill label="Upcoming" value={stats.upcoming} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatPill: React.FC<{
+  label: string;
+  value: number;
+  variant?: "win" | "loss" | "tie" | "forfeit";
+}> = ({ label, value, variant }) => (
+  <div
+    className={`flex flex-col items-center justify-center min-w-[4rem] px-3 py-1.5 rounded-lg text-xs font-semibold ${
+      variant === "win"
+        ? "bg-green-400/30 dark:bg-green-600/30 text-green-800 dark:text-green-200"
+        : variant === "loss"
+        ? "bg-red-400/30 dark:bg-red-600/30 text-red-800 dark:text-red-200"
+        : variant === "tie"
+        ? "bg-yellow-300/40 dark:bg-yellow-600/30 text-yellow-800 dark:text-yellow-200"
+        : variant === "forfeit"
+        ? "bg-slate-400/30 dark:bg-slate-600/30 text-slate-800 dark:text-slate-200"
+        : "bg-gray-200/50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200"
+    }`}
+  >
+    <span className="text-base font-bold">{value}</span>
+    <span className="text-[10px] uppercase tracking-wide opacity-90">{label}</span>
+  </div>
+);
 
 // ─── skeleton loader ──────────────────────────────────────────────────────────
 const SkeletonCard: React.FC = () => (

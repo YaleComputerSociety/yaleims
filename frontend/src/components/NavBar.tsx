@@ -19,9 +19,8 @@ import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineLeaderboard } from "react-icons/md";
 import { FaQuestionCircle } from "react-icons/fa";
 import { getVersionedImage } from "@/utils/versionedImages";
-import { MdOutlineSportsScore } from "react-icons/md";
+import { MdOutlineSportsScore, MdSports } from "react-icons/md";
 import { TbBrackets } from "react-icons/tb";
-import { IoGameController } from "react-icons/io5";
 
 const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
   return (
@@ -68,10 +67,8 @@ const NavBar: React.FC = () => {
 
   const links = [
     { href: "/hub", text: "Hub", icon: <LuLayoutDashboard /> },
-    { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard />},
-    { href: "/games", text: "Games", icon: <IoGameController /> },
-    { href: "/scores", text: "Scores", icon: <MdOutlineScoreboard /> },
-    { href: "/schedules", text: "Schedules", icon: <GrSchedules /> },
+    { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard /> },
+    { href: "/games", text: "Games", icon: <MdSports /> },
     { href: "/brackets", text: "Brackets", icon: <TbBrackets /> },
     { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
     { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
@@ -202,6 +199,7 @@ const NavBar: React.FC = () => {
               href={link.href}
               onClick={turnMenuOff}
               className="hover:text-slate-300 dark:hover:text-blue-300 flex justify-center items-center font-medium transition duration-200"
+              target={link.text === "Feedback" ? "_blank" : ""}
             >
               {link.text}
             </Link>

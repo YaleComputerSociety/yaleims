@@ -102,14 +102,12 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
       toast.error("Error fetching match id");
       return;
     }
-
+    
     try {
-      const userToken = sessionStorage.getItem("userToken");
       const response = await fetch("/api/functions/undoScoreMatch", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${userToken}`,
         },
         body: JSON.stringify({
           matchId: String(matchId).trim(),
@@ -128,6 +126,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
       const errorMessage =
         "Undo score failed: " + (error as Error)?.message ||
         "An unknown error occurred. Please try again.";
+        // console.log(errorMessage)
       toast.error(errorMessage);
     } finally {
       setUndoLoading(false);

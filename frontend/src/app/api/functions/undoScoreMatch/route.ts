@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       }),
     }
   );
-
+  console.log("Response from undo score match API:", response);
   if (!response.ok) {
     return new Response(await response.text(), { status: response.status });
   }

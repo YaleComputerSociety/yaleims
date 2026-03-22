@@ -2,7 +2,7 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE = "data//2025-2026/2026_W-Hoops_Schedule_formatted.csv";
+const CSV_FILE = "data//2025-2026/2026_Volleyball_Schedule_formatted.csv";
 const SEASON_ID = "2025-2026"; // season we are inserting into
 
 /** ✱ 2. FIREBASE SETUP ✱ */

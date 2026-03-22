@@ -9,6 +9,7 @@ import { Match } from "@src/types/components";
 import { toCollegeName, emojiMap, sportsMap } from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";
 import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
+import { ReportScoreButton } from "@src/components/Games/ReportScoreModal";
 
 const LIVE_WINDOW_MS = 2.5 * 60 * 60 * 1000; // 2.5 hours
 
@@ -429,6 +430,7 @@ const GameCard: React.FC<GameCardProps> = ({
             )}
 
             <EditMatchButton match={match} />
+            <ReportScoreButton match={match} />
 
             {/* Expand for predictions */}
             <button

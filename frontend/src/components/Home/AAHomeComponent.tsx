@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "../LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
-import { currentYear, toCollegeAbbreviation } from "@src/utils/helpers";
+import { currentYear } from "@src/utils/helpers";
 import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
@@ -20,7 +20,6 @@ const AAHomeComponent: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
   const [sortedColleges, setSortedColleges] = useState<any[]>([]);
-  const { setFilter } = useContext(FiltersContext);
   const { filter } = useContext(FiltersContext);
   const { currentSeason } = useSeason();
   const [selected, setSelected] = useState<string>(
@@ -58,13 +57,7 @@ const AAHomeComponent: React.FC = () => {
   }, [selected]);
 
   const handleCollegeClick = (collegeName: string) => {
-    setFilter({
-      college: toCollegeAbbreviation[collegeName],
-      sport: "",
-      date: "",
-      selected: "",
-    });
-    router.push("/scores");
+    router.push(`/games?college=${encodeURIComponent(collegeName)}`);
   };
 
   const handleSelectedChange = (filter: string) => {
