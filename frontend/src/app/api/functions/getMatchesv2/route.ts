@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const forwardParams = new URLSearchParams(searchParams);

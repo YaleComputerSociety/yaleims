@@ -91,7 +91,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         expiresIn: "7d",
       });
       
-      const redirectResponse = NextResponse.redirect(`${BASE_URL}`);
+      const redirectTo = from.startsWith("http") ? from : `${BASE_URL.replace(/\/$/, "")}${from.startsWith("/") ? from : "/" + from}`;
+      const redirectResponse = NextResponse.redirect(redirectTo);
       redirectResponse.cookies.set("token", token, {
         secure: true,
         path: "/",
@@ -105,7 +106,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${BASE_URL}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(from)}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
     
     if (BASE_URL === "http://localhost:3000") {

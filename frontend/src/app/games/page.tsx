@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeading from "@src/components/PageHeading";
+import Link from "next/link";
 import { Match } from "@src/types/components";
 import { useSeason } from "@src/context/SeasonContext";
 import { useUser } from "@src/context/UserContext";
@@ -505,11 +506,32 @@ const GamesPage: React.FC = () => {
     ? "Tomorrow"
     : selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
+  const hasUpcomingGames = useMemo(
+    () => allMatches.some((m) => getMatchStatus(m) === "upcoming" || getMatchStatus(m) === "live"),
+    [allMatches]
+  );
+  const showSignInPrompt = !user && isCurrentSeason && hasUpcomingGames;
+
   return (
     <div className="min-h-screen">
       <PageHeading heading="Games" />
 
       <div className="mt-20 md:mt-16 px-3 sm:px-6 max-w-6xl mx-auto pb-10">
+
+        {/* ── Sign in prompt for unauthenticated users ────────────────────── */}
+        {showSignInPrompt && (
+          <div className="mb-4 rounded-xl border border-blue-500/30 dark:border-blue-400/30 bg-blue-500/10 dark:bg-blue-500/5 px-4 py-3 flex items-center justify-between gap-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Sign in to sign up for games, report score issues, and place predictions.
+            </p>
+            <Link
+              href="/api/auth/login?from=%2Fgames"
+              className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            >
+              Sign in
+            </Link>
+          </div>
+        )}
 
         {/* ── Season selector + DateScroller ─────────────────────────────── */}
         <div className="mb-5 space-y-3">

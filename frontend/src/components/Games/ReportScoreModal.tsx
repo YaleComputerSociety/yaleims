@@ -41,10 +41,19 @@ export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({
   const isScored = match.winner !== null;
   if (!isScored) return null;
 
+  const handleClick = () => {
+    if (!user) {
+      const from = encodeURIComponent("/games");
+      window.location.href = `/api/auth/login?from=${from}`;
+      return;
+    }
+    setModalOpen(true);
+  };
+
   return (
     <>
       <button
-        onClick={() => setModalOpen(true)}
+        onClick={handleClick}
         title="Report incorrect score"
         className="ml-1 p-1 rounded bg-gray-100 dark:bg-gray-800 text-yellow-500 hover:text-yellow-600 text-[10px] border border-gray-200 dark:border-gray-700 cursor-pointer"
       >

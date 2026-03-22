@@ -408,12 +408,21 @@ const GameCard: React.FC<GameCardProps> = ({
             <ReportScoreButton match={match} seasonId={seasonId} />
 
             {status === "upcoming" && (
-              <Link
-                href="/odds"
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Predict here
-              </Link>
+              user ? (
+                <Link
+                  href="/odds"
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Predict here
+                </Link>
+              ) : (
+                <Link
+                  href="/api/auth/login?from=%2Fodds"
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Predict here
+                </Link>
+              )
             )}
           </div>
         </div>
