@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { FaCircle, FaCalendar, FaMapMarkerAlt } from "react-icons/fa";
-import { SlArrowDown, SlArrowRight } from "react-icons/sl";
+import { FaCircle, FaMapMarkerAlt } from "react-icons/fa";
 import { Match } from "@src/types/components";
 import { toCollegeName, emojiMap, sportsMap } from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";
@@ -48,7 +47,6 @@ const GameCard: React.FC<GameCardProps> = ({
   onStatusChange,
   seasonId,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [signUpLoading, setSignUpLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -132,10 +130,6 @@ const GameCard: React.FC<GameCardProps> = ({
     winner,
     forfeit,
     type,
-    home_volume,
-    away_volume,
-    draw_volume,
-    default_volume,
   } = match;
 
   const homeName = toCollegeName[home_college] ?? home_college ?? "TBD";
@@ -171,25 +165,6 @@ const GameCard: React.FC<GameCardProps> = ({
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
-
-  // Prediction data
-  const totalPredicted =
-    (home_volume ?? 0) +
-    (away_volume ?? 0) +
-    (draw_volume ?? 0) +
-    (default_volume ?? 0);
-  const hasPredictionData = totalPredicted > 0;
-
-  const correctPredicted =
-    (home_college_score > away_college_score ? (home_volume ?? 0) : 0) +
-    (away_college_score > home_college_score ? (away_volume ?? 0) : 0) +
-    (winner === "Tie" ? (draw_volume ?? 0) : 0) +
-    (winner === "Default" ? (default_volume ?? 0) : 0);
-
-  const correctPct =
-    totalPredicted > 0
-      ? ((correctPredicted / totalPredicted) * 100).toFixed(1)
-      : "0.0";
 
   const typeLabel =
     type === "Regular" ? "Regular Season" : `${type} Round`;
@@ -430,57 +405,19 @@ const GameCard: React.FC<GameCardProps> = ({
             )}
 
             <EditMatchButton match={match} />
-            <ReportScoreButton match={match} />
+            <ReportScoreButton match={match} seasonId={seasonId} />
 
-            {/* Expand for predictions */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              aria-label="Toggle predictions"
-            >
-              {isOpen ? (
-                <SlArrowDown className="text-xs" />
-              ) : (
-                <SlArrowRight className="text-xs" />
-              )}
-            </button>
+            {status === "upcoming" && (
+              <Link
+                href="/odds"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Predict here
+              </Link>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Expandable prediction bar */}
-      <div
-        className={`transition-all duration-300 overflow-hidden ${
-          isOpen && hasPredictionData ? "max-h-24" : "max-h-0"
-        }`}
-      >
-        <div className="px-4 pb-3">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">
-            Prediction Results
-          </p>
-          <div className="flex rounded-full overflow-hidden h-2">
-            <div
-              className="h-full bg-green-500"
-              style={{ width: `${correctPct}%` }}
-            />
-            <div
-              className="h-full bg-gray-200 dark:bg-gray-700 flex-1"
-            />
-          </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            {correctPct}% correct · {totalPredicted} total YCoins wagered
-          </p>
-        </div>
-      </div>
-
-      {isOpen && !hasPredictionData && (
-        <div className="px-4 pb-3 text-xs italic text-gray-400 dark:text-gray-500">
-          No prediction data.{" "}
-          <Link href="/odds" className="text-blue-400 hover:underline">
-            Predict here.
-          </Link>
-        </div>
-      )}
     </div>
   );
 };

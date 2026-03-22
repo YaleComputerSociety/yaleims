@@ -8,6 +8,7 @@ import HeroStats from "@src/components/Dashboard/User/HeroStats";
 import QuickActionCard from "@src/components/Dashboard/QuickActionCard";
 import SectionCard from "@src/components/Dashboard/SectionCard";
 import PopupActionCard from "@src/components/Dashboard/PopupActionCard";
+import ScoreReportsAdmin from "@src/components/Dashboard/Admin/ScoreReportsAdmin";
 import ViewCaptainsCollegeRep from "@src/components/Dashboard/User/ViewCaptainsCollegeRep";
 import UserMatches from "@src/components/Dashboard/User/UserMatches";
 import AssignCaptain from "@src/components/Dashboard/College_Rep/AssignCaptain";
@@ -17,10 +18,12 @@ import ViewTeamSignups from "@src/components/Dashboard/Captain/ViewTeamSignups";
 
 type HubAction = {
   title: string;
-  link: string;
+  link?: string;
   icon: string;
   description: string;
   gradient: string;
+  isPopup?: boolean;
+  CustomComponent?: React.ComponentType;
 };
 
 const Dashboard: React.FC = () => {
@@ -101,6 +104,14 @@ const Dashboard: React.FC = () => {
       description: "Edit user permissions",
       gradient: "from-teal-500/10 to-cyan-500/10",
     },
+    {
+      title: "Score Reports",
+      icon: "🚩",
+      description: "View and resolve score dispute reports",
+      gradient: "from-amber-500/10 to-yellow-500/10",
+      isPopup: true,
+      CustomComponent: ScoreReportsAdmin,
+    },
   ];
 
   const isAdmin = user?.mRoles.includes("admin");
@@ -151,16 +162,27 @@ const Dashboard: React.FC = () => {
               <span className="inline-block w-2 h-2 rounded-full bg-amber-400" /> Admin Tools
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {adminActions.map((action) => (
-                <QuickActionCard
-                  key={action.title}
-                  title={action.title}
-                  link={action.link}
-                  icon={action.icon}
-                  description={action.description}
-                  gradient={action.gradient}
-                />
-              ))}
+              {adminActions.map((action) =>
+                action.isPopup && action.CustomComponent ? (
+                  <PopupActionCard
+                    key={action.title}
+                    title={action.title}
+                    icon={action.icon}
+                    description={action.description}
+                    gradient={action.gradient}
+                    CustomComponent={action.CustomComponent}
+                  />
+                ) : (
+                  <QuickActionCard
+                    key={action.title}
+                    title={action.title}
+                    link={action.link!}
+                    icon={action.icon}
+                    description={action.description}
+                    gradient={action.gradient}
+                  />
+                )
+              )}
             </div>
           </section>
         )}
