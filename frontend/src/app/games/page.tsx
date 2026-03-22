@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeading from "@src/components/PageHeading";
 import { Match } from "@src/types/components";
@@ -906,4 +906,18 @@ const EmptyState: React.FC<{
   );
 };
 
-export default GamesPage;
+function GamesPageFallback() {
+  return (
+    <div className="min-h-screen pt-20 px-6 flex items-center justify-center">
+      <div className="animate-pulse text-gray-400">Loading games…</div>
+    </div>
+  );
+}
+
+export default function GamesPageWithSuspense() {
+  return (
+    <Suspense fallback={<GamesPageFallback />}>
+      <GamesPage />
+    </Suspense>
+  );
+}
