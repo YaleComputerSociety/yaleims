@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
               <QuickActionCard
                 key={action.title}
                 title={action.title}
-                link={action.link}
+                link={action.link ?? "/"}
                 icon={action.icon}
                 description={action.description}
                 gradient={action.gradient}
@@ -176,7 +176,7 @@ const Dashboard: React.FC = () => {
                   <QuickActionCard
                     key={action.title}
                     title={action.title}
-                    link={action.link!}
+                    link={action.link ?? "/"}
                     icon={action.icon}
                     description={action.description}
                     gradient={action.gradient}
