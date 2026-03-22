@@ -1,11 +1,6 @@
 import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
-    }
     const { searchParams } = new URL(req.url);
     const forwardParams = new URLSearchParams(searchParams);
     if (!forwardParams.has("seasonId")) {
