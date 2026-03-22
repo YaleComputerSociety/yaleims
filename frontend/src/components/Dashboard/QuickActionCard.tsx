@@ -3,7 +3,7 @@ import Link from "next/link";
 
 interface QuickActionCardProps {
   title: string;
-  link: string;
+  link?: string;
   icon: string;
   description?: string;
   gradient?: string;
@@ -11,7 +11,7 @@ interface QuickActionCardProps {
 
 export default function QuickActionCard({
   title,
-  link,
+  link = "/",
   icon,
   description,
   gradient = "from-indigo-500/10 to-purple-500/10",
