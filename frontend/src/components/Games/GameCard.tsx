@@ -10,7 +10,7 @@ import { getCollegeFlag } from "@src/utils/versionedImages";
 import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
 import { ReportScoreButton } from "@src/components/Games/ReportScoreModal";
 
-const LIVE_WINDOW_MS = 2.5 * 60 * 60 * 1000; // 2.5 hours
+const LIVE_WINDOW_MS = 1 * 60 * 60 * 1000; // 1 hour
 
 export type MatchStatus = "live" | "upcoming" | "completed";
 
