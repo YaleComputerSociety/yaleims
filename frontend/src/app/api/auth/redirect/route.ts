@@ -3,7 +3,7 @@ import { parseString } from "xml2js";
 import jwt from "jsonwebtoken";
 
 export async function GET(request: Request): Promise<NextResponse> {
-  const BASE_URL = "https://yaleims.com";
+  const BASE_URL = process.env.BASE_URL;
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
   }
@@ -22,8 +22,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (ticket) {
     const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${from}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
-    const ticketQuery = `https://secure.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
-    
+
+    let ticketQuery;
+    if (BASE_URL === "http://localhost:3000") {
+      ticketQuery = `https://secure-tst.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
+    } else {
+      ticketQuery = `https://secure.its.yale.edu/cas/serviceValidate?ticket=${ticket}&service=${encodedServiceUrl}`;
+    }
     const response = await fetch(ticketQuery);
     const xml = await response.text();
 
@@ -85,16 +90,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       }, JWT_SECRET, {
         expiresIn: "7d",
       });
-
-      const redirectPath = from && from.includes("/profile") ? "/profile" : "/";
-
-      const redirectResponse = NextResponse.redirect(`http://localhost:3000/`);
+      
+      const redirectTo = from.startsWith("http") ? from : `${BASE_URL.replace(/\/$/, "")}${from.startsWith("/") ? from : "/" + from}`;
+      const redirectResponse = NextResponse.redirect(redirectTo);
       redirectResponse.cookies.set("token", token, {
         secure: true,
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "none"
       });
 
       return redirectResponse;
@@ -102,8 +106,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `http://localhost:3000/api/auth/redirect?from=${from}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(from)}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
+    
+    if (BASE_URL === "http://localhost:3000") {
+      return NextResponse.redirect(
+        `http://secure-tst.its.yale.edu/cas/login?service=${encodedServiceUrl}`
+      );
+    }
+
     return NextResponse.redirect(
       `https://secure.its.yale.edu/cas/login?service=${encodedServiceUrl}`
     );

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import Image from "next/image";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 export default function StatsBox() {    
     const { user } = useUser();
@@ -29,7 +30,7 @@ export default function StatsBox() {
     return (
         <div className="flex md:flex-row gap-x-4 items-center">
             <Image
-                src={`/college_flags/${user.college}.png`}
+                src={getCollegeFlag(user.college)}
                 alt={user.college}
                 width={100}
                 height={100}

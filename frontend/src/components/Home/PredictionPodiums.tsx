@@ -1,5 +1,6 @@
 import React from "react";
 import PredictionPodium from "./PredictionPodium";
+import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
 
 type PredictionPodiumsProps = {
   users: {
@@ -21,9 +22,9 @@ const PredictionPodiums: React.FC<PredictionPodiumsProps> = ({ users }) => {
 
   // Overlay and position configurations
   const overlaySources = [
-    "/college_flags/bronze_overlay.png", // 3rd place
-    "/college_flags/gold_overlay.png", // 1st place
-    "/college_flags/silver_overlay.png", // 2nd place
+    getVersionedImage("/college_flags/bronze_overlay.png"), // 3rd place
+    getVersionedImage("/college_flags/gold_overlay.png"), // 1st place
+    getVersionedImage("/college_flags/silver_overlay.png"), // 2nd place
   ];
 
   const positions = [
@@ -63,7 +64,7 @@ const PredictionPodiums: React.FC<PredictionPodiumsProps> = ({ users }) => {
           ycoins={user.points}
           correctPredictions={user.correctPredictions}
           college={user.college}
-          imgSrc={`/college_flags/${user.college}.png`}
+          imgSrc={getCollegeFlag(user.college)}
           overlaySrc={overlaySources[index]}
           posHeight={positions[index].posHeight}
           imgsConfig={positions[index].imgsConfig}

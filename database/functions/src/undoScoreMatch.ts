@@ -24,8 +24,8 @@ interface MatchData {
   predictions: Record<string, Prediction>;
 }
 
-const canUndoScoreMatch = (role: string): boolean => {
-  return role === "admin" || role === "dev";
+const canUndoScoreMatch = (mRoles: string[]) => {
+  return mRoles.includes("admin") || mRoles.includes("dev");
 };
 
 const getPointsForWinBySportName = async (
@@ -125,7 +125,7 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid token" });
     }
-    if (!isValidDecodedToken(decoded) || !canUndoScoreMatch(decoded.role)) {
+    if (!isValidDecodedToken(decoded) || !canUndoScoreMatch(decoded.mRoles)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 

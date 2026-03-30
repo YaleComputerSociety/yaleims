@@ -77,8 +77,8 @@ export default function ViewCaptainsCollegeRep() {
     })) ?? [];
 
   return (
-    <div className="rounded-2xl shadow-md dark:border-white/10 dark:bg-white/5 bg-white/90 border-white/95 p-2 md:p-4 overflow-y-auto">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="overflow-y-auto">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex gap-2">
           <button
             onClick={() => setView("captains")}
@@ -98,33 +98,33 @@ export default function ViewCaptainsCollegeRep() {
       </div>
 
       {error && <div className="text-red-300 text-xs md:text-sm">{error}</div>}
-      <div className="overflow-y-auto h-20">
+      <div className="overflow-y-auto max-h-32">
         {!data ? (
-          <div className="dark:text-gray-300 animate-pulse text-xs md:text-sm">Loading…</div>
+          <div className="text-gray-400 animate-pulse text-xs md:text-sm">Loading…</div>
         ) : view === "captains" ? (
           captainRows.length === 0 ? (
-            <div className="dark:text-gray-300 text-xs md:text-sm">No captains found.</div>
+            <div className="text-gray-400 text-xs md:text-sm">No captains found.</div>
           ) : (
-            <ul className="divide-y divide-white/10 rounded-xl text-xs md:text-sm dark:bg-white/5 p-2">
+            <ul className="divide-y divide-white/10 rounded-xl text-xs md:text-sm bg-white/5 p-2">
               {captainRows.map((r, i) => (
                 <li key={`${r.sport}-${i}`} className="flex items-center justify-between py-2">
-                  <span className="dark:text-gray-200">{r.sport}</span>
-                  <span className="font-medium dark:text-white">{r.name}</span>
+                  <span className="text-gray-300">{r.sport}</span>
+                  <span className="font-medium text-white">{r.name}</span>
                 </li>
               ))}
             </ul>
           )
         ) : 
         repRows.length === 0 ? (
-          <div className="dark:text-gray-300 text-xs md:text-sm">No college rep found.</div>
+          <div className="text-gray-400 text-xs md:text-sm">No college rep found.</div>
         ) : (
-          <ul className="divide-y divide-white/10 rounded-xl text-xs md:text-sm dark:bg-white/5 p-2">
+          <ul className="divide-y divide-white/10 rounded-xl text-xs md:text-sm bg-white/5 p-2">
             {repRows.map((r, i) => (
               <li key={`${r.name}-${i}`} className="flex items-center justify-between py-2">
-                <span className="font-medium dark:text-white">{r.name}</span>
+                <span className="font-medium text-white">{r.name}</span>
                 <a
                   href={`mailto:${r.email}`}
-                  className="text-xs dark:text-gray-200 underline underline-offset-4"
+                  className="text-xs text-gray-300 underline underline-offset-4 hover:text-white transition"
                 >
                   {r.email}
                 </a>

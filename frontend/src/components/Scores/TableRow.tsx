@@ -6,6 +6,7 @@ import { SlArrowDown } from "react-icons/sl";
 import { useState } from "react";
 import Link from "next/link";
 import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 const TableRow: React.FC<TableRowProps> = ({
   match,
@@ -78,7 +79,7 @@ const TableRow: React.FC<TableRowProps> = ({
       onClick={() => handleCollegeClick(college)}
     >
       <Image
-        src={`/college_flags/${toCollegeName[college]}.png`}
+        src={getCollegeFlag(toCollegeName[college])}
         alt={college}
         width={20}
         height={20}

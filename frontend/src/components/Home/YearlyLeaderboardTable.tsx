@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaCaretDown, FaCaretUp } from "react-icons/fa";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 type College = {
   id: string;
@@ -115,10 +116,7 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
               <td className=" md:w-[120px] w-[30px] text-xs border border-gray-300 dark:border-gray-600">
                 <div className="ml-1 xs:ml-2 flex items-center whitespace-normal break-words">
                   <Image
-                    src={`/college_flags/${college.name.replace(
-                      /\s+/g,
-                      " "
-                    )}.png`}
+                    src={getCollegeFlag(college.name.replace(/\s+/g, " "))}
                     alt={college.name}
                     width={20}
                     height={20}

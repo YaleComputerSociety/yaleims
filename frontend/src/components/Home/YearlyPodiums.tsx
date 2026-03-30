@@ -1,5 +1,6 @@
 import React from "react";
 import CPodium from "./YearlyPodium";
+import { getVersionedImage, getCollegeFlag } from "@/utils/versionedImages";
 
 interface YearlyPodiumsProps {
   colleges: any;
@@ -11,9 +12,9 @@ export const YearlyPodiums: React.FC<YearlyPodiumsProps> = ({
   onCollegeClick,
 }) => {
   const overlaySources = [
-    "/college_flags/bronze_overlay.png", // 3rd place
-    "/college_flags/gold_overlay.png", // 1st place
-    "/college_flags/silver_overlay.png", // 2nd place
+    getVersionedImage("/college_flags/bronze_overlay.png"), // 3rd place
+    getVersionedImage("/college_flags/gold_overlay.png"), // 1st place
+    getVersionedImage("/college_flags/silver_overlay.png"), // 2nd place
   ];
 
   const positions = [
@@ -46,7 +47,7 @@ export const YearlyPodiums: React.FC<YearlyPodiumsProps> = ({
         <CPodium
           key={college.name}
           posHeight={positions[index].posHeight}
-          imgSrc={`/college_flags/${college.name}.png`}
+          imgSrc={getCollegeFlag(college.name)}
           overlaySrc={overlaySources[index]}
           imgsConfig="mg:h-[170px] h-[150px]"
           overlayHeight={positions[index].overlayHeight}

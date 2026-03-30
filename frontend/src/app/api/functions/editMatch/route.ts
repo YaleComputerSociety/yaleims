@@ -1,8 +1,6 @@
 import { getYearFromTimestamp } from "@src/utils/helpers";
 import { db } from "../../../../../lib/firebase";
 import { doc, Timestamp, updateDoc } from "firebase/firestore";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
 import { userTokenHasRoles } from "@src/utils/auth-helpers";
 
 export async function PATCH(req: Request) {

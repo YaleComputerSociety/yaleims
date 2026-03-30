@@ -19,6 +19,7 @@ import { getSeasons } from "./getSeasons.js";
 import { getSeasonPoints } from "./getSeasonPoints.js";
 import { getBets } from "./getBets.js";
 import { getMatchesPaginated } from "./getMatchesPaginated.js";
+import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
 import { createBracket } from "./createBracket.js";
 import { deleteBracket } from "./deleteBracket.js";
 import { scoreMatchTesting } from "./scoreMatchTesting.js";
@@ -58,4 +59,5 @@ export {
   getUsersInCollege,
   setMVP,
   addSchedule,
+  getMatchesPaginatedv2,
 };

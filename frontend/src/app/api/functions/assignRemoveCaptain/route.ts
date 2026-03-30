@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     });
   }
   const response = await fetch(
-    "https://assignremovecaptainv2-65477nrg6a-uc.a.run.app",
+    "https://assignremovecaptain-65477nrg6a-uc.a.run.app",
     {
       method: "POST",
       headers: {

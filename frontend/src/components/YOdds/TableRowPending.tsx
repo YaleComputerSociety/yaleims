@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toCollegeName } from "@src/utils/helpers";
 import { resolve } from "path";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 interface TableRowPendingProps {
   bet: {
@@ -99,7 +100,7 @@ const TableRowPending: FC<TableRowPendingProps> = ({
           }`}
         >
           <Image
-            src={`/college_flags/${toCollegeName[college]}.png`}
+            src={getCollegeFlag(toCollegeName[college])}
             alt={college}
             width={20}
             height={20}

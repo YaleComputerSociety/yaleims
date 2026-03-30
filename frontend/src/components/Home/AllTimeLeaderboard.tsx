@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { allTimeStandings } from "@src/utils/helpers";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 const AllTimeLeaderboard: React.FC = () => {
   const [isSmallScreen, setIsSmallScreen] = useState(false);
@@ -48,7 +49,7 @@ const AllTimeLeaderboard: React.FC = () => {
               <td className="text-xs border border-gray-300 dark:border-gray-600">
                 <div className="ml-2 flex xs:ml-5 items-center whitespace-normal break-words">
                   <Image
-                    src={`/college_flags/${college[0]}.png`}
+                    src={getCollegeFlag(String(college[0]))}
                     alt=""
                     width={24}
                     height={24}

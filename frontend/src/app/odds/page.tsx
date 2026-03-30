@@ -23,6 +23,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import { toast } from "react-toastify";
 import { seasonSports } from "@src/utils/helpers";
 import PredictionLeaderboard from "@src/components/Home/PredictionLeaderboard";
+import { getVersionedImage } from "@/utils/versionedImages";
 
 const YoddsPage: React.FC = () => {
   // Pagination state
@@ -160,6 +161,7 @@ const YoddsPage: React.FC = () => {
 
         const data = await response.json();
         setFilteredMatches(data.matches);
+        console.log(data.matches)
         
         if (data.firstVisible) setFirstVisible(data.firstVisible);
         if (data.lastVisible) setLastVisible(data.lastVisible);
@@ -229,9 +231,10 @@ const YoddsPage: React.FC = () => {
         setPendingLoading(true);
         const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason?.year || '2025-2026'}&history=true&pending=false`)
         if (!response.ok)
-          throw new Error(`Error fetching pending bets: ${response.statusText}`);
+          throw new Error(`Error fetching past bets: ${response.statusText}`);
         const data = await response.json();
-        const betsData = Object.values(data).flat() as BetParlay[];
+        // Reverse the keys so most recent season comes first, then flatten
+        const betsData = Object.keys(data).reverse().flatMap(key => data[key]) as BetParlay[];
         setPastBets(betsData);
       } catch (error) {
         console.error("Failed to fetch past bets:", error);
@@ -465,7 +468,7 @@ const YoddsPage: React.FC = () => {
                 </p>
               )}
               <Image
-                src="/YCoin.png"
+                src={getVersionedImage("/YCoin.png")}
                 alt="YCoin"
                 height={30}
                 width={30}

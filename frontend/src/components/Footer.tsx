@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getVersionedImage } from "@/utils/versionedImages";
 
 export default function Footer() {
   return (
@@ -9,7 +10,7 @@ export default function Footer() {
           {/* Logo Section */}
           <div className="basis-1/3 text-white">
             <Link href="/">
-              <Image src={"LOGO.png"} width={150} height={150} alt="YALE IMS" />
+              <Image src={getVersionedImage("LOGO.png")} width={150} height={150} alt="YALE IMS" />
             </Link>
             <h2 className="text-xs mt-3">
               a{" "}

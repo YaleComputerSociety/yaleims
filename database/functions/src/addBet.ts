@@ -4,14 +4,61 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import { isValidDecodedToken } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import { oddsCalculator } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
+function calculateOddsForMatch(
+  matchData: FirebaseFirestore.DocumentData,
+  homeStats: FirebaseFirestore.DocumentData | undefined,
+  awayStats: FirebaseFirestore.DocumentData | undefined
+): { home_college_odds: number; away_college_odds: number; draw_odds: number; default_odds: number } {
+  const vol = {
+    team1: matchData.home_volume ?? 0,
+    team2: matchData.away_volume ?? 0,
+    draw: matchData.draw_volume ?? 0,
+    forfeit: matchData.default_volume ?? 0,
+  };
+  const odds = oddsCalculator(
+    (homeStats?.wins || 0) / (homeStats?.games || 1),
+    (awayStats?.wins || 0) / (awayStats?.games || 1),
+    vol,
+    (homeStats?.forfeits || 0) / (homeStats?.games || 1),
+    (awayStats?.forfeits || 0) / (awayStats?.games || 1)
+  );
+  return {
+    home_college_odds: odds.team1Win,
+    away_college_odds: odds.team2Win,
+    draw_odds: odds.draw,
+    default_odds: odds.forfeit,
+  };
+}
+
+// Convert probability to multiplier: 1 + (1 - prob) / prob = 1/prob
+function probabilityToMultiplier(probability: number): number {
+  if (probability <= 0) return 1;
+  return 1 / probability;
+}
+
+function getOddsForBetOption(
+  calculatedOdds: { home_college_odds: number; away_college_odds: number; draw_odds: number; default_odds: number },
+  betOption: string,
+  leg: { home_college: string; away_college: string }
+): number {
+  let prob: number;
+  if (betOption === "Default") prob = calculatedOdds.default_odds;
+  else if (betOption === "Draw") prob = calculatedOdds.draw_odds;
+  else if (betOption === leg.away_college) prob = calculatedOdds.away_college_odds;
+  else if (betOption === leg.home_college) prob = calculatedOdds.home_college_odds;
+  else throw new Error(`Invalid betOption: ${betOption}`);
+  
+  return probabilityToMultiplier(prob);
+}
+
 
 interface Bet {
   away_college: string;
-  betOdds: number;
   betOption: string;
   home_college: string;
   matchId: string;
@@ -25,7 +72,6 @@ interface Bet {
 interface AddBetRequestBody {
   betAmount: number;
   betArray: Bet[];
-  totalOdds: number
 }
 
 export const addBet = functions.https.onRequest(async (req, res) => {
@@ -54,28 +100,32 @@ export const addBet = functions.https.onRequest(async (req, res) => {
     }
     const email = decoded.email;
     const { seasonId } = req.query as { seasonId: string };
-    const { betAmount, betArray, totalOdds } = req.body as AddBetRequestBody;
+    const { betAmount, betArray } = req.body as AddBetRequestBody;
     const currentCashed = 0 
 
     if (!email || !Array.isArray(betArray) || betArray.length === 0)
       {console.log("must supply bets")
       return res.status(400).send("Must supply email and ≥1 bets");}
 
-    const finalOdds = totalOdds;
     try {
       const userSeasonRef = db.collection("users").doc(email).collection("seasons").doc(seasonId);
       const userSnap = await userSeasonRef.get();
       if (!userSnap.exists) return res.status(404).send("User not found");
 
-      await Promise.all(
-        betArray.map(async (leg) => {
-          const mSnap = await db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId).get();
-          if (!mSnap.exists)
-            throw new Error(`Match not found: ${leg.matchId}`);
-        })
-      );
+      // Fetch college stats for odds calculation
+      const statsSnap = await db
+        .collection("colleges")
+        .doc("seasons")
+        .collection(seasonId)
+        .get();
+      const statsMap = new Map<string, FirebaseFirestore.DocumentData>();
+      statsSnap.forEach((d) => statsMap.set(d.id, d.data()));
 
+      // Fetch all matches and calculate odds server-side
       const now = new Date();
+      const calculatedLegs: (Bet & { betOdds: number })[] = [];
+      let totalOdds = 1;
+
       for (const leg of betArray) {
         const matchRef = db
           .collection("matches")
@@ -98,7 +148,18 @@ export const addBet = functions.https.onRequest(async (req, res) => {
             error: `Betting period has ended for one or more matches (${leg.matchId})`,
           });
         }
+
+        // Calculate odds server-side using college stats
+        const homeStats = statsMap.get(leg.home_college);
+        const awayStats = statsMap.get(leg.away_college);
+        const calculatedOdds = calculateOddsForMatch(matchData, homeStats, awayStats);
+        const legOdds = getOddsForBetOption(calculatedOdds, leg.betOption, leg);
+        
+        totalOdds *= legOdds;
+        calculatedLegs.push({ ...leg, betOdds: legOdds });
       }
+
+      const finalOdds = totalOdds;
 
       await db.runTransaction(async (tx) => {
         tx.update(userSeasonRef, {
@@ -112,12 +173,12 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           currentCashed,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           won: null,
-          legCount: betArray.length,
+          legCount: calculatedLegs.length,
         });
 
         const sanitizedEmail = email.replace(/\./g, "_");
 
-        for (const leg of betArray) {
+        for (const leg of calculatedLegs) {
           const legRef = parlayRef.collection("betArray").doc();
           tx.set(legRef, leg);
           const matchRef = db.collection("matches").doc("seasons").collection(seasonId).doc(leg.matchId);
@@ -127,7 +188,7 @@ export const addBet = functions.https.onRequest(async (req, res) => {
               betOption: leg.betOption,
               betAmount: betAmount,
               betOdds: leg.betOdds,
-              isParlay: betArray.length > 1,
+              isParlay: calculatedLegs.length > 1,
               legId: legRef.id,
             },
           });

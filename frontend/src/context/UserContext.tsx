@@ -128,7 +128,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     checkCasAuth();
-  }, [checkCasAuth]);
+  }, []);
 
   return (
     <UserContext.Provider

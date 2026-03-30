@@ -9,6 +9,7 @@ import LoadingScreen from "../LoadingScreen";
 import { FaSpinner, FaCheck } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { EditMatchButton } from "../Dashboard/Admin/EditMatchModal";
+import { getCollegeFlag } from "@/utils/versionedImages";
 
 const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
   const [awayScore, setAwayScore] = useState<string>("");
@@ -159,7 +160,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
         <div className="flex flex-col justify-between items-start gap-4 sm:pl-4 xl:pl-16 lg:pl-10">
           <div className="flex items-center">
             <Image
-              src={`/college_flags/${toCollegeName[match.away_college]}.png`}
+              src={getCollegeFlag(toCollegeName[match.away_college])}
               alt={match.away_college}
               width={20}
               height={20}
@@ -170,7 +171,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
           </div>
           <div className="flex items-center">
             <Image
-              src={`/college_flags/${toCollegeName[match.home_college]}.png`}
+              src={getCollegeFlag(toCollegeName[match.home_college])}
               alt={match.home_college}
               width={20}
               height={20}
