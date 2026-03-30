@@ -82,12 +82,12 @@ const AAHomeComponent: React.FC = () => {
     <div className="rounded-lg overflow-hidden sm:max-w-5xl min-w-full mx-auto mt-10 mb-20">
       <PageHeading heading="" />
       {SHOW_BANNER && bannerOpen && (
-        <div className="mt-10 mx-5 rounded-lg flex items-center justify-center gap-3 bg-[#00356b] px-4 py-2 text-sm text-white">
+        <div className="mt-10 mx-5 rounded-lg flex items-center justify-center gap-3 dark:bg-[#00356b] px-4 py-2 text-sm dark:text-white bg-blue-100 text-black">
           <span>{BANNER_MESSAGE}</span>
           <button
             onClick={() => setBannerOpen(false)}
             aria-label="Close banner"
-            className="ml-2 text-white/70 hover:text-white"
+            className="ml-2 dark:text-white/70 dark:hover:text-white hover:text-black text-black/70"
           >
             ✕
           </button>
