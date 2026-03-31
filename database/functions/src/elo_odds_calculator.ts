@@ -2,101 +2,79 @@
 // -----------------------------------------------------------------------------
 // PURPOSE
 // Turn Elo-based strength + historical forfeit behavior + current betting
-// volume into a 4-outcome probability distribution, then (optionally) into
-// American moneyline numbers.
+// volume into a 3-outcome probability distribution (Home/Away/Draw), then
+// (optionally) into American moneyline numbers.
+//
+// v1.1 CHANGES:
+// - Forfeits are NO LONGER a predicted outcome
+// - Forfeit history TIPS the Home/Away odds via Delta_F adjustment
+// - Returns only 3 outcomes: team1Win, team2Win, draw
+// - When no betting volume exists, pure model probabilities are returned
+// - Phased market weighting when volume > 0
+// - Laplace smoothing for low-sample forfeit rates
 //
 // DEPENDS ON
-// - elo_system.ts  -> getEloWinProbabilities(...)
+// - elo_system.ts  -> getEloWinProbabilities(...), ELO_CONFIG
 // - Firestore docs created/updated by initEloSeason.ts + updateEloRatings(...)
 // -----------------------------------------------------------------------------
 import admin from "./firebaseAdmin.js";
-import { getEloWinProbabilities } from "./elo_system.js";
+import { getEloWinProbabilities, ELO_CONFIG } from "./elo_system.js";
 
 const db = admin.firestore();
 
-interface Odds {
+export interface Odds {
   team1Win: number;
   team2Win: number;
   draw: number;
-  forfeit: number;
 }
 
 interface BettingVolume {
   team1?: number;
   team2?: number;
   draw?: number;
-  forfeit?: number;
+  forfeit?: number; // kept for backward compat but ignored in predictions
 }
 
-// convert raw volumes → probabilities
-function probabilitiesFromBettingVolume(volume: BettingVolume): Odds {
-  const v1 = volume.team1 ?? 0;
-  const v2 = volume.team2 ?? 0;
-  const vD = volume.draw ?? 0;
-  const vF = volume.forfeit ?? 0;
-  const total = v1 + v2 + vD + vF;
-
-  if (total <= 0) {
-    // “no market yet” placeholder
-    return {
-      team1Win: 0.25,
-      team2Win: 0.25,
-      draw: 0.25,
-      forfeit: 0.25,
-    };
-  }
-
-  const p1 = v1 / total;
-  const p2 = v2 / total;
-  const pD = vD / total;
-  const pF = vF / total;
-  const sum = p1 + p2 + pD + pF;
-
-  return {
-    team1Win: p1 / sum,
-    team2Win: p2 / sum,
-    draw: pD / sum,
-    forfeit: pF / sum,
-  };
-}
-
-// estimate match-level forfeit chance from team + sport history
-function forfeitProbability(
-  homeForfeits: number,
-  homeMatches: number,
-  awayForfeits: number,
-  awayMatches: number,
-  sportForfeits: number,
-  sportMatches: number
+/**
+ * Calculate forfeit tipping factor (Delta_F) based on team reliability.
+ * Positive Delta_F means away forfeits more -> boost home odds.
+ * Uses Laplace smoothing for teams with fewer than threshold matches.
+ *
+ * NOTE: Uses matches_total (includes forfeits) as denominator, matching
+ * the experiment's forfeits_initiated / matches_total.
+ */
+function calculateForfeitTipping(
+  homeDefaults: number,
+  homeMatchesTotal: number,
+  awayDefaults: number,
+  awayMatchesTotal: number
 ): number {
-  // tunables
-  const ALPHA = 150;
-  const BETA = 1.0;
-  const W_TEAM = 1.0;
-  const FLOOR = 0.0;
-  const CEIL = 0.6;
+  const { laplaceSmoothingThreshold } = ELO_CONFIG;
 
-  const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+  const getForfeitRate = (defaults: number, matchesTotal: number): number => {
+    if (matchesTotal < laplaceSmoothingThreshold) {
+      // Laplace smoothing: (successes + 1) / (trials + 2)
+      return (Math.max(0, defaults) + 1) / (Math.max(0, matchesTotal) + 2);
+    }
+    return matchesTotal > 0 ? Math.max(0, defaults) / matchesTotal : 0;
+  };
 
-  const pSport = sportMatches > 0 ? clamp01(sportForfeits / sportMatches) : 0;
+  const homeRate = getForfeitRate(homeDefaults, homeMatchesTotal);
+  const awayRate = getForfeitRate(awayDefaults, awayMatchesTotal);
 
-  const pHome =
-    (Math.max(0, homeForfeits) + ALPHA * pSport) /
-    Math.max(1, Math.max(0, homeMatches) + ALPHA);
-  const pAway =
-    (Math.max(0, awayForfeits) + ALPHA * pSport) /
-    Math.max(1, Math.max(0, awayMatches) + ALPHA);
-
-  const termSport = 1 - clamp01(BETA * pSport);
-  const termHome = 1 - clamp01(W_TEAM * pHome);
-  const termAway = 1 - clamp01(W_TEAM * pAway);
-
-  let pMatch = 1 - termSport * termHome * termAway;
-  pMatch = Math.min(Math.max(pMatch, FLOOR), CEIL);
-
-  return pMatch;
+  // Delta_F = Rate_F(Away) - Rate_F(Home)
+  return awayRate - homeRate;
 }
 
+/**
+ * 5-step hybrid odds calculator (v1.1):
+ *
+ * 1. Get Elo base probabilities (3 outcomes)
+ * 2. Apply forfeit tipping (Delta_F adjustment to home/away)
+ * 3. If no betting volume, return pure model probabilities
+ * 4. If volume exists: compute market sentiment, phased weighting
+ * 5. Blend model and market, normalize to sum = 1
+ */
 export async function hybridOddsCalculator(
   homeTeam: string,
   awayTeam: string,
@@ -104,106 +82,92 @@ export async function hybridOddsCalculator(
   season: string,
   bettingVolume: BettingVolume
 ): Promise<Odds> {
-  const defaultOdds: Odds = {
-    team1Win: 0.35,
-    team2Win: 0.35,
-    draw: 0.1,
-    forfeit: 0.2,
-  };
+  const defaultOdds: Odds = { team1Win: 0.45, team2Win: 0.45, draw: 0.10 };
 
   try {
-    // fetch the 3 docs we need to estimate forfeit
-    const [homeDoc, awayDoc, sportDoc] = await Promise.all([
-      db
-        .collection("elo")
-        .doc(season)
-        .collection("sports")
-        .doc(sport)
-        .collection("colleges")
-        .doc(homeTeam)
-        .get(),
-      db
-        .collection("elo")
-        .doc(season)
-        .collection("sports")
-        .doc(sport)
-        .collection("colleges")
-        .doc(awayTeam)
-        .get(),
-      db.collection("elo").doc(season).collection("sports").doc(sport).get(),
+    // Fetch the 2 team docs for forfeit stats
+    const [homeDoc, awayDoc] = await Promise.all([
+      db.collection("elo").doc(season).collection("sports").doc(sport)
+        .collection("colleges").doc(homeTeam).get(),
+      db.collection("elo").doc(season).collection("sports").doc(sport)
+        .collection("colleges").doc(awayTeam).get(),
     ]);
 
     const homeData = homeDoc.data() ?? {};
     const awayData = awayDoc.data() ?? {};
-    const sportData = sportDoc.data() ?? {};
 
-    const homeForfeits = (homeData as any).defaults ?? 0;
-    const homeMatches = (homeData as any).matches_played ?? 0;
-    const awayForfeits = (awayData as any).defaults ?? 0;
-    const awayMatches = (awayData as any).matches_played ?? 0;
-    const sportForfeits = (sportData as any).defaults ?? 0;
-    const sportMatches = (sportData as any).matches_played ?? 0;
+    // Use defaults (= forfeits_initiated) and matches_total for forfeit tipping
+    const homeDefaults  = (homeData as any).defaults ?? 0;
+    const homeMatchesTotal = (homeData as any).matches_total ?? 0;
+    const awayDefaults  = (awayData as any).defaults ?? 0;
+    const awayMatchesTotal = (awayData as any).matches_total ?? 0;
 
-    // match-level forfeit chance
-    const Pdefault = forfeitProbability(
-      homeForfeits,
-      homeMatches,
-      awayForfeits,
-      awayMatches,
-      sportForfeits,
-      sportMatches
-    );
-
-    // Elo-based non-forfeit probabilities
-    let { PHome: eloHome, PDraw: eloDraw, PAway: eloAway } =
+    // STEP 1: Base Elo probabilities (P_home + P_away + P_draw = 1)
+    const { PHome: eloHome, PDraw: eloDraw, PAway: eloAway } =
       await getEloWinProbabilities(homeTeam, awayTeam, sport, season);
 
-    // take out forfeit mass
-    eloHome = eloHome * (1 - Pdefault);
-    eloAway = eloAway * (1 - Pdefault);
-    eloDraw = eloDraw * (1 - Pdefault);
+    // STEP 2: Forfeit tipping factor (Delta_F adjusts home/away)
+    const deltaF = calculateForfeitTipping(
+      homeDefaults, homeMatchesTotal, awayDefaults, awayMatchesTotal
+    );
 
-    // market-based probabilities
-    const vol = probabilitiesFromBettingVolume(bettingVolume);
-    const totalBettingVolume =
-      (bettingVolume.team1 ?? 0) +
-      (bettingVolume.team2 ?? 0) +
-      (bettingVolume.draw ?? 0) +
-      (bettingVolume.forfeit ?? 0);
+    let modelHome = eloHome + ELO_CONFIG.W_forfeit * deltaF;
+    let modelAway = eloAway - ELO_CONFIG.W_forfeit * deltaF;
+    let modelDraw = eloDraw;
 
-    const volWeight = totalBettingVolume > 0 ? 1 : 0;
-    const eloWeight = 5;
-
-    // softmax the market part
-    const e1 = Math.exp(vol.team1Win);
-    const e2 = Math.exp(vol.team2Win);
-    const eD = Math.exp(vol.draw);
-    const eF = Math.exp(vol.forfeit);
-    const s = e1 + e2 + eD + eF;
-
-    const n1 = e1 / s;
-    const n2 = e2 / s;
-    const nD = eD / s;
-    const nF = eF / s;
-
-    const denom = eloWeight + volWeight || 1;
-
-    const team1Win = (eloWeight * eloHome + volWeight * n1) / denom;
-    const team2Win = (eloWeight * eloAway + volWeight * n2) / denom;
-    const draw = (eloWeight * eloDraw + volWeight * nD) / denom;
-    const forfeit = (eloWeight * Pdefault + volWeight * nF) / denom;
-
-    // normalize to 1
-    const total = team1Win + team2Win + draw + forfeit;
-    if (total <= 0) {
-      return defaultOdds;
+    // Clamp to [0, 1] and renormalize
+    modelHome = Math.max(0, modelHome);
+    modelAway = Math.max(0, modelAway);
+    modelDraw = Math.max(0, modelDraw);
+    const modelSum = modelHome + modelAway + modelDraw;
+    if (modelSum > 0) {
+      modelHome /= modelSum;
+      modelAway /= modelSum;
+      modelDraw /= modelSum;
     }
 
+    // STEP 3: Check betting volume — if none, return pure model probabilities
+    const v1 = bettingVolume.team1 ?? 0;
+    const v2 = bettingVolume.team2 ?? 0;
+    const vD = bettingVolume.draw ?? 0;
+    const totalBettingVolume = v1 + v2 + vD;
+
+    if (totalBettingVolume <= 0) {
+      // No market data — use pure model probabilities
+      return { team1Win: modelHome, team2Win: modelAway, draw: modelDraw };
+    }
+
+    // STEP 4: Compute market sentiment from betting volume (3 outcomes only)
+    const volTotal = v1 + v2 + vD;
+    let marketHome = v1 / volTotal;
+    let marketAway = v2 / volTotal;
+    let marketDraw = vD / volTotal;
+
+    // Apply softmax normalization to market probabilities for stability
+    const e1 = Math.exp(marketHome);
+    const e2 = Math.exp(marketAway);
+    const eD = Math.exp(marketDraw);
+    const softmaxSum = e1 + e2 + eD;
+
+    marketHome = e1 / softmaxSum;
+    marketAway = e2 / softmaxSum;
+    marketDraw = eD / softmaxSum;
+
+    // Phased market weighting
+    const volWeight = Math.min(ELO_CONFIG.maxVolWeight, totalBettingVolume / ELO_CONFIG.V_threshold);
+
+    // STEP 5: Blend model and market, then normalize
+    const finalHome = (1 - volWeight) * modelHome + volWeight * marketHome;
+    const finalAway = (1 - volWeight) * modelAway + volWeight * marketAway;
+    const finalDraw = (1 - volWeight) * modelDraw + volWeight * marketDraw;
+
+    const finalSum = finalHome + finalAway + finalDraw;
+    if (finalSum <= 0) return defaultOdds;
+
     return {
-      team1Win: team1Win / total,
-      team2Win: team2Win / total,
-      draw: draw / total,
-      forfeit: forfeit / total,
+      team1Win: finalHome / finalSum,
+      team2Win: finalAway / finalSum,
+      draw: finalDraw / finalSum,
     };
   } catch (err) {
     console.error("Error in hybrid odds calculation:", err);
@@ -211,7 +175,9 @@ export async function hybridOddsCalculator(
   }
 }
 
-// optional helper: turn Odds → moneyline
+/**
+ * Convert 3-outcome probability to American moneylines.
+ */
 export function oddsToMoneyline(odds: Odds) {
   const toML = (p: number): number => {
     const probability = Math.min(Math.max(p, 0.0001), 0.9999);
@@ -225,6 +191,5 @@ export function oddsToMoneyline(odds: Odds) {
     team1ML: toML(odds.team1Win),
     team2ML: toML(odds.team2Win),
     drawML: toML(odds.draw),
-    forfeitML: toML(odds.forfeit),
   };
 }

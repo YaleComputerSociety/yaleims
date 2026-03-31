@@ -4,21 +4,39 @@
 // - Read Elo ratings for a given season/sport/college from Firestore.
 // - Update Elo ratings AFTER a match.
 // - Keep team-level season stats in sync with match results.
-// - Update sport-level aggregates (matches_played, draws, defaults, totals).
+// - Update sport-level aggregates (matches_total, matches_played, defaults, totals).
 //
 // FIRESTORE LAYOUT (must match initEloSeason.ts):
 // elo/{season}/sports/{sport}                      -> sport-level stats
 // elo/{season}/sports/{sport}/colleges/{college}   -> team-level stats
 // -----------------------------------------------------------------------------
-// TODO: Incorporte in upload matches and upload brackets - for each match, it gives the correct odds when added
+// TODO: Incorporate in upload matches and upload brackets - for each match, it gives the correct odds when added
 // TODO: make sure that odds are not set for matches that are still TBD / not fully filled out yet
 import admin from "./firebaseAdmin.js";
 
 const db = admin.firestore();
 const inc = admin.firestore.FieldValue.increment;
 
+// -----------------------------------------------------------------------------
+// CENTRALIZED ELO CONFIGURATION
+// Optimized from 525,000 experiment grid search (67.96% accuracy, Feb 2026)
+// -----------------------------------------------------------------------------
+export const ELO_CONFIG = {
+  initialElo: 850,
+  baseK: { Regular: 24, Playoff: 36, Final: 48 } as Record<string, number>,
+  eloScalingFactor: 275,
+  defaultSportModifier: 0.9,
+  sportModifiers: {} as Record<string, number>,
+  C_draw: 0.12,
+  S_draw: 0.0008,
+  W_forfeit: 0.10,
+  V_threshold: 500,
+  maxVolWeight: 0.3,
+  laplaceSmoothingThreshold: 5,
+};
+
 // result letters we store in `form`
-type ResultLetter = "W" | "L" | "D" | "F";
+type ResultLetter = "W" | "L" | "D" | "WF" | "LF";
 
 // small helper to keep at most 5 recent results
 const nextForm = (prev: unknown, letter: ResultLetter) => {
@@ -28,7 +46,7 @@ const nextForm = (prev: unknown, letter: ResultLetter) => {
   return arr;
 };
 
-// --- 1. Read a team's Elo (default 1000 to match your seeding) -------------
+// --- 1. Read a team's Elo ---------------------------------------------------
 async function getEloRating(
   college: string,
   sport: string,
@@ -44,10 +62,10 @@ async function getEloRating(
     .get();
 
   if (!snap.exists) {
-    return 1000;
+    return ELO_CONFIG.initialElo;
   }
   const data = snap.data() as { elo_rating?: number };
-  return data?.elo_rating ?? 1000;
+  return data?.elo_rating ?? ELO_CONFIG.initialElo;
 }
 
 // --- 2. Elo math for non-forfeit matches -----------------------------------
@@ -60,14 +78,9 @@ function calculateNewRatingsFromElo(
   matchType: "Regular" | "Playoff" | "Final",
   sport: string
 ): { newHomeRating: number; newAwayRating: number } {
-  // basic K-factors — you can move these to a config
-  const baseKByType: Record<string, number> = {
-    Regular: 32,
-    Playoff: 48,
-    Final: 64,
-  };
-  const sportModifier = 1.0; // plug in per-sport volatility if you want
-  const K = (baseKByType[matchType] ?? 32) * sportModifier;
+  const sportModifier =
+    ELO_CONFIG.sportModifiers[sport] ?? ELO_CONFIG.defaultSportModifier;
+  const K = (ELO_CONFIG.baseK[matchType] ?? ELO_CONFIG.baseK.Regular) * sportModifier;
 
   // actual score from the match
   let homeActual: number;
@@ -81,7 +94,8 @@ function calculateNewRatingsFromElo(
   const awayActual = 1 - homeActual;
 
   // expected score (standard Elo)
-  const homeExpected = 1 / (1 + 10 ** ((awayRating - homeRating) / 400));
+  const homeExpected =
+    1 / (1 + 10 ** ((awayRating - homeRating) / ELO_CONFIG.eloScalingFactor));
   const awayExpected = 1 - homeExpected;
 
   return {
@@ -107,9 +121,9 @@ export interface EloMatchResult {
 
 /**
  * Update both teams + sport aggregate to reflect a finished match.
- * - Forfeits: increment defaults, do NOT change Elo.
+ * - Double forfeit: match is VOID, no stats updated.
+ * - Single forfeit: increment stats, do NOT change Elo.
  * - Normal match: update Elo, wins/losses/draws, scores, form.
- * - Sport always gets matches_played incremented.
  */
 export async function updateEloRatings(
   match: EloMatchResult
@@ -137,38 +151,48 @@ export async function updateEloRatings(
 
   const batch = db.batch();
 
-  // sport-level stats ALWAYS updated
-  batch.set(
-    sportRef,
-    {
-      matches_played: inc(1),
-      draws: inc(winner === "Draw" ? 1 : 0),
-      defaults: inc(winner === "Default" ? 1 : 0),
-      total_points: inc(home_college_score + away_college_score),
-      total_score_diff: inc(Math.abs(home_college_score - away_college_score)),
-    },
-    { merge: true }
-  );
-
-  // --- CASE 1: FORFEIT -----------------------------------------------------
+  // --- CASE 0: DOUBLE FORFEIT (void match) ---------------------------------
   if (winner === "Default") {
     const forfeiter =
       forfeitingTeam && [homeTeam, awayTeam].includes(forfeitingTeam)
         ? forfeitingTeam
         : undefined;
 
+    if (!forfeiter) {
+      // Double forfeit: match is VOID, no stats updated, bets returned
+      return;
+    }
+  }
+
+  // --- CASE 1: SINGLE FORFEIT ----------------------------------------------
+  if (winner === "Default") {
+    const forfeiter = forfeitingTeam!;
+
+    // Sport-level: increment matches_total only (not matches_played)
+    batch.set(
+      sportRef,
+      {
+        matches_total: inc(1),
+        defaults: inc(1),
+      },
+      { merge: true }
+    );
+
     // home
     batch.set(
       homeRef,
       {
-        matches_played: inc(1),
+        matches_total: inc(1),
+        // matches_played NOT incremented - forfeit wasn't actually played
         defaults: forfeiter === homeTeam ? inc(1) : inc(0),
+        wins: forfeiter === homeTeam ? inc(0) : inc(1),
+        wins_by_forfeit: forfeiter === homeTeam ? inc(0) : inc(1),
+        losses_by_forfeit: forfeiter === homeTeam ? inc(1) : inc(0),
         form: nextForm(
           homeData.form,
-          forfeiter === homeTeam ? "F" : ("W" as ResultLetter)
+          forfeiter === homeTeam ? "LF" : "WF"
         ),
-        total_scored: inc(home_college_score),
-        total_conceded: inc(away_college_score),
+        // Forfeit scores are NOT added to totals — they skew avg point diff
       },
       { merge: true }
     );
@@ -177,14 +201,17 @@ export async function updateEloRatings(
     batch.set(
       awayRef,
       {
-        matches_played: inc(1),
+        matches_total: inc(1),
+        // matches_played NOT incremented - forfeit wasn't actually played
         defaults: forfeiter === awayTeam ? inc(1) : inc(0),
+        wins: forfeiter === awayTeam ? inc(0) : inc(1),
+        wins_by_forfeit: forfeiter === awayTeam ? inc(0) : inc(1),
+        losses_by_forfeit: forfeiter === awayTeam ? inc(1) : inc(0),
         form: nextForm(
           awayData.form,
-          forfeiter === awayTeam ? "F" : ("W" as ResultLetter)
+          forfeiter === awayTeam ? "LF" : "WF"
         ),
-        total_scored: inc(away_college_score),
-        total_conceded: inc(home_college_score),
+        // Forfeit scores are NOT added to totals — they skew avg point diff
       },
       { merge: true }
     );
@@ -195,7 +222,20 @@ export async function updateEloRatings(
 
   // --- CASE 2: NORMAL / DRAW MATCH ----------------------------------------
 
-  // read current Elo (will be 1000 if team is new)
+  // Sport-level: increment both matches_total and matches_played
+  batch.set(
+    sportRef,
+    {
+      matches_total: inc(1),
+      matches_played: inc(1),
+      draws: inc(winner === "Draw" ? 1 : 0),
+      total_points: inc(home_college_score + away_college_score),
+      total_score_diff: inc(Math.abs(home_college_score - away_college_score)),
+    },
+    { merge: true }
+  );
+
+  // read current Elo (will be initialElo if team is new)
   const [homeElo, awayElo] = await Promise.all([
     getEloRating(homeTeam, sport, season),
     getEloRating(awayTeam, sport, season),
@@ -223,9 +263,12 @@ export async function updateEloRatings(
     homeRef,
     {
       elo_rating: newHomeRating,
+      matches_total: inc(1),
       matches_played: inc(1),
       wins: inc(homeLetter === "W" ? 1 : 0),
+      wins_by_play: inc(homeLetter === "W" ? 1 : 0),
       losses: inc(homeLetter === "L" ? 1 : 0),
+      losses_by_play: inc(homeLetter === "L" ? 1 : 0),
       draws: inc(homeLetter === "D" ? 1 : 0),
       total_scored: inc(home_college_score),
       total_conceded: inc(away_college_score),
@@ -239,9 +282,12 @@ export async function updateEloRatings(
     awayRef,
     {
       elo_rating: newAwayRating,
+      matches_total: inc(1),
       matches_played: inc(1),
       wins: inc(awayLetter === "W" ? 1 : 0),
+      wins_by_play: inc(awayLetter === "W" ? 1 : 0),
       losses: inc(awayLetter === "L" ? 1 : 0),
+      losses_by_play: inc(awayLetter === "L" ? 1 : 0),
       draws: inc(awayLetter === "D" ? 1 : 0),
       total_scored: inc(away_college_score),
       total_conceded: inc(home_college_score),
@@ -250,7 +296,7 @@ export async function updateEloRatings(
     { merge: true }
   );
 
-  // OPTIONAL: log the match for auditing
+  // log the match for auditing
   const matchLogRef = sportRef.collection("matches").doc();
   batch.set(matchLogRef, {
     homeTeam,
@@ -277,15 +323,14 @@ export async function getEloWinProbabilities(
     getEloRating(awayTeam, sport, season),
   ]);
 
-  // standard Elo expected score
-  const Ea = 1 / (1 + 10 ** ((awayRating - homeRating) / 400));
+  const { C_draw, S_draw, eloScalingFactor } = ELO_CONFIG;
 
-  // you can tune these 2 to change draw behavior
-  const Dmax = 0.1;
-  const k = 0.002;
+  // standard Elo expected score
+  const Ea = 1 / (1 + 10 ** ((awayRating - homeRating) / eloScalingFactor));
+
   const diff = Math.abs(awayRating - homeRating);
 
-  const PDraw = Dmax * Math.exp(-k * diff);
+  const PDraw = C_draw * Math.exp(-S_draw * diff);
   const PHome = (1 - PDraw) * Ea;
   const PAway = (1 - PDraw) * (1 - Ea);
 

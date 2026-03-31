@@ -12,7 +12,7 @@
   "engines": {
     "node": "22"
   },
-  "main": "lib/index.js",
+  "main": "lib/src/index.js",
   "type": "module",
   "dependencies": {
     "@google-cloud/secret-manager": "^6.1.1",

@@ -4,55 +4,28 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import { isValidDecodedToken } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
-import { oddsCalculator } from "./helpers.js";
+import { recalcOddsForMatch } from "./recalcOdds.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
-function calculateOddsForMatch(
-  matchData: FirebaseFirestore.DocumentData,
-  homeStats: FirebaseFirestore.DocumentData | undefined,
-  awayStats: FirebaseFirestore.DocumentData | undefined
-): { home_college_odds: number; away_college_odds: number; draw_odds: number; default_odds: number } {
-  const vol = {
-    team1: matchData.home_volume ?? 0,
-    team2: matchData.away_volume ?? 0,
-    draw: matchData.draw_volume ?? 0,
-    forfeit: matchData.default_volume ?? 0,
-  };
-  const odds = oddsCalculator(
-    (homeStats?.wins || 0) / (homeStats?.games || 1),
-    (awayStats?.wins || 0) / (awayStats?.games || 1),
-    vol,
-    (homeStats?.forfeits || 0) / (homeStats?.games || 1),
-    (awayStats?.forfeits || 0) / (awayStats?.games || 1)
-  );
-  return {
-    home_college_odds: odds.team1Win,
-    away_college_odds: odds.team2Win,
-    draw_odds: odds.draw,
-    default_odds: odds.forfeit,
-  };
-}
-
-// Convert probability to multiplier: 1 + (1 - prob) / prob = 1/prob
+// Convert probability to multiplier: 1/prob
 function probabilityToMultiplier(probability: number): number {
   if (probability <= 0) return 1;
   return 1 / probability;
 }
 
 function getOddsForBetOption(
-  calculatedOdds: { home_college_odds: number; away_college_odds: number; draw_odds: number; default_odds: number },
+  calculatedOdds: { home_college_odds: number; away_college_odds: number; draw_odds: number },
   betOption: string,
   leg: { home_college: string; away_college: string }
 ): number {
   let prob: number;
-  if (betOption === "Default") prob = calculatedOdds.default_odds;
-  else if (betOption === "Draw") prob = calculatedOdds.draw_odds;
+  if (betOption === "Draw") prob = calculatedOdds.draw_odds;
   else if (betOption === leg.away_college) prob = calculatedOdds.away_college_odds;
   else if (betOption === leg.home_college) prob = calculatedOdds.home_college_odds;
   else throw new Error(`Invalid betOption: ${betOption}`);
-  
+
   return probabilityToMultiplier(prob);
 }
 
@@ -112,16 +85,7 @@ export const addBet = functions.https.onRequest(async (req, res) => {
       const userSnap = await userSeasonRef.get();
       if (!userSnap.exists) return res.status(404).send("User not found");
 
-      // Fetch college stats for odds calculation
-      const statsSnap = await db
-        .collection("colleges")
-        .doc("seasons")
-        .collection(seasonId)
-        .get();
-      const statsMap = new Map<string, FirebaseFirestore.DocumentData>();
-      statsSnap.forEach((d) => statsMap.set(d.id, d.data()));
-
-      // Fetch all matches and calculate odds server-side
+      // Fetch all matches and calculate odds server-side using Elo
       const now = new Date();
       const calculatedLegs: (Bet & { betOdds: number })[] = [];
       let totalOdds = 1;
@@ -149,12 +113,10 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           });
         }
 
-        // Calculate odds server-side using college stats
-        const homeStats = statsMap.get(leg.home_college);
-        const awayStats = statsMap.get(leg.away_college);
-        const calculatedOdds = calculateOddsForMatch(matchData, homeStats, awayStats);
+        // Calculate odds using current Elo + pre-bet volume (determines this bet's payout)
+        const calculatedOdds = await recalcOddsForMatch(matchRef, matchData as any, seasonId);
         const legOdds = getOddsForBetOption(calculatedOdds, leg.betOption, leg);
-        
+
         totalOdds *= legOdds;
         calculatedLegs.push({ ...leg, betOdds: legOdds });
       }
@@ -211,6 +173,21 @@ export const addBet = functions.https.onRequest(async (req, res) => {
           });
         }
       });
+
+      // Recalculate stored odds with updated volume so next viewer sees fresh odds
+      try {
+        const uniqueMatchIds = [...new Set(calculatedLegs.map((l) => l.matchId))];
+        await Promise.all(
+          uniqueMatchIds.map(async (matchId) => {
+            const ref = db.collection("matches").doc("seasons").collection(seasonId).doc(matchId);
+            const snap = await ref.get();
+            const data = snap.data();
+            if (data) await recalcOddsForMatch(ref, data as any, seasonId);
+          })
+        );
+      } catch (err) {
+        console.error("Post-bet odds recalc failed (bet still placed):", err);
+      }
 
       return res.status(200).json({message: "Parlay added successfully"});
     } catch (err) {
