@@ -42,6 +42,43 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
         const parlaySnap = await tx.get(parlayRef);
         const parlay = parlaySnap.data()!;
 
+        // Double forfeit: void this leg instead of settling it
+        if (winningTeam === "Default") {
+          tx.update(legRef, { winner: "Default", won: null, voided: true });
+
+          const newLegCount = (parlay.legCount ?? 1) - 1;
+          const currentCashed = (parlay.currentCashed ?? 0);
+
+          if (newLegCount <= 0) {
+            // Single-leg bet or all legs voided: refund points
+            tx.update(parlayRef, { settled: true, won: null, voided: true, legCount: 0, payout: parlay.betAmount });
+            const seasonDocRef = parlayRef.parent.parent!;
+            tx.update(seasonDocRef, {
+              points: admin.firestore.FieldValue.increment(parlay.betAmount),
+            });
+          } else {
+            // Multi-leg parlay: remove this leg, recalculate odds without it
+            const newOdds = parlay.betOdds / (leg.betOdds || 1);
+            tx.update(parlayRef, { legCount: newLegCount, betOdds: newOdds });
+
+            // If all remaining legs are already settled, finalize the parlay
+            if (currentCashed >= newLegCount) {
+              const lostLegs = parlay.lostLegs ?? 0;
+              const parlayWon = lostLegs === 0;
+              const payout = parlayWon ? parlay.betAmount * newOdds : 0;
+              tx.update(parlayRef, { settled: true, won: parlayWon, payout });
+              const seasonDocRef = parlayRef.parent.parent!;
+              if (payout > 0) {
+                tx.update(seasonDocRef, {
+                  points: admin.firestore.FieldValue.increment(payout),
+                  correctPredictions: admin.firestore.FieldValue.increment(1),
+                });
+              }
+            }
+          }
+          return;
+        }
+
         const legWon =
           (winningTeam === "Draw" && leg.betOption === "Draw") ||
           (winningTeam === leg.home_college &&
