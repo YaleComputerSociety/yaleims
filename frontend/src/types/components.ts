@@ -34,11 +34,9 @@ export type Match = {
   home_college_odds?: number;
   away_college_odds?: number;
   draw_odds?: number;
-  default_odds?: number;
   home_volume?: number;
   away_volume?: number;
   draw_volume?: number;
-  default_volume?: number;
   next_match_id?: string;
   playoff_bracket_slot?: number;
 };
