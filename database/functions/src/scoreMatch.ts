@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 
 import { isValidDecodedToken } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import { updateEloRatings, EloMatchResult } from "./elo_system.js";
+import { recalcOddsForAffectedMatches } from "./recalcOdds.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -39,6 +41,43 @@ const settleParlayLegs = async (matchId: string, winningTeam: string) => {
 
         const parlaySnap = await tx.get(parlayRef);
         const parlay = parlaySnap.data()!;
+
+        // Double forfeit: void this leg instead of settling it
+        if (winningTeam === "Default") {
+          tx.update(legRef, { winner: "Default", won: null, voided: true });
+
+          const newLegCount = (parlay.legCount ?? 1) - 1;
+          const currentCashed = (parlay.currentCashed ?? 0);
+
+          if (newLegCount <= 0) {
+            // Single-leg bet or all legs voided: refund points
+            tx.update(parlayRef, { settled: true, won: null, voided: true, legCount: 0, payout: parlay.betAmount });
+            const seasonDocRef = parlayRef.parent.parent!;
+            tx.update(seasonDocRef, {
+              points: admin.firestore.FieldValue.increment(parlay.betAmount),
+            });
+          } else {
+            // Multi-leg parlay: remove this leg, recalculate odds without it
+            const newOdds = parlay.betOdds / (leg.betOdds || 1);
+            tx.update(parlayRef, { legCount: newLegCount, betOdds: newOdds });
+
+            // If all remaining legs are already settled, finalize the parlay
+            if (currentCashed >= newLegCount) {
+              const lostLegs = parlay.lostLegs ?? 0;
+              const parlayWon = lostLegs === 0;
+              const payout = parlayWon ? parlay.betAmount * newOdds : 0;
+              tx.update(parlayRef, { settled: true, won: parlayWon, payout });
+              const seasonDocRef = parlayRef.parent.parent!;
+              if (payout > 0) {
+                tx.update(seasonDocRef, {
+                  points: admin.firestore.FieldValue.increment(payout),
+                  correctPredictions: admin.firestore.FieldValue.increment(1),
+                });
+              }
+            }
+          }
+          return;
+        }
 
         const legWon =
           (winningTeam === "Draw" && leg.betOption === "Draw") ||
@@ -294,11 +333,31 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await batch.commit();
 
+      // Update Elo ratings and recalculate odds for affected upcoming matches
       const matchDocData = matchDoc.data() || {};
+      const matchType = (matchDocData.type as "Regular" | "Playoff" | "Final") || "Regular";
+
+      try {
+        const eloMatch: EloMatchResult = {
+          season: year,
+          sport,
+          homeTeam,
+          awayTeam,
+          winner: winningTeam,
+          matchType,
+          home_college_score: homeScore,
+          away_college_score: awayScore,
+          forfeitingTeam: doubleForfeit
+            ? undefined
+            : homeForfeit ? homeTeam : awayForfeit ? awayTeam : undefined,
+        };
+        await updateEloRatings(eloMatch);
+        await recalcOddsForAffectedMatches(year, sport, homeTeam, awayTeam);
+      } catch (eloErr) {
+        console.error("Elo update or odds recalc failed (match already scored):", eloErr);
+      }
 
       // update next match in bracket (if a playoff match and there is a definitive winner, else will have to be manual)
-      const matchType = matchDocData.type;
-
       if (
         matchType &&
         matchType !== "Regular" &&

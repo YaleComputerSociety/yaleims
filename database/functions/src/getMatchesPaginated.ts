@@ -2,7 +2,7 @@ import { Filter, OrderByDirection } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import { oddsCalculator } from "./helpers.js";
+import { hybridOddsCalculator } from "./elo_odds_calculator.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -69,27 +69,50 @@ export const getMatchesPaginated = functions.https.onRequest(
 
         const sortOrderValidated = sortOrder as OrderByDirection;
 
-        const addOdds = (match: any, homeStats: any, awayStats: any) => {
-          const vol = {
-            team1: match.home_volume ?? 0,
-            team2: match.away_volume ?? 0,
-            draw: match.draw_volume ?? 0,
-            forfeit: match.default_volume ?? 0,
-          };
-          const odds = oddsCalculator(
-            (homeStats?.wins || 0) / (homeStats?.games || 1),
-            (awayStats?.wins || 0) / (awayStats?.games || 1),
-            vol,
-            (homeStats?.forfeits || 0) / (homeStats?.games || 1),
-            (awayStats?.forfeits || 0) / (awayStats?.games || 1)
-          );
-          return {
-            ...match,
-            default_odds: odds.forfeit,
-            home_college_odds: odds.team1Win,
-            away_college_odds: odds.team2Win,
-            draw_odds: odds.draw,
-          };
+        // Read stored odds from match doc, or calculate via Elo as fallback
+        const addOdds = async (match: any, seasonForOdds: string, docId: string) => {
+          if (
+            match.home_college_odds != null &&
+            match.away_college_odds != null &&
+            match.draw_odds != null
+          ) {
+            return match; // odds already stored on the doc
+          }
+          // Fallback: calculate from Elo (for matches created before this change)
+          if (!match.home_college || !match.away_college || !match.sport) return match;
+          try {
+            const odds = await hybridOddsCalculator(
+              match.home_college,
+              match.away_college,
+              match.sport,
+              seasonForOdds,
+              {
+                team1: match.home_volume ?? 0,
+                team2: match.away_volume ?? 0,
+                draw: match.draw_volume ?? 0,
+              }
+            );
+            const computed = {
+              home_college_odds: odds.team1Win,
+              away_college_odds: odds.team2Win,
+              draw_odds: odds.draw,
+            };
+            // Persist so future reads don't recalculate
+            if (docId) {
+              const matchRef = db
+                .collection("matches").doc("seasons")
+                .collection(seasonForOdds).doc(docId);
+              matchRef.update(computed).catch((e: any) => console.warn("Odds persist failed:", docId, e?.message));
+            }
+            return { ...match, ...computed };
+          } catch {
+            return {
+              ...match,
+              home_college_odds: 0.45,
+              away_college_odds: 0.45,
+              draw_odds: 0.10,
+            };
+          }
         };
 
         if (date !== "AllPast" && date !== "today" && date !== "yesterday" && date !== "last7days" && date !== "last30days" && date !== "last60days") {
@@ -147,28 +170,20 @@ export const getMatchesPaginated = functions.https.onRequest(
                 totalPages,
               });
 
-          const statsSnap = await db
-            .collection("colleges")
-            .doc("seasons")
-            .collection(seasonId)
-            .get();
-          const statsMap = new Map<string, any>();
-          statsSnap.forEach((d) => statsMap.set(d.id, d.data()));
-
-          const matches = snapshot.docs
-            .map((doc) => {
-              const data = doc.data();
-              const matchBase = {
-                id: doc.id,
-                seasonId,
-                ...data,
-                timestamp: data.timestamp?.toDate?.()?.toISOString() || null,
-              };
-              const homeStats = statsMap.get(data.home_college);
-              const awayStats = statsMap.get(data.away_college);
-              return addOdds(matchBase, homeStats, awayStats);
-            })
-            .filter((m) => m != null);
+          const matches = (
+            await Promise.all(
+              snapshot.docs.map(async (doc) => {
+                const data = doc.data();
+                const matchBase = {
+                  id: doc.id,
+                  seasonId,
+                  ...data,
+                  timestamp: data.timestamp?.toDate?.()?.toISOString() || null,
+                };
+                return addOdds(matchBase, seasonId, doc.id);
+              })
+            )
+          ).filter((m) => m != null);
 
           return res.status(200).json({
             matches,
@@ -249,42 +264,19 @@ export const getMatchesPaginated = functions.https.onRequest(
           pageSlice = filtered.slice(start, start + pageSizeNum);
         }
 
-        const neededSeasons = Array.from(
-          new Set(pageSlice.map((m) => m.seasonId))
-        );
-        const statsMap = new Map<string, any>();
-        for (const sid of neededSeasons) {
-          const snap = await db
-            .collection("colleges")
-            .doc("seasons")
-            .collection(sid)
-            .get();
-          snap.forEach((d) => statsMap.set(`${sid}-${d.id}`, d.data()));
-        }
-
-        const matches = pageSlice
-          .map((row) => {
-            const homeStats = statsMap.get(
-              `${row.seasonId}-${row.data.home_college}`
-            );
-            const awayStats = statsMap.get(
-              `${row.seasonId}-${row.data.away_college}`
-            );
-            if (!homeStats || !awayStats) {
-              console.error(
-                `Missing stats for ${row.seasonId}-${row.data.home_college} or ${row.seasonId}-${row.data.away_college}`
-              );
-              return null;
-            }
-            const baseMatch = {
-              id: row.id,
-              seasonId: row.seasonId,
-              ...row.data,
-              timestamp: row.ts.toISOString(),
-            };
-            return addOdds(baseMatch, homeStats, awayStats);
-          })
-          .filter((m) => m != null);
+        const matches = (
+          await Promise.all(
+            pageSlice.map(async (row) => {
+              const baseMatch = {
+                id: row.id,
+                seasonId: row.seasonId,
+                ...row.data,
+                timestamp: row.ts.toISOString(),
+              };
+              return addOdds(baseMatch, row.seasonId, row.id);
+            })
+          )
+        ).filter((m) => m != null);
 
         return res.status(200).json({
           matches,

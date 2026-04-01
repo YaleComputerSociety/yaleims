@@ -28,7 +28,6 @@ import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
 import { setMVP } from "./setMVP.js";
 import { addSchedule } from "./addSchedule.js";
 import { addBet } from "./addBet.js";
-
 export {
   assignRemoveCaptain,
   getLeaderboard,

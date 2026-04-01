@@ -110,7 +110,7 @@ const BetOption = ({ match, type, setSelectedOption, closeDropDown, selectedOpti
               />
             </div>
 
-            {/* Draw and Default options */}
+            {/* Draw option */}
             <div className="space-y-3 md:space-y-4 mt-4 md:mt-0">
               <RadioOption
                 college={null}
@@ -120,17 +120,6 @@ const BetOption = ({ match, type, setSelectedOption, closeDropDown, selectedOpti
                 label={`Draw - ${
                   match.draw_odds !== undefined
                     ? `${(1 * (1 + (1 - match.draw_odds) / match.draw_odds)).toFixed(2)}x`
-                    : "Unknown odds"
-                }`}
-              />
-              <RadioOption
-                college={null}
-                value="Default"
-                odds={match.default_odds ?? 0}
-                // value={JSON.stringify({ option: "Default", odds: match.default_odds })}
-                label={`Default - ${
-                  match.default_odds !== undefined
-                    ? `${(1 * (1 + (1 - match.default_odds) / match.default_odds)).toFixed(2)}x`
                     : "Unknown odds"
                 }`}
               />

@@ -242,7 +242,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
               />
             </div>
 
-            {/* Draw and Default options */}
+            {/* Draw option */}
             <div className="space-y-3 md:space-y-4 mt-4 md:mt-0">
               <RadioOption
                 college={null}
@@ -252,17 +252,6 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
                 label={`Draw - ${
                   match.draw_odds !== undefined
                     ? `${(100 * match.draw_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.draw_odds) / match.draw_odds)).toFixed(2)}x returns`
-                    : "Unknown odds"
-                }`}
-              />
-              <RadioOption
-                college={null}
-                value="Default"
-                odds={match.default_odds ?? 0}
-                // value={JSON.stringify({ option: "Default", odds: match.default_odds })}
-                label={`Default - ${
-                  match.default_odds !== undefined
-                    ? `${(100 * match.default_odds).toFixed(1)}% likely, ${(1 * (1 + (1 - match.default_odds) / match.default_odds)).toFixed(2)}x returns`
                     : "Unknown odds"
                 }`}
               />
