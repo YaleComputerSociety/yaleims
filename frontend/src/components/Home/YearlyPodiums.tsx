@@ -5,11 +5,13 @@ import { getVersionedImage, getCollegeFlag } from "@/utils/versionedImages";
 interface YearlyPodiumsProps {
   colleges: any;
   onCollegeClick: any;
+  highlightCollegeId?: string | null;
 }
 
 export const YearlyPodiums: React.FC<YearlyPodiumsProps> = ({
   colleges,
   onCollegeClick,
+  highlightCollegeId,
 }) => {
   const overlaySources = [
     getVersionedImage("/college_flags/bronze_overlay.png"), // 3rd place
@@ -55,6 +57,11 @@ export const YearlyPodiums: React.FC<YearlyPodiumsProps> = ({
           overlayConfig={positions[index].overlayConfig}
           college={college}
           onSelect={onCollegeClick}
+          highlight={
+            !!highlightCollegeId &&
+            college.rank === 1 &&
+            college.id === highlightCollegeId
+          }
         />
       ))}
     </div>

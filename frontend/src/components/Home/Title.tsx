@@ -1,6 +1,6 @@
 import React from "react";
 import { useSeason } from "@src/context/SeasonContext";
-import MVPPopup from "./MVPPopup";
+// import MVPPopup from "./MVPPopup";
 
 type TitleProps = {
   selected: string;
@@ -22,17 +22,17 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
 
   return (
     <div className="relative pt-7 mb-7">
-      <div className="grid grid-cols-2 md:max-w-[80%] sm:max-w-[75%] max-w-[85%] mx-auto pt-7 mb-7 xs:mb-0">
+      <div className="grid grid-cols-2  md:max-w-[80%] sm:max-w-[75%] max-w-[85%] mx-auto pt-7 mb-7 xs:mb-0">
         <h1 className="hidden xs:block text-start ml-3 md:text-5xl text-4xl text-blue-600 font-bold dark:text-white mg:text-6xl relative">
           {selected === currentSeason?.year && "TYNG CUP STANDINGS"}
           {selected === "All Time" && "ALL-TIME STANDINGS"}
           {pastSeasons?.years?.includes(selected) && `${selected} STANDINGS`}
         </h1>
-        <div className="hidden xs:grid text-right ml-10 grid-cols-2">
-          <div>
+        <div className="hidden xs:grid text-right ml-10">
+          {/* <div>
             <MVPPopup />
-          </div>
-          <div>
+          </div> */}
+          <div className="grid-cols-2">
             <select
               value={selected}
               onChange={handleSelectionChange}

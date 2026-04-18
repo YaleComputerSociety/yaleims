@@ -2,7 +2,6 @@ import { Filter, OrderByDirection } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import { oddsCalculator } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -25,8 +24,11 @@ const db = admin.firestore();
  *   scored       – "all" | "scored" | "unscored" (default "all")
  *   dateFrom     – ISO string, only return matches on or after this date
  *   dateTo       – ISO string, only return matches on or before this date
+ *   paginate     – "true" | "false" (default "true"). When "false", returns
+ *                  all matches for the season and ignores pageSize/type/cursors.
  */
 export const getMatchesPaginatedv2 = functions.https.onRequest(
+  { memory: "512MiB" },
   async (req, res) => {
     return corsHandler(req, res, async () => {
       try {
@@ -43,20 +45,23 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
         const scored = (req.query.scored as string) || "all"; // "all" | "scored" | "unscored"
         const dateFrom = req.query.dateFrom as string;
         const dateTo = req.query.dateTo as string;
+        const paginate = (req.query.paginate as string) !== "false";
 
         // ── validate ──────────────────────────────────────────────────
         if (!seasonId)
           return res.status(400).send("Missing required parameter: seasonId");
-        if (!pageSize)
-          return res.status(400).send("Missing required parameter: pageSize");
-        if (!["next", "prev", "index"].includes(type))
-          return res.status(400).send("Invalid or missing 'type' parameter");
+        if (paginate) {
+          if (!pageSize)
+            return res.status(400).send("Missing required parameter: pageSize");
+          if (!["next", "prev", "index"].includes(type))
+            return res.status(400).send("Invalid or missing 'type' parameter");
+        }
         if (!["asc", "desc"].includes(sortOrder))
           return res.status(400).send("Invalid 'sortOrder' parameter");
         if (!["all", "scored", "unscored"].includes(scored))
           return res.status(400).send("Invalid 'scored' parameter. Use 'all', 'scored', or 'unscored'.");
 
-        const pageSizeNum = parseInt(pageSize, 10);
+        const pageSizeNum = paginate ? parseInt(pageSize, 10) : 0;
         const pageIndexNum = parseInt(pageIndex, 10) || 1;
 
         // ── build query ───────────────────────────────────────────────
@@ -99,24 +104,31 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
         }
 
         // ── count total (for page indicator) ──────────────────────────
-        const totalResults = (await query.count().get()).data().count;
-        const totalPages = Math.ceil(totalResults / pageSizeNum);
+        let totalResults: number;
+        let totalPages: number;
+        if (paginate) {
+          totalResults = (await query.count().get()).data().count;
+          totalPages = Math.ceil(totalResults / pageSizeNum);
 
-        // ── pagination ────────────────────────────────────────────────
-        if (type === "next" && lastVisible) {
-          const cursorDoc = await baseRef.doc(lastVisible).get();
-          if (!cursorDoc.exists)
-            return res.status(404).send("Last visible document not found");
-          query = query.startAfter(cursorDoc).limit(pageSizeNum);
-        } else if (type === "prev" && firstVisible) {
-          const cursorDoc = await baseRef.doc(firstVisible).get();
-          if (!cursorDoc.exists)
-            return res.status(404).send("First visible document not found");
-          query = query.endBefore(cursorDoc).limitToLast(pageSizeNum);
+          // ── pagination ──────────────────────────────────────────────
+          if (type === "next" && lastVisible) {
+            const cursorDoc = await baseRef.doc(lastVisible).get();
+            if (!cursorDoc.exists)
+              return res.status(404).send("Last visible document not found");
+            query = query.startAfter(cursorDoc).limit(pageSizeNum);
+          } else if (type === "prev" && firstVisible) {
+            const cursorDoc = await baseRef.doc(firstVisible).get();
+            if (!cursorDoc.exists)
+              return res.status(404).send("First visible document not found");
+            query = query.endBefore(cursorDoc).limitToLast(pageSizeNum);
+          } else {
+            // type === "index"
+            const offset = (pageIndexNum - 1) * pageSizeNum;
+            query = query.offset(offset).limit(pageSizeNum);
+          }
         } else {
-          // type === "index"
-          const offset = (pageIndexNum - 1) * pageSizeNum;
-          query = query.offset(offset).limit(pageSizeNum);
+          totalResults = 0;
+          totalPages = 1;
         }
 
         // ── execute ───────────────────────────────────────────────────
@@ -131,52 +143,18 @@ export const getMatchesPaginatedv2 = functions.https.onRequest(
           });
         }
 
-        // ── fetch college stats for odds calculation ──────────────────
-        const statsSnap = await db
-          .collection("colleges")
-          .doc("seasons")
-          .collection(seasonId)
-          .get();
-        const statsMap = new Map<string, any>();
-        statsSnap.forEach((d) => statsMap.set(d.id, d.data()));
-
         // ── map results ───────────────────────────────────────────────
         const matches = snapshot.docs.map((doc) => {
           const data = doc.data();
-          const matchBase = {
+          return {
             id: doc.id,
             seasonId,
             ...data,
             timestamp: data.timestamp?.toDate?.()?.toISOString() || null,
           };
-
-          const homeStats = statsMap.get(data.home_college);
-          const awayStats = statsMap.get(data.away_college);
-
-          if (!homeStats || !awayStats) return matchBase;
-
-          const vol = {
-            team1: data.home_volume ?? 0,
-            team2: data.away_volume ?? 0,
-            draw: data.draw_volume ?? 0,
-            forfeit: data.default_volume ?? 0,
-          };
-          const odds = oddsCalculator(
-            (homeStats.wins || 0) / (homeStats.games || 1),
-            (awayStats.wins || 0) / (awayStats.games || 1),
-            vol,
-            (homeStats.forfeits || 0) / (homeStats.games || 1),
-            (awayStats.forfeits || 0) / (awayStats.games || 1)
-          );
-
-          return {
-            ...matchBase,
-            default_odds: odds.forfeit,
-            home_college_odds: odds.team1Win,
-            away_college_odds: odds.team2Win,
-            draw_odds: odds.draw,
-          };
         });
+
+        if (!paginate) totalResults = matches.length;
 
         return res.status(200).json({
           matches,

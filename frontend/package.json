@@ -13,11 +13,13 @@
     "@gsap/react": "^2.1.2",
     "@headlessui/react": "^2.2.2",
     "@react-oauth/google": "^0.12.1",
+    "canvas-confetti": "^1.9.4",
     "cookies-next": "^5.0.2",
     "date-fns": "^3.6.0",
     "firebase": "^10.13.1",
     "firebase-functions": "^6.1.1",
     "googleapis": "^143.0.0",
+    "gsap": "^3.15.0",
     "lucide-react": "^0.503.0",
     "next": "^16.1.1",
     "next-themes": "^0.4.6",
@@ -31,6 +33,7 @@
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/passport": "^1.0.17",
     "@types/react": "^18.3.20",

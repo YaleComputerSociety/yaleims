@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { FaCaretDown } from "react-icons/fa";
 import { FaCaretUp } from "react-icons/fa";
+import { Crown } from "lucide-react";
 
 type props = {
   imgSrc: string;
@@ -12,6 +13,7 @@ type props = {
   overlayConfig: string;
   onSelect: Function;
   posHeight: string;
+  highlight?: boolean;
   college: {
     abbreviation: string;
     forfeits: number;
@@ -38,6 +40,7 @@ const CPodium: React.FC<props> = ({
   imgsConfig,
   onSelect,
   posHeight,
+  highlight,
 }) => {
   return (
     <div
@@ -47,13 +50,24 @@ const CPodium: React.FC<props> = ({
       onClick={() => onSelect(college.name)}
     >
       <div className={`relative ${imgsConfig} w-full -mb-10`}>
-        <Image
-          src={imgSrc}
-          alt={college.name}
-          width={120}
-          height={120}
-          className="absolute top-[32%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 mg:h-[146px] mg:w-[120px] h-[115px] w-[93px]"
-        />
+        <div className="absolute top-[32%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 mg:h-[146px] mg:w-[120px] h-[115px] w-[93px]">
+          <Image
+            src={imgSrc}
+            alt={college.name}
+            width={120}
+            height={120}
+            className={`w-full h-full ${highlight ? "champion-flag-glow" : ""}`}
+          />
+          {highlight && (
+            <div className="absolute -top-10 -right-6 mg:-top-12 mg:-right-8 rotate-12 drop-shadow-[0_0_8px_rgba(251,191,36,0.9)]">
+              <Crown
+                className="w-14 h-14 mg:w-16 mg:h-16 text-amber-300"
+                fill="currentColor"
+                strokeWidth={1.5}
+              />
+            </div>
+          )}
+        </div>
         <Image
           src={overlaySrc}
           alt="Overlay"
@@ -63,7 +77,9 @@ const CPodium: React.FC<props> = ({
         />
       </div>
       <div
-        className={`flex flex-col items-center justify-center rounded-t-2xl px-5 md:w-full ${posHeight} bg-blue-300 text-black dark:bg-black dark:text-white text-center`}
+        className={`${
+          highlight ? "champion-glow " : ""
+        }flex flex-col items-center justify-center rounded-t-2xl px-5 md:w-full ${posHeight} bg-blue-300 text-black dark:bg-black dark:text-white text-center`}
       >
         <h1 className="mg:mb-2 mg:text-lg text-sm font-bold">{college.name}</h1>
         <div className="flex flex-row gap-3 mg:mb-1">

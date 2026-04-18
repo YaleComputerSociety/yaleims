@@ -9,6 +9,7 @@ import QuickActionCard from "@src/components/Dashboard/QuickActionCard";
 import SectionCard from "@src/components/Dashboard/SectionCard";
 import PopupActionCard from "@src/components/Dashboard/PopupActionCard";
 import ScoreReportsAdmin from "@src/components/Dashboard/Admin/ScoreReportsAdmin";
+import ChampionControls from "@src/components/Dashboard/Admin/ChampionControls";
 import ViewCaptainsCollegeRep from "@src/components/Dashboard/User/ViewCaptainsCollegeRep";
 import UserMatches from "@src/components/Dashboard/User/UserMatches";
 import AssignCaptain from "@src/components/Dashboard/College_Rep/AssignCaptain";
@@ -111,6 +112,14 @@ const Dashboard: React.FC = () => {
       gradient: "from-amber-500/10 to-yellow-500/10",
       isPopup: true,
       CustomComponent: ScoreReportsAdmin,
+    },
+    {
+      title: "Champion Celebration",
+      icon: "🏆",
+      description: "Pick the winning college and toggle the celebration",
+      gradient: "from-yellow-500/10 to-amber-500/10",
+      isPopup: true,
+      CustomComponent: ChampionControls,
     },
   ];
 

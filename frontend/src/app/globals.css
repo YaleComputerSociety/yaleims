@@ -53,6 +53,84 @@ body {
   animation: pulseGlow 2s infinite ease-in-out;
 }
 
+@property --champion-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes championSweep {
+  to { --champion-angle: 360deg; }
+}
+
+@keyframes championPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 12px rgba(251, 191, 36, 0.55),
+      0 0 28px rgba(253, 224, 71, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 22px rgba(251, 191, 36, 0.85),
+      0 0 48px rgba(253, 224, 71, 0.55);
+  }
+}
+
+@keyframes championFlagPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.7))
+            drop-shadow(0 0 12px rgba(253, 224, 71, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.95))
+            drop-shadow(0 0 28px rgba(253, 224, 71, 0.8));
+  }
+}
+
+.champion-glow {
+  position: relative;
+  isolation: isolate;
+  box-shadow:
+    0 0 14px rgba(251, 191, 36, 0.45),
+    0 0 32px rgba(253, 224, 71, 0.25);
+}
+
+.champion-glow::before {
+  content: "";
+  position: absolute;
+  inset: -4px -4px 0 -4px;
+  border-radius: inherit;
+  padding: 4px 4px 0 4px;
+  background: conic-gradient(
+    from var(--champion-angle),
+    #fbbf24 0deg,
+    #f59e0b 285deg,
+    #fde68a 330deg,
+    #ffffff 350deg,
+    #fffbe6 355deg,
+    #ffffff 5deg,
+    #fde68a 25deg,
+    #fbbf24 60deg,
+    #fbbf24 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: championSweep 3s linear infinite;
+  filter:
+    drop-shadow(0 0 6px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 0 14px rgba(253, 224, 71, 0.85))
+    drop-shadow(0 0 24px rgba(251, 191, 36, 0.55));
+  pointer-events: none;
+  z-index: -1;
+}
+
+.champion-flag-glow {
+  animation: championFlagPulse 2.4s ease-in-out infinite;
+}
+
 html,
 body {
   margin: 0;

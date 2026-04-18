@@ -125,9 +125,7 @@ const GamesPage: React.FC = () => {
       try {
         const params = new URLSearchParams({
           seasonId: selectedSeason,
-          type: "index",
-          pageIndex: "1",
-          pageSize: "2000",
+          paginate: "false",
           sortOrder: "asc",
           scored: "all",
           college: "All",

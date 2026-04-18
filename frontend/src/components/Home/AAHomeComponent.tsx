@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "../LoadingScreen";
 import { FiltersContext } from "@src/context/FiltersContext";
-import { currentYear } from "@src/utils/helpers";
+import { currentYear, colleges } from "@src/utils/helpers";
 import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
@@ -12,8 +12,11 @@ import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
 import { useSeason } from "@src/context/SeasonContext";
 import PageHeading from "../PageHeading";
+import ChampionConfetti from "./ChampionConfetti";
+import { useConfettiEnabled } from "@src/utils/preferences";
 import {
   collection,
+  doc,
   onSnapshot,
   orderBy,
   query,
@@ -21,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
-const SHOW_BANNER = true;
+const SHOW_BANNER = false;
 const BANNER_MESSAGE =
   "🎮 The odds challenge for the Nintendo Switch is still on! Place bets to compete!";
 
@@ -37,6 +40,29 @@ const AAHomeComponent: React.FC = () => {
       : currentSeason?.year || currentYear,
   );
   const [bannerOpen, setBannerOpen] = useState(true);
+  const [championship, setChampionship] = useState<{
+    winningCollegeId: string | null;
+    celebrationActive: boolean;
+  } | null>(null);
+  const confettiEnabled = useConfettiEnabled();
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "seasons", "current"), (snap) => {
+      const data = snap.data() as
+        | { winningCollegeId?: string | null; celebrationActive?: boolean }
+        | undefined;
+      setChampionship({
+        winningCollegeId: data?.winningCollegeId ?? null,
+        celebrationActive: !!data?.celebrationActive,
+      });
+    });
+    return () => unsub();
+  }, []);
+
+  const winningCollege =
+    championship?.celebrationActive && championship.winningCollegeId
+      ? colleges.find((c) => c.id === championship.winningCollegeId)
+      : undefined;
 
   useEffect(() => {
     let unsub: Unsubscribe | undefined;
@@ -93,6 +119,7 @@ const AAHomeComponent: React.FC = () => {
           </button>
         </div>
       )}
+      {winningCollege && confettiEnabled && <ChampionConfetti />}
       <Title
         selected={selected}
         lastUpdated={sortedColleges[0].today}
@@ -108,6 +135,7 @@ const AAHomeComponent: React.FC = () => {
           <YearlyPodiums
             colleges={sortedColleges.slice(0, 3)}
             onCollegeClick={handleCollegeClick}
+            highlightCollegeId={winningCollege?.id ?? null}
           />
           <YearlyLeaderboardTable
             colleges={sortedColleges}

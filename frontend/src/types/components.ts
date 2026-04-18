@@ -37,6 +37,7 @@ export type Match = {
   home_volume?: number;
   away_volume?: number;
   draw_volume?: number;
+  default_volume?: number;
   next_match_id?: string;
   playoff_bracket_slot?: number;
 };
