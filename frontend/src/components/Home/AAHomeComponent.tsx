@@ -66,7 +66,10 @@ const AAHomeComponent: React.FC = () => {
 
   useEffect(() => {
     let unsub: Unsubscribe | undefined;
-    if (!selected || selected === "All Time") return;
+    if (!selected || selected === "All Time") {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
@@ -122,7 +125,7 @@ const AAHomeComponent: React.FC = () => {
       {winningCollege && confettiEnabled && <ChampionConfetti />}
       <Title
         selected={selected}
-        lastUpdated={sortedColleges[0].today}
+        lastUpdated={sortedColleges[0]?.today ?? ""}
         onFilterChange={handleSelectedChange}
       />
       {selected === "All Time" ? (
