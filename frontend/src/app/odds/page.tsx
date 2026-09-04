@@ -156,7 +156,8 @@ const YoddsPage: React.FC = () => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams(getQueryParams(queryType));
-        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
+        if (!currentSeason?.year) return;
+        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason.year}`);
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
         const data = await response.json();
@@ -176,7 +177,7 @@ const YoddsPage: React.FC = () => {
 
     window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType, filter.sport]);
+  }, [page, queryType, filter.sport, currentSeason]);
   // Fetch user points
   useEffect(() => {
     if (!userEmail) return;
@@ -184,7 +185,8 @@ const YoddsPage: React.FC = () => {
     const fetchMyPoints = async () => {
       setCoinsLoading(true);
       try {
-        const response = await fetch(`/api/functions/getSeasonPoints?seasonId=${currentSeason?.year || "2025-2026"}`);
+        if (!currentSeason?.year) return;
+        const response = await fetch(`/api/functions/getSeasonPoints?seasonId=${currentSeason.year}`);
         if (!response.ok) throw new Error("Error fetching points");
         const data = await response.json();
         
@@ -198,7 +200,7 @@ const YoddsPage: React.FC = () => {
     }
 
     fetchMyPoints();
-  }, [userEmail, submitButtonClicked]);
+  }, [userEmail, submitButtonClicked, currentSeason]);
 
   // Fetch pending bets
   useEffect(() => {
@@ -207,7 +209,8 @@ const YoddsPage: React.FC = () => {
     const fetchPendingBets = async () => {
       try {
         setPendingLoading(true);
-        const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason?.year || '2025-2026'}&history=false&pending=true`)
+        if (!currentSeason?.year) return;
+        const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason.year}&history=false&pending=true`)
         if (!response.ok)
           throw new Error(`Error fetching pending bets: ${response.statusText}`);
         const data = await response.json();
@@ -221,7 +224,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchPendingBets();
-  }, [userEmail, submitButtonClicked]);
+  }, [userEmail, submitButtonClicked, currentSeason]);
 
   useEffect(() => {
     if (!userEmail) return;
@@ -229,7 +232,8 @@ const YoddsPage: React.FC = () => {
     const fetchPastBets = async () => {
       try {
         setPendingLoading(true);
-        const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason?.year || '2025-2026'}&history=true&pending=false`)
+        if (!currentSeason?.year) return;
+        const response = await fetch(`/api/functions/getBets?seasonId=${currentSeason.year}&history=true&pending=false`)
         if (!response.ok)
           throw new Error(`Error fetching past bets: ${response.statusText}`);
         const data = await response.json();
@@ -244,7 +248,7 @@ const YoddsPage: React.FC = () => {
     };
 
     fetchPastBets();
-  }, [userEmail]);
+  }, [userEmail, currentSeason]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -590,7 +594,7 @@ const YoddsPage: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative justify-between flex w-full rounded-t-lg p-4 flex-row border-b-2 border-gray-300 dark:border-black bg-gray-200 dark:bg-custom_gray">
-              <h2 className="text-xl font-semibold">2025-2026 Odds Rankings</h2>
+              <h2 className="text-xl font-semibold">{currentSeason?.year} Odds Rankings</h2>
               <button
                 onClick={() => setViewRankings(false)}
                 className="text-gray-600 hover:text-white text-xl font-bold"

@@ -80,7 +80,8 @@ const SchedulePage: React.FC = () => {
         toast.error("Cannot signUp for past matches.");
         return;
       }
-        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason?.year || "2025-2026"}`);
+        if (!currentSeason?.year) return;
+        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason.year}`);
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
         const data = await response.json();
@@ -100,7 +101,7 @@ const SchedulePage: React.FC = () => {
 
     window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType, filter]);
+  }, [page, queryType, filter, currentSeason]);
 
   // state for calendar focus circle
   const [topDate, setTopDate] = useState(new Date());

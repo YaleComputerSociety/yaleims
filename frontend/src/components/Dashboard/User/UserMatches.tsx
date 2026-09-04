@@ -41,7 +41,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("api/functions/addMatchParticipant", {
+      const response = await fetch("/api/functions/addMatchParticipant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

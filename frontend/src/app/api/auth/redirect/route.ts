@@ -66,6 +66,18 @@ export async function GET(request: Request): Promise<NextResponse> {
       const email = yaliesJSON[0].email;
       const name = `${yaliesJSON[0].first_name} ${yaliesJSON[0].last_name}`;
 
+      const currentSeasonResponse = await fetch(
+        "https://getseasons-65477nrg6a-uc.a.run.app"
+      );
+      if (!currentSeasonResponse.ok) {
+        throw new Error("Failed to load current season");
+      }
+      const currentSeasonData = await currentSeasonResponse.json();
+      const currentSeasonId = currentSeasonData.current?.year;
+      if (!currentSeasonId) {
+        throw new Error("Current season is missing");
+      }
+
       const response1 = await fetch(
         "https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser",
         {
@@ -73,7 +85,7 @@ export async function GET(request: Request): Promise<NextResponse> {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, seasonId: "2025-2026" }),
+          body: JSON.stringify({ email, seasonId: currentSeasonId }),
         }
       );
       const result1 = await response1.json();

@@ -1,8 +1,6 @@
 export async function GET(req: Request) {
-    const url = new URL(req.url);
-    const seasonId = url.searchParams.get("seasonId") ?? "2025-2026";
     const response= await fetch(
-        `https://getseasons-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`
+        "https://getseasons-65477nrg6a-uc.a.run.app"
     );
 
     if (!response.ok) {

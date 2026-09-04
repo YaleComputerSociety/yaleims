@@ -9,7 +9,10 @@ const db = admin.firestore();
 export const getLeaderboard = functions.https.onRequest((req, res) => {
   corsHandler(req, res, async () => {
     try {
-        const seasonId = (req.query.seasonId as string) || "2025-2026";
+        const seasonId = req.query.seasonId as string;
+        if (!seasonId) {
+            return res.status(400).json({ error: "seasonId is required" });
+        }
         const leaderboardRef = db.collection("colleges").doc("seasons").collection(seasonId);
         const snapshot = await leaderboardRef
             .orderBy("points", "desc")

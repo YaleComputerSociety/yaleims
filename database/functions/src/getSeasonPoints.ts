@@ -29,7 +29,10 @@ export const getSeasonPoints = functions.https.onRequest(
 
       const token = authHeader.split("Bearer ")[1];
       const decoded = jwt.verify(token, JWT_SECRET);
-      const seasonId = req.query.seasonId as string || "2025-2026";
+      const seasonId = req.query.seasonId as string;
+      if (!seasonId) {
+        return res.status(400).json({ error: "seasonId is required" });
+      }
 
       if (!isValidDecodedToken(decoded)) {
         console.error("Invalid token structure");

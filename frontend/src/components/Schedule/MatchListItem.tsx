@@ -49,7 +49,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("api/functions/addMatchParticipant", {
+      const response = await fetch("/api/functions/addMatchParticipant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +87,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
     try {
       setIsLoadingParticipants(true);
       const response = await fetch(
-        `/api/functions/getMatchParticipants?matchId=${matchId}&seasonId=2025-2026`,
+        `/api/functions/getMatchParticipants?matchId=${matchId}&seasonId=${currentSeasonId}`,
         {
           method: "GET",
           headers: {

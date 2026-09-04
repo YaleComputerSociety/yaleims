@@ -72,7 +72,7 @@ function formatReport(
   };
 }
 
-/** GET reports: ?season=2025-2026&matchId=123 (for a match) or ?season=2025-2026&all=true (admin, all reports) */
+/** GET reports: ?season=<seasonId>&matchId=123 (for a match) or ?season=<seasonId>&all=true (admin, all reports) */
 export async function GET(req: Request): Promise<NextResponse> {
   try {
     const cookieStore = await cookies();

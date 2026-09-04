@@ -24,7 +24,7 @@ export default function HeroStats() {
       try {
         setLoading(true);
         const response = await fetch(
-          `/api/functions/getUserStats?seasonId=${currentSeason?.year || "2025-2026"}&email=${user.email}`
+          `/api/functions/getUserStats?seasonId=${currentSeason?.year}&email=${user.email}`
         );
         if (!response.ok) throw new Error("Error fetching user stats");
         const data = await response.json();

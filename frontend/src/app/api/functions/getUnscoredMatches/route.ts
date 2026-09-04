@@ -7,7 +7,10 @@ export async function GET(req: Request) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
     const url = new URL(req.url);
-    const seasonId = url.searchParams.get("seasonId") ?? "2025-2026";
+    const seasonId = url.searchParams.get("seasonId");
+    if (!seasonId) {
+        return Response.json({ error: "seasonId is required" }, { status: 400 });
+    }
     const response= await fetch(
         `https://getunscoredmatches-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }

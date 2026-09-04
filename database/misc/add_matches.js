@@ -2,8 +2,8 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE = "data//2025-2026/2026_Volleyball_Schedule_formatted.csv";
-const SEASON_ID = "2025-2026"; // season we are inserting into
+const CSV_FILE = "data/Soccer_Fall_2026_schedule_formatted.csv";
+const SEASON_ID = "2026-2027"; // season we are inserting into
 
 /** ✱ 2. FIREBASE SETUP ✱ */
 import { initializeApp } from "firebase/app";

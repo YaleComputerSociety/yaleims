@@ -14,7 +14,11 @@ interface UserRow {
 
 export const getUserLeaderboard = functions.https.onRequest((req, res) =>
   corsHandler(req, res, async () => {
-    const seasonId = (req.query.season as string) ?? "2025-2026";
+    const seasonId = req.query.season as string;
+    if (!seasonId) {
+      res.status(400).json({ error: "season is required" });
+      return;
+    }
 
     try {
       // 1) List user doc refs (no document reads billed here)

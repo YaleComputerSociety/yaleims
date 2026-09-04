@@ -14,7 +14,8 @@ export default function StatsBox() {
 
         const fetchUserStats = async () => {
             try {
-                const response = await fetch(`/api/functions/getUserStats?seasonId=${currentSeason?.year || "2025-2026"}&email=${user.email}`);
+                if (!currentSeason?.year) return;
+                const response = await fetch(`/api/functions/getUserStats?seasonId=${currentSeason.year}&email=${user.email}`);
                 if (!response.ok) throw new Error("Error fetching user stats");
                 const data = await response.json();
                 setUserStats(data)
@@ -24,7 +25,7 @@ export default function StatsBox() {
         }
 
         fetchUserStats();
-    }, []);
+    }, [user, currentSeason]);
 
     if (!user) return null;
     return (

@@ -98,7 +98,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
   const [loadingReports, setLoadingReports] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-  const season = seasonId ?? "2025-2026";
+  const season = seasonId ?? "";
 
   const fetchReports = useCallback(async () => {
     if (!season || !match.id) return;
