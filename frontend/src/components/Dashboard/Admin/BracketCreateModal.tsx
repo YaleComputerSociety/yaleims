@@ -129,14 +129,22 @@ const BracketModal: React.FC<BracketModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg w-2/3 max-w-5xl max-h-[80vh] overflow-y-auto shadow-lg">
+      <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg w-[92%] sm:w-2/3 max-w-5xl max-h-[85vh] overflow-y-auto shadow-lg border border-gray-200 dark:border-gray-700">
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold">
-            Configure {sport} Playoff Bracket
-          </h2>
+        <div className="sticky top-0 z-10 flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div>
+            <h2 className="text-xl font-semibold">
+              Configure {sport} Playoff Bracket
+            </h2>
+            {/* The season is not selectable -- brackets always land in the
+                current one -- so say which one that is. */}
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Will be added to the{" "}
+              <span className="font-semibold">{year}</span> season
+            </p>
+          </div>
           <button
-            className="text-2xl bg-transparent border-0 cursor-pointer"
+            className="text-2xl bg-transparent border-0 cursor-pointer text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             onClick={onClose}
           >
             &times;
@@ -148,34 +156,34 @@ const BracketModal: React.FC<BracketModalProps> = ({
           <table className="w-full border-collapse mb-6">
             <thead>
               <tr>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Match Slot
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Away College
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Away Seed
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Home College
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Home Seed
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Date
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Time
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Location
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Location Extra
                 </th>
-                <th className="border border-gray-300 bg-gray-100 p-2 text-left">
+                <th className="border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-2 text-left">
                   Division
                 </th>
               </tr>
@@ -186,15 +194,17 @@ const BracketModal: React.FC<BracketModalProps> = ({
                   key={index}
                   className={`${
                     match.division === "green"
-                      ? "bg-green-50"
+                      ? "bg-green-200/70 dark:bg-green-800/45"
                       : match.division === "blue"
-                      ? "bg-blue-50"
-                      : "bg-gray-50"
+                      ? "bg-blue-200/70 dark:bg-blue-800/45"
+                      : match.division === "final"
+                      ? "bg-amber-200/70 dark:bg-amber-700/40"
+                      : "bg-gray-100 dark:bg-gray-800/60"
                   }`}
                 >
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="number"
                       value={match.match_slot}
                       min="1"
@@ -205,9 +215,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       placeholder="1-15"
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <select
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       value={toCollegeName[match.away_college]}
                       onChange={(e) =>
                         handleChange(
@@ -225,9 +235,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       ))}
                     </select>
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="number"
                       value={match.away_seed}
                       min="1"
@@ -238,9 +248,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       placeholder="1-7"
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <select
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       value={toCollegeName[match.home_college]}
                       onChange={(e) =>
                         handleChange(
@@ -258,9 +268,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       ))}
                     </select>
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="number"
                       value={match.home_seed}
                       min="1"
@@ -271,9 +281,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       placeholder="1-7"
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="text"
                       value={match.date}
                       onChange={(e) =>
@@ -281,9 +291,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       }
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="text"
                       value={match.time}
                       onChange={(e) =>
@@ -291,9 +301,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       }
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="text"
                       value={match.location}
                       onChange={(e) =>
@@ -301,9 +311,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       }
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <input
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       type="text"
                       value={match.location_extra}
                       onChange={(e) =>
@@ -311,9 +321,9 @@ const BracketModal: React.FC<BracketModalProps> = ({
                       }
                     />
                   </td>
-                  <td className="border border-gray-300 p-2">
+                  <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <select
-                      className="w-full p-2 border border-gray-300 rounded"
+                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       value={match.division}
                       onChange={(e) =>
                         handleChange(
@@ -334,20 +344,20 @@ const BracketModal: React.FC<BracketModalProps> = ({
           </table>
 
           {/* CSV Upload */}
-          <div className="p-4 border border-dashed border-gray-300 rounded text-center mt-6">
+          <div className="p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded text-center mt-6">
             <h3 className="text-lg font-medium mb-2">Or upload CSV</h3>
             <div className="flex justify-center gap-4 mt-3">
               <a
                 href="https://docs.google.com/spreadsheets/d/1D0Bx1oYOOAgQJF4-qDzcKdQYsWmbPfR3-xyAbrI1h4Q/edit?usp=sharing"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
               >
                 View Template
               </a>
               <label
                 htmlFor="csv-upload"
-                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors cursor-pointer"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
               >
                 Choose CSV File
                 <input
@@ -363,7 +373,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex flex-col gap-2">
+        <div className="sticky bottom-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col gap-2">
           <div className="flex justify-end mb-2">
             <label className="flex items-center cursor-pointer select-none">
               <input
@@ -372,7 +382,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
                 onChange={() => setOverrideValidation((v) => !v)}
                 className="form-checkbox h-5 w-5 text-blue-600"
               />
-              <span className="ml-2 text-sm text-gray-700">
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                 Override input validation
               </span>
             </label>
@@ -380,13 +390,13 @@ const BracketModal: React.FC<BracketModalProps> = ({
           <div className="flex justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-60"
               disabled={loading}
             >
               {loading ? (
