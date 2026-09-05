@@ -3,7 +3,7 @@ import admin from "./firebaseAdmin.js";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
-import { isValidDecodedToken } from "./helpers.js";
+import { isValidDecodedToken, tokenHasRole } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -17,10 +17,6 @@ interface ScheduleMatch {
   location: string;
   locationExtra?: string;
 }
-
-const canAddSchedule = (role: string) => {
-  return role === "admin" || role === "dev";
-};
 
 export const addSchedule = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
@@ -48,7 +44,7 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid token" });
     }
-    if (!isValidDecodedToken(decoded) || !canAddSchedule(decoded.role)) {
+    if (!isValidDecodedToken(decoded) || !tokenHasRole(decoded, ["admin", "dev"])) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -64,6 +60,13 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
         return res.status(400).json({ error: "Invalid schedule format" });
       }
 
+      // A Firestore batch caps at 500 writes, and one slot goes to the counter.
+      if (schedule.matches.length > 499) {
+        return res.status(400).json({
+          error: "Too many matches in one upload (max 499). Split the file.",
+        });
+      }
+
       // Fetch the next ID for matches
       const nextIdSnap = await db.collection("counters").doc("matches").get();
       const nextIdData = nextIdSnap.data();
@@ -76,7 +79,9 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
         return res.status(500).json({ error: "Cannot find next match ID" });
       }
 
-      let nextId = nextIdData.count;
+      // counters/matches holds the last id handed out, so the next free id is
+      // one past it. Starting at count itself overwrote the newest match.
+      let nextId = nextIdData.count + 1;
 
       // Write each match as a document in a subcollection for the sport
       const batch = db.batch();
@@ -119,11 +124,11 @@ export const addSchedule = functions.https.onRequest(async (req, res) => {
         });
       });
 
-      // Update the counter for next match ID
+      // Store the last id handed out, matching what the counter already means.
       batch.set(
         db.collection("counters").doc("matches"),
         {
-          count: nextId,
+          count: nextId - 1,
         },
         { merge: true }
       );

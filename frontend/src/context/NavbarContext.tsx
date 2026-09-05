@@ -42,8 +42,7 @@
 
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { createContext, useContext, useState, ReactNode } from "react";
 
 
 interface NavBarProps {
@@ -57,18 +56,9 @@ const NavbarContext = createContext<NavBarProps>({
 });
 
 export const NavbarProvider = ({ children }: { children: ReactNode }) => {
-  // console.log("NavbarProvider is mounting..."); // 👈 runs every render
-  const pathname = usePathname();
+  // The sidebar is collapsed only when the user collapses it -- no route ever
+  // forces it (the brackets page used to collapse it on entry).
   const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    const shouldCollapse = pathname?.startsWith("/brackets");
-    setCollapsed(!!shouldCollapse);
-  
-    // console.log("PATHNAME:", pathname);
-    // console.log("Collapsed state just set to:", !!shouldCollapse);
-  }, [pathname]);
-  
 
   const onToggleCollapse = () => setCollapsed((c) => !c);
 

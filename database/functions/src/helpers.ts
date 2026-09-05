@@ -18,6 +18,19 @@ export function isValidDecodedToken(decoded: any): decoded is DecodedToken {
   );
 }
 
+/**
+ * Roles live in the mRoles array; the singular `role` field no longer exists on
+ * user docs, so tokens ship without it and checks against it always failed.
+ * The legacy field is still honoured for any token that happens to carry one.
+ */
+export function tokenHasRole(decoded: any, allowed: string[]): boolean {
+  const roles: string[] = Array.isArray(decoded?.mRoles) ? decoded.mRoles : [];
+  if (typeof decoded?.role === "string") {
+    roles.push(decoded.role);
+  }
+  return allowed.some((role) => roles.includes(role));
+}
+
 
 export interface Sport {
   id: number;

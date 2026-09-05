@@ -153,11 +153,28 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
         data[key] = value;
       }
     });
-    if (!formData.has("forfeit")) {
+    // Only send forfeit when the checkbox is actually on screen -- otherwise every
+    // edit would quietly clear the forfeit flag of an already-scored match.
+    if (scoringSectionEnabled && matchIsScored && !formData.has("forfeit")) {
       data["forfeit"] = false;
     }
 
+    // datetime-local hands back a naive "2026-09-09T16:00" with no zone. Resolve it
+    // here, in the admin's timezone, so the server can't reinterpret it as UTC.
+    if (typeof data["timestamp"] === "string" && data["timestamp"]) {
+      const parsed = new Date(data["timestamp"]);
+      if (isNaN(parsed.getTime())) {
+        toast.error("Invalid date/time");
+        setEditLoading(false);
+        return;
+      }
+      data["timestamp"] = parsed.toISOString();
+    }
+
     data["id"] = match.id;
+    // The doc lives in the season it was created in; don't re-derive it from a
+    // date the admin may have just moved.
+    data["seasonId"] = match.seasonId || year;
 
     const home_college = data["home_college"];
     const away_college = data["away_college"];

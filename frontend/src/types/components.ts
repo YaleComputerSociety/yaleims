@@ -17,6 +17,7 @@ export interface CollegeSummaryCardProps {
 
 export type Match = {
   id: string; // Unique identifier for the match
+  seasonId?: string; // Season collection the match doc lives in, e.g. "2026-2027"
   home_college: string; // Abbreviation of the home college
   away_college: string; // Abbreviation of the away college
   home_college_score: number; // Score of the home college

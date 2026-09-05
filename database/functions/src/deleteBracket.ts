@@ -3,16 +3,12 @@ import admin from "./firebaseAdmin.js";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
-import { isValidDecodedToken } from "./helpers.js";
+import { isValidDecodedToken, tokenHasRole } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
 const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
-
-const canDeleteBracket = (role: string) => {
-  return role === "admin" || role === "dev";
-};
 
 export const deleteBracket = functions.https.onRequest((req, res) => {
   return corsHandler(req, res, async () => {
@@ -40,7 +36,7 @@ export const deleteBracket = functions.https.onRequest((req, res) => {
     } catch {
       return res.status(401).json({ error: "Invalid token" });
     }
-    if (!isValidDecodedToken(decoded) || !canDeleteBracket(decoded.role)) {
+    if (!isValidDecodedToken(decoded) || !tokenHasRole(decoded, ["admin", "dev"])) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
