@@ -38,6 +38,8 @@ export default function PopupActionCard({
         <div
           className={`
             relative overflow-hidden rounded-xl p-4 md:p-5
+            bg-white/80 border border-black/5 shadow-sm
+            dark:bg-transparent dark:border-transparent dark:shadow-none
             bg-gradient-to-br ${gradient}
             backdrop-blur-sm
             transition-all duration-300
@@ -49,7 +51,7 @@ export default function PopupActionCard({
           <div className="flex items-start justify-between mb-3">
             <span className="text-2xl md:text-3xl">{icon}</span>
             <svg
-              className="w-5 h-5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all"
+              className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -64,7 +66,7 @@ export default function PopupActionCard({
           </div>
           <h3 className="font-semibold text-sm md:text-base mb-1">{title}</h3>
           {description && (
-            <p className="text-xs text-gray-400 line-clamp-2">{description}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{description}</p>
           )}
           <div className="absolute -right-8 -bottom-8 w-24 h-24 rounded-full bg-white/5 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
@@ -79,11 +81,11 @@ export default function PopupActionCard({
             className="w-[80%] md:w-[60%] h-[80%] bg-gray-200 dark:bg-custom_gray rounded-lg flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center justify-between p-4 border-b border-black/10 dark:border-white/10">
               <h2 className="text-xl font-semibold">{popupTitle || title}</h2>
               <button
                 onClick={() => setOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors"
               >
                 <MdClose size={24} />
               </button>

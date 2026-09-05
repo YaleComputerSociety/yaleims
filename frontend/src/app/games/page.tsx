@@ -204,11 +204,15 @@ const GamesPage: React.FC = () => {
   // ── user sign-up state ────────────────────────────────────────────────────────
   const { user } = useUser();
   const [userMatches, setUserMatches] = useState<Match[]>([]);
+  // Until these land we can't tell sign-up state apart from not-signed-up, so the
+  // cards show a skeleton rather than flashing "Sign Up" at someone already playing.
+  const [userMatchesLoading, setUserMatchesLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setUserMatches([]); return; }
+    if (!user) { setUserMatches([]); setUserMatchesLoading(false); return; }
     const controller = new AbortController();
     const fetchUserMatches = async () => {
+      setUserMatchesLoading(true);
       try {
         const res = await fetch(
           `/api/functions/getUserMatches?seasonId=${selectedSeason}`,
@@ -221,6 +225,8 @@ const GamesPage: React.FC = () => {
         if ((err as { name?: string }).name !== "AbortError") {
           console.error("Error fetching user matches:", err);
         }
+      } finally {
+        if (!controller.signal.aborted) setUserMatchesLoading(false);
       }
     };
     fetchUserMatches();
@@ -674,6 +680,7 @@ const GamesPage: React.FC = () => {
                       onSportClick={handleSportClick}
                       user={user}
                       isSignedUp={signedUpIds.has(`${match.id}::${parseTimestamp(match.timestamp).getTime()}`)}
+                      signUpStatusLoading={userMatchesLoading}
                       onStatusChange={handleSignUpStatusChange}
                       seasonId={selectedSeason}
                     />

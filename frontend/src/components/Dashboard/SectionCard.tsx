@@ -17,7 +17,8 @@ export default function SectionCard({
     <div
       className={`
         relative overflow-hidden rounded-xl
-        bg-white/5
+        bg-white/70 border border-black/5 shadow-sm
+        dark:bg-white/5 dark:border-transparent dark:shadow-none
         backdrop-blur-sm
         h-50 md:h-64
         ${className}

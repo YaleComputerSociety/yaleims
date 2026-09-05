@@ -227,7 +227,7 @@ const MatchList: React.FC<{ matches: Match[]; seasonId: string }> = ({
 
   if (matches.length === 0) {
     return (
-      <div className="text-center text-gray-400 py-4 text-sm">
+      <div className="text-center text-gray-600 dark:text-gray-400 py-4 text-sm">
         No upcoming matches. Sign up on the Schedules page!
       </div>
     );

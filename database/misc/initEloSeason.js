@@ -61,7 +61,7 @@ const SPORTS = [
 
 const COLLEGES = [
   "BF", "BK", "BR", "DC", "ES", "GH", "JE",
-  "MC", "PM", "PC", "SM", "SY", "TC", "TD",
+  "MC", "MY", "PC", "SM", "SY", "TC", "TD",
 ];
 
 // Must match fields read/written by updateEloRatings and hybridOddsCalculator
@@ -123,5 +123,5 @@ async function initEloSeason(seasonId) {
   console.log(`Initialized season ${seasonId} (initial Elo: ${ELO_CONFIG.initialElo})`);
 }
 
-// Run:
-initEloSeason("2025-2026");
+// Run: node initEloSeason.js 2026-2027
+initEloSeason(process.argv[2] || "2025-2026");

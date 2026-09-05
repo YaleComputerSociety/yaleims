@@ -92,21 +92,22 @@ export const removeParticipant = functions.https.onRequest((req, res) => {
         return;
       }
 
+      // Read the user's season doc before touching the match, so a missing season
+      // doc can't leave them off the roster with the match still on their side.
+      const userDocRef = db.collection("users").doc(email).collection("seasons").doc(seasonId);
+      const userDoc = await userDocRef.get();
+
+      if (!userDoc.exists) {
+        console.error(`User document not found for email: ${email} in season ${seasonId}`);
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
       participantsArray.splice(participantIndex, 1);
 
       await matchDoc.ref.update({
         [participantType]: participantsArray,
       });
-
-      // Update the user's "matches" array in the "users" collection
-      const userDocRef = db.collection("users").doc(email).collection("seasons").doc(seasonId);
-      const userDoc = await userDocRef.get();
-
-      if (!userDoc.exists) {
-        console.error(`User document not found for email: ${email}`);
-        res.status(404).json({ error: "User not found" });
-        return;
-      }
 
       const userData = userDoc.data();
       const userMatches = userData?.matches || [];

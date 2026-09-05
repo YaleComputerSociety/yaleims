@@ -2,8 +2,11 @@
 // node upsertMatches.ts
 
 /** ✱ 1. CONFIG ✱ */
-const CSV_FILE = "data/Soccer_Fall_2026_schedule_formatted.csv";
-const SEASON_ID = "2026-2027"; // season we are inserting into
+// Usage: node add_matches.js [csvFile] [seasonId]
+// Match ids come from counters/matches, so each run appends -- running the same
+// CSV twice inserts it twice.
+const CSV_FILE = process.argv[2] || "data/Soccer_Fall_2026_schedule_formatted.csv";
+const SEASON_ID = process.argv[3] || "2026-2027"; // season we are inserting into
 
 /** ✱ 2. FIREBASE SETUP ✱ */
 import { initializeApp } from "firebase/app";

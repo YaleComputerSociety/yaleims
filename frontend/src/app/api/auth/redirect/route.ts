@@ -89,16 +89,18 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
       );
       const result1 = await response1.json();
-      const token = jwt.sign({ 
+      // Defaults matter: jwt.sign drops undefined values, and user docs carry no
+      // role/points/matches_played, so without them the token ships incomplete.
+      const token = jwt.sign({
         name,
         netid,
-        email, 
-        role: result1.user.role,
-        mRoles: result1.user.mRoles,
-        username: result1.user.username,
-        college: result1.user.college,
-        points: result1.user.points,
-        matches_played: result1.user.matches_played,
+        email,
+        role: result1.user.role ?? "user",
+        mRoles: result1.user.mRoles ?? ["user"],
+        username: result1.user.username ?? "Anonymous",
+        college: result1.user.college ?? "",
+        points: result1.user.points ?? 0,
+        matches_played: result1.user.matches_played ?? 0,
       }, JWT_SECRET, {
         expiresIn: "7d",
       });

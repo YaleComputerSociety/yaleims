@@ -34,6 +34,7 @@ interface GameCardProps {
   onSportClick?: (sport: string) => void;
   user?: any;
   isSignedUp?: boolean;
+  signUpStatusLoading?: boolean;
   onStatusChange?: (matchId: string, signed: boolean) => void;
   seasonId?: string;
 }
@@ -44,6 +45,7 @@ const GameCard: React.FC<GameCardProps> = ({
   onSportClick,
   user,
   isSignedUp = false,
+  signUpStatusLoading = false,
   onStatusChange,
   seasonId,
 }) => {
@@ -381,27 +383,34 @@ const GameCard: React.FC<GameCardProps> = ({
 
             {/* Sign-up button */}
             {user && status === "upcoming" && !isPastMatch && isUserTeam && (
-              <button
-                onClick={() => (isSignedUp ? handleUnregister() : handleSignUp())}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                disabled={signUpLoading}
-                className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-150 ${
-                  signUpLoading
-                    ? "bg-gray-400 dark:bg-gray-600 text-gray-200 cursor-not-allowed"
+              signUpStatusLoading ? (
+                <div
+                  className="h-6 w-[74px] rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"
+                  aria-hidden="true"
+                />
+              ) : (
+                <button
+                  onClick={() => (isSignedUp ? handleUnregister() : handleSignUp())}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  disabled={signUpLoading}
+                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-150 ${
+                    signUpLoading
+                      ? "bg-gray-400 dark:bg-gray-600 text-gray-200 cursor-not-allowed"
+                      : isSignedUp
+                      ? "bg-green-600 hover:bg-red-500 text-white"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  {signUpLoading
+                    ? "..."
                     : isSignedUp
-                    ? "bg-green-600 hover:bg-red-500 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-              >
-                {signUpLoading
-                  ? "..."
-                  : isSignedUp
-                  ? isHovered
-                    ? "Unregister"
-                    : "Playing!"
-                  : "Sign Up"}
-              </button>
+                    ? isHovered
+                      ? "Unregister"
+                      : "Playing!"
+                    : "Sign Up"}
+                </button>
+              )
             )}
 
             <EditMatchButton match={match} />

@@ -97,34 +97,34 @@ export default function ViewCaptainsCollegeRep() {
         </div>
       </div>
 
-      {error && <div className="text-red-300 text-xs md:text-sm">{error}</div>}
+      {error && <div className="text-red-600 dark:text-red-300 text-xs md:text-sm">{error}</div>}
       <div className="overflow-y-auto max-h-32">
         {!data ? (
-          <div className="text-gray-400 animate-pulse text-xs md:text-sm">Loading…</div>
+          <div className="text-gray-600 dark:text-gray-400 animate-pulse text-xs md:text-sm">Loading…</div>
         ) : view === "captains" ? (
           captainRows.length === 0 ? (
-            <div className="text-gray-400 text-xs md:text-sm">No captains found.</div>
+            <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm">No captains found.</div>
           ) : (
-            <ul className="divide-y divide-white/10 rounded-xl text-xs md:text-sm bg-white/5 p-2">
+            <ul className="divide-y divide-black/10 dark:divide-white/10 rounded-xl text-xs md:text-sm bg-black/[0.03] dark:bg-white/5 p-2">
               {captainRows.map((r, i) => (
                 <li key={`${r.sport}-${i}`} className="flex items-center justify-between py-2">
-                  <span className="text-gray-300">{r.sport}</span>
-                  <span className="font-medium text-white">{r.name}</span>
+                  <span className="text-gray-600 dark:text-gray-300">{r.sport}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{r.name}</span>
                 </li>
               ))}
             </ul>
           )
         ) : 
         repRows.length === 0 ? (
-          <div className="text-gray-400 text-xs md:text-sm">No college rep found.</div>
+          <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm">No college rep found.</div>
         ) : (
-          <ul className="divide-y divide-white/10 rounded-xl text-xs md:text-sm bg-white/5 p-2">
+          <ul className="divide-y divide-black/10 dark:divide-white/10 rounded-xl text-xs md:text-sm bg-black/[0.03] dark:bg-white/5 p-2">
             {repRows.map((r, i) => (
               <li key={`${r.name}-${i}`} className="flex items-center justify-between py-2">
-                <span className="font-medium text-white">{r.name}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{r.name}</span>
                 <a
                   href={`mailto:${r.email}`}
-                  className="text-xs text-gray-300 underline underline-offset-4 hover:text-white transition"
+                  className="text-xs text-gray-600 dark:text-gray-300 underline underline-offset-4 hover:text-black dark:hover:text-white transition"
                 >
                   {r.email}
                 </a>

@@ -65,7 +65,7 @@ const YoddsPage: React.FC = () => {
   const [submitButtonClicked, setSubmitButtonClicked] = useState(0);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'submitted'>('idle');
 
-  const { currentSeason } = useSeason();
+  const { currentSeason, seasonLoading } = useSeason();
   const handleEditUsername = async () => {
     setEditLoading(true);
     setError("");
@@ -161,9 +161,8 @@ const YoddsPage: React.FC = () => {
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
         const data = await response.json();
-        setFilteredMatches(data.matches);
-        console.log(data.matches)
-        
+        setFilteredMatches(Array.isArray(data.matches) ? data.matches : []);
+
         if (data.firstVisible) setFirstVisible(data.firstVisible);
         if (data.lastVisible) setLastVisible(data.lastVisible);
         if (data.totalPages) setTotalPages(data.totalPages);
@@ -336,7 +335,7 @@ const YoddsPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || seasonLoading || !currentSeason) {
     return <LoadingScreen />;
   }
 
@@ -366,7 +365,7 @@ const YoddsPage: React.FC = () => {
         <div className="flex flex-col gap-y-2 md:gap-y-6 min-w-0 pb-4">
           <div className="w-full overflow-x-auto invisible-scrollbar gap-x-4">
             <div className="flex flex-row w-full gap-3 px-2 py-3 items-center justify-center">
-              {seasonSports[currentSeason!.season].map((sport) => (
+              {(seasonSports[currentSeason.season] ?? []).map((sport) => (
               <SportCard
                 key={sport}
                 sport={sport}

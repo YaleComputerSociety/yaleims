@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
       <div className="min-h-screen pt-20 px-6">
         <PageHeading heading="Hub" />
         <div className="max-w-6xl mx-auto">
-          <p className="text-center text-gray-400">Please log in to access your Hub.</p>
+          <p className="text-center text-gray-600 dark:text-gray-400">Please log in to access your Hub.</p>
         </div>
       </div>
     );
@@ -166,7 +166,7 @@ const Dashboard: React.FC = () => {
 
         {/* Admin Section */}
         {isAdmin && (
-          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 md:p-5">
+          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-4 md:p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-amber-400" /> Admin Tools
             </h2>
@@ -198,7 +198,7 @@ const Dashboard: React.FC = () => {
 
         {/* College Rep Section */}
         {isCollegeRep && (
-          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 md:p-5">
+          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-4 md:p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-indigo-400" /> College Rep Tools
             </h2>
@@ -223,7 +223,7 @@ const Dashboard: React.FC = () => {
 
         {/* Captain Section */}
         {isCaptain && (
-          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 md:p-5">
+          <section className="mb-8 rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-4 md:p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" /> Captain Tools
             </h2>
@@ -247,7 +247,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {!isAdmin && !isCollegeRep && !isCaptain && (
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] p-4 text-sm text-gray-700 dark:text-gray-300">
+          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] p-4 text-sm text-gray-700 dark:text-gray-300">
             You have standard user access. Quick actions and personal stats are available above.
           </div>
         )}

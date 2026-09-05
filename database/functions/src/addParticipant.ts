@@ -72,6 +72,17 @@ export const addParticipant = functions.https.onRequest((req, res) => {
           ? matchData.home_college_participants
           : matchData.away_college_participants;
 
+      // Read the user's season doc before touching the match, so a missing season
+      // doc can't leave the participant on the roster with nothing on their side.
+      const userDocRef = db.collection("users").doc(email).collection("seasons").doc(seasonId as string);
+      const userDoc = await userDocRef.get();
+
+      if (!userDoc.exists) {
+        console.error(`User document not found for email: ${email} in season ${seasonId}`);
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
       // Check for duplicate participant by email
       const isDuplicate = participantsArray.some(
         (participant: { email: string }) => {
@@ -79,43 +90,30 @@ export const addParticipant = functions.https.onRequest((req, res) => {
         }
       );
 
-      if (isDuplicate) {
+      const userData = userDoc.data();
+      const userMatches = userData?.matches || [];
+      const isMatchDuplicate = userMatches.some(
+        (match: any) => Number(match?.id) === Number(matchId)
+      );
+
+      if (isDuplicate && isMatchDuplicate) {
         console.warn(`${email} is already a participant`);
         return res.status(400).json({ error: `${email} is already a participant` });
       }
 
-      // Add the participant email and update Firestore
-      participantsArray.push({email, name});
-
-      await matchDoc.ref.update({
-        [participantType]: participantsArray,
-      });
-
-      // Add the match to the user's "matches" array in the "users" collection
-      const userDocRef = db.collection("users").doc(email).collection("seasons").doc(seasonId as string);
-      const userDoc = await userDocRef.get();
-
-      if (!userDoc.exists) {
-        console.error(`User document not found for email: ${email}`);
-        res.status(404).json({ error: "User not found" });
-        return;
+      // Either side may already be recorded (e.g. a half-applied earlier attempt),
+      // so write only what is missing and let a retry repair the other side.
+      if (!isDuplicate) {
+        participantsArray.push({email, name});
+        await matchDoc.ref.update({
+          [participantType]: participantsArray,
+        });
       }
 
-      const userData = userDoc.data();
-      const userMatches = userData?.matches || [];
-      // Check if the match is already in the user's matches array
-      const isMatchDuplicate = userMatches.some(
-        (id: any) => id === matchId
-      );
-
-      if (isMatchDuplicate) {
-        console.warn(`Match ${matchId} is already in your matches`);
-        return;
-      } else {
+      if (!isMatchDuplicate) {
         userMatches.push({ id: Number(matchId), timestamp: matchTimestamp});
+        await userDocRef.update({ matches: userMatches });
       }
-
-      await userDocRef.update({ matches: userMatches });
 
       return res.status(200).json({message: `Successfully signed up and updated your matches!`});
     } catch (error) {

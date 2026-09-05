@@ -13,18 +13,6 @@ interface DecodedToken {
   matches_played: number;
 }
 
-const decodedTokenShape: DecodedToken = {
-  name: "",
-  netid: "",
-  email: "",
-  role: "",
-  mRoles: [],
-  username: "",
-  college: "",
-  points: 0,
-  matches_played: 0,
-};
-
 /**
  * Helper function to check if the current user has one of the required roles.
  * @param requiredRoles
@@ -40,7 +28,12 @@ export const userTokenHasRoles = async (
   }
 
   const secret = process.env.JWT_SECRET as string;
-  const decoded = jwt.verify(token.value, secret) as DecodedToken;
+  let decoded: DecodedToken;
+  try {
+    decoded = jwt.verify(token.value, secret) as DecodedToken;
+  } catch {
+    return false;
+  }
 
   if (!isValidDecodedToken(decoded)) {
     return false;
@@ -49,12 +42,17 @@ export const userTokenHasRoles = async (
   return requiredRoles.some((role) => decoded.mRoles.includes(role));
 };
 
+// Only the fields authorization depends on are required. jwt.sign drops keys
+// whose value is undefined, and user docs carry no points/matches_played/role,
+// so demanding the full DecodedToken shape rejected every real token.
 const isValidDecodedToken = (decoded: any): boolean => {
   if (typeof decoded !== "object" || decoded === null) {
     return false;
   }
 
-  const requiredFields = Object.keys(decodedTokenShape);
-
-  return requiredFields.every((field) => field in decoded);
+  return (
+    typeof decoded.netid === "string" &&
+    typeof decoded.email === "string" &&
+    Array.isArray(decoded.mRoles)
+  );
 };

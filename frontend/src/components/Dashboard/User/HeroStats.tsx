@@ -82,7 +82,7 @@ export default function HeroStats() {
           <h1 className="text-2xl md:text-3xl font-bold">
             Welcome back, {user.firstname || user.name?.split(" ")[0] || "there"}! 👋
           </h1>
-          <p className="text-sm md:text-base text-gray-400">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
             {user.college} • {currentSeason?.year} {currentSeason?.season ? currentSeason.season.charAt(0).toUpperCase() + currentSeason.season.slice(1) : ""} Season
           </p>
         </div>
@@ -95,6 +95,8 @@ export default function HeroStats() {
             key={stat.label}
             className={`
               relative overflow-hidden rounded-xl p-4 md:p-6
+              bg-white/80 border border-black/5 shadow-sm
+              dark:bg-transparent dark:border-transparent dark:shadow-none
               bg-gradient-to-br ${stat.gradient}
               backdrop-blur-sm
               transition-all duration-300
@@ -115,7 +117,7 @@ export default function HeroStats() {
               <span className="text-2xl md:text-4xl font-bold tracking-tight">
                 {stat.value}
               </span>
-              <span className="text-xs md:text-sm text-gray-400 mt-1">
+              <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {stat.label}
               </span>
             </div>

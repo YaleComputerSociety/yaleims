@@ -9,7 +9,9 @@ import {
 } from 'firebase/firestore'
 import { db } from "./firebase.js";
 
-const seasonId = '2025-2026';
+// Usage: node addNewSeasonUser.js 2026-2027
+// Existing season docs are skipped, so re-running never resets anyone's points.
+const seasonId = process.argv[2] || '2025-2026';
 
 async function addSeasonToAllUsers() {
   const usersSnap = await getDocs(collection(db, 'users'));

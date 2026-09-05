@@ -10,15 +10,17 @@ interface Users {
 
 const PredictionLeaderboard = () => {
   const [sortedUsers, setSortedUsers] = useState<Users[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const { currentSeason } = useSeason();
 
   useEffect(() => {
+    if (!currentSeason?.year) return;
+
     async function fetchLeaderboard() {
       setLoadingUsers(true);
       try {
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard?${currentSeason?.year}`,
+          `https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard?season=${currentSeason!.year}`,
           {
             method: "GET",
             headers: {
@@ -34,7 +36,6 @@ const PredictionLeaderboard = () => {
         }
 
         const data = await response.json();
-        console.log(data);
         setSortedUsers(() => data);
       } catch (error) {
         console.error("Failed to fetch users leaderboard:", error);
@@ -43,7 +44,7 @@ const PredictionLeaderboard = () => {
       }
     }
     fetchLeaderboard();
-  }, []);
+  }, [currentSeason]);
 
   return (
     <div className="overflow-x-auto">

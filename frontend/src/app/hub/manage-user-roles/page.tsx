@@ -83,17 +83,30 @@ const ManageUserRolesPage = () => {
     string[]
   >([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string>("");
 
   useEffect(() => {
     if (!selectedCollege) return;
     setLoading(true);
-    fetch(`/api/functions/getSpecialUsers?college=${selectedCollege}`)
-      .then((res) => res.json())
-      .then((data) => {
+    setLoadError("");
+    fetch(
+      `/api/functions/getSpecialUsers?college=${encodeURIComponent(selectedCollege)}`
+    )
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        // Without this an unauthorized or failed lookup was indistinguishable
+        // from a college that genuinely has no captains or reps.
+        if (!res.ok) {
+          throw new Error(data.error || `Request failed (${res.status})`);
+        }
         setSpecialRoleUsers(data.users || []);
-        setLoading(false);
       })
-      .catch(() => setSpecialRoleUsers([]));
+      .catch((err) => {
+        console.error("Failed to load special users:", err);
+        setSpecialRoleUsers([]);
+        setLoadError(err.message || "Failed to load users.");
+      })
+      .finally(() => setLoading(false));
   }, [selectedCollege]);
 
   // Group users by role
@@ -401,7 +414,11 @@ const ManageUserRolesPage = () => {
           </div>
         ) : (
           <>
-            {specialRoleUsers.length === 0 ? (
+            {loadError ? (
+              <div className="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="text-red-700 dark:text-red-300">{loadError}</p>
+              </div>
+            ) : specialRoleUsers.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <p className="text-gray-500 dark:text-gray-400">
                   No users with special roles found for {selectedCollege}.
