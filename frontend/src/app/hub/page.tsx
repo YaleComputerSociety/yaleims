@@ -74,6 +74,13 @@ const Dashboard: React.FC = () => {
       description: "Check playoff brackets",
       gradient: "from-emerald-500/10 to-green-500/10",
     },
+    {
+      title: "View Tournaments",
+      link: "/tournaments",
+      icon: "🏐",
+      description: "Follow one-day tournament brackets and placement points",
+      gradient: "from-sky-500/10 to-indigo-500/10",
+    },
   ];
 
   const adminActions: HubAction[] = [
@@ -97,6 +104,13 @@ const Dashboard: React.FC = () => {
       icon: "🗂️",
       description: "Manage playoff brackets",
       gradient: "from-violet-500/10 to-purple-500/10",
+    },
+    {
+      title: "Create Tournaments",
+      link: "/hub/upload-tournaments",
+      icon: "🏆",
+      description: "Set up tournaments and their placement points",
+      gradient: "from-fuchsia-500/10 to-pink-500/10",
     },
     {
       title: "Manage Roles",

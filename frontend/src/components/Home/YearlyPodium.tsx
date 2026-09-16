@@ -83,11 +83,11 @@ const CPodium: React.FC<props> = ({
       >
         <h1 className="mg:mb-2 mg:text-lg text-sm font-bold">{college.name}</h1>
         <div className="flex flex-row gap-3 mg:mb-1">
-          {college.prevRank - college.rank > 0 && (
-            <FaCaretUp size={32} style={{ color: "00C707" }} />
+          {college.prevRank > 0 && college.prevRank - college.rank > 0 && (
+            <FaCaretUp size={32} style={{ color: "#00C707" }} />
           )}
-          {college.prevRank - college.rank < 0 && (
-            <FaCaretDown size={32} style={{ color: "DF2C2C" }} />
+          {college.prevRank > 0 && college.prevRank - college.rank < 0 && (
+            <FaCaretDown size={32} style={{ color: "#DF2C2C" }} />
           )}
           <h1 className="mg:text-5xl text-4xl font-bold">
             {college.rank}

@@ -41,6 +41,9 @@ export type Match = {
   default_volume?: number;
   next_match_id?: string;
   playoff_bracket_slot?: number;
+  /** Set only on matches created as part of a tournament. */
+  tournament_id?: string;
+  tournament_name?: string;
 };
 
 export type Matchv2 = {
@@ -249,6 +252,45 @@ export interface ParsedMatch {
   division: string;
   date?: string;
   time?: string;
+}
+
+export interface PlacementPoints {
+  first: number;
+  second: number;
+  third: number;
+}
+
+/** One row of the 16-slot tournament bracket as stored on the tournament doc. */
+export interface TournamentBracketMatch {
+  bracket_placement: number;
+  round: string;
+  match_id: number;
+  /** Serialized to epoch milliseconds by the getTournaments function. */
+  timestamp: number | null;
+}
+
+export interface Tournament {
+  id: string;
+  name: string;
+  sport: string;
+  season: string;
+  createdAt: number | null;
+  placement_points: PlacementPoints;
+  third_place_slot: number;
+  placements: {
+    first: string | null;
+    second: string | null;
+    third: string | null;
+  };
+  matches: TournamentBracketMatch[];
+}
+
+/** Payload the admin panel posts to createTournament. */
+export interface TournamentData {
+  name: string;
+  sport: string;
+  matches: ParsedMatch[];
+  placement_points: PlacementPoints;
 }
 
 export interface CurrentSeason {

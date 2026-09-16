@@ -891,3 +891,205 @@ export const userIsAdminOrDev = (user: User | null): boolean => {
 
   return isAdmin;
 };
+
+/**
+ * Tournament brackets reuse the 14-team playoff shape with a 16th slot for the
+ * third place game, and they have no divisions, so their CSV is the bracket CSV
+ * minus the division column.
+ */
+export const TOURNAMENT_SLOT_COUNT = 16;
+export const TOURNAMENT_BYE_SLOTS = [1, 7];
+
+export function parseTournamentCSV(
+  csvText: string,
+  season: string
+): ParsedMatch[] {
+  const lines = csvText.trim().split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) throw new Error("CSV must have at least one data row.");
+
+  const header = lines[0].toLowerCase().replace(/\s+/g, "");
+  const expectedColumns = [
+    "matchslot",
+    "awaycollege",
+    "awayseed",
+    "homecollege",
+    "homeseed",
+    "date",
+    "time",
+    "location",
+    "locationextra",
+  ];
+  const hasHeader = expectedColumns.every((col) => header.includes(col));
+  const startLine = hasHeader ? 1 : 0;
+  const validCollegeAbbrs = colleges.map((c) => c.id);
+  const matches: ParsedMatch[] = [];
+
+  for (let i = startLine; i < lines.length; i++) {
+    const row = lines[i].split(",").map((v) => v.trim());
+    const rowNum = i + 1;
+
+    if (row.length < 9) {
+      throw new Error(`Row ${rowNum}: Not enough columns (expected 9).`);
+    }
+    if (row.length > 9) {
+      throw new Error(`Row ${rowNum}: Too many columns (expected 9).`);
+    }
+
+    const [
+      matchSlot,
+      awayCollege,
+      awaySeed,
+      homeCollege,
+      homeSeed,
+      date,
+      time,
+      location,
+      locationExtra,
+    ] = row;
+
+    const match_slot = Number(matchSlot);
+    if (
+      !Number.isInteger(match_slot) ||
+      match_slot < 1 ||
+      match_slot > TOURNAMENT_SLOT_COUNT
+    ) {
+      throw new Error(
+        `Row ${rowNum}: Match slot must be between 1 and ${TOURNAMENT_SLOT_COUNT}.`
+      );
+    }
+
+    const away_college = awayCollege.toUpperCase();
+    const home_college = homeCollege.toUpperCase();
+
+    [away_college, home_college].forEach((college) => {
+      if (college && college !== "TBD" && !validCollegeAbbrs.includes(college)) {
+        throw new Error(`Row ${rowNum}: Unknown college '${college}'.`);
+      }
+    });
+
+    const timestamp = toTimestamp(date, time, season);
+    if (!timestamp || isNaN(new Date(timestamp).getTime())) {
+      throw new Error(`Row ${rowNum}: Invalid date/time combination.`);
+    }
+
+    matches.push({
+      match_slot,
+      away_college,
+      away_seed: Number(awaySeed) || 0,
+      home_college,
+      home_seed: Number(homeSeed) || 0,
+      location,
+      ...(locationExtra && locationExtra.trim() !== ""
+        ? { location_extra: locationExtra }
+        : {}),
+      timestamp,
+      division: "none",
+      date,
+      time,
+    });
+  }
+
+  return matches;
+}
+
+/**
+ * Same structural rules the playoff bracket enforces -- every slot filled, byes
+ * doubled up on slots 1 and 7, each college entered exactly once -- without the
+ * per-division seed checks, since tournaments run a single field.
+ */
+export const validateTournamentData = (matches: ParsedMatch[]): boolean => {
+  let isValid = true;
+  const collegeAbbrs = colleges.map((c) => c.id);
+  const matchSlots = matches.map((m) => m.match_slot);
+
+  for (let i = 1; i <= TOURNAMENT_SLOT_COUNT; i++) {
+    if (!matchSlots.includes(i)) {
+      toast.error(`Missing match slot ${i}`, { autoClose: 7000 });
+      isValid = false;
+    }
+  }
+
+  TOURNAMENT_BYE_SLOTS.forEach((slot) => {
+    const m = matches.find((match) => match.match_slot === slot);
+    if (!m) {
+      toast.error(`Missing bye match slot ${slot}`, { autoClose: 7000 });
+      isValid = false;
+      return;
+    }
+    if (
+      !m.away_college ||
+      !m.home_college ||
+      m.away_college !== m.home_college
+    ) {
+      toast.error(
+        `Bye match slot ${slot} must list the same college for home and away.`,
+        { autoClose: 7000 }
+      );
+      isValid = false;
+    }
+  });
+
+  const collegeCount: Record<string, number> = {};
+  matches.forEach((m) => {
+    const isBye =
+      TOURNAMENT_BYE_SLOTS.includes(m.match_slot) &&
+      m.away_college === m.home_college;
+
+    const entries = isBye
+      ? [m.home_college]
+      : [m.away_college, m.home_college];
+
+    entries.forEach((college) => {
+      if (!college || college === "TBD") return;
+      collegeCount[college] = (collegeCount[college] || 0) + 1;
+    });
+  });
+
+  Object.entries(collegeCount).forEach(([college, count]) => {
+    if (count > 1) {
+      toast.error(
+        `College ${college} appears ${count} times (each college should be entered once)`,
+        { autoClose: 7000 }
+      );
+      isValid = false;
+    }
+  });
+
+  collegeAbbrs.forEach((abbr) => {
+    if (!collegeCount[abbr]) {
+      toast.error(`College ${abbr} is missing from the tournament`, {
+        autoClose: 7000,
+      });
+      isValid = false;
+    }
+  });
+
+  return isValid;
+};
+
+/**
+ * Tournament matches reuse the playoff round names ("Playoff", "Quarterfinal",
+ * ...), so without this they render as "Playoff Round" and "Third Place Round"
+ * and read as ordinary playoff games. Non-tournament matches keep the wording
+ * they have always had.
+ */
+export const getMatchTypeLabel = (
+  type: string,
+  tournamentId?: string
+): string => {
+  if (!tournamentId) {
+    return type === "Regular" ? "Regular Season" : `${type} Round`;
+  }
+
+  switch (type) {
+    case "Playoff":
+      return "Round 1";
+    case "Third Place":
+      return "3rd Place Game";
+    case "Bye":
+      return "Bye";
+    default:
+      // Quarterfinal, Semifinal and Final already read correctly on their own.
+      return type;
+  }
+};

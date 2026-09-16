@@ -28,6 +28,9 @@ import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
 import { setMVP } from "./setMVP.js";
 import { addSchedule } from "./addSchedule.js";
 import { addBet } from "./addBet.js";
+import { createTournament } from "./createTournament.js";
+import { deleteTournament } from "./deleteTournament.js";
+import { getTournaments } from "./getTournaments.js";
 export {
   assignRemoveCaptain,
   getLeaderboard,
@@ -59,4 +62,7 @@ export {
   setMVP,
   addSchedule,
   getMatchesPaginatedv2,
+  createTournament,
+  deleteTournament,
+  getTournaments,
 };

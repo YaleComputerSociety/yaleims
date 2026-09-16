@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import TournamentBadge from "@src/components/ui/TournamentBadge";
+import { getMatchTypeLabel } from "@src/utils/helpers";
 import { FaCalendar, FaSpinner } from "react-icons/fa";
 import {
   toCollegeName,
@@ -194,11 +196,17 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           </div>
 
           {/* Match Sport */}
-          <div className="text-sm sm:text-md text-gray-600 dark:text-gray-400 font-semibold">
-            {match.sport}{" "}
-            {match.type == "Regular"
-              ? "Regular Season Match"
-              : `${match.type} Round`}
+          <div className="text-sm sm:text-md text-gray-600 dark:text-gray-400 font-semibold flex flex-wrap items-center gap-2">
+            <span>
+              {match.sport}{" "}
+              {match.type === "Regular"
+                ? "Regular Season Match"
+                : getMatchTypeLabel(match.type, match.tournament_id)}
+            </span>
+            <TournamentBadge
+              tournamentId={match.tournament_id}
+              tournamentName={match.tournament_name}
+            />
           </div>
 
           {/* Match Date and Time */}

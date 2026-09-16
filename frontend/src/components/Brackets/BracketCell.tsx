@@ -96,10 +96,11 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
   // }
 
   if (!match) {
+    // `match` is undefined here, so it cannot be read for an id.
     return (
       <ErrorBracketCell
         title="🔎 Match not Found"
-        message={`Match ${match.match_id} not found.`}
+        message="This match could not be loaded."
       />
     );
   }

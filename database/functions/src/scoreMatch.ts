@@ -7,6 +7,7 @@ import { isValidDecodedToken } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { updateEloRatings, EloMatchResult } from "./elo_system.js";
 import { recalcOddsForAffectedMatches } from "./recalcOdds.js";
+import { awardTournamentPlacements } from "./tournament_helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -392,6 +393,56 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
           }
 
           await nextMatchRef.update(updateData);
+        }
+      }
+
+      // Tournament brackets add a third place game: the semifinal losers feed
+      // into it, and scoring the final or that game settles placement points.
+      const tournamentId = matchDocData.tournament_id;
+      if (
+        tournamentId &&
+        winningTeam &&
+        winningTeam !== "Default" &&
+        winningTeam !== "Draw"
+      ) {
+        const bracketSlot = matchDocData.playoff_bracket_slot;
+        const losingTeam = winningTeam === homeTeam ? awayTeam : homeTeam;
+        const loserMatchId = matchDocData.next_match_loser_id;
+
+        if (loserMatchId && bracketSlot) {
+          const loserSeed =
+            winningTeam === homeTeam
+              ? matchDocData.away_seed
+              : matchDocData.home_seed;
+
+          // Same slot parity rule the winner bracket uses: odd slots fill the
+          // away side of their destination, even slots fill the home side.
+          const loserUpdate =
+            bracketSlot % 2 === 1
+              ? { away_college: losingTeam, away_seed: loserSeed ?? null }
+              : { home_college: losingTeam, home_seed: loserSeed ?? null };
+
+          await db
+            .collection("matches")
+            .doc("seasons")
+            .collection(year)
+            .doc(`${loserMatchId}`)
+            .update(loserUpdate);
+        }
+
+        try {
+          await awardTournamentPlacements(
+            year,
+            tournamentId,
+            bracketSlot,
+            winningTeam,
+            losingTeam
+          );
+        } catch (placementErr) {
+          console.error(
+            "Placement points failed (match already scored):",
+            placementErr
+          );
         }
       }
 

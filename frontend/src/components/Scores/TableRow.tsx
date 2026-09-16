@@ -1,4 +1,6 @@
 import Image from "next/image";
+import TournamentBadge from "@src/components/ui/TournamentBadge";
+import { getMatchTypeLabel } from "@src/utils/helpers";
 import { toCollegeName, sportsMap, emojiMap } from "@src/utils/helpers";
 import { TableRowProps } from "@src/types/components";
 import { SlArrowRight } from "react-icons/sl";
@@ -150,8 +152,12 @@ const TableRow: React.FC<TableRowProps> = ({
             {getTimeString(timestamp)}
             <EditMatchButton match={match} setUnscored={setUnscored} />
           </span>
-          <span>
-            {match.type} {match.type == "Regular" ? "Season" : "Round"}
+          <span className="flex items-center gap-2">
+            <TournamentBadge
+              tournamentId={match.tournament_id}
+              tournamentName={match.tournament_name}
+            />
+            {getMatchTypeLabel(match.type, match.tournament_id)}
           </span>
         </div>
       </div>
@@ -232,9 +238,15 @@ const TableRow: React.FC<TableRowProps> = ({
             {sport}
           </div>
         </div>
-        <div className="hidden sm:block text-center text-xs py-1 w-[100px] flex flex-col border-l border-gray-200 dark:border-gray-700">
-          <div>{match.type}</div>
-          {match.type == "Regular" ? "Season" : "Round"}
+        <div className="hidden sm:flex text-center text-xs py-1 w-[100px] flex-col items-center justify-center gap-1 border-l border-gray-200 dark:border-gray-700">
+          <div>{getMatchTypeLabel(match.type, match.tournament_id)}</div>
+          {match.tournament_id ? (
+            <TournamentBadge
+              compact
+              tournamentId={match.tournament_id}
+              tournamentName={match.tournament_name}
+            />
+          ) : null}
         </div>
       </div>
       {/* Bar Graph for Predictions */}

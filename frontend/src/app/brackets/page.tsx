@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
@@ -11,6 +11,12 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import { useNavbar } from "@src/context/NavbarContext";
 import PageHeading from "@src/components/PageHeading";
 import { getVersionedImage } from "@/utils/versionedImages";
+import useElementHeight from "@src/hooks/useElementHeight";
+import BracketConnectorSvg, {
+  WINNER_EDGES,
+  useBracketConnectors,
+  buildTeamConnections,
+} from "@src/components/Brackets/bracketConnectors";
 
 interface FirestoreBracketMatch {
   bracket_placement: number;
@@ -18,39 +24,6 @@ interface FirestoreBracketMatch {
   round: string;
   timestamp: Timestamp;
 }
-
-const glowIdsForConnection: Record<string, string[]> = {
-  // === LEFT SIDE ===
-  // Playoffs → Quarterfinals (top half)
-  "1-5": ["1a", "1b"],
-  "2-5": ["2a", "2b"],
-
-  // Playoffs → Quarterfinals (bottom half)
-  "3-6": ["3a", "3b"],
-  "4-6": ["4a", "4b"],
-
-  // Quarterfinals → Semifinal (left)
-  "5-13": ["5a", "5b"],
-  "6-13": ["6a", "6b"],
-
-  // === RIGHT SIDE ===
-  // Playoffs → Quarterfinals (top half)
-  "7-11": ["7a", "7b"],
-  "8-11": ["8a", "8b"],
-
-  // Playoffs → Quarterfinals (bottom half)
-  "9-12": ["9a", "9b"],
-  "10-12": ["10a", "10b"],
-
-  // Quarterfinals → Semifinal (right)
-  "11-14": ["11a", "11b"],
-  "12-14": ["12a", "12b"],
-
-  // Semifinals → Final
-  "13-15": ["13a", "15a"],
-  "14-15": ["14a", "15a"],
-};
-
 
 // mapping index in bracket array to the type of location of the match in the bracket
 const leftPlayoffIndices = [0, 1, 2, 3];
@@ -73,14 +46,7 @@ const BracketsPage: React.FC = () => {
   const [season, setSeason] = useState<string>(currentSeason?.year || currentYear);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
   const [matchDetails, setMatchDetails] = useState<Record<string, any>>({});
-  const [teamConnections, setTeamConnections] = useState<Record<string, { from: number; to: number }[]>>({});
   // console.log("Hovered Team:", hoveredTeam);
-
-  const activeIds =
-    hoveredTeam &&
-    teamConnections[hoveredTeam]?.flatMap(
-      (c) => glowIdsForConnection[`${c.from}-${c.to}`] || []
-    ) || [];
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -160,38 +126,30 @@ const BracketsPage: React.FC = () => {
     }
   }, [sport, season]);
 
-  useEffect(() => {
-    if (!bracket || !matchDetails) return;
+  // Connector geometry is measured from the rendered cells, so the lines stay
+  // aligned without the hand-tuned coordinates this page used to carry.
+  const matchesReady = Boolean(
+    bracket &&
+      bracket.length > 0 &&
+      bracket.every((m) => matchDetails[m.match_id] !== undefined)
+  );
 
-    const connections: Record<string, { from: number; to: number }[]> = {};
+  const { ref: headerRef, height: headerHeight } = useElementHeight();
 
-    bracket.forEach((b) => {
-      const match = matchDetails[b.match_id];
-      if (!match || !match.winner || !match.next_match_id) return;
+  const { containerRef, setCellRef, connectors, canvas } = useBracketConnectors(
+    WINNER_EDGES,
+    matchesReady
+  );
 
-      const nextMatch = bracket.find((n) => n.match_id === match.next_match_id);
-      if (!nextMatch) return;
+  const teamConnections = useMemo(
+    () => buildTeamConnections(WINNER_EDGES, bracket, matchDetails),
+    [bracket, matchDetails]
+  );
 
-      const nextMatchData = matchDetails[nextMatch.match_id];
-      if (nextMatchData) {
-        const appearsInNext =
-          nextMatchData.home_college === match.winner ||
-          nextMatchData.away_college === match.winner;
-
-        // Track connection for the winner advancing, regardless of
-        // whether they win or lose the next round (fixes eliminated team glow)
-        if (appearsInNext) {
-          if (!connections[match.winner]) connections[match.winner] = [];
-          connections[match.winner].push({
-            from: b.bracket_placement,
-            to: nextMatch.bracket_placement,
-          });
-        }
-      }
-    });
-
-    setTeamConnections(connections);
-  }, [bracket, matchDetails]);
+  const activeEdges = useMemo(
+    () => new Set(hoveredTeam ? teamConnections[hoveredTeam] || [] : []),
+    [hoveredTeam, teamConnections]
+  );
 
   if (seasonLoading || loading) {
     return <LoadingScreen />;
@@ -220,12 +178,15 @@ const BracketsPage: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen pt-16 pb-5`}>
-      <PageHeading heading="Brackets" />
-      {/* <div>{hoveredTeam}</div> */}
+    <div className={`min-h-screen flex flex-col pt-16 pb-16`}>
+      {/* Grouping the header into one block keeps these out of the root flex
+          container, where `mx-auto` would shrink them to their content width,
+          and gives one element to measure for the centring offset below. */}
+      <div ref={headerRef}>
+        <PageHeading heading="Brackets" />
 
-      {/* Sport Selector & Actions */}
-      <div className="relative z-30 max-w-3xl mx-auto rounded-2xl px-6 py-3 flex flex-wrap justify-between items-center mb-4 gap-4 bg-white/70 dark:bg-slate-900/80 backdrop-blur-md border border-blue-200/60 dark:border-blue-400/10 shadow-lg shadow-blue-100/50 dark:shadow-blue-500/5">
+        {/* Sport Selector & Actions */}
+        <div className="relative z-30 w-full max-w-5xl mx-auto rounded-2xl px-6 py-3 flex flex-wrap justify-between items-center mb-4 gap-4 bg-white/70 dark:bg-slate-900/80 backdrop-blur-md border border-blue-200/60 dark:border-blue-400/10 shadow-lg shadow-blue-100/50 dark:shadow-blue-500/5">
         <div className="flex justify-between w-full">
           {/* Sport on left */}
           <div className="flex items-center gap-3">
@@ -256,16 +217,23 @@ const BracketsPage: React.FC = () => {
             />
           </div>
         </div>
+        </div>
       </div>
 
       {/* Column Titles Row */}
-      <section className="flex flex-col justify-center items-center">
+      <section
+        className="flex-1 flex flex-col justify-center items-center"
+        style={{ paddingBottom: headerHeight }}
+      >
         {/* <div className="absolute inset-0 bg-[url('/bracket-overlay.png')] bg-cover bg-center opacity-45 z-0 pointer-events-none mt-12 backdrop-blur-3xl"></div> */}
 
         {/* Bracket Columns */}
         {bracket ? (
           <div className="w-[100%] flex flex-col justify-center items-center max-w-[1650px]">
-            <div className={`${collapsed ? "w-[90%]" : "w-[100%]"}  mx-auto relative`}>
+            <div
+              ref={containerRef}
+              className={`${collapsed ? "w-[90%]" : "w-[100%]"}  mx-auto relative`}
+            >
               <div className=" grid grid-cols-7 h-full items-start">
                 {/* Desktop View */}
 
@@ -282,6 +250,7 @@ const BracketsPage: React.FC = () => {
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
+                          ref={setCellRef(match.bracket_placement)}
                         >
                           <BracketCell
                             match={matchDetails[match.match_id]}
@@ -306,6 +275,7 @@ const BracketsPage: React.FC = () => {
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
+                          ref={setCellRef(match.bracket_placement)}
                         >
                           <BracketCell
                             match={matchDetails[match.match_id]}
@@ -326,6 +296,7 @@ const BracketsPage: React.FC = () => {
                     <div
                       className="scale-75 space-y-22 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                       key={bracket[leftSemiIndex].match_id}
+                      ref={setCellRef(bracket[leftSemiIndex].bracket_placement)}
                     >
                       <BracketCell
                         match={matchDetails[bracket[leftSemiIndex].match_id]}
@@ -350,7 +321,10 @@ const BracketsPage: React.FC = () => {
                     />
 
                     {/* Overlayed final match cell */}
-                    <div className="absolute scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl">
+                    <div
+                      className="absolute scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
+                      ref={setCellRef(bracket[finalIndex].bracket_placement)}
+                    >
                       <BracketCell
                         match={matchDetails[bracket[finalIndex].match_id]}
                         time={bracket[finalIndex].timestamp.toDate().toString()}
@@ -368,6 +342,7 @@ const BracketsPage: React.FC = () => {
                   <div
                     className="scale-75 space-y-22 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                     key={bracket[rightSemiIndex].match_id}
+                    ref={setCellRef(bracket[rightSemiIndex].bracket_placement)}
                   >
                     <BracketCell
                       match={matchDetails[bracket[rightSemiIndex].match_id]}
@@ -389,6 +364,7 @@ const BracketsPage: React.FC = () => {
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
+                          ref={setCellRef(match.bracket_placement)}
                         >
                           <BracketCell
                             match={matchDetails[match.match_id]}
@@ -412,6 +388,7 @@ const BracketsPage: React.FC = () => {
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                           key={match.match_id}
+                          ref={setCellRef(match.bracket_placement)}
                         >
                           <BracketCell
                             match={matchDetails[match.match_id]}
@@ -425,220 +402,11 @@ const BracketsPage: React.FC = () => {
                 </div>
 
               </div>
-              <svg
-                className="absolute inset-0 w-full h-full text-yellow-500 pointer-events-none"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 1000 1000"
-                preserveAspectRatio="none"
-              >
-                {/* === LEFT SIDE === */}
-                {/* Playoffs (8 lines) */}
-                <path 
-                  id="1a" 
-                  d="M136 149 H214" 
-                  className={`glow-line ${activeIds.includes("1a") ? "active" : ""}`} 
-                  stroke={activeIds.includes("1a") ? "#00FFFF" : "currentColor"} 
-                  strokeWidth="5" 
-                />
-                <path 
-                  id="1b" 
-                  d="M213 147 V193" 
-                  className={`glow-line ${activeIds.includes("1b") ? "active" : ""}`} 
-                  stroke={activeIds.includes("1b") ? "#00FFFF" : "currentColor"} 
-                  strokeWidth="2.5" 
-                />
-
-                <path
-                  id="2a"
-                  d="M136 398 H214"
-                  className={`glow-line ${activeIds.includes("2a") ? "active" : ""}`}
-                  stroke={activeIds.includes("2a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="2b"
-                  d="M213 400 V354"
-                  className={`glow-line ${activeIds.includes("2b") ? "active" : ""}`}
-                  stroke={activeIds.includes("2b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="3a"
-                  d="M136 645 H214"
-                  className={`glow-line ${activeIds.includes("3a") ? "active" : ""}`}
-                  stroke={activeIds.includes("3a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="3b"
-                  d="M213 643 V688"
-                  className={`glow-line ${activeIds.includes("3b") ? "active" : ""}`}
-                  stroke={activeIds.includes("3b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="4a"
-                  d="M136 894 H214"
-                  className={`glow-line ${activeIds.includes("4a") ? "active" : ""}`}
-                  stroke={activeIds.includes("4a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="4b"
-                  d="M213 896 V848"
-                  className={`glow-line ${activeIds.includes("4b") ? "active" : ""}`}
-                  stroke={activeIds.includes("4b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-                {/* Quarterfinals (4 lines) */}
-                <path
-                  id="5a"
-                  d="M279.3 273.5 H361.2"
-                  className={`glow-line ${activeIds.includes("5a") ? "active" : ""}`}
-                  stroke={activeIds.includes("5a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="5b"
-                  d="M360 272 V436"
-                  className={`glow-line ${activeIds.includes("5b") ? "active" : ""}`}
-                  stroke={activeIds.includes("5b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="6a"
-                  d="M279.3 768 H361.2"
-                  className={`glow-line ${activeIds.includes("6a") ? "active" : ""}`}
-                  stroke={activeIds.includes("6a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="6b"
-                  d="M360 770 V596.5"
-                  className={`glow-line ${activeIds.includes("6b") ? "active" : ""}`}
-                  stroke={activeIds.includes("6b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                {/* === RIGHT SIDE === */}
-                {/* Playoffs (8 lines) */}
-                <path
-                  id="7a"
-                  d="M864.4 149 H786"
-                  className={`glow-line ${activeIds.includes("7a") ? "active" : ""}`}
-                  stroke={activeIds.includes("7a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="7b"
-                  d="M787 147 V193"
-                  className={`glow-line ${activeIds.includes("7b") ? "active" : ""}`}
-                  stroke={activeIds.includes("7b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="8a"
-                  d="M864.4 398 H786"
-                  className={`glow-line ${activeIds.includes("8a") ? "active" : ""}`}
-                  stroke={activeIds.includes("8a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="8b"
-                  d="M787 400 V354"
-                  className={`glow-line ${activeIds.includes("8b") ? "active" : ""}`}
-                  stroke={activeIds.includes("8b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="9a"
-                  d="M864.4 645 H786"
-                  className={`glow-line ${activeIds.includes("9a") ? "active" : ""}`}
-                  stroke={activeIds.includes("9a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="9b"
-                  d="M787 643 V688"
-                  className={`glow-line ${activeIds.includes("9b") ? "active" : ""}`}
-                  stroke={activeIds.includes("9b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="10a"
-                  d="M864.4 894 H786"
-                  className={`glow-line ${activeIds.includes("10a") ? "active" : ""}`}
-                  stroke={activeIds.includes("10a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="10b"
-                  d="M787 896 V848"
-                  className={`glow-line ${activeIds.includes("10b") ? "active" : ""}`}
-                  stroke={activeIds.includes("10b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                {/* Quarterfinals (4 lines) */}
-                <path
-                  id="11a"
-                  d="M721 273.5 H638.8"
-                  className={`glow-line ${activeIds.includes("11a") ? "active" : ""}`}
-                  stroke={activeIds.includes("11a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="11b"
-                  d="M640 272 V436"
-                  className={`glow-line ${activeIds.includes("11b") ? "active" : ""}`}
-                  stroke={activeIds.includes("11b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                <path
-                  id="12a"
-                  d="M721 768 H638.8"
-                  className={`glow-line ${activeIds.includes("12a") ? "active" : ""}`}
-                  stroke={activeIds.includes("12a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="12b"
-                  d="M640 770 V596.5"
-                  className={`glow-line ${activeIds.includes("12b") ? "active" : ""}`}
-                  stroke={activeIds.includes("12b") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-
-                {/* === SEMIS → FINAL (2 lines) === */}
-                <path
-                  id="13a"
-                  d="M422.1 516.7 H501.2"
-                  className={`glow-line ${activeIds.includes("13a") ? "active" : ""}`}
-                  stroke={activeIds.includes("13a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="14a"
-                  d="M498.8 516.7 H578.3"
-                  className={`glow-line ${activeIds.includes("14a") ? "active" : ""}`}
-                  stroke={activeIds.includes("14a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="5"
-                />
-                <path
-                  id="15a"
-                  d="M500 518.6 V396"
-                  className={`glow-line ${activeIds.includes("15a") ? "active" : ""}`}
-                  stroke={activeIds.includes("15a") ? "#00FFFF" : "currentColor"}
-                  strokeWidth="2.5"
-                />
-              </svg>
+              <BracketConnectorSvg
+                connectors={connectors}
+                canvas={canvas}
+                activeEdges={activeEdges}
+              />
 
             </div>
 

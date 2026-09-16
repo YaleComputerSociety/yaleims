@@ -104,13 +104,15 @@ const YearlyLeaderboardTable: React.FC<YearlyLeaderboardTableProps> = ({
             >
               <td className="md:w-[50px] w-[20px] text-xs font-medium border border-gray-300 dark:border-gray-600 text-center">
                 <div className="flex flex-col items-center">
-                  {college.prevRank - college.rank > 0 && (
-                    <FaCaretUp style={{ color: "00C707" }} />
-                  )}
+                  {college.prevRank > 0 &&
+                    college.prevRank - college.rank > 0 && (
+                      <FaCaretUp style={{ color: "#00C707" }} />
+                    )}
                   {college.rank}
-                  {college.prevRank - college.rank < 0 && (
-                    <FaCaretDown style={{ color: "DF2C2C" }} />
-                  )}
+                  {college.prevRank > 0 &&
+                    college.prevRank - college.rank < 0 && (
+                      <FaCaretDown style={{ color: "#DF2C2C" }} />
+                    )}
                 </div>
               </td>
               <td className=" md:w-[120px] w-[30px] text-xs border border-gray-300 dark:border-gray-600">

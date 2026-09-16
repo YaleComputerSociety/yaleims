@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 
 import { isValidDecodedToken } from "./helpers.js";
 import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import { reverseTournamentPlacements } from "./tournament_helpers.js";
 
 const corsHandler = cors({ origin: true });
 const db = admin.firestore();
@@ -22,6 +23,8 @@ interface MatchData {
   sport: string;
   forfeit: boolean;
   predictions: Record<string, Prediction>;
+  tournament_id?: string;
+  playoff_bracket_slot?: number;
 }
 
 const canUndoScoreMatch = (mRoles: string[]) => {
@@ -157,6 +160,8 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
         winner,
         sport,
         forfeit,
+        tournament_id: tournamentId,
+        playoff_bracket_slot: bracketSlot,
       } = matchData;
 
       if (
@@ -262,6 +267,19 @@ export const undoScoreMatch = functions.https.onRequest(async (req, res) => {
       }
 
       await batch.commit();
+
+      // Unscoring a tournament final or third place game has to claw back the
+      // placement bonus it awarded, on top of the ordinary win points above.
+      if (tournamentId && bracketSlot) {
+        try {
+          await reverseTournamentPlacements(year, tournamentId, bracketSlot);
+        } catch (placementErr) {
+          console.error(
+            "Reversing placement points failed (score already undone):",
+            placementErr
+          );
+        }
+      }
 
       // Recalculate college ranks
       const collegesSnapshot = await db

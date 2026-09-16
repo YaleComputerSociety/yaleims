@@ -1,11 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import TournamentBadge from "@src/components/ui/TournamentBadge";
 import Link from "next/link";
 import { useState } from "react";
 import { FaCircle, FaMapMarkerAlt } from "react-icons/fa";
 import { Match } from "@src/types/components";
-import { toCollegeName, emojiMap, sportsMap } from "@src/utils/helpers";
+import {
+  toCollegeName,
+  emojiMap,
+  sportsMap,
+  getMatchTypeLabel,
+} from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";
 import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
 import { ReportScoreButton } from "@src/components/Games/ReportScoreModal";
@@ -132,6 +138,8 @@ const GameCard: React.FC<GameCardProps> = ({
     winner,
     forfeit,
     type,
+    tournament_id,
+    tournament_name,
   } = match;
 
   const homeName = toCollegeName[home_college] ?? home_college ?? "TBD";
@@ -168,8 +176,7 @@ const GameCard: React.FC<GameCardProps> = ({
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  const typeLabel =
-    type === "Regular" ? "Regular Season" : `${type} Round`;
+  const typeLabel = getMatchTypeLabel(type, tournament_id);
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-800 overflow-hidden transition-shadow duration-200">
@@ -184,6 +191,11 @@ const GameCard: React.FC<GameCardProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
+          <TournamentBadge
+            tournamentId={tournament_id}
+            tournamentName={tournament_name}
+          />
+
           {/* Match type badge */}
           <span className="text-xs text-gray-400 dark:text-gray-500">
             {typeLabel}
