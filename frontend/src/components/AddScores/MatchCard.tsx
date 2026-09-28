@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 import { EditMatchButton } from "../Dashboard/Admin/EditMatchModal";
 import { getCollegeFlag } from "@/utils/versionedImages";
 
-const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
+const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
   const [awayScore, setAwayScore] = useState<string>("");
   const [homeScore, setHomeScore] = useState<string>("");
   const [awayForfeit, setAwayForfeit] = useState<boolean>(false);
@@ -82,6 +82,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
       }
 
       setScored(true);
+      onScored?.(match.id);
     } catch (error) {
       toast.error(
         `Failed to submit score: ${

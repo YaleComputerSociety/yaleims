@@ -1,14 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Matchv2 as Match } from "@src/types/components";
 import MatchCard from "@src/components/AddScores/MatchCard";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { useSeason } from "@src/context/SeasonContext";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
-import { currentYear } from "@src/utils/helpers";
+import { currentYear, emojiMap, toCollegeName } from "@src/utils/helpers";
 import UndoScoreMatchModal from "@src/components/AddScores/UndoScoreMatchModal";
 import PageHeading from "@src/components/PageHeading";
+import AddScoresFilterBar, {
+  AddScoresSortOrder,
+} from "@src/components/AddScores/AddScoresFilterBar";
+
+const matchTime = (match: Match) =>
+  match.timestamp._seconds * 1000 + match.timestamp._nanoseconds / 1000000;
 
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -17,6 +23,11 @@ const AddScoresPage: React.FC = () => {
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false); // For confirmation modal
   const [refreshKey, setRefreshKey] = useState(0); // For refetching matches
+  const [sportFilter, setSportFilter] = useState<string>("");
+  const [collegeFilter, setCollegeFilter] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<AddScoresSortOrder>("oldest");
+  const [scoredIds, setScoredIds] = useState<Set<string>>(new Set());
   const { currentSeason, seasonLoading } = useSeason();
   const year = currentSeason?.year || currentYear;
 
@@ -31,6 +42,7 @@ const AddScoresPage: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           setMatches(data.matches);
+          setScoredIds(new Set());
         }
       } catch (error) {
         console.error("Failed to fetch matches:", error);
@@ -39,8 +51,73 @@ const AddScoresPage: React.FC = () => {
       }
     };
 
+    if (seasonLoading) return;
     fetchMatches();
-  }, [refreshKey]);
+  }, [refreshKey, year, seasonLoading]);
+
+  const matchList = useMemo(
+    () => (Array.isArray(matches) ? matches : []),
+    [matches]
+  );
+
+  // only offer sports / colleges that actually have matches waiting, with counts
+  const sportOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    matchList.forEach((m) => counts.set(m.sport, (counts.get(m.sport) || 0) + 1));
+    return Array.from(counts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([sport, count]) => ({
+        value: sport,
+        label: `${emojiMap[sport] ?? ""} ${sport} (${count})`.trim(),
+      }));
+  }, [matchList]);
+
+  const collegeOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    matchList.forEach((m) => {
+      [m.home_college, m.away_college].forEach((c) => {
+        const name = toCollegeName[c] || c;
+        if (name) counts.set(name, (counts.get(name) || 0) + 1);
+      });
+    });
+    return Array.from(counts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([college, count]) => ({
+        value: college,
+        label: `${college} (${count})`,
+      }));
+  }, [matchList]);
+
+  const sortedMatches = useMemo(
+    () =>
+      [...matchList].sort((a, b) =>
+        sortOrder === "oldest"
+          ? matchTime(a) - matchTime(b)
+          : matchTime(b) - matchTime(a)
+      ),
+    [matchList, sortOrder]
+  );
+
+  const visibleIds = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return new Set(
+      matchList
+        .filter((m) => !sportFilter || m.sport === sportFilter)
+        .filter(
+          (m) =>
+            !collegeFilter ||
+            toCollegeName[m.home_college] === collegeFilter ||
+            toCollegeName[m.away_college] === collegeFilter
+        )
+        .filter((m) => !query || String(m.id).toLowerCase().includes(query))
+        .map((m) => m.id)
+    );
+  }, [matchList, sportFilter, collegeFilter, search]);
+
+  const handleScored = (matchId: string) =>
+    setScoredIds((prev) => new Set(prev).add(matchId));
+
+  const remainingCount = matchList.filter((m) => !scoredIds.has(m.id)).length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,13 +138,63 @@ const AddScoresPage: React.FC = () => {
           </h1>
 
           <div className="flex flex-col gap-4 items-center">
+            {matchList.length > 0 && (
+              <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-2">
+                <AddScoresFilterBar
+                  sportOptions={sportOptions}
+                  collegeOptions={collegeOptions}
+                  sportFilter={sportFilter}
+                  collegeFilter={collegeFilter}
+                  search={search}
+                  sortOrder={sortOrder}
+                  onSportChange={setSportFilter}
+                  onCollegeChange={setCollegeFilter}
+                  onSearchChange={setSearch}
+                  onSortOrderChange={setSortOrder}
+                />
+                <div className="flex items-center gap-3 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  <span>
+                    Showing {visibleIds.size} of {matchList.length}
+                  </span>
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <span>{remainingCount} left to score</span>
+                  {scoredIds.size > 0 && (
+                    <>
+                      <span className="text-gray-300 dark:text-gray-600">|</span>
+                      <button
+                        onClick={() => setRefreshKey((k) => k + 1)}
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Refresh list
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Matches Section */}
-            {Array.isArray(matches) && matches.length === 0 ? (
-              <p>No past matches to be scored</p>
-            ) : Array.isArray(matches) ? (
-              matches.map((match) => <MatchCard key={match.id} match={match} />)
-            ) : (
+            {!Array.isArray(matches) ? (
               <p>Something went wrong. Please try again later.</p>
+            ) : matchList.length === 0 ? (
+              <p>No past matches to be scored</p>
+            ) : (
+              <>
+                {visibleIds.size === 0 && (
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No matches to be scored for these filters
+                  </p>
+                )}
+                {/* hide rather than unmount so typed scores and "Scored!" state survive filter changes */}
+                {sortedMatches.map((match) => (
+                  <div
+                    key={match.id}
+                    className={visibleIds.has(match.id) ? "w-full" : "hidden"}
+                  >
+                    <MatchCard match={match} onScored={handleScored} />
+                  </div>
+                ))}
+              </>
             )}
 
             {/* Unscore Match Form */}

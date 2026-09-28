@@ -63,6 +63,7 @@ export type Matchv2 = {
 
 export interface MatchCardProps {
   match: Matchv2;
+  onScored?: (matchId: string) => void;
 }
 
 export interface MatchesTableProps {
