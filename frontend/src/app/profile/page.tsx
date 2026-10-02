@@ -74,7 +74,7 @@ const Profile = () => {
         const userToken = sessionStorage.getItem("userToken")
 
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`, 
+          `${functionUrl("getMyAvailablePoints")}?email=${userEmail}`, 
           {
             headers: {Authorization: `Bearer ${userToken}`}
           }
@@ -129,7 +129,7 @@ const Profile = () => {
       const userToken = sessionStorage.getItem("userToken")
 
       const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
+        functionUrl("updateUsername"),
         {
           method: "POST",
           headers: {

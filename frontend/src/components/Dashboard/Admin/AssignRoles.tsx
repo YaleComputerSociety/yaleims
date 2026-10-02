@@ -1,4 +1,5 @@
 "use client";
+import { functionUrl } from "@/utils/functionUrls";
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
@@ -40,7 +41,7 @@ const AssignRoles = () => {
     try {
       const userToken = sessionStorage.getItem("userToken");
       const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/updateUserRole",
+        functionUrl("updateUserRole"),
         {
           method: "POST",
           headers: {

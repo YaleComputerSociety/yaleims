@@ -1,3 +1,4 @@
+import { functionUrl } from "@/utils/functionUrls";
 import Image from "next/image";
 import { toCollegeName, emojiMap } from "@src/utils/helpers";
 import { YoddsTableRowProps } from "@src/types/components";
@@ -54,7 +55,7 @@ const TableRow: React.FC<YoddsTableRowProps> = ({
       setIsLoading(true);
       const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/addBet",
+        functionUrl("addBet"),
         {
           method: "POST",
           headers: {

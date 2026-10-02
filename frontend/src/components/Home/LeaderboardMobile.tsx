@@ -1,3 +1,4 @@
+import { functionUrl } from "@/utils/functionUrls";
 import React, { useEffect, useState, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -18,7 +19,7 @@ const Leaderboard: React.FC = () => {
     const fetchLeaderboard = async () => {
       try {
         const response = await fetch(
-          "https://us-central1-yims-125a2.cloudfunctions.net/getLeaderboard",
+          functionUrl("getLeaderboard"),
           {
             method: "GET",
             headers: {

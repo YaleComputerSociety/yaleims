@@ -1,5 +1,6 @@
 "use client";
 
+import { functionUrl } from "@/utils/functionUrls";
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeading from "@src/components/PageHeading";
@@ -148,7 +149,7 @@ const GamesPage: React.FC = () => {
     const fetchLeaderboard = async () => {
       try {
         const res = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getLeaderboard?seasonId=${selectedSeason}`
+          `${functionUrl("getLeaderboard")}?seasonId=${selectedSeason}`
         );
         const data = res.ok ? await res.json() : [];
         setLeaderboardData(Array.isArray(data) ? data : []);

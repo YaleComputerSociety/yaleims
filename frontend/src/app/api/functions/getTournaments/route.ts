@@ -1,9 +1,11 @@
+import { functionUrl } from "@/utils/functionUrls";
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const year = searchParams.get("year");
 
   const url = new URL(
-    "https://us-central1-yims-125a2.cloudfunctions.net/getTournaments"
+    functionUrl("getTournaments")
   );
   if (year) url.searchParams.set("year", year);
 

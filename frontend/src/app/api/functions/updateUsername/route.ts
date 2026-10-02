@@ -1,3 +1,4 @@
+import { functionUrl } from "@/utils/functionUrls";
 import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
     const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername", {
+        functionUrl("updateUsername"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

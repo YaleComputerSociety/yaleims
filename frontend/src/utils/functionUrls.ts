@@ -10,6 +10,11 @@
 // In production it reproduces the exact same Cloud Run URL as before, so
 // behavior is unchanged. When NEXT_PUBLIC_USE_EMULATOR === "true" it returns the
 // local Functions-emulator URL instead. Callers append their own query string.
+//
+// Every function is 2nd gen (firebase-functions v6's root export is v2), so each
+// one is reachable at both its run.app URL and the legacy alias
+// https://us-central1-yims-125a2.cloudfunctions.net/<name>. Always use this
+// helper rather than either hardcoded form.
 
 /** Cloud Run URL discriminator for the production project (yims-125a2). */
 const PROD_RUN_HASH = "65477nrg6a-uc";
@@ -49,6 +54,18 @@ export const FUNCTION_NAMES = [
   "undoScoreMatch",
   "setMVP",
   "publicApiSignup",
+  "getLeaderboard",
+  "getUserLeaderboard",
+  "updateUsername",
+  "fetchOrAddUser",
+  "updateUserRole",
+  "deleteBet",
+  "addSchedule",
+  "createBracket",
+  "deleteBracket",
+  "createTournament",
+  "deleteTournament",
+  "getTournaments",
 ] as const;
 
 export type FunctionName = (typeof FUNCTION_NAMES)[number];

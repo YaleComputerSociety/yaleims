@@ -1,3 +1,4 @@
+import { functionUrl } from "@/utils/functionUrls";
 import { FC, useState, useEffect } from "react";
 import { emojiMap } from "@src/utils/helpers";
 import { useUser } from "../../context/UserContext";
@@ -50,7 +51,7 @@ const TableRowPending: FC<TableRowPendingProps> = ({
     try {
       const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
-        `https://us-central1-yims-125a2.cloudfunctions.net/deleteBet?email=${userEmail}&matchId=${bet.matchId}&sport=${bet.sport}&betAmount=${bet.betAmount}&betOdds=${bet.betOdds}&betOption=${bet.betOption}`,
+        `${functionUrl("deleteBet")}?email=${userEmail}&matchId=${bet.matchId}&sport=${bet.sport}&betAmount=${bet.betAmount}&betOdds=${bet.betOdds}&betOption=${bet.betOption}`,
         {
           method: "DELETE",
           headers: {

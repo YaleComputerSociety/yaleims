@@ -1,3 +1,4 @@
+import { functionUrl } from "@/utils/functionUrls";
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
   }
 
   const response = await fetch(
-    "https://us-central1-yims-125a2.cloudfunctions.net/addSchedule",
+    functionUrl("addSchedule"),
     {
       method: "POST",
       headers: {

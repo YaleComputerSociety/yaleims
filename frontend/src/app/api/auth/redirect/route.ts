@@ -80,7 +80,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
 
       const response1 = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser",
+        functionUrl("fetchOrAddUser"),
         {
           method: "POST",
           headers: {

@@ -1,3 +1,4 @@
+import { functionUrl } from "@/utils/functionUrls";
 import React, { useEffect, useState } from "react";
 import { useSeason } from "@src/context/SeasonContext";
 import LoadingSpinner from "../LoadingSpinner";
@@ -20,7 +21,7 @@ const PredictionLeaderboard = () => {
       setLoadingUsers(true);
       try {
         const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getUserLeaderboard?season=${currentSeason!.year}`,
+          `${functionUrl("getUserLeaderboard")}?season=${currentSeason!.year}`,
           {
             method: "GET",
             headers: {
