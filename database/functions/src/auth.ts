@@ -37,6 +37,14 @@ let secretClient: SecretManagerServiceClient | null = null;
 
 async function getJwtSecret(): Promise<string> {
   if (cachedSecret) return cachedSecret;
+  // Testability fallback: when JWT_SECRET is provided as an env var (the
+  // Functions emulator via functions/.env.local, or CI) use it directly and
+  // skip the Secret Manager call. Production functions set no such env var, so
+  // they continue to read from Secret Manager unchanged.
+  if (process.env.JWT_SECRET) {
+    cachedSecret = process.env.JWT_SECRET;
+    return cachedSecret;
+  }
   if (!secretClient) secretClient = new SecretManagerServiceClient();
   const [version] = await secretClient.accessSecretVersion({
     name: JWT_SECRET_RESOURCE,
