@@ -1,13 +1,12 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
-import cors from "cors";
+import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
 
 import { isValidDecodedToken, tokenHasRole } from "./helpers.js";
 import { getPointsForWinBySportName } from "./scoreMatch.js";
 import { normalizePlacementPoints } from "./tournament_helpers.js";
 
-const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
 export const deleteTournament = functions.https.onRequest((req, res) => {

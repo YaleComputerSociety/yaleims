@@ -1,12 +1,11 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
-import cors from "cors";
+import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
 
 import { isValidDecodedToken, tokenHasRole } from "./helpers.js";
 import { Timestamp } from "firebase-admin/firestore";
 
-const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
 interface ScheduleMatch {

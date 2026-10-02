@@ -1,12 +1,11 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
-import cors from "cors";
+import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
 import { isValidDecodedToken } from "./helpers.js";
 // ✅ ADDED: import getPointsForWinBySportName
 import { getPointsForWinBySportName } from "./scoreMatch.js";
 
-const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
 interface MatchSlotPair {

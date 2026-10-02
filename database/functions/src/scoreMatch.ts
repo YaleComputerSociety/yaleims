@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
-import cors from "cors";
+import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
 
 import { isValidDecodedToken } from "./helpers.js";
@@ -8,7 +8,6 @@ import { updateEloRatings, EloMatchResult } from "./elo_system.js";
 import { recalcOddsForAffectedMatches } from "./recalcOdds.js";
 import { awardTournamentPlacements } from "./tournament_helpers.js";
 
-const corsHandler = cors({ origin: true });
 const db = admin.firestore();
 
 // interface Prediction {

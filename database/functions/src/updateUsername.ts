@@ -1,10 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
-import cors from "cors";
+import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
 import { isValidDecodedToken } from "./helpers.js";
 
-const corsHandler = cors({ origin: true });
 
 const db = admin.firestore();
 
