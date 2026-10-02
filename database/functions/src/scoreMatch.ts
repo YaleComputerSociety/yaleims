@@ -1,10 +1,9 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import jwt from "jsonwebtoken";
+import { authenticateRequest } from "./auth.js";
 
 import { isValidDecodedToken } from "./helpers.js";
-import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { updateEloRatings, EloMatchResult } from "./elo_system.js";
 import { recalcOddsForAffectedMatches } from "./recalcOdds.js";
 import { awardTournamentPlacements } from "./tournament_helpers.js";
@@ -142,28 +141,11 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
       return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    const authHeader = req.headers.authorization || "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "No token provided" });
+    const auth = await authenticateRequest(req);
+    if (!auth.ok) {
+      return res.status(auth.status).json({ error: auth.error });
     }
-
-    const client = new SecretManagerServiceClient();
-    const [version] = await client.accessSecretVersion({
-      name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
-    });
-    if (!version.payload || !version.payload.data) {
-      console.error("JWT secret payload is missing");
-      return res.status(500).send("Internal Server Error");
-    }
-    const JWT_SECRET = version.payload.data.toString();
-
-    const idToken = authHeader.split("Bearer ")[1];
-    let decoded: any;
-    try {
-      decoded = jwt.verify(idToken, JWT_SECRET);
-    } catch {
-      return res.status(401).json({ error: "Invalid token" });
-    }
+    const decoded = auth.decoded;
     if (!isValidDecodedToken(decoded) || !canScoreMatch(decoded.mRoles)) {
       return res.status(403).json({ error: "Unauthorized" });
     }

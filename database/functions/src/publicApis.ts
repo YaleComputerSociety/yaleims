@@ -1,20 +1,8 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import jwt from "jsonwebtoken";
 import {randomBytes} from "crypto";
-import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
-
-interface DecodedToken {
-  name: string;
-  netid: string;
-  email: string;
-  role: string;
-  username: string;
-  college: string;
-  points: string;
-  matches_played: number;
-}
+import { authenticateRequest } from "./auth.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -26,22 +14,11 @@ export const publicApiSignup = functions.https.onRequest((req, res) => {
       if (req.method != "POST") {
         return res.status(405).send("Method not allowed");
       }
-      const authHeader = req.headers.authorization || "";
-      if (!authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({error: "No token provided"});
+      const auth = await authenticateRequest(req);
+      if (!auth.ok) {
+        return res.status(auth.status).json({ error: auth.error });
       }
-      const token = authHeader.split("Bearer ")[1];
-      const client = new SecretManagerServiceClient();
-      const [version] = await client.accessSecretVersion({
-        name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
-      });
-      if (!version.payload || !version.payload.data) {
-        console.error("JWT secret payload is missing");
-        return res.status(500).json({error: "Internal Server Error"});
-      }
-      const JWT_SECRET = version.payload.data.toString();
-
-      const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload as DecodedToken;
+      const decoded = auth.decoded;
       
       const description = req.body.description;
       const apiKey = randomBytes(32).toString("hex");

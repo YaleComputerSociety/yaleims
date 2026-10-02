@@ -1,9 +1,8 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
-import jwt from "jsonwebtoken";
+import { authenticateRequest } from "./auth.js";
 import { isValidDecodedToken } from "./helpers.js";
-import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 import { recalcOddsForMatch } from "./recalcOdds.js";
 
 const corsHandler = cors({ origin: true });
@@ -49,23 +48,11 @@ interface AddBetRequestBody {
 
 export const addBet = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
-    const authHeader = req.headers.authorization || ""
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({error: "No token provided"});
+    const auth = await authenticateRequest(req);
+    if (!auth.ok) {
+      return res.status(auth.status).json({ error: auth.error });
     }
-    
-    const client = new SecretManagerServiceClient();
-    const [version] = await client.accessSecretVersion({
-      name: "projects/yims-125a2/secrets/JWT_SECRET/versions/1",
-    });
-    if (!version.payload || !version.payload.data) {
-      console.error("JWT secret payload is missing");
-      return res.status(500).send("Internal Server Error");
-    }
-    const JWT_SECRET = version.payload.data.toString();
-
-    const token = authHeader.split("Bearer ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = auth.decoded;
 
     if (!isValidDecodedToken(decoded)) {
       console.error("Invalid token structure");
