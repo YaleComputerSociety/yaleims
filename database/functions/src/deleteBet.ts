@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { authenticateRequest } from "./auth.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -27,32 +28,24 @@ function isDelBetRequestBody(query: any): query is DelBetRequestBody {
 
 export const deleteBet = functions.https.onRequest(async (req, res) => {
   corsHandler(req, res, async () => {
-    // uncomment and redeploy once new frontend changes are deployed
-    // const authHeader = req.headers.authorization || ""
-    // if (!authHeader.startsWith("Bearer ")) {
-    //   return res.status(401).json({error: "No token provided"});
-    // }
-    // //   // getting token passed from request
-    // const idToken = authHeader.split("Bearer ")[1];
-    // // //   //verifying the token using firebase admin
-    // let decoded;
-    // try {
-    //   decoded = await admin.auth().verifyIdToken(idToken);
-    //   if (!decoded) {
-    //     return res.status(401).json({error: "Invalid Token"})
-    //   }
-    // } catch (error) {
-    //   return res.status(401).json({error: "Invalid Token"})
-    // } 
-    //get rid of email in the query and use the decoded users email
+    // Verify the caller's token. The bet owner's email is taken from the
+    // verified token (NOT the query string), so a user can only delete their
+    // own bets — previously the email came from the query and verification was
+    // commented out, so anyone could delete anyone's bets.
+    const auth = await authenticateRequest(req);
+    if (!auth.ok) {
+      return res.status(auth.status).json({ error: auth.error });
+    }
+
     if (!isDelBetRequestBody(req.query)) {
       return res
         .status(400)
         .send("Required parameters are missing or incorrect.");
     }
 
-    const { email, matchId, sport, betAmount, betOption }: DelBetRequestBody =
+    const { matchId, sport, betAmount, betOption }: DelBetRequestBody =
       req.query;
+    const email = auth.decoded.email;
 
     const betAmountNumber = parseFloat(betAmount);
 

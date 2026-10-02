@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import cors from "cors";
+import { authenticateRequest } from "./auth.js";
+import { tokenHasRole } from "./helpers.js";
 
 const corsHandler = cors({ origin: true });
 
@@ -10,6 +12,17 @@ const db = admin.firestore();
 export const updateUserRole = functions.https.onRequest(async (req, res) => {
   return corsHandler(req, res, async () => {
     try {
+      // Changing a user's role is privileged: require a verified token with the
+      // `dev` role (mirrors the manage-user-roles BFF route). Without this, the
+      // endpoint was an unauthenticated privilege-escalation hole.
+      const auth = await authenticateRequest(req);
+      if (!auth.ok) {
+        return res.status(auth.status).json({ error: auth.error });
+      }
+      if (!tokenHasRole(auth.decoded, ["dev"])) {
+        return res.status(403).json({ error: "Forbidden: requires dev role" });
+      }
+
       const { email, role, sport } = req.body;
       if (!email || !role || (role === "captain" && !sport)) {
         return res.status(400).send("Missing input parameters");

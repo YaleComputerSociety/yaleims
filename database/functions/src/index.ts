@@ -22,7 +22,6 @@ import { getMatchesPaginated } from "./getMatchesPaginated.js";
 import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
 import { createBracket } from "./createBracket.js";
 import { deleteBracket } from "./deleteBracket.js";
-import { scoreMatchTesting } from "./scoreMatchTesting.js";
 import { getUsersInCollege } from "./getUsersInCollege.js";
 import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
 import { setMVP } from "./setMVP.js";
@@ -57,7 +56,6 @@ export {
   updateUserRole,
   createBracket,
   deleteBracket,
-  scoreMatchTesting,
   getUsersInCollege,
   setMVP,
   addSchedule,
