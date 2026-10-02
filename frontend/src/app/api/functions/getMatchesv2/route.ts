@@ -1,3 +1,5 @@
+import { functionUrl } from "@/utils/functionUrls";
+
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const forwardParams = new URLSearchParams(searchParams);
@@ -6,7 +8,7 @@ export async function GET(req: Request) {
     }
 
     const response = await fetch(
-        `https://getmatchespaginatedv2-65477nrg6a-uc.a.run.app?${forwardParams.toString()}`
+        `${functionUrl("getMatchesPaginatedv2")}?${forwardParams.toString()}`
     );
 
     if (!response.ok) {

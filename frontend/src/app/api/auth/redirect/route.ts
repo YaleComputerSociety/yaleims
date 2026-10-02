@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseString } from "xml2js";
 import jwt from "jsonwebtoken";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
@@ -67,7 +68,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       const name = `${yaliesJSON[0].first_name} ${yaliesJSON[0].last_name}`;
 
       const currentSeasonResponse = await fetch(
-        "https://getseasons-65477nrg6a-uc.a.run.app"
+        functionUrl("getSeasons")
       );
       if (!currentSeasonResponse.ok) {
         throw new Error("Failed to load current season");

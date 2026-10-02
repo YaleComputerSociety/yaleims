@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function GET(req: Request) {
     const cookieStore = await cookies();
@@ -12,7 +13,7 @@ export async function GET(req: Request) {
         return Response.json({ error: "seasonId is required" }, { status: 400 });
     }
     const response= await fetch(
-        `https://getunscoredmatches-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
+        `${functionUrl("getUnscoredMatches")}?seasonId=${seasonId}`,
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
     );
 

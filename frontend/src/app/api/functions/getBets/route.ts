@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function GET(req: Request) {
     const cookieStore = await cookies();
@@ -14,7 +15,7 @@ export async function GET(req: Request) {
     const history = url.searchParams.get("history")
     const pending = url.searchParams.get("pending");
     const response= await fetch(
-        `https://getbets-65477nrg6a-uc.a.run.app?seasonId=${seasonId}&history=${history}&pending=${pending}`,
+        `${functionUrl("getBets")}?seasonId=${seasonId}&history=${history}&pending=${pending}`,
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
     );
 

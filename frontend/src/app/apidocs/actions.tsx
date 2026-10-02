@@ -1,6 +1,7 @@
 "use server"
 
 import { cookies } from "next/headers"
+import { functionUrl } from "@/utils/functionUrls"
 
 export const addNewApi = async (description: string) => {
     try {
@@ -16,7 +17,7 @@ export const addNewApi = async (description: string) => {
             return
         }
         console.log(token.value)
-        const response = await fetch("https://publicapisignup-65477nrg6a-uc.a.run.app", {
+        const response = await fetch(functionUrl("publicApiSignup"), {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

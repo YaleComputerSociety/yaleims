@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function GET(req: Request) {
     const cookieStore = await cookies();
@@ -7,7 +8,7 @@ export async function GET(req: Request) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
     const response= await fetch(
-        "https://getmyavailablepoints-65477nrg6a-uc.a.run.app",
+        functionUrl("getMyAvailablePoints"),
         { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
     );
 

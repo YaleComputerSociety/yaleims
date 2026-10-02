@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function POST(req: Request) {
   const { matchId, seasonId, participantType, matchTimestamp } =
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
     });
   }
   const response = await fetch(
-    "https://addparticipant-65477nrg6a-uc.a.run.app",
+    functionUrl("addParticipant"),
     {
       method: "POST",
       headers: {

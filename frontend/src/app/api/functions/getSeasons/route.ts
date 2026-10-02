@@ -1,6 +1,8 @@
+import { functionUrl } from "@/utils/functionUrls";
+
 export async function GET(req: Request) {
     const response= await fetch(
-        "https://getseasons-65477nrg6a-uc.a.run.app"
+        functionUrl("getSeasons")
     );
 
     if (!response.ok) {

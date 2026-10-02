@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
  
 export async function POST(req: Request) {
     const { matchId, seasonId, participantType } = await req.json();
@@ -7,7 +8,7 @@ export async function POST(req: Request) {
     if (!token) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
-    const response = await fetch("https://removeparticipant-65477nrg6a-uc.a.run.app", {
+    const response = await fetch(functionUrl("removeParticipant"), {
         method: "POST",
         headers: {"Content-Type": "application/json", Authorization: `Bearer ${token.value}`},
         body: JSON.stringify({ matchId, seasonId, participantType }),

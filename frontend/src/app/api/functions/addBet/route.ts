@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
     if (!seasonId) {
       return Response.json({ error: "seasonId is required" }, { status: 400 });
     }
-    const response = await fetch(`https://addbet-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`, {
+    const response = await fetch(`${functionUrl("addBet")}?seasonId=${seasonId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

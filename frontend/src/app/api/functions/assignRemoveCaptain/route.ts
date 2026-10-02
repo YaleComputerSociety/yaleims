@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function POST(req: Request) {
   const { email, sport, assign, remove } = await req.json();
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
     });
   }
   const response = await fetch(
-    "https://assignremovecaptain-65477nrg6a-uc.a.run.app",
+    functionUrl("assignRemoveCaptain"),
     {
       method: "POST",
       headers: {

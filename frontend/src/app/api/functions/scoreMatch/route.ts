@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function POST(req: Request) {
   const {
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const response = await fetch("https://scorematch-65477nrg6a-uc.a.run.app", {
+  const response = await fetch(functionUrl("scoreMatch"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

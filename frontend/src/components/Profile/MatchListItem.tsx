@@ -6,6 +6,7 @@ import {
   generateGoogleCalendarLink,
 } from "@src/utils/helpers";
 import { Match } from "@src/types/components";
+import { functionUrl } from "@/utils/functionUrls";
 import { useUser } from "../../context/UserContext";
 
 interface MatchListItemProps {
@@ -25,7 +26,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
     try {
       const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
-        "https://addparticipant-65477nrg6a-uc.a.run.app",
+        functionUrl("addParticipant"),
         {
           method: "POST",
           headers: {
@@ -62,7 +63,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
     try {
       const userToken = sessionStorage.getItem("userToken")
       const response = await fetch(
-        "https://removeparticipant-65477nrg6a-uc.a.run.app",
+        functionUrl("removeParticipant"),
         {
           method: "POST",
           headers: {

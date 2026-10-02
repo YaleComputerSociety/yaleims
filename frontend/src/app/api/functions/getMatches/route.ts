@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { functionUrl } from "@/utils/functionUrls";
 
 export async function GET(req: Request) {
     const cookieStore = await cookies();
@@ -13,7 +14,7 @@ export async function GET(req: Request) {
     }
 
     const response = await fetch(
-        `https://getmatchespaginated-65477nrg6a-uc.a.run.app?${forwardParams.toString()}`
+        `${functionUrl("getMatchesPaginated")}?${forwardParams.toString()}`
     );
 
     if (!response.ok) {
