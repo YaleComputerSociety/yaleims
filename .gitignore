@@ -1,1 +1,7 @@
 database/misc/serviceaccount.json
+
+# Local env files (contain real secrets: JWT_SECRET, YALIES_API_KEY, etc.)
+.env.local
+.env*.local
+**/.env.local
+**/.env*.local

@@ -7,7 +7,7 @@ declare global {
     gtag?: (...args: any[]) => void;
   }
 }
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -25,6 +25,22 @@ export const firebaseApp: FirebaseApp =
   getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 export const db = getFirestore(firebaseApp);
+
+// ─── Emulator wiring (local dev/QA only) ──────────────────────
+// When NEXT_PUBLIC_USE_EMULATOR === "true", point the client Firestore SDK at
+// the local Firestore emulator instead of production. This must match the flag
+// used by src/utils/functionUrls.ts so the whole app targets the emulator
+// consistently. Guarded by a module-level flag to survive Next.js HMR.
+let emulatorConnected = false;
+if (
+  process.env.NEXT_PUBLIC_USE_EMULATOR === "true" &&
+  !emulatorConnected
+) {
+  const host = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST ?? "127.0.0.1";
+  const port = Number(process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_PORT ?? "8080");
+  connectFirestoreEmulator(db, host, port);
+  emulatorConnected = true;
+}
 
 // ─── Lazy analytics init ──────────────────────────────────────
 let analyticsInstance: Analytics | null = null;

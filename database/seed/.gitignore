@@ -1,0 +1,9 @@
+# Raw export from production — contains real user PII. NEVER commit.
+data/prod-dump.json
+
+# Local install
+node_modules/
+
+# The sanitized seed (data/seed.json) and the emulator snapshot (snapshot/)
+# are safe to commit if you want a shared dataset — they are intentionally
+# NOT ignored here.
