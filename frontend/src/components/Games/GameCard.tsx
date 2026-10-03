@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import TournamentBadge from "@src/components/ui/TournamentBadge";
-import Link from "next/link";
 import { useState } from "react";
 import { FaCircle, FaMapMarkerAlt } from "react-icons/fa";
 import { Match } from "@src/types/components";
@@ -427,24 +426,6 @@ const GameCard: React.FC<GameCardProps> = ({
 
             <EditMatchButton match={match} />
             <ReportScoreButton match={match} seasonId={seasonId} />
-
-            {status === "upcoming" && (
-              user ? (
-                <Link
-                  href="/odds"
-                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Predict here
-                </Link>
-              ) : (
-                <Link
-                  href="/api/auth/login?from=%2Fodds"
-                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Predict here
-                </Link>
-              )
-            )}
           </div>
         </div>
       </div>

@@ -24,9 +24,9 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 
+// Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
-const BANNER_MESSAGE =
-  "🎮 The odds challenge for the Nintendo Switch is still on! Place bets to compete!";
+const BANNER_MESSAGE = "";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();

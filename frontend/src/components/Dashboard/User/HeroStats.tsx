@@ -3,12 +3,9 @@ import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import Image from "next/image";
 import { getCollegeFlag } from "@/utils/versionedImages";
-import { getYCoinImage } from "@/utils/versionedImages";
 
 interface UserStats {
-  points: number;
   matches: any[];
-  correctPredictions: number;
 }
 
 export default function HeroStats() {
@@ -43,25 +40,11 @@ export default function HeroStats() {
 
   const stats = [
     {
-      label: "YCoins",
-      value: loading ? "..." : userStats?.points?.toFixed(0) || "0",
-      icon: "ycoin",
-      gradient: "from-amber-400/60 to-yellow-500/30",
-      border: "border-amber-500/30",
-    },
-    {
       label: "Games Played",
       value: loading ? "..." : userStats?.matches?.length || "0",
       icon: "🎮",
       gradient: "from-blue-500/20 to-cyan-500/20",
       border: "border-blue-500/30",
-    },
-    {
-      label: "Correct Predictions",
-      value: loading ? "..." : userStats?.correctPredictions || "0",
-      icon: "✓",
-      gradient: "from-emerald-500/20 to-green-500/20",
-      border: "border-emerald-500/30",
     },
   ];
 
@@ -105,14 +88,7 @@ export default function HeroStats() {
           >
             <div className="flex flex-col">
               <span className="text-2xl md:text-3xl mb-1">
-                {stat.icon === "ycoin" ? (
-                <Image
-                  src={getYCoinImage()}
-                  alt="YCoin"
-                  width={24}
-                  height={24}
-                  className="inline-block"
-                />) : (stat.icon)}
+                {stat.icon}
               </span>
               <span className="text-2xl md:text-4xl font-bold tracking-tight">
                 {stat.value}

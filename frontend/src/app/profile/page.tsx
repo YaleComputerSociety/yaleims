@@ -9,7 +9,7 @@ import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
-import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/utils/versionedImages";
 import { functionUrl } from "@/utils/functionUrls";
 
 const Profile = () => {
@@ -20,10 +20,7 @@ const Profile = () => {
   const [newUsername, setNewUsername] = useState(user?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
-  const [availablePoints, setAvailablePoints] = useState(0);
-  const [correctPrediction, setCorrectPredictions] = useState(0);
 
-  const userEmail = user ? user.email : null;
   const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
 
   const cloudFunctionUrl = functionUrl("getCollegeMatches");
@@ -67,31 +64,8 @@ const Profile = () => {
   }, [user, matches.length]);
 
   useEffect(() => {
-    if (!userEmail) return;
-
-    const fetchMyPoints = async () => {
-      try {
-        const userToken = sessionStorage.getItem("userToken")
-
-        const response = await fetch(
-          `${functionUrl("getMyAvailablePoints")}?email=${userEmail}`, 
-          {
-            headers: {Authorization: `Bearer ${userToken}`}
-          }
-        );
-        if (!response.ok)
-          throw new Error(`Error fetching points: ${response.statusText}`);
-        const data = await response.json();
-        setAvailablePoints(data.points);
-        setCorrectPredictions(data.correctPredictions);
-        setNewUsername(data.username);
-      } catch (error) {
-        console.error("Failed to fetch points:", error);
-      }
-    };
-
-    fetchMyPoints();
-  }, [userEmail]);
+    if (user?.username) setNewUsername(user.username);
+  }, [user?.username]);
 
   const signedUpMatches = matches.filter((match) => {
     const homeParticipants = match.home_college_participants || [];
@@ -213,7 +187,7 @@ const Profile = () => {
               </div>
               <div className="flex items-center flex-col">
                 <p className="text-md font-bold flex items-center mb-3">
-                  Yodds Username: {newUsername || "Anonymous"}
+                  Username: {newUsername || "Anonymous"}
                   <span className="ml-2 flex items-center">
                     <MdModeEditOutline
                       style={{ fontSize: "24px" }} // Ensures a fixed size
@@ -221,21 +195,6 @@ const Profile = () => {
                       onClick={() => setIsEditing(true)}
                     />
                   </span>
-                </p>
-                <div className="flex flex-row items-center space-x-2">
-                  <p className="text-md font-bold">
-                    YCoins: {availablePoints.toFixed(2) || 0}
-                  </p>
-                  <Image
-                    src={getVersionedImage("/YCoin.png")}
-                    alt="YCoin"
-                    height={25} // Retains the specified height
-                    width={25} // Retains the specified width
-                    style={{ objectFit: "contain" }} // Proper usage of objectFit
-                  />
-                </div>
-                <p className="text-md font-bold">
-                  Correct Predictions: {correctPrediction}
                 </p>
               </div>
             </div>

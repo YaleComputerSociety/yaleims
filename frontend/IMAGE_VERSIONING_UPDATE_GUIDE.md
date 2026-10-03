@@ -32,19 +32,15 @@ Replace `/college_flags/${collegeName}.png` with `getCollegeFlag(collegeName)`
 4. `src/components/Scores/CollegeSummaryCardMobile.tsx` (line 32)
 5. `src/components/Scores/CollegeSummaryCard.tsx` (line 43)
 6. `src/components/Dashboard/User/StatsBox.tsx` (line 32)
-7. `src/components/Home/PredictionPodiums.tsx` (line 66)
-8. `src/components/Home/AllTimePodiums.tsx` (line 51)
-9. `src/components/YOdds/BetOption.tsx` (line 60)
-10. `src/components/YOdds/BetSlipRow.tsx` (line 72)
-11. `src/components/Home/YearlyLeaderboardTable.tsx` (line 118)
-12. `src/app/profile/page.tsx` (line 205)
+7. `src/components/Home/AllTimePodiums.tsx` (line 51)
+8. `src/components/Home/YearlyLeaderboardTable.tsx` (line 118)
+9. `src/app/profile/page.tsx` (line 205)
 
 ### Medal Overlays (also use `getVersionedImage()`)
 Replace `/college_flags/[medal]_overlay.png` with `getVersionedImage('/college_flags/[medal]_overlay.png')`
 
 **Files:**
-1. `src/components/Home/PredictionPodiums.tsx` (lines 24-26)
-2. `src/components/Home/AllTimePodiums.tsx` (lines 6-8)
+1. `src/components/Home/AllTimePodiums.tsx` (lines 6-8)
 
 ### Dev Team Images (`getDevImage()`)
 Replace `/dev_images/[name]` with `getDevImage('[name]')`
@@ -57,9 +53,7 @@ Replace `/dev_images/[name]` with `getDevImage('[name]')`
 1. `src/components/Footer.tsx` - `LOGO.png`
 2. `src/components/NavBar.tsx` - `/LOGO.png`
 3. `src/app/not-found.tsx` - `404.png`
-4. `src/app/odds/page.tsx` - `/YCoin.png`
-5. `src/app/profile/page.tsx` - `/YCoin.png`
-6. `src/app/brackets/page.tsx` - `/trophy.png`
+4. `src/app/brackets/page.tsx` - `/trophy.png`
 
 ## 📝 Update Pattern
 

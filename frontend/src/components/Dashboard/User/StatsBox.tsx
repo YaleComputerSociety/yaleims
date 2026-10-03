@@ -20,7 +20,7 @@ export default function StatsBox() {
                 const data = await response.json();
                 setUserStats(data)
             } catch (error) {
-                console.error("Failed to fetch points:", error);
+                console.error("Failed to fetch user stats:", error);
             }
         }
 
@@ -43,9 +43,7 @@ export default function StatsBox() {
             />
             <div className="mt-2 md:text-sm text-xs mg:text-base">
                 <h3 className="font-semibold">{user.college}</h3>
-                <p className="">YCoins: {userStats?.points.toFixed(0)}</p>
-                <p className="">Games Played: {userStats?.matches.length}</p>
-                <p className="">Correct Predictions: {userStats?.correctPredictions}</p>
+                <p className="">Games Played: {userStats?.matches?.length ?? 0}</p>
             </div>
         </div>
     )

@@ -527,7 +527,7 @@ const GamesPage: React.FC = () => {
         {showSignInPrompt && (
           <div className="mb-4 rounded-xl border border-blue-500/30 dark:border-blue-400/30 bg-blue-500/10 dark:bg-blue-500/5 px-4 py-3 flex items-center justify-between gap-4">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Sign in to sign up for games, report score issues, and place predictions.
+              Sign in to sign up for games and report score issues.
             </p>
             <Link
               href="/api/auth/login?from=%2Fgames"

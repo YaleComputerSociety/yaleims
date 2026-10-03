@@ -32,13 +32,6 @@ export type Match = {
   division?: string;
   winner: string | null; // Determines the winner, or if it's a draw
   forfeit: boolean;
-  home_college_odds?: number;
-  away_college_odds?: number;
-  draw_odds?: number;
-  home_volume?: number;
-  away_volume?: number;
-  draw_volume?: number;
-  default_volume?: number;
   next_match_id?: string;
   playoff_bracket_slot?: number;
   /** Set only on matches created as part of a tournament. */
@@ -70,12 +63,6 @@ export interface MatchesTableProps {
   filteredMatches: Match[]; // Type the filteredMatches prop as an array of Match
   handleCollegeClick?: (college: string) => void;
   handleSportClick?: (sport: string) => void;
-  updateBetSlip?: (bet: Bet) => Bet[];
-  availablePoints?: number;
-}
-
-export interface PendingMatchesTableProps {
-  pendingBets: Bet[];
 }
 
 export interface TableHeaderProps {
@@ -92,22 +79,6 @@ export interface TableRowProps {
   isFirst?: boolean; // Optional prop to indicate if this is the first row
   isLast?: boolean; // Optional prop to indicate if this is the last row
   handleSportClick: any; // Function to handle sport clicks
-  availablePoints?: number;
-}
-export interface YoddsTableRowProps {
-  key?: number;
-  match: Match; // `match` prop remains typed as `Match`
-  isFirst?: boolean; // Optional prop to indicate if this is the first row
-  isLast?: boolean; // Optional prop to indicate if this is the last row
-  availablePoints: number | undefined;
-}
-
-export interface TablePendingRowProps {
-  key?: number;
-  bet: Bet; // `match` prop remains typed as `Match`
-  isFirst?: boolean; // Optional prop to indicate if this is the first row
-  isLast?: boolean; // Optional prop to indicate if this is the last row
-  availablePoints?: number | undefined;
 }
 
 export type Sport = {
@@ -172,33 +143,6 @@ export interface Participant {
   lastname?: string;
   name?: string;
   // Add other fields as needed
-}
-
-export interface Bet {
-  away_college: string;
-  betOdds: number;
-  betOption: string;
-  home_college: string;
-  matchId: string;
-  sport: string;
-  winner?: string;
-  won?: boolean;
-  matchTimestamp: string;
-  betId: number;
-}
-
-export interface BetParlay {
-  betArray: Bet[];
-  betId: string;
-  currentCashed: number;
-  createdAt: string;
-  betAmount: number;
-  totalOdds: number;
-  won: boolean;
-}
-
-export interface BetParlayTableProps {
-  parlays: BetParlay[];
 }
 
 export interface SportModalProps {

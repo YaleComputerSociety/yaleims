@@ -16,12 +16,14 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
     const userSeasonRef = doc(db, "users", email, "seasons", seasonId);
     const snap = await getDoc(userSeasonRef);
-    
-    const userData = snap.data();
 
-    return NextResponse.json(userData, { status: 200 });
+    // Only games played; the user-season doc still holds frozen betting fields.
+    return NextResponse.json(
+      { matches: snap.data()?.matches ?? [] },
+      { status: 200 }
+    );
   } catch (err) {
-    console.error("Error in getting sports for captain:", err);
+    console.error("Error getting user stats:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

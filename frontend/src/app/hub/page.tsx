@@ -61,13 +61,6 @@ const Dashboard: React.FC = () => {
       gradient: "from-amber-500/10 to-yellow-500/10",
     },
     {
-      title: "Place Bets",
-      link: "/odds",
-      icon: "🎯",
-      description: "Predict match outcomes and earn YCoins",
-      gradient: "from-purple-500/10 to-pink-500/10",
-    },
-    {
       title: "View Brackets",
       link: "/brackets",
       icon: "🏅",
