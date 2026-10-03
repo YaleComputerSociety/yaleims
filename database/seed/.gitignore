@@ -4,6 +4,8 @@ data/prod-dump.json
 # Local install
 node_modules/
 
-# The sanitized seed (data/seed.json) and the emulator snapshot (snapshot/)
-# are safe to commit if you want a shared dataset — they are intentionally
-# NOT ignored here.
+# The sanitized seed and the emulator snapshot stay out of git too. The first
+# sanitizer missed real names and emails (see CLEANUP-LOG session 3), and an
+# 8 MB dataset doesn't belong in the repo anyway. Share it out-of-band if needed.
+data/seed.json
+snapshot/
