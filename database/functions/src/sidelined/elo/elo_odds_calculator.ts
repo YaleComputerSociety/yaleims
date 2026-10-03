@@ -1,23 +1,24 @@
 // elo_odds_calculator.ts
 // -----------------------------------------------------------------------------
 // PURPOSE
-// Turn Elo-based strength + historical forfeit behavior + current betting
-// volume into a 3-outcome probability distribution (Home/Away/Draw), then
-// (optionally) into American moneyline numbers.
+// Turn Elo-based strength + historical forfeit behavior into a 3-outcome
+// probability distribution (Home/Away/Draw).
+//
+// SIDELINED (see README.md): betting was removed, so the v1.1 betting-volume
+// ("market sentiment") blend and the moneyline conversion are gone; this is
+// the pure model.
 //
 // v1.1 CHANGES:
 // - Forfeits are NO LONGER a predicted outcome
 // - Forfeit history TIPS the Home/Away odds via Delta_F adjustment
 // - Returns only 3 outcomes: team1Win, team2Win, draw
-// - When no betting volume exists, pure model probabilities are returned
-// - Phased market weighting when volume > 0
 // - Laplace smoothing for low-sample forfeit rates
 //
 // DEPENDS ON
 // - elo_system.ts  -> getEloWinProbabilities(...), ELO_CONFIG
 // - Firestore docs created/updated by initEloSeason.ts + updateEloRatings(...)
 // -----------------------------------------------------------------------------
-import admin from "./firebaseAdmin.js";
+import admin from "../../firebaseAdmin.js";
 import { getEloWinProbabilities, ELO_CONFIG } from "./elo_system.js";
 
 const db = admin.firestore();
@@ -26,13 +27,6 @@ export interface Odds {
   team1Win: number;
   team2Win: number;
   draw: number;
-}
-
-interface BettingVolume {
-  team1?: number;
-  team2?: number;
-  draw?: number;
-  forfeit?: number; // kept for backward compat but ignored in predictions
 }
 
 /**
@@ -67,20 +61,16 @@ function calculateForfeitTipping(
 }
 
 /**
- * 5-step hybrid odds calculator (v1.1):
+ * Odds calculator (v1.1 without the betting-volume blend):
  *
  * 1. Get Elo base probabilities (3 outcomes)
- * 2. Apply forfeit tipping (Delta_F adjustment to home/away)
- * 3. If no betting volume, return pure model probabilities
- * 4. If volume exists: compute market sentiment, phased weighting
- * 5. Blend model and market, normalize to sum = 1
+ * 2. Apply forfeit tipping (Delta_F adjustment to home/away), normalize
  */
 export async function hybridOddsCalculator(
   homeTeam: string,
   awayTeam: string,
   sport: string,
-  season: string,
-  bettingVolume: BettingVolume
+  season: string
 ): Promise<Odds> {
   const defaultOdds: Odds = { team1Win: 0.45, team2Win: 0.45, draw: 0.10 };
 
@@ -120,76 +110,14 @@ export async function hybridOddsCalculator(
     modelAway = Math.max(0, modelAway);
     modelDraw = Math.max(0, modelDraw);
     const modelSum = modelHome + modelAway + modelDraw;
-    if (modelSum > 0) {
-      modelHome /= modelSum;
-      modelAway /= modelSum;
-      modelDraw /= modelSum;
-    }
+    if (modelSum <= 0) return defaultOdds;
+    modelHome /= modelSum;
+    modelAway /= modelSum;
+    modelDraw /= modelSum;
 
-    // STEP 3: Check betting volume — if none, return pure model probabilities
-    const v1 = bettingVolume.team1 ?? 0;
-    const v2 = bettingVolume.team2 ?? 0;
-    const vD = bettingVolume.draw ?? 0;
-    const totalBettingVolume = v1 + v2 + vD;
-
-    if (totalBettingVolume <= 0) {
-      // No market data — use pure model probabilities
-      return { team1Win: modelHome, team2Win: modelAway, draw: modelDraw };
-    }
-
-    // STEP 4: Compute market sentiment from betting volume (3 outcomes only)
-    const volTotal = v1 + v2 + vD;
-    let marketHome = v1 / volTotal;
-    let marketAway = v2 / volTotal;
-    let marketDraw = vD / volTotal;
-
-    // Apply softmax normalization to market probabilities for stability
-    const e1 = Math.exp(marketHome);
-    const e2 = Math.exp(marketAway);
-    const eD = Math.exp(marketDraw);
-    const softmaxSum = e1 + e2 + eD;
-
-    marketHome = e1 / softmaxSum;
-    marketAway = e2 / softmaxSum;
-    marketDraw = eD / softmaxSum;
-
-    // Phased market weighting
-    const volWeight = Math.min(ELO_CONFIG.maxVolWeight, totalBettingVolume / ELO_CONFIG.V_threshold);
-
-    // STEP 5: Blend model and market, then normalize
-    const finalHome = (1 - volWeight) * modelHome + volWeight * marketHome;
-    const finalAway = (1 - volWeight) * modelAway + volWeight * marketAway;
-    const finalDraw = (1 - volWeight) * modelDraw + volWeight * marketDraw;
-
-    const finalSum = finalHome + finalAway + finalDraw;
-    if (finalSum <= 0) return defaultOdds;
-
-    return {
-      team1Win: finalHome / finalSum,
-      team2Win: finalAway / finalSum,
-      draw: finalDraw / finalSum,
-    };
+    return { team1Win: modelHome, team2Win: modelAway, draw: modelDraw };
   } catch (err) {
     console.error("Error in hybrid odds calculation:", err);
     return defaultOdds;
   }
-}
-
-/**
- * Convert 3-outcome probability to American moneylines.
- */
-export function oddsToMoneyline(odds: Odds) {
-  const toML = (p: number): number => {
-    const probability = Math.min(Math.max(p, 0.0001), 0.9999);
-    if (probability >= 0.5) {
-      return Math.round((-100 * probability) / (1 - probability));
-    }
-    return Math.round((100 * (1 - probability)) / probability);
-  };
-
-  return {
-    team1ML: toML(odds.team1Win),
-    team2ML: toML(odds.team2Win),
-    drawML: toML(odds.draw),
-  };
 }

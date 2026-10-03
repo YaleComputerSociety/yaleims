@@ -3,6 +3,8 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "typecheck:sidelined": "tsc -p tsconfig.sidelined.json",
+    "check:sidelined": "node scripts/check-sidelined.mjs",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",

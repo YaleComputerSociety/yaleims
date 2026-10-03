@@ -51,3 +51,7 @@ jobs:
           cache-dependency-path: database/functions/package-lock.json
       - run: npm ci
       - run: npm run build
+      # Elo code is switched off (src/sidelined/elo/README.md): keep it compiling,
+      # and make sure nothing pulls it back into the deployed build.
+      - run: npm run typecheck:sidelined
+      - run: npm run check:sidelined

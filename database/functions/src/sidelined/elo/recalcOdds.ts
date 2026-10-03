@@ -1,6 +1,6 @@
 // recalcOdds.ts
 // Shared helpers to recalculate Elo-based odds and write them to match docs.
-import admin from "./firebaseAdmin.js";
+import admin from "../../firebaseAdmin.js";
 import { hybridOddsCalculator } from "./elo_odds_calculator.js";
 import { Filter } from "firebase-admin/firestore";
 
@@ -16,9 +16,6 @@ export async function recalcOddsForMatch(
     home_college: string;
     away_college: string;
     sport: string;
-    home_volume?: number;
-    away_volume?: number;
-    draw_volume?: number;
   },
   season: string
 ): Promise<{
@@ -30,12 +27,7 @@ export async function recalcOddsForMatch(
     matchData.home_college,
     matchData.away_college,
     matchData.sport,
-    season,
-    {
-      team1: matchData.home_volume ?? 0,
-      team2: matchData.away_volume ?? 0,
-      draw: matchData.draw_volume ?? 0,
-    }
+    season
   );
 
   const result = {

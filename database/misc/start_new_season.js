@@ -87,8 +87,7 @@ async function createSeasonDocs() {
       `  2. node addNewSeasonUser.js ${seasonId}\n` +
       `     Gives every existing user an empty seasons/${seasonId} doc. Until it runs,\n` +
       `     addParticipant returns 404, so existing users cannot sign up for games.\n` +
-      `  3. node initEloSeason.js ${seasonId}\n` +
-      `     Seeds the Elo/odds docs so ratings start from a full, consistent shape.`,
+      `  (Elo is sidelined, so there is no Elo step; see functions/src/sidelined/elo/README.md.)`,
   );
 }
 

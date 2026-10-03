@@ -12,7 +12,7 @@
 // -----------------------------------------------------------------------------
 // TODO: Incorporate in upload matches and upload brackets - for each match, it gives the correct odds when added
 // TODO: make sure that odds are not set for matches that are still TBD / not fully filled out yet
-import admin from "./firebaseAdmin.js";
+import admin from "../../firebaseAdmin.js";
 
 const db = admin.firestore();
 const inc = admin.firestore.FieldValue.increment;
@@ -30,8 +30,6 @@ export const ELO_CONFIG = {
   C_draw: 0.12,
   S_draw: 0.0008,
   W_forfeit: 0.10,
-  V_threshold: 500,
-  maxVolWeight: 0.3,
   laplaceSmoothingThreshold: 5,
 };
 
@@ -159,7 +157,7 @@ export async function updateEloRatings(
         : undefined;
 
     if (!forfeiter) {
-      // Double forfeit: match is VOID, no stats updated, bets returned
+      // Double forfeit: match is VOID, no stats updated
       return;
     }
   }

@@ -5,7 +5,7 @@
 # composite indexes are per collection id, so a brand new season starts with none of
 # them. Until they exist, every "upcoming matches" query (winner == null + timestamp
 # range + orderBy timestamp) fails with FAILED_PRECONDITION and getMatchesPaginated
-# returns a 500 -- which is what breaks the odds, schedules and team signup pages.
+# returns a 500 -- which is what breaks the schedules and team signup pages.
 #
 # Run this right after start_new_season.js. Index builds are additive and take a few
 # minutes to finish; re-running is safe (existing indexes are reported and skipped).
