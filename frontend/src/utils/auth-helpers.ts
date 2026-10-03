@@ -9,7 +9,6 @@ interface DecodedToken {
   mRoles: string[];
   username: string;
   college: string;
-  points: number;
   matches_played: number;
 }
 
@@ -43,7 +42,7 @@ export const userTokenHasRoles = async (
 };
 
 // Only the fields authorization depends on are required. jwt.sign drops keys
-// whose value is undefined, and user docs carry no points/matches_played/role,
+// whose value is undefined, and user docs carry no matches_played/role,
 // so demanding the full DecodedToken shape rejected every real token.
 const isValidDecodedToken = (decoded: any): boolean => {
   if (typeof decoded !== "object" || decoded === null) {

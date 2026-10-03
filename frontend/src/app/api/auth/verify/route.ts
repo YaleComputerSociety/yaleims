@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
 
 interface DecodedToken {
   name: string;
@@ -21,16 +22,27 @@ function isValidDecodedToken(decoded: any): decoded is DecodedToken {
   );
 }
 
-const parseRoles = (csv = ""): string[] =>
-  csv.split(",").map(r => r.trim()).filter(Boolean);
+const sameRoles = (a: string[] = [], b: string[] = []): boolean =>
+  a.length === b.length && a.every((role) => b.includes(role));
 
-const rolesEqual = (a: string[] = [], b: string[] = []): boolean => {
-  if (a.length !== b.length) return false;
-  const setB = new Set(b);
-  return a.every(role => setB.has(role));
-};
+// Roles, username and college always come from the user's Firestore doc, never
+// from the request: this route used to re-sign the session with roles passed
+// in the query string, which let any logged-in user make themselves admin.
+async function freshUserFields(email: string) {
+  const snap = await adminDb.collection("users").doc(email).get();
+  const data = snap.data() ?? {};
+  return {
+    role: typeof data.role === "string" ? data.role : "user",
+    mRoles:
+      Array.isArray(data.mRoles) && data.mRoles.length > 0
+        ? (data.mRoles as string[])
+        : ["user"],
+    username: typeof data.username === "string" ? data.username : undefined,
+    college: typeof data.college === "string" ? data.college : undefined,
+  };
+}
 
-export async function GET(req: Request): Promise<NextResponse> {
+export async function GET(): Promise<NextResponse> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
@@ -52,28 +64,34 @@ export async function GET(req: Request): Promise<NextResponse> {
       return NextResponse.json({ isLoggedIn: false }, { status: 401 });
     }
 
-    const currentRolesCSV = new URL(req.url).searchParams.get("currentRoles");
-    const currentUserNameCSV = new URL(req.url).searchParams.get("currentUsername");
-    const currentRoles = parseRoles(currentRolesCSV || undefined);
-    const currentUsername = currentUserNameCSV?.trim() || undefined;
-
-    const shouldUpdateRoles = currentRoles.length > 0 && !rolesEqual(currentRoles, decoded.mRoles ?? []);
-    const shouldUpdateUsername = currentUsername && currentUsername !== decoded.username;
+    let fresh: Awaited<ReturnType<typeof freshUserFields>> | null = null;
+    try {
+      fresh = await freshUserFields(decoded.email);
+    } catch (err) {
+      // Firestore unavailable: keep the session as signed rather than log out.
+      console.error("verify: could not read user doc:", err);
+    }
 
     const mergedUser: DecodedToken = {
       name: decoded.name,
       netid: decoded.netid,
       email: decoded.email,
-      role: decoded.role,
-      mRoles: shouldUpdateRoles ? currentRoles! : decoded.mRoles,
-      username: shouldUpdateUsername? currentUsername : decoded.username,
-      college: decoded.college,
+      role: fresh?.role ?? decoded.role,
+      mRoles: fresh?.mRoles ?? decoded.mRoles,
+      username: fresh?.username ?? decoded.username,
+      college: fresh?.college ?? decoded.college,
       matches_played: decoded.matches_played,
     };
 
+    const changed =
+      mergedUser.role !== decoded.role ||
+      !sameRoles(mergedUser.mRoles, decoded.mRoles) ||
+      mergedUser.username !== decoded.username ||
+      mergedUser.college !== decoded.college;
+
     const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
 
-    if (shouldUpdateRoles || shouldUpdateUsername) {
+    if (changed) {
       const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
       res.cookies.set("token", newToken, {
         secure: true, 

@@ -116,12 +116,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             }
           : prev
       );
-      const csv = d.mRoles?.join(",") ?? "";
-      fetch(
-        `/api/auth/verify?currentRoles=${encodeURIComponent(
-          csv
-        )}&currentUsername=${encodeURIComponent(d.username)}`
-      );
+      // Re-issue the session cookie; the server reads roles from Firestore.
+      fetch("/api/auth/verify");
     });
     return () => unsub();
   }, [user?.email]);

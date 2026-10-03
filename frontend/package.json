@@ -17,6 +17,7 @@
     "cookies-next": "^5.0.2",
     "date-fns": "^3.6.0",
     "firebase": "^10.13.1",
+    "firebase-admin": "^13.10.0",
     "googleapis": "^143.0.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.503.0",
