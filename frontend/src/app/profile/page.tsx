@@ -29,7 +29,6 @@ const Profile = () => {
     const fetchUserMatches = async () => {
       if (!user || !user.email || matches.length > 0) return;
 
-      const userToken = sessionStorage.getItem("userToken")
       setFetching(true);
       try {
         const userCollegeAbbreviation =
@@ -39,10 +38,7 @@ const Profile = () => {
           `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc&limit=${matchesLimit}`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${userToken}`
-            },
+            headers: { "Content-Type": "application/json" },
           }
         );
 
@@ -100,22 +96,11 @@ const Profile = () => {
     setError("");
 
     try {
-      const userToken = sessionStorage.getItem("userToken")
-
-      const response = await fetch(
-        functionUrl("updateUsername"),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
-          },
-          body: JSON.stringify({
-            userId: user?.email,
-            newUsername: newUsername.trim(),
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/updateUsername", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newUsername: newUsername.trim() }),
+      });
 
       if (response.ok) {
         const data = await response.json();

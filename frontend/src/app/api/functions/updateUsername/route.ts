@@ -1,11 +1,10 @@
 import { functionUrl } from "@/utils/functionUrls";
 import { cookies } from "next/headers";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
     const cookieStore = await cookies();
     const token = cookieStore.get("token");
-    const url = new URL(req.url);
-    const newUsername = url.searchParams.get("newUsername") || "";
+    const { newUsername = "" } = await req.json().catch(() => ({}));
     if (!token) {
         return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
     }
@@ -17,7 +16,7 @@ export async function GET(req: Request) {
             Authorization: `Bearer ${token.value}`
           },
           body: JSON.stringify({
-            newUsername: newUsername.trim(),
+            newUsername: String(newUsername).trim(),
           }),
         }
       );

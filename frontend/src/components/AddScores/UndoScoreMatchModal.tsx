@@ -40,13 +40,9 @@ const UndoScoreMatchModal: React.FC<UndoScoreMatchModalProps> = ({
     setLoading(true);
 
     try {
-      const userToken = sessionStorage.getItem("userToken");
       const response = await fetch("/api/functions/undoScoreMatch", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${userToken}`,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           matchId: String(unscoreId).trim(),
           year: String(year),
