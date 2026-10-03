@@ -12,24 +12,13 @@ const fake_matches = [
     away_college: "BR",
     away_college_participants: [], // Add participants here if needed
     away_college_score: null,
-    away_volume: 30,
-    default_volume: 0,
-    draw_volume: 0,
     forfeit: null,
     home_college: "GH",
     home_college_participants: [], // Add participants here if needed
     home_college_score: null,
-    home_volume: 0,
     id: "00test3",
     location: "Lanman Center",
     location_extra: "Court 1",
-    predictions: {
-      "anna_xu@yale_edu": {
-        betAmount: 30,
-        betOdds: 0.4404226903067277,
-        betOption: "Default",
-      },
-    }, // Add prediction map if needed
     sport: "MHoops",
     timestamp: Timestamp.fromDate(new Date("2025-01-20T20:00:00-05:00")), // Use the client SDK Timestamp
     type: "Regular",

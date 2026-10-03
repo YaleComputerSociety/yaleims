@@ -3,11 +3,10 @@ import {
   collection,
   getDocs,
   doc,
-  writeBatch,
   setDoc
 } from 'firebase/firestore';
 
-async function copyUsersWithBets(sourceCol = 'users', targetCol = 'users_copy', concurrency = 5) {
+async function copyUsers(sourceCol = 'users', targetCol = 'users_copy', concurrency = 5) {
   const srcColRef = collection(firestore, sourceCol);
   const usersSnap = await getDocs(srcColRef);
   const userDocs = usersSnap.docs;
@@ -20,7 +19,7 @@ async function copyUsersWithBets(sourceCol = 'users', targetCol = 'users_copy', 
   return new Promise((resolve, reject) => {
     const next = () => {
       if (index >= userDocs.length && active === 0) {
-        console.log('Done copying users + bets');
+        console.log('Done copying users');
         resolve();
         return;
       }
@@ -41,31 +40,8 @@ async function copyUsersWithBets(sourceCol = 'users', targetCol = 'users_copy', 
 
     // Copy user doc
     await setDoc(doc(firestore, targetCol, userId), data);
-
-    // Copy bets
-    const betsSrc = collection(firestore, sourceCol, userId, 'bets');
-    const betsSnap = await getDocs(betsSrc);
-    if (betsSnap.empty) {
-      console.log(`Copied ${userId} (no bets)`);
-      return;
-    }
-
-    let batch = writeBatch(firestore);
-    let ops = 0;
-
-    for (const bet of betsSnap.docs) {
-      const targetBetRef = doc(firestore, targetCol, userId, 'bets', bet.id);
-      batch.set(targetBetRef, bet.data());
-      ops++;
-      if (ops === 450) { // flush before 500 limit
-        await batch.commit();
-        batch = writeBatch(firestore);
-        ops = 0;
-      }
-    }
-    if (ops > 0) await batch.commit();
-    console.log(`Copied ${userId} + ${betsSnap.size} bets`);
+    console.log(`Copied ${userId}`);
   }
 }
 
-copyUsersWithBets();
+copyUsers();

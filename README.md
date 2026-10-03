@@ -122,7 +122,6 @@ The Web App is broken down into **8 general pages** with their supporting compon
    - [./Profile]
    - [./Schedule]
    - [./Scores]
-   - [./YOdds]
 
 There are also additional typescript components ('Footer.tsx', 'LoadingScreen.tsx', and 'NavBar.tsx') that are used throughout the app
 

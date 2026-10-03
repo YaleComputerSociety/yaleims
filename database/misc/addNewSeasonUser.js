@@ -10,7 +10,7 @@ import {
 import { db } from "./firebase.js";
 
 // Usage: node addNewSeasonUser.js 2026-2027
-// Existing season docs are skipped, so re-running never resets anyone's points.
+// Existing season docs are skipped, so re-running never resets anyone's sign-ups.
 const seasonId = process.argv[2] || '2025-2026';
 
 async function addSeasonToAllUsers() {
@@ -30,9 +30,7 @@ async function addSeasonToAllUsers() {
     }
 
     batch.set(seasonRef, {
-      correctPredictions: 0,
       matches: [],
-      points: 2000
     });
     ops++;
     created++;

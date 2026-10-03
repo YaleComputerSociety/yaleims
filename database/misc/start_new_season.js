@@ -83,10 +83,10 @@ async function createSeasonDocs() {
     `\nRemaining rollover steps for ${seasonId}:\n` +
       `  1. ./create_season_indexes.sh ${seasonId}\n` +
       `     Firestore composite indexes are per collection id, so the new season has none.\n` +
-      `     Without them the upcoming-matches queries fail and the odds, schedules and signup pages break.\n` +
+      `     Without them the upcoming-matches queries fail and the schedules and signup pages break.\n` +
       `  2. node addNewSeasonUser.js ${seasonId}\n` +
-      `     Gives every existing user a seasons/${seasonId} doc with 2000 points. Until it runs,\n` +
-      `     getSeasonPoints and addBet return 404 and nobody can see coins or place bets.\n` +
+      `     Gives every existing user an empty seasons/${seasonId} doc. Until it runs,\n` +
+      `     addParticipant returns 404, so existing users cannot sign up for games.\n` +
       `  3. node initEloSeason.js ${seasonId}\n` +
       `     Seeds the Elo/odds docs so ratings start from a full, consistent shape.`,
   );

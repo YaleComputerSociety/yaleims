@@ -20,10 +20,9 @@ function nowIso() { return new Date().toISOString(); }
  * Return the object you want stored at users/{uid}/seasons/{seasonId}.
  */
 function buildSeasonSnapshot(userData) {
-  // If you want to exclude huge fields, do it here.
-  return {
-    ...userData
-  };
+  // If you want to exclude huge fields, do it here. Betting fields are never copied.
+  const { points, TotalPoints, correctPredictions, totalCorrectPredictions, totalPoints, ...rest } = userData;
+  return rest;
 }
 
 async function migrate() {
@@ -45,26 +44,7 @@ async function migrate() {
     // 1. Write season snapshot document
     const seasonDocRef = doc(db, `${usersCollection}/${userId}/seasons/${seasonId}`);
     await setDoc(seasonDocRef, buildSeasonSnapshot(userData), { merge: true });
-
-    // 2. Copy bets subcollection (if exists)
-    const betsSrcRef = collection(db, `${usersCollection}/${userId}/bets`);
-    const betsSnap = await getDocs(betsSrcRef);
-
-    if (betsSnap.empty) {
-      console.log(`[${userId}] No bets to copy (snapshot doc written).`);
-      continue;
-    }
-
-    // Get existing season bets to avoid overwrites (Lite has no getDoc in bulk; we just overwrite safely OR
-    // you can prefetch target bets if needed. Overwriting with same data is fine.)
-    let betCopied = 0;
-    for (const betDoc of betsSnap.docs) {
-      const betId = betDoc.id;
-      const seasonBetRef = doc(db, `${usersCollection}/${userId}/seasons/${seasonId}/bets/${betId}`);
-      await setDoc(seasonBetRef, { ...betDoc.data(), seasonId }, { merge: false });
-      betCopied++;
-    }
-    console.log(`[${userId}] Snapshot stored. Bets copied: ${betCopied}`);
+    console.log(`[${userId}] Snapshot stored.`);
   }
 
   console.log(`Finished. Users processed: ${usersProcessed}`);
