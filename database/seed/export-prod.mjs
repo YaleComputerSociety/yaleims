@@ -16,7 +16,7 @@
 // ----------------------------------------------------------------------------
 import admin from "firebase-admin";
 import { writeFile, mkdir } from "node:fs/promises";
-import { SEED_COLLECTIONS } from "./collections.mjs";
+import { SEED_COLLECTIONS, EXCLUDED_COLLECTIONS } from "./collections.mjs";
 
 const PROJECT_ID = "yims-125a2";
 
@@ -59,27 +59,82 @@ function encode(value) {
   return value;
 }
 
-/** Recursively export a document and its subcollections into `dump`. */
-async function exportDoc(docSnap, dump) {
-  dump[docSnap.ref.path] = encode(docSnap.data());
-  const subcollections = await docSnap.ref.listCollections();
-  for (const sub of subcollections) {
-    const subSnap = await sub.get();
-    for (const d of subSnap.docs) await exportDoc(d, dump);
+// Many paths go through parent docs that were never created, e.g. the
+// `seasons` in matches/seasons/{year}/{id}. Firestore keeps their
+// subcollections, but `collection.get()` does not return them. listDocuments()
+// does, so each collection is walked via listDocuments() + one get() for the
+// docs that actually exist. Without this, matches, colleges, tournaments and
+// score reports are silently skipped.
+
+/** Caps concurrent Firestore requests (wraps calls, not the recursion). */
+const MAX_IN_FLIGHT = 32;
+let inFlight = 0;
+const waiting = [];
+async function limited(fn) {
+  if (inFlight >= MAX_IN_FLIGHT) await new Promise((r) => waiting.push(r));
+  inFlight++;
+  try {
+    return await fn();
+  } finally {
+    inFlight--;
+    waiting.shift()?.();
   }
+}
+
+const stats = { docs: 0, placeholders: 0, collections: 0 };
+
+/** Export every doc in a collection (including placeholder parents) recursively. */
+async function exportCollection(colRef, dump) {
+  stats.collections++;
+  const [snap, refs] = await Promise.all([
+    limited(() => colRef.get()),
+    limited(() => colRef.listDocuments()),
+  ]);
+  const existing = new Map(snap.docs.map((d) => [d.id, d]));
+  await Promise.all(
+    refs.map(async (ref) => {
+      const docSnap = existing.get(ref.id);
+      if (docSnap) {
+        dump[ref.path] = encode(docSnap.data());
+        stats.docs++;
+      } else {
+        stats.placeholders++;
+      }
+      const subs = await limited(() => ref.listCollections());
+      await Promise.all(subs.map((sub) => exportCollection(sub, dump)));
+    })
+  );
 }
 
 async function main() {
   const dump = {};
-  for (const name of SEED_COLLECTIONS) {
-    const snap = await db.collection(name).get();
-    console.log(`  ${name}: ${snap.size} docs`);
-    for (const d of snap.docs) await exportDoc(d, dump);
+  const started = Date.now();
+  const progress = setInterval(() => {
+    const secs = Math.round((Date.now() - started) / 1000);
+    console.log(
+      `  ... ${secs}s: ${stats.docs} docs, ${stats.placeholders} placeholder parents, ` +
+        `${stats.collections} collections, ${inFlight} requests in flight`
+    );
+  }, 5000);
+
+  const topLevel = (await db.listCollections()).map((c) => c.id);
+  const skipped = topLevel.filter(
+    (id) => !SEED_COLLECTIONS.includes(id) && !EXCLUDED_COLLECTIONS.includes(id)
+  );
+  if (skipped.length) {
+    console.log(`Top-level collections NOT exported (not in collections.mjs): ${skipped.join(", ")}`);
   }
+
+  for (const name of SEED_COLLECTIONS) {
+    const before = stats.docs;
+    await exportCollection(db.collection(name), dump);
+    console.log(`  ${name}: ${stats.docs - before} docs (including subcollections)`);
+  }
+  clearInterval(progress);
   await mkdir(new URL("./data/", import.meta.url), { recursive: true });
   const outPath = new URL("./data/prod-dump.json", import.meta.url);
   await writeFile(outPath, JSON.stringify(dump, null, 2));
-  console.log(`\nWrote ${Object.keys(dump).length} documents to data/prod-dump.json`);
+  console.log(`\nWrote ${Object.keys(dump).length} documents to data/prod-dump.json in ${Math.round((Date.now() - started) / 1000)}s`);
   console.log("NEXT: npm run sanitize  (this file contains real PII — do not commit)");
 }
 
