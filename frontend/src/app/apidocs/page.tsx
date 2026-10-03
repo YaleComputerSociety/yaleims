@@ -1,33 +1,17 @@
 "use client"
 import { useState, useEffect } from "react"
-import { addNewApi } from "./actions"
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore"
-import { db } from "../../../lib/firebase"
+import { addNewApi, getMyApiKeys, ApiKey } from "./actions"
 import { useUser } from "@src/context/UserContext"
 import KeyList from "@src/components/APIKeyList"
 
 const ApiDocs = () => {
     const [ description, setDescription ] = useState<string>("")
-    const [apiKeys, setApiKeys] = useState<{ description: string; apiKey: string }[]>([])
+    const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
     const { user } = useUser()
 
     useEffect(() => {
         if (!user?.email) return;
-        const apiKeysRef = collection(db, "users", user.email, "api_keys");
-        const q = query(apiKeysRef, orderBy("createdAt", "asc"));
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const updateApiKeys = snapshot.docs.map((doc) => {
-                const data = doc.data();
-                return {
-                    description: data.description || "",
-                    apiKey: data.apiKey || "",
-                };
-            });
-            setApiKeys(updateApiKeys as { description: string; apiKey: string }[]);
-        });
-    
-        return () => unsubscribe();
+        getMyApiKeys().then(setApiKeys).catch(console.error);
     }, [user?.email])
 
     if (!user) {
@@ -81,6 +65,7 @@ const ApiDocs = () => {
                             addNewApi(description)
                             .then(() => {
                                 setDescription(() => "")
+                                return getMyApiKeys().then(setApiKeys)
                             })
                         }
                     >
