@@ -6,7 +6,6 @@ export interface DecodedToken {
   mRoles: string[];
   username: string;
   college: string;
-  points: string;
   matches_played: number;
 }
 

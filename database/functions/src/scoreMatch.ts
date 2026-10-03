@@ -10,110 +10,6 @@ import { awardTournamentPlacements } from "./tournament_helpers.js";
 
 const db = admin.firestore();
 
-// interface Prediction {
-//   betOption: string;
-//   betAmount: number;
-//   betOdds: number;
-// }
-
-// interface PredictionsMap {
-//   [email: string]: Prediction;
-// }
-
-const settleParlayLegs = async (matchId: string, winningTeam: string) => {
-  /*
-  TODO: update this part to be year specific, i'm thinking if we add a year field to the betArray
-  we can add a where("year", "==", year) to check for that
-  */
-  const legsSnap = await db
-    .collectionGroup("betArray")
-    .where("matchId", "==", matchId)
-    .where("won", "==", null)
-    .get();
-  await Promise.all(
-    legsSnap.docs.map(async (legDoc) =>
-      db.runTransaction(async (tx) => {
-        const legRef = legDoc.ref;
-        const leg = legDoc.data() as any;
-
-        const parlayRef = legRef.parent.parent!;
-
-        const parlaySnap = await tx.get(parlayRef);
-        const parlay = parlaySnap.data()!;
-
-        // Double forfeit: void this leg instead of settling it
-        if (winningTeam === "Default") {
-          tx.update(legRef, { winner: "Default", won: null, voided: true });
-
-          const newLegCount = (parlay.legCount ?? 1) - 1;
-          const currentCashed = (parlay.currentCashed ?? 0);
-
-          if (newLegCount <= 0) {
-            // Single-leg bet or all legs voided: refund points
-            tx.update(parlayRef, { settled: true, won: null, voided: true, legCount: 0, payout: parlay.betAmount });
-            const seasonDocRef = parlayRef.parent.parent!;
-            tx.update(seasonDocRef, {
-              points: admin.firestore.FieldValue.increment(parlay.betAmount),
-            });
-          } else {
-            // Multi-leg parlay: remove this leg, recalculate odds without it
-            const newOdds = parlay.betOdds / (leg.betOdds || 1);
-            tx.update(parlayRef, { legCount: newLegCount, betOdds: newOdds });
-
-            // If all remaining legs are already settled, finalize the parlay
-            if (currentCashed >= newLegCount) {
-              const lostLegs = parlay.lostLegs ?? 0;
-              const parlayWon = lostLegs === 0;
-              const payout = parlayWon ? parlay.betAmount * newOdds : 0;
-              tx.update(parlayRef, { settled: true, won: parlayWon, payout });
-              const seasonDocRef = parlayRef.parent.parent!;
-              if (payout > 0) {
-                tx.update(seasonDocRef, {
-                  points: admin.firestore.FieldValue.increment(payout),
-                  correctPredictions: admin.firestore.FieldValue.increment(1),
-                });
-              }
-            }
-          }
-          return;
-        }
-
-        const legWon =
-          (winningTeam === "Draw" && leg.betOption === "Draw") ||
-          (winningTeam === leg.home_college &&
-            leg.betOption === leg.home_college) ||
-          (winningTeam === leg.away_college &&
-            leg.betOption === leg.away_college);
-
-        tx.update(legRef, { winner: winningTeam, won: legWon });
-
-        const currentCashed = (parlay.currentCashed ?? 0) + 1;
-        const lostLegs = (parlay.lostLegs ?? 0) + (legWon ? 0 : 1);
-
-        tx.update(parlayRef, {
-          currentCashed,
-          lostLegs,
-        });
-
-        if (currentCashed === parlay.legCount) {
-          const parlayWon = lostLegs === 0;
-          const payout = parlayWon ? parlay.betAmount * parlay.betOdds : 0;
-
-          tx.update(parlayRef, { settled: true, won: parlayWon, payout });
-          const seasonDocRef = parlayRef.parent.parent!;
-
-          if (payout > 0) {
-            tx.update(seasonDocRef, {
-              points: admin.firestore.FieldValue.increment(payout),
-              correctPredictions: admin.firestore.FieldValue.increment(1),
-            });
-          }
-        }
-      })
-    )
-  );
-};
-
 export const getPointsForWinBySportName = async (sportName: string) => {
   const sportsRef = db.collection("sports");
   const querySnapshot = await sportsRef.where("name", "==", sportName).get();
@@ -498,21 +394,9 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await rankBatch.commit();
 
-      // reward singles and parlays after dat
-      const matchData = await db
-        .collection("matches")
-        .doc("seasons")
-        .collection(year)
-        .doc(matchId)
-        .get();
-
-      if (matchData.exists) {
-        await settleParlayLegs(matchId, matchData.data()!.winner);
-      }
-
       return res.status(200).json({
         success: true,
-        message: "Match, colleges, bets and parlays updated successfully.",
+        message: "Match and colleges updated successfully.",
       });
     } catch (error: any) {
       console.error("Error scoring match:", error);

@@ -34,8 +34,6 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
           mRoles: fullData?.mRoles,
           matches_played: fullData?.matches_played,
           username: fullData?.username,
-          points: fullData?.points,
-          correctPredictions: fullData?.correctPredictions,
         };
 
         res.status(200).json({
@@ -95,7 +93,6 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         email: email,
         firstname: first_name,
         lastname: last_name,
-        TotalPoints: 2000,
         college: college || null,
         role: "user", // default role; otherwise "admin" can be set in firestore
         mRoles: ["user"],
@@ -108,8 +105,6 @@ export const fetchOrAddUser = functions.https.onRequest((req, res) => {
         .doc(seasonId)
         .set({
           matches: [],
-          points: 2000,
-          correctPredictions: 0
         });
       res
         .status(200)
