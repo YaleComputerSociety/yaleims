@@ -16,7 +16,6 @@ export const addNewApi = async (description: string) => {
             console.error("Token not found")
             return
         }
-        console.log(token.value)
         const response = await fetch(functionUrl("publicApiSignup"), {
             method: "POST",
             headers: {

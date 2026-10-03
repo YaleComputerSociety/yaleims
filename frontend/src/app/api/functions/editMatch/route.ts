@@ -1,6 +1,6 @@
 import { getYearFromTimestamp } from "@src/utils/helpers";
-import { db } from "../../../../../lib/firebase";
-import { doc, Timestamp, updateDoc } from "firebase/firestore";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
+import { Timestamp } from "firebase-admin/firestore";
 import { userTokenHasRoles } from "@src/utils/auth-helpers";
 
 export async function PATCH(req: Request) {
@@ -51,11 +51,16 @@ export async function PATCH(req: Request) {
     }
 
     // Update the match document in Firestore
-    const matchRef = doc(db, "matches", "seasons", year, matchId);
-    await updateDoc(matchRef, fields);
+    await adminDb
+      .collection("matches")
+      .doc("seasons")
+      .collection(year)
+      .doc(matchId)
+      .update(fields);
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err: any) {
-    if (err?.code === "not-found") {
+    // Admin SDK reports a missing doc as gRPC code 5 (NOT_FOUND).
+    if (err?.code === 5 || err?.code === "not-found") {
       return new Response(
         JSON.stringify({ error: "Match not found in that season" }),
         { status: 404 }

@@ -1,5 +1,5 @@
-import { db } from "../../../../../lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { isValidCollegeAbbrev } from "@src/utils/helpers";
@@ -57,12 +57,11 @@ export async function POST(req: Request) {
       );
     }
 
-    await setDoc(
-      doc(db, "seasons", "current"),
+    await adminDb.collection("seasons").doc("current").set(
       {
         winningCollegeId,
         celebrationActive,
-        championshipUpdatedAt: serverTimestamp(),
+        championshipUpdatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );

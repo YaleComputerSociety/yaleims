@@ -1,14 +1,12 @@
-import { collection, getDocs, doc, getDoc, query, orderBy, updateDoc, increment } from "firebase/firestore";
-import {db} from "../../../../../lib/firebase";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 
 async function apiKeyExists(apiKey: string) {
-  const userApiRef = collection(db, 'user_api_keys');
-  const ref = doc(userApiRef, apiKey);
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    await updateDoc(ref, {
-      uses: increment(1)})
+  const ref = adminDb.collection("user_api_keys").doc(apiKey);
+  const snap = await ref.get();
+  if (snap.exists) {
+    await ref.update({ uses: FieldValue.increment(1) });
     return true;
   }
   return false;    
@@ -29,14 +27,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({message: "Invalid API key."}, { status: 401 });
     }
 
-    const leaderboardRef = collection(db, 'colleges');
-
-    const leaderboardQuery = query(
-      leaderboardRef,
-      orderBy("points", "desc"),
-      orderBy("wins", "desc")
-    );
-    const snapshot = await getDocs(leaderboardQuery);
+    const snapshot = await adminDb
+      .collection("colleges")
+      .orderBy("points", "desc")
+      .orderBy("wins", "desc")
+      .get();
 
     if (snapshot.empty) {
       return NextResponse.json({message: "No colleges found."}, { status: 404 });

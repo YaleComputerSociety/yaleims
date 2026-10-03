@@ -1,5 +1,4 @@
-import { db } from "../../../../../lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
 import { userTokenHasRoles } from "@src/utils/auth-helpers";
 
 export async function PUT(req: Request) {
@@ -28,20 +27,17 @@ export async function PUT(req: Request) {
     }
 
     // Get document reference
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
 
-    if (!userSnap.exists()) {
+    if (!userSnap.exists) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 404,
       });
     }
 
-    if (!roles.includes("captain")) {
-    }
-
     // Update user roles and sports
-    await updateDoc(userRef, {
+    await userRef.update({
       mRoles: roles,
       sportsCaptainOf: roles.includes("captain") ? sportsCaptainOf : [],
     });

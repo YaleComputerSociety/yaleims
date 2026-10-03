@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { db } from "../../../../../lib/firebase";
-import {
-  doc,
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export interface ScoreReportPayload {
   matchId: string;
@@ -60,16 +55,18 @@ export async function POST(req: Request): Promise<NextResponse> {
     const matchIdStr = String(matchId);
     const seasonStr = String(season);
 
-    const scoreReportsRoot = doc(db, "matches", "score_reports");
-    const seasonCol = collection(scoreReportsRoot, seasonStr);
-    const matchDoc = doc(seasonCol, matchIdStr);
-    const reportsCol = collection(matchDoc, "reports");
+    const reportsCol = adminDb
+      .collection("matches")
+      .doc("score_reports")
+      .collection(seasonStr)
+      .doc(matchIdStr)
+      .collection("reports");
 
     const reportData = {
       reason: reason.trim(),
       reportedBy: user.name || user.username || "Unknown",
       reportedByEmail: user.email,
-      reportedAt: serverTimestamp(),
+      reportedAt: FieldValue.serverTimestamp(),
       resolved: false,
       season: seasonStr,
       matchId: matchIdStr,
@@ -80,7 +77,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       sport: sport ?? null,
     };
 
-    const docRef = await addDoc(reportsCol, reportData);
+    const docRef = await reportsCol.add(reportData);
 
     return NextResponse.json(
       {

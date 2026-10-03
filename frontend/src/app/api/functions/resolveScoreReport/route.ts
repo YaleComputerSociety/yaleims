@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { db } from "../../../../../lib/firebase";
-import {
-  doc,
-  collection,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { adminDb } from "../../../../../lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 
 /** POST: resolve a score report. Body: { reportId, matchId, season }. Admin only. */
 export async function POST(req: Request): Promise<NextResponse> {
@@ -43,17 +38,18 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const scoreReportsRoot = doc(db, "matches", "score_reports");
-    const seasonCol = collection(scoreReportsRoot, String(season));
-    const matchDocRef = doc(seasonCol, String(matchId));
-    const reportsCol = collection(matchDocRef, "reports");
-    const reportDocRef = doc(reportsCol, String(reportId));
-
-    await updateDoc(reportDocRef, {
-      resolved: true,
-      resolvedBy: user.name || user.username || user.email,
-      resolvedAt: serverTimestamp(),
-    });
+    await adminDb
+      .collection("matches")
+      .doc("score_reports")
+      .collection(String(season))
+      .doc(String(matchId))
+      .collection("reports")
+      .doc(String(reportId))
+      .update({
+        resolved: true,
+        resolvedBy: user.name || user.username || user.email,
+        resolvedAt: FieldValue.serverTimestamp(),
+      });
 
     return NextResponse.json(
       { success: true, message: "Report marked as resolved" },
