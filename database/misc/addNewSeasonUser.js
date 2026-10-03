@@ -1,45 +1,41 @@
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  setDoc,
-  writeBatch
-} from 'firebase/firestore'
-import { db } from "./firebase.js";
-
-// Usage: node addNewSeasonUser.js 2026-2027
+// Season rollover, step 2: give every user an empty users/{email}/seasons/{seasonId}
+// doc (addParticipant requires it).
+//
+// Usage: node addNewSeasonUser.js 2027-2028 [--prod]
+//
 // Existing season docs are skipped, so re-running never resets anyone's sign-ups.
-const seasonId = process.argv[2] || '2025-2026';
+import { db } from "./firebaseAdmin.js";
+
+const seasonId = process.argv[2];
+if (!/^\d{4}-\d{4}$/.test(seasonId || "")) {
+  console.error("Usage: node addNewSeasonUser.js <YYYY-YYYY> [--prod]");
+  process.exit(1);
+}
 
 async function addSeasonToAllUsers() {
-  const usersSnap = await getDocs(collection(db, 'users'));
-  console.log('Users found:', usersSnap.size);
+  const usersSnap = await db.collection("users").get();
+  console.log("Users found:", usersSnap.size);
 
-  let batch = writeBatch(db);
+  let batch = db.batch();
   let ops = 0;
   let created = 0;
 
   for (const userDoc of usersSnap.docs) {
-    const seasonRef = doc(collection(userDoc.ref, 'seasons'), seasonId);
-    const seasonSnap = await getDoc(seasonRef);
-    if (seasonSnap.exists()) {
-      console.log('Skip (already exists):', userDoc.id);
+    const seasonRef = userDoc.ref.collection("seasons").doc(seasonId);
+    if ((await seasonRef.get()).exists) {
+      console.log("Skip (already exists):", userDoc.id);
       continue;
     }
 
-    batch.set(seasonRef, {
-      matches: [],
-    });
+    batch.create(seasonRef, { matches: [] });
     ops++;
     created++;
 
     // Firestore batches max 500 writes
     if (ops === 500) {
       await batch.commit();
-      console.log('Committed 500 season docs...');
-      batch = writeBatch(db);
+      console.log("Committed 500 season docs...");
+      batch = db.batch();
       ops = 0;
     }
   }
@@ -50,4 +46,8 @@ async function addSeasonToAllUsers() {
 
   console.log(`Done. Created season ${seasonId} for ${created} user(s).`);
 }
-addSeasonToAllUsers()
+
+addSeasonToAllUsers().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

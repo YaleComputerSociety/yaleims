@@ -1,3 +1,6 @@
+// LEGACY: browser-SDK client for the old scripts here. Production rules deny
+// browser writes, so writing scripts must use ./firebaseAdmin.js (see README.md).
+
 import { initializeApp, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
