@@ -10,7 +10,6 @@ interface DecodedToken {
   mRoles: string[];
   username: string;
   college: string;
-  points: string;
   matches_played: number;
 }
 
@@ -69,7 +68,6 @@ export async function GET(req: Request): Promise<NextResponse> {
       mRoles: shouldUpdateRoles ? currentRoles! : decoded.mRoles,
       username: shouldUpdateUsername? currentUsername : decoded.username,
       college: decoded.college,
-      points: decoded.points,
       matches_played: decoded.matches_played,
     };
 

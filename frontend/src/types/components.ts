@@ -259,6 +259,5 @@ export interface User {
   sportsCaptainOf?: string[];
   username: string;
   college: string;
-  points: string;
   matches_played: number;
 }
