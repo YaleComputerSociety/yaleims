@@ -53,7 +53,6 @@ export const FUNCTION_NAMES = [
   "getLeaderboard",
   "updateUsername",
   "fetchOrAddUser",
-  "updateUserRole",
   "addSchedule",
   "createBracket",
   "deleteBracket",

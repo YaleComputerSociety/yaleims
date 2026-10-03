@@ -11,7 +11,6 @@ import { getMatches } from "./getMatches.js";
 import { updateUsername } from "./updateUsername.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
 import { publicApiSignup } from "./publicApis.js";
-import { updateUserRole } from "./updateUserRole.js";
 import { getSeasons } from "./getSeasons.js";
 import { getMatchesPaginated } from "./getMatchesPaginated.js";
 import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
@@ -41,7 +40,6 @@ export {
   undoScoreMatch,
   publicApiSignup,
   getSeasons,
-  updateUserRole,
   createBracket,
   deleteBracket,
   getUsersInCollege,
