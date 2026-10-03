@@ -2,7 +2,6 @@ import { Filter, OrderByDirection } from "firebase-admin/firestore";
 import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import { corsHandler } from "./cors.js";
-import { hybridOddsCalculator } from "./elo_odds_calculator.js";
 
 const db = admin.firestore();
 
@@ -67,52 +66,6 @@ export const getMatchesPaginated = functions.https.onRequest(
         };
 
         const sortOrderValidated = sortOrder as OrderByDirection;
-
-        // Read stored odds from match doc, or calculate via Elo as fallback
-        const addOdds = async (match: any, seasonForOdds: string, docId: string) => {
-          if (
-            match.home_college_odds != null &&
-            match.away_college_odds != null &&
-            match.draw_odds != null
-          ) {
-            return match; // odds already stored on the doc
-          }
-          // Fallback: calculate from Elo (for matches created before this change)
-          if (!match.home_college || !match.away_college || !match.sport) return match;
-          try {
-            const odds = await hybridOddsCalculator(
-              match.home_college,
-              match.away_college,
-              match.sport,
-              seasonForOdds,
-              {
-                team1: match.home_volume ?? 0,
-                team2: match.away_volume ?? 0,
-                draw: match.draw_volume ?? 0,
-              }
-            );
-            const computed = {
-              home_college_odds: odds.team1Win,
-              away_college_odds: odds.team2Win,
-              draw_odds: odds.draw,
-            };
-            // Persist so future reads don't recalculate
-            if (docId) {
-              const matchRef = db
-                .collection("matches").doc("seasons")
-                .collection(seasonForOdds).doc(docId);
-              matchRef.update(computed).catch((e: any) => console.warn("Odds persist failed:", docId, e?.message));
-            }
-            return { ...match, ...computed };
-          } catch {
-            return {
-              ...match,
-              home_college_odds: 0.45,
-              away_college_odds: 0.45,
-              draw_odds: 0.10,
-            };
-          }
-        };
 
         if (date !== "AllPast" && date !== "today" && date !== "yesterday" && date !== "last7days" && date !== "last30days" && date !== "last60days") {
           if (!seasonId)
@@ -179,7 +132,7 @@ export const getMatchesPaginated = functions.https.onRequest(
                   ...data,
                   timestamp: data.timestamp?.toDate?.()?.toISOString() || null,
                 };
-                return addOdds(matchBase, seasonId, doc.id);
+                return matchBase;
               })
             )
           ).filter((m) => m != null);
@@ -272,7 +225,7 @@ export const getMatchesPaginated = functions.https.onRequest(
                 ...row.data,
                 timestamp: row.ts.toISOString(),
               };
-              return addOdds(baseMatch, row.seasonId, row.id);
+              return baseMatch;
             })
           )
         ).filter((m) => m != null);

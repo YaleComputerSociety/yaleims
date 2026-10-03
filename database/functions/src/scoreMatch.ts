@@ -4,8 +4,6 @@ import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
 
 import { isValidDecodedToken } from "./helpers.js";
-import { updateEloRatings, EloMatchResult } from "./elo_system.js";
-import { recalcOddsForAffectedMatches } from "./recalcOdds.js";
 import { awardTournamentPlacements } from "./tournament_helpers.js";
 
 const db = admin.firestore();
@@ -211,29 +209,10 @@ export const scoreMatch = functions.https.onRequest(async (req, res) => {
 
       await batch.commit();
 
-      // Update Elo ratings and recalculate odds for affected upcoming matches
+      // Elo ratings and odds are no longer computed here (sidelined; see
+      // sidelined/elo/README.md). They can be rebuilt by replaying results.
       const matchDocData = matchDoc.data() || {};
       const matchType = (matchDocData.type as "Regular" | "Playoff" | "Final") || "Regular";
-
-      try {
-        const eloMatch: EloMatchResult = {
-          season: year,
-          sport,
-          homeTeam,
-          awayTeam,
-          winner: winningTeam,
-          matchType,
-          home_college_score: homeScore,
-          away_college_score: awayScore,
-          forfeitingTeam: doubleForfeit
-            ? undefined
-            : homeForfeit ? homeTeam : awayForfeit ? awayTeam : undefined,
-        };
-        await updateEloRatings(eloMatch);
-        await recalcOddsForAffectedMatches(year, sport, homeTeam, awayTeam);
-      } catch (eloErr) {
-        console.error("Elo update or odds recalc failed (match already scored):", eloErr);
-      }
 
       // update next match in bracket (if a playoff match and there is a definitive winner, else will have to be manual)
       if (
