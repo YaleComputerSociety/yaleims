@@ -10,7 +10,6 @@ import { removeParticipant } from "./removeParticipant.js";
 import { getMatches } from "./getMatches.js";
 import { updateUsername } from "./updateUsername.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
-import { publicApiSignup } from "./publicApis.js";
 import { getSeasons } from "./getSeasons.js";
 import { getMatchesPaginated } from "./getMatchesPaginated.js";
 import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
@@ -38,7 +37,6 @@ export {
   getMatches,
   updateUsername,
   undoScoreMatch,
-  publicApiSignup,
   getSeasons,
   createBracket,
   deleteBracket,

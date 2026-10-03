@@ -49,7 +49,6 @@ export const FUNCTION_NAMES = [
   "scoreMatch",
   "undoScoreMatch",
   "setMVP",
-  "publicApiSignup",
   "getLeaderboard",
   "updateUsername",
   "fetchOrAddUser",

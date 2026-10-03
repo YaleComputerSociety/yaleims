@@ -8,9 +8,10 @@ rules_version = '2';
 // told apart from anyone else; reads stay public for now (locking them down is
 // a later phase).
 //
-// Exception: API keys are secrets, so they are never readable from the browser
-// (`user_api_keys/{key}` and `users/{email}/api_keys/{id}`). The API docs page
-// lists a user's own keys through a server action instead.
+// Exception: API keys are never readable from the browser
+// (`user_api_keys/{key}` and `users/{email}/api_keys/{id}`). The public API that
+// used them was removed, but the old keys (and their owners' emails) stay in
+// Firestore, so they stay hidden.
 //
 // Rules are OR-ed (any allow wins), so a blanket `match /{document=**}` read
 // rule could not be narrowed later. Every document is matched exactly once:
