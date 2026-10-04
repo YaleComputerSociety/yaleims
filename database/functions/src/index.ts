@@ -4,8 +4,6 @@ import { fetchOrAddUser } from "./fetchOrAddUser.js";
 import { removeParticipant } from "./removeParticipant.js";
 import { updateUsername } from "./updateUsername.js";
 import { undoScoreMatch } from "./undoScoreMatch.js";
-import { getMatchesPaginated } from "./getMatchesPaginated.js";
-import { getMatchesPaginatedv2 } from "./getMatchesPaginatedv2.js";
 import { createBracket } from "./createBracket.js";
 import { deleteBracket } from "./deleteBracket.js";
 import { assignRemoveCaptain } from "./assignRemoveCaptain.js";
@@ -17,7 +15,6 @@ export {
   assignRemoveCaptain,
   scoreMatch,
   addParticipant,
-  getMatchesPaginated,
   fetchOrAddUser,
   removeParticipant,
   updateUsername,
@@ -26,7 +23,6 @@ export {
   deleteBracket,
   setMVP,
   addSchedule,
-  getMatchesPaginatedv2,
   createTournament,
   deleteTournament,
 };
