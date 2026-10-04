@@ -210,7 +210,7 @@ export interface TournamentBracketMatch {
   bracket_placement: number;
   round: string;
   match_id: number;
-  /** Serialized to epoch milliseconds by the getTournaments function. */
+  /** Serialized to epoch milliseconds by the getTournaments route. */
   timestamp: number | null;
 }
 

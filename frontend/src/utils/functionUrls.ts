@@ -36,20 +36,14 @@ const USE_EMULATOR = process.env.NEXT_PUBLIC_USE_EMULATOR === "true";
  * protection against typos in endpoint names.
  */
 export const FUNCTION_NAMES = [
-  "getSeasons",
-  "getCollegeMatches",
   "getMatchesPaginated",
   "getMatchesPaginatedv2",
-  "getUserMatches",
-  "getUnscoredMatches",
-  "getUsersInCollege",
   "addParticipant",
   "removeParticipant",
   "assignRemoveCaptain",
   "scoreMatch",
   "undoScoreMatch",
   "setMVP",
-  "getLeaderboard",
   "updateUsername",
   "fetchOrAddUser",
   "addSchedule",
@@ -57,7 +51,6 @@ export const FUNCTION_NAMES = [
   "deleteBracket",
   "createTournament",
   "deleteTournament",
-  "getTournaments",
 ] as const;
 
 export type FunctionName = (typeof FUNCTION_NAMES)[number];
