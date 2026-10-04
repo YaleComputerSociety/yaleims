@@ -1,26 +1,12 @@
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 import { adminDb } from "../../../../../lib/firebaseAdmin";
-
-interface DecodedToken {
-  name: string;
-  netid: string;
-  email: string;
-  role: string;
-  mRoles: string[];
-  username: string;
-  college: string;
-  matches_played: number;
-}
-
-function isValidDecodedToken(decoded: any): decoded is DecodedToken {
-  return (
-    typeof decoded === "object" &&
-    typeof decoded.netid === "string" &&
-    typeof decoded.email === "string"
-  );
-}
+import {
+  Session,
+  clearSessionCookie,
+  getSession,
+  getSessionToken,
+  setSessionCookie,
+} from "@/server/session";
 
 const sameRoles = (a: string[] = [], b: string[] = []): boolean =>
   a.length === b.length && a.every((role) => b.includes(role));
@@ -43,69 +29,48 @@ async function freshUserFields(email: string) {
 }
 
 export async function GET(): Promise<NextResponse> {
+  if (!(await getSessionToken())) {
+    return NextResponse.json({ isLoggedIn: false }, { status: 200 });
+  }
+
+  let session: Session | null;
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-
-    if (!token?.value) {
-      return NextResponse.json({ isLoggedIn: false }, { status: 200 });
-    }
-
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      console.error("JWT_SECRET is not defined");
-      return NextResponse.json({ isLoggedIn: false }, { status: 500 });
-    }
-
-    const decoded = jwt.verify(token.value, JWT_SECRET);
-
-    if (!isValidDecodedToken(decoded)) {
-      console.error("Invalid token structure");
-      return NextResponse.json({ isLoggedIn: false }, { status: 401 });
-    }
-
-    let fresh: Awaited<ReturnType<typeof freshUserFields>> | null = null;
-    try {
-      fresh = await freshUserFields(decoded.email);
-    } catch (err) {
-      // Firestore unavailable: keep the session as signed rather than log out.
-      console.error("verify: could not read user doc:", err);
-    }
-
-    const mergedUser: DecodedToken = {
-      name: decoded.name,
-      netid: decoded.netid,
-      email: decoded.email,
-      role: fresh?.role ?? decoded.role,
-      mRoles: fresh?.mRoles ?? decoded.mRoles,
-      username: fresh?.username ?? decoded.username,
-      college: fresh?.college ?? decoded.college,
-      matches_played: decoded.matches_played,
-    };
-
-    const changed =
-      mergedUser.role !== decoded.role ||
-      !sameRoles(mergedUser.mRoles, decoded.mRoles) ||
-      mergedUser.username !== decoded.username ||
-      mergedUser.college !== decoded.college;
-
-    const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
-
-    if (changed) {
-      const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
-      res.cookies.set("token", newToken, {
-        secure: true, 
-        httpOnly: true,
-        sameSite: "none",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    }
-    return res
+    session = await getSession();
   } catch (error) {
-    console.error("Authentication error:", error);
+    console.error("verify: cannot check the session:", error);
+    return NextResponse.json({ isLoggedIn: false }, { status: 500 });
+  }
+  if (!session) {
     const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });
-    response.cookies.delete("token");
+    clearSessionCookie(response);
     return response;
   }
+
+  let fresh: Awaited<ReturnType<typeof freshUserFields>> | null = null;
+  try {
+    fresh = await freshUserFields(session.email);
+  } catch (err) {
+    // Firestore unavailable: keep the session as signed rather than log out.
+    console.error("verify: could not read user doc:", err);
+  }
+
+  const mergedUser: Session = {
+    ...session,
+    role: fresh?.role ?? session.role,
+    mRoles: fresh?.mRoles ?? session.mRoles,
+    username: fresh?.username ?? session.username,
+    college: fresh?.college ?? session.college,
+  };
+
+  const changed =
+    mergedUser.role !== session.role ||
+    !sameRoles(mergedUser.mRoles, session.mRoles) ||
+    mergedUser.username !== session.username ||
+    mergedUser.college !== session.college;
+
+  const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
+  if (changed) {
+    setSessionCookie(res, mergedUser);
+  }
+  return res;
 }

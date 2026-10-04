@@ -1,11 +1,9 @@
 import { adminDb } from "../../../../../lib/firebaseAdmin";
-import { userTokenHasRoles } from "@src/utils/auth-helpers";
+import { getSession, hasAnyRole } from "@/server/session";
 
 export async function PUT(req: Request) {
   try {
-    const hasRoles = await userTokenHasRoles(["dev"]);
-
-    if (!hasRoles) {
+    if (!hasAnyRole(await getSession(), ["dev"])) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 403,
       });

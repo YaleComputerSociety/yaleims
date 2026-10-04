@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { getSession, hasAnyRole } from "@/server/session";
 import { db } from "../../../../../lib/firebase";
 import {
   doc,
@@ -75,19 +74,8 @@ function formatReport(
 /** GET reports: ?season=<seasonId>&matchId=123 (for a match) or ?season=<seasonId>&all=true (admin, all reports) */
 export async function GET(req: Request): Promise<NextResponse> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-    let user: { name?: string; username?: string; email: string; mRoles?: string[] };
-    try {
-      user = jwt.verify(token.value, JWT_SECRET) as typeof user;
-    } catch {
+    const user = await getSession();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -108,7 +96,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     const seasonCol = collection(scoreReportsRoot, seasonStr);
 
     if (all) {
-      const isAdmin = user.mRoles?.includes("admin") || user.mRoles?.includes("dev");
+      const isAdmin = hasAnyRole(user, ["admin", "dev"]);
       if (!isAdmin) {
         return NextResponse.json({ error: "Forbidden: admin required" }, { status: 403 });
       }

@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { parseString } from "xml2js";
-import jwt from "jsonwebtoken";
 import { functionUrl } from "@/utils/functionUrls";
+import { setSessionCookie } from "@/server/session";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
-  }
-  const JWT_SECRET = process.env.JWT_SECRET as string;
-  if (!JWT_SECRET) {
-    throw new Error("Please define the JWT_SECRET environment variable");
   }
   const YALIES_API_KEY = process.env.YALIES_API_KEY as string;
   if (!YALIES_API_KEY) {
@@ -90,9 +86,11 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
       );
       const result1 = await response1.json();
+      const redirectTo = from.startsWith("http") ? from : `${BASE_URL.replace(/\/$/, "")}${from.startsWith("/") ? from : "/" + from}`;
+      const redirectResponse = NextResponse.redirect(redirectTo);
       // Defaults matter: jwt.sign drops undefined values, and user docs carry no
       // role/matches_played, so without them the token ships incomplete.
-      const token = jwt.sign({
+      setSessionCookie(redirectResponse, {
         name,
         netid,
         email,
@@ -101,18 +99,6 @@ export async function GET(request: Request): Promise<NextResponse> {
         username: result1.user.username ?? "Anonymous",
         college: result1.user.college ?? "",
         matches_played: result1.user.matches_played ?? 0,
-      }, JWT_SECRET, {
-        expiresIn: "7d",
-      });
-      
-      const redirectTo = from.startsWith("http") ? from : `${BASE_URL.replace(/\/$/, "")}${from.startsWith("/") ? from : "/" + from}`;
-      const redirectResponse = NextResponse.redirect(redirectTo);
-      redirectResponse.cookies.set("token", token, {
-        secure: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-        httpOnly: true,
-        sameSite: "none"
       });
 
       return redirectResponse;

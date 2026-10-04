@@ -1,13 +1,11 @@
 import { getYearFromTimestamp } from "@src/utils/helpers";
 import { adminDb } from "../../../../../lib/firebaseAdmin";
 import { Timestamp } from "firebase-admin/firestore";
-import { userTokenHasRoles } from "@src/utils/auth-helpers";
+import { getSession, hasAnyRole } from "@/server/session";
 
 export async function PATCH(req: Request) {
   try {
-    const hasRoles = await userTokenHasRoles(["admin", "dev"]);
-
-    if (!hasRoles) {
+    if (!hasAnyRole(await getSession(), ["admin", "dev"])) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 403,
       });

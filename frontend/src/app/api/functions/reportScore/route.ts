@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { getSession } from "@/server/session";
 import { adminDb } from "../../../../../lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -17,19 +16,8 @@ export interface ScoreReportPayload {
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-    let user: { name?: string; username?: string; email: string; mRoles?: string[] };
-    try {
-      user = jwt.verify(token.value, JWT_SECRET) as typeof user;
-    } catch {
+    const user = await getSession();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
