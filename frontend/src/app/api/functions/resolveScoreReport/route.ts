@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession, hasAnyRole } from "@/server/session";
-import { adminDb } from "../../../../../lib/firebaseAdmin";
-import { FieldValue } from "firebase-admin/firestore";
+import { resolveScoreReport } from "@/server/data/scoreReports";
 
 /** POST: resolve a score report. Body: { reportId, matchId, season }. Admin only. */
 export async function POST(req: Request): Promise<NextResponse> {
@@ -26,18 +25,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    await adminDb
-      .collection("matches")
-      .doc("score_reports")
-      .collection(String(season))
-      .doc(String(matchId))
-      .collection("reports")
-      .doc(String(reportId))
-      .update({
-        resolved: true,
-        resolvedBy: user.name || user.username || user.email,
-        resolvedAt: FieldValue.serverTimestamp(),
-      });
+    await resolveScoreReport(
+      String(season),
+      String(matchId),
+      String(reportId),
+      user.name || user.username || user.email
+    );
 
     return NextResponse.json(
       { success: true, message: "Report marked as resolved" },

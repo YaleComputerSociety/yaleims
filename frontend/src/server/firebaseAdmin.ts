@@ -1,13 +1,14 @@
 // Server-only Firestore access with the Firebase Admin SDK.
 //
-// Use this from API routes / server code, never from client components. It
-// bypasses security rules, so authorization must happen in the route first.
+// Only src/server/data/* imports this; everything else goes through those
+// modules. It bypasses security rules, so authorization happens in the route.
 //
 // Credentials: on App Hosting the backend's service account
 // (firebase-app-hosting-compute@) is picked up automatically. Locally, run
 // `gcloud auth application-default login`, or use the emulator: with
 // NEXT_PUBLIC_USE_EMULATOR=true (npm run dev:emulator) the Admin SDK is pointed
 // at the local Firestore emulator and needs no credentials.
+import "server-only";
 import { getApps, initializeApp, App } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
 

@@ -1,4 +1,4 @@
-import { adminDb } from "../../../../../lib/firebaseAdmin";
+import { updateUserRoles } from "@/server/data/users";
 import { getSession, hasAnyRole } from "@/server/session";
 
 export async function PUT(req: Request) {
@@ -24,21 +24,16 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Get document reference
-    const userRef = adminDb.collection("users").doc(userId);
-    const userSnap = await userRef.get();
-
-    if (!userSnap.exists) {
+    const updated = await updateUserRoles(
+      userId,
+      roles,
+      roles.includes("captain") ? sportsCaptainOf : []
+    );
+    if (!updated) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 404,
       });
     }
-
-    // Update user roles and sports
-    await userRef.update({
-      mRoles: roles,
-      sportsCaptainOf: roles.includes("captain") ? sportsCaptainOf : [],
-    });
 
     return new Response(
       JSON.stringify({

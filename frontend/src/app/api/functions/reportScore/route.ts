@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/server/session";
-import { adminDb } from "../../../../../lib/firebaseAdmin";
-import { FieldValue } from "firebase-admin/firestore";
+import { addScoreReport } from "@/server/data/scoreReports";
 
 export interface ScoreReportPayload {
   matchId: string;
@@ -40,37 +39,21 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const matchIdStr = String(matchId);
-    const seasonStr = String(season);
-
-    const reportsCol = adminDb
-      .collection("matches")
-      .doc("score_reports")
-      .collection(seasonStr)
-      .doc(matchIdStr)
-      .collection("reports");
-
-    const reportData = {
+    const reportId = await addScoreReport(String(season), String(matchId), {
       reason: reason.trim(),
       reportedBy: user.name || user.username || "Unknown",
       reportedByEmail: user.email,
-      reportedAt: FieldValue.serverTimestamp(),
-      resolved: false,
-      season: seasonStr,
-      matchId: matchIdStr,
       matchHomeCollege: matchHomeCollege ?? null,
       matchAwayCollege: matchAwayCollege ?? null,
       homeScore: homeScore ?? null,
       awayScore: awayScore ?? null,
       sport: sport ?? null,
-    };
-
-    const docRef = await reportsCol.add(reportData);
+    });
 
     return NextResponse.json(
       {
         success: true,
-        reportId: docRef.id,
+        reportId,
         message: "Score report submitted successfully",
       },
       { status: 201 }

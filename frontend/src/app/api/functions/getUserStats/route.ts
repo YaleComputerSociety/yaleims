@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "../../../../../lib/firebase"; 
-import { getDoc, doc } from "firebase/firestore";
+import { getUserSeason } from "@/server/data/users";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -14,12 +13,11 @@ export async function GET(req: Request): Promise<NextResponse> {
         { status: 400 }
       );
     }
-    const userSeasonRef = doc(db, "users", email, "seasons", seasonId);
-    const snap = await getDoc(userSeasonRef);
 
     // Only games played; the user-season doc still holds frozen betting fields.
+    const userSeason = await getUserSeason(email, seasonId);
     return NextResponse.json(
-      { matches: snap.data()?.matches ?? [] },
+      { matches: userSeason?.matches ?? [] },
       { status: 200 }
     );
   } catch (err) {

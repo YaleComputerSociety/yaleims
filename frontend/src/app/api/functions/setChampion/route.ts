@@ -1,5 +1,4 @@
-import { adminDb } from "../../../../../lib/firebaseAdmin";
-import { FieldValue } from "firebase-admin/firestore";
+import { setChampionship } from "@/server/data/seasons";
 import { getSession, hasAnyRole } from "@/server/session";
 import { isValidCollegeAbbrev } from "@src/utils/helpers";
 
@@ -37,14 +36,7 @@ export async function POST(req: Request) {
       );
     }
 
-    await adminDb.collection("seasons").doc("current").set(
-      {
-        winningCollegeId,
-        celebrationActive,
-        championshipUpdatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await setChampionship(winningCollegeId, celebrationActive);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

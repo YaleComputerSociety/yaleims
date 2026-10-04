@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "../../../../../lib/firebaseAdmin";
 import {
   Session,
   clearSessionCookie,
@@ -7,6 +6,7 @@ import {
   getSessionToken,
   setSessionCookie,
 } from "@/server/session";
+import { getUser } from "@/server/data/users";
 
 const sameRoles = (a: string[] = [], b: string[] = []): boolean =>
   a.length === b.length && a.every((role) => b.includes(role));
@@ -15,8 +15,7 @@ const sameRoles = (a: string[] = [], b: string[] = []): boolean =>
 // from the request: this route used to re-sign the session with roles passed
 // in the query string, which let any logged-in user make themselves admin.
 async function freshUserFields(email: string) {
-  const snap = await adminDb.collection("users").doc(email).get();
-  const data = snap.data() ?? {};
+  const data = (await getUser(email)) ?? {};
   return {
     role: typeof data.role === "string" ? data.role : "user",
     mRoles:
