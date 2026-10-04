@@ -11,6 +11,8 @@ import { Match, CollegeStats } from "@src/types/components";
 import Pagination from "@src/components/Scores/Pagination";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
+import { useUser } from "@src/context/UserContext";
+import SignInPrompt from "@src/components/SignInPrompt";
 
 import "react-loading-skeleton/dist/skeleton.css";
 import { currentYear } from "@src/utils/helpers";
@@ -45,6 +47,11 @@ const ScoresPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(10);
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const { currentSeason } = useSeason();
+  // Scores are for signed-in users for now (interim; see the product decision
+  // on what logged-out visitors can see).
+  const { user, loading: userLoading } = useUser();
+  const signedIn = !!user;
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   const resetPaginationState = () => {
     setPage(1); // Reset page number when filter is changed
@@ -100,6 +107,13 @@ const ScoresPage: React.FC = () => {
     };
 
     const fetchMatches = async () => {
+      if (userLoading) return;
+      if (!signedIn) {
+        setNeedsSignIn(true);
+        setIsLoading(false);
+        return;
+      }
+      setNeedsSignIn(false);
       setIsLoading(true);
       try {
         const params = new URLSearchParams(getParams());
@@ -108,6 +122,10 @@ const ScoresPage: React.FC = () => {
             currentSeason?.year || currentYear
           }`
         );
+        if (response.status === 401) {
+          setNeedsSignIn(true);
+          return;
+        }
         if (!response.ok)
           throw new Error(`Error fetching matches: ${response.statusText}`);
         const data = await response.json();
@@ -125,7 +143,7 @@ const ScoresPage: React.FC = () => {
 
     window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder]);
+  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder, userLoading, signedIn]);
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
@@ -179,8 +197,17 @@ const ScoresPage: React.FC = () => {
     resetPaginationState();
   };
 
-  if (isLoading) {
+  if (isLoading || userLoading) {
     return <LoadingScreen />;
+  }
+
+  if (needsSignIn) {
+    return (
+      <main className="flex flex-col mt-20 min-h-screen max-w-full mx-auto px-4">
+        <PageHeading heading="Scores and Rankings" />
+        <SignInPrompt message="Sign in to see scores and results." />
+      </main>
+    );
   }
 
   return (

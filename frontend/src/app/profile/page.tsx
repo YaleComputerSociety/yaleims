@@ -10,6 +10,7 @@ import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/utils/versionedImages";
+import SignInPrompt from "@src/components/SignInPrompt";
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();
@@ -139,8 +140,8 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center h-screen text-xl text-gray-500">
-        <span>User not signed in</span>
+      <div className="flex justify-center items-center h-screen px-4">
+        <SignInPrompt message="Sign in to see your profile." />
       </div>
     );
   }

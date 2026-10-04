@@ -9,6 +9,8 @@ import { FaSpinner } from "react-icons/fa";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
+import { useUser } from "@src/context/UserContext";
+import SignInPrompt from "@src/components/SignInPrompt";
 import { Match } from "@src/types/components";
 import Pagination from "@src/components/Scores/Pagination";
 import { toast } from "react-toastify";
@@ -32,6 +34,11 @@ const SchedulePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const {currentSeason} = useSeason()
+  // The schedule is for signed-in users for now (interim; see the product
+  // decision on what logged-out visitors can see).
+  const { user, loading: userLoading } = useUser();
+  const signedIn = !!user;
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   const resetPaginationState = () => {
     setPage(1); // Reset page number when filter is changed
@@ -66,6 +73,13 @@ const SchedulePage: React.FC = () => {
   // Fetch matches with pagination
   useEffect(() => {
     const fetchMatches = async () => {
+    if (userLoading) return;
+    if (!signedIn) {
+      setNeedsSignIn(true);
+      setIsLoading(false);
+      return;
+    }
+    setNeedsSignIn(false);
     setIsLoading(true);
     try {
       const currentDate = new Date();
@@ -82,6 +96,10 @@ const SchedulePage: React.FC = () => {
       }
         if (!currentSeason?.year) return;
         const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason.year}`);
+        if (response.status === 401) {
+          setNeedsSignIn(true);
+          return;
+        }
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
         const data = await response.json();
@@ -101,7 +119,7 @@ const SchedulePage: React.FC = () => {
 
     window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType, filter, currentSeason]);
+  }, [page, queryType, filter, currentSeason, userLoading, signedIn]);
 
   // state for calendar focus circle
   const [topDate, setTopDate] = useState(new Date());
@@ -115,6 +133,21 @@ const SchedulePage: React.FC = () => {
     setFilter((prev) => ({ ...prev, date: value }));
     resetPaginationState();
   };
+
+  if (userLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (needsSignIn) {
+    return (
+      <div className="pt-20">
+        <div className="p-4 min-h-screen flex flex-col items-center">
+          <PageHeading heading="Schedules" />
+          <SignInPrompt message="Sign in to see the schedule and sign up for games." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-20">

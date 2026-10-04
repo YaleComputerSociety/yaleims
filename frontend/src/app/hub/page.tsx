@@ -16,6 +16,7 @@ import AssignCaptain from "@src/components/Dashboard/College_Rep/AssignCaptain";
 import SelectMVP from "@src/components/Dashboard/College_Rep/SelectMVP";
 import ViewCaptainSports from "@src/components/Dashboard/Captain/ViewCaptainSports";
 import ViewTeamSignups from "@src/components/Dashboard/Captain/ViewTeamSignups";
+import SignInPrompt from "@src/components/SignInPrompt";
 
 type HubAction = {
   title: string;
@@ -39,7 +40,7 @@ const Dashboard: React.FC = () => {
       <div className="min-h-screen pt-20 px-6">
         <PageHeading heading="Hub" />
         <div className="max-w-6xl mx-auto">
-          <p className="text-center text-gray-600 dark:text-gray-400">Please log in to access your Hub.</p>
+          <SignInPrompt message="Sign in to see your Hub." />
         </div>
       </div>
     );
