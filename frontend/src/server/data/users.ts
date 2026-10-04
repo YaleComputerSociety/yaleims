@@ -70,10 +70,34 @@ export async function updateUserRoles(
   }
 }
 
+/** All users of a college. */
+export async function listCollegeUsers(college: string): Promise<UserDoc[]> {
+  const snap = await adminDb
+    .collection(paths.users)
+    .where("college", "==", college)
+    .get();
+  return snap.docs.map((d) => d.data() as UserDoc);
+}
+
 export async function getUserSeason(
   email: string,
   seasonId: string
 ): Promise<UserSeasonDoc | null> {
   const snap = await adminDb.doc(paths.userSeason(email, seasonId)).get();
   return snap.exists ? (snap.data() as UserSeasonDoc) : null;
+}
+
+/**
+ * The games a user signed up for that start after `now`, or null if the
+ * user has no doc for that season.
+ */
+export async function listUpcomingSignups(
+  email: string,
+  seasonId: string,
+  now: Date
+): Promise<UserSeasonMatch[] | null> {
+  const userSeason = await getUserSeason(email, seasonId);
+  if (!userSeason) return null;
+  const matches = Array.isArray(userSeason.matches) ? userSeason.matches : [];
+  return matches.filter((m) => new Date(m.timestamp) > now);
 }

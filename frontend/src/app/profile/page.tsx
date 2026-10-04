@@ -10,7 +10,6 @@ import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/utils/versionedImages";
-import { functionUrl } from "@/utils/functionUrls";
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();
@@ -23,8 +22,6 @@ const Profile = () => {
 
   const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
 
-  const cloudFunctionUrl = functionUrl("getCollegeMatches");
-
   useEffect(() => {
     const fetchUserMatches = async () => {
       if (!user || !user.email || matches.length > 0) return;
@@ -35,7 +32,7 @@ const Profile = () => {
           toCollegeAbbreviation[user.college] || user.college;
 
         const response = await fetch(
-          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc&limit=${matchesLimit}`,
+          `/api/functions/getCollegeMatches?college=${userCollegeAbbreviation}&limit=${matchesLimit}`,
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },

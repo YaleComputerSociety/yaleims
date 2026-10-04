@@ -1,6 +1,5 @@
 "use client";
 
-import { functionUrl } from "@/utils/functionUrls";
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeading from "@src/components/PageHeading";
@@ -149,7 +148,7 @@ const GamesPage: React.FC = () => {
     const fetchLeaderboard = async () => {
       try {
         const res = await fetch(
-          `${functionUrl("getLeaderboard")}?seasonId=${selectedSeason}`
+          `/api/functions/getLeaderboard?seasonId=${selectedSeason}`
         );
         const data = res.ok ? await res.json() : [];
         setLeaderboardData(Array.isArray(data) ? data : []);

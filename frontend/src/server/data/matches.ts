@@ -3,7 +3,7 @@ import "server-only";
 import type { Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import { isNotFound } from "./util";
+import { WithId, isNotFound, withId } from "./util";
 
 export interface MatchParticipant {
   email: string;
@@ -63,4 +63,43 @@ export async function updateMatch(
     if (isNotFound(err)) return false;
     throw err;
   }
+}
+
+/** Matches that have started but have no winner yet, oldest first. */
+export async function listUnscoredPastMatches(
+  seasonId: string,
+  now: Date
+): Promise<WithId<MatchDoc>[]> {
+  const snap = await adminDb
+    .collection(paths.matches(seasonId))
+    .where("winner", "==", null)
+    .where("timestamp", "<", now)
+    .orderBy("timestamp", "asc")
+    .get();
+  return snap.docs.map((d) => withId<MatchDoc>(d));
+}
+
+/**
+ * A college's next unplayed matches (no winner, starting after `now`),
+ * soonest first: up to `limitPerSide` home and up to `limitPerSide` away.
+ */
+export async function listUpcomingCollegeMatches(
+  seasonId: string,
+  college: string,
+  now: Date,
+  limitPerSide: number
+): Promise<MatchDoc[]> {
+  const side = (field: "home_college" | "away_college") =>
+    adminDb
+      .collection(paths.matches(seasonId))
+      .where(field, "==", college)
+      .where("winner", "==", null)
+      .where("timestamp", ">", now)
+      .orderBy("timestamp", "asc")
+      .limit(limitPerSide)
+      .get();
+  const [home, away] = await Promise.all([side("home_college"), side("away_college")]);
+  return [...home.docs, ...away.docs]
+    .map((d) => d.data() as MatchDoc)
+    .sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
 }
