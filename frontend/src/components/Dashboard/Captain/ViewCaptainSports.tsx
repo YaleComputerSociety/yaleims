@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
+import { paths } from "@/lib/paths";
 import { useUser } from "@src/context/UserContext";
 import SportCard from "@src/app/About/SportCard";
 
@@ -13,7 +14,7 @@ export default function ViewCaptainSports() {
 
     useEffect(() => {
         if (!user?.email) return;                // wait for auth/context
-        const ref = doc(db, "users", user.email);
+        const ref = doc(db, paths.user(user.email));
 
         const unsub = onSnapshot(ref,
             snap => {

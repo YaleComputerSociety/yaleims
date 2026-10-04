@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { paths } from "@/lib/paths";
 import { currentYear } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import BracketCell from "@src/components/Brackets/BracketCell";
@@ -125,7 +126,7 @@ const TournamentsPage: React.FC = () => {
         setError(null);
         const docs = await Promise.all(
           bracket.map(async (m) => {
-            const ref = doc(db, "matches", "seasons", season, `${m.match_id}`);
+            const ref = doc(db, paths.match(season, m.match_id));
             const snapshot = await getDoc(ref);
             return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
           })

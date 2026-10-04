@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { db } from "../../lib/firebase";
+import { paths } from "@/lib/paths";
 import { User } from "@src/types/components";
 
 interface AuthContextType {
@@ -103,7 +104,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!user?.email) return;
-    const unsub = onSnapshot(doc(db, "users", user.email), (snap) => {
+    const unsub = onSnapshot(doc(db, paths.user(user.email)), (snap) => {
       const d = snap.data();
       if (!d) return;
       setUser((prev) =>

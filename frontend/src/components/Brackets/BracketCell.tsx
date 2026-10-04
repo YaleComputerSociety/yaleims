@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../lib/firebase"; // Your Firebase config
 import { toCollegeName } from "@src/utils/helpers";
 import SkeletonBracketCell from "./SkeletonBracketCell";
 import "react-loading-skeleton/dist/skeleton.css";

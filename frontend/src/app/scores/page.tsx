@@ -23,6 +23,7 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { paths } from "@/lib/paths";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
@@ -133,13 +134,7 @@ const ScoresPage: React.FC = () => {
     if (filter.college && filter.college !== "All") {
       setCollegeIsLoading(true);
 
-      const q = doc(
-        db,
-        "colleges",
-        "seasons",
-        currentSeason?.year,
-        filter.college
-      );
+      const q = doc(db, paths.collegeStanding(currentSeason.year, filter.college));
 
       unsub = onSnapshot(
         q,

@@ -4,6 +4,7 @@ import { currentYear, sports } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { paths } from "@/lib/paths";
 import { useRef } from "react";
 import BracketCell from "@src/components/Brackets/BracketCell";
 import { useSeason } from "@src/context/SeasonContext";
@@ -82,7 +83,7 @@ const BracketsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const bracketDocRef = doc(db, "brackets", "seasons", season, sport);
+        const bracketDocRef = doc(db, paths.bracket(season, sport));
         const bracketDoc = await getDoc(bracketDocRef);
 
         if (!bracketDoc.exists() || !bracketDoc.data()?.matches) {
@@ -96,7 +97,7 @@ const BracketsPage: React.FC = () => {
         
           const matchDocs = await Promise.all(
             matches.map(async (m) => {
-              const docRef = doc(db, "matches", "seasons", season, `${m.match_id}`);
+              const docRef = doc(db, paths.match(season, m.match_id));
               const snapshot = await getDoc(docRef);
               return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
             })

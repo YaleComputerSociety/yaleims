@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
+import { paths } from "@/lib/paths";
 import { useUser } from "@src/context/UserContext";
 
 type Person = {
@@ -30,7 +31,7 @@ export default function ViewCaptainsCollegeRep() {
     if (!user?.college) return; 
     try {
       const q = query(
-        collection(db, "users"),
+        collection(db, paths.users),
         where("college", "==", user.college),
         where("mRoles", "array-contains-any", ["captain", "college_rep"])
       );

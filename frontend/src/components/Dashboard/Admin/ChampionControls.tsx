@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
+import { paths } from "@/lib/paths";
 import { colleges } from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";
 import { toast } from "react-toastify";
@@ -20,7 +21,7 @@ const ChampionControls: React.FC = () => {
   const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "seasons", "current"), (snap) => {
+    const unsub = onSnapshot(doc(db, paths.currentSeason), (snap) => {
       const data = snap.data() as SeasonDoc | undefined;
       setWinningCollegeId(data?.winningCollegeId ?? "");
       setCelebrationActive(!!data?.celebrationActive);

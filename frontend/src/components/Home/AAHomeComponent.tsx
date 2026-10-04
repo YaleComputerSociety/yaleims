@@ -16,13 +16,14 @@ import ChampionConfetti from "./ChampionConfetti";
 import { useConfettiEnabled } from "@src/utils/preferences";
 import {
   collection,
-  doc,
   onSnapshot,
   orderBy,
   query,
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { paths } from "@/lib/paths";
+import { useChampionship } from "@src/utils/useChampionship";
 
 // Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
@@ -40,27 +41,11 @@ const AAHomeComponent: React.FC = () => {
       : currentSeason?.year || currentYear,
   );
   const [bannerOpen, setBannerOpen] = useState(true);
-  const [championship, setChampionship] = useState<{
-    winningCollegeId: string | null;
-    celebrationActive: boolean;
-  } | null>(null);
+  const championship = useChampionship();
   const confettiEnabled = useConfettiEnabled();
 
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, "seasons", "current"), (snap) => {
-      const data = snap.data() as
-        | { winningCollegeId?: string | null; celebrationActive?: boolean }
-        | undefined;
-      setChampionship({
-        winningCollegeId: data?.winningCollegeId ?? null,
-        celebrationActive: !!data?.celebrationActive,
-      });
-    });
-    return () => unsub();
-  }, []);
-
   const winningCollege =
-    championship?.celebrationActive && championship.winningCollegeId
+    championship.celebrationActive && championship.winningCollegeId
       ? colleges.find((c) => c.id === championship.winningCollegeId)
       : undefined;
 
@@ -74,7 +59,7 @@ const AAHomeComponent: React.FC = () => {
     setLoading(true);
 
     const q = query(
-      collection(db, "colleges", "seasons", selected),
+      collection(db, paths.collegeStandings(selected)),
       orderBy("rank", "asc"),
     );
 

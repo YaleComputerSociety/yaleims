@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { paths } from "@/lib/paths";
 
 export interface ChampionshipState {
   winningCollegeId: string | null;
@@ -14,7 +15,7 @@ export function useChampionship(): ChampionshipState {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "seasons", "current"), (snap) => {
+    const unsub = onSnapshot(doc(db, paths.currentSeason), (snap) => {
       const data = snap.data() as
         | { winningCollegeId?: string | null; celebrationActive?: boolean }
         | undefined;
