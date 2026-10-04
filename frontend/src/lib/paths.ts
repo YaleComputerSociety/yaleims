@@ -21,6 +21,8 @@ export const paths = {
   currentSeason: "seasons/current",
   pastSeasons: "seasons/past",
 
+  /** Placeholder doc whose subcollections are the seasons' matches. */
+  matchSeasons: "matches/seasons",
   matches: (seasonId: string) => `matches/seasons/${seg(seasonId)}`,
   match: (seasonId: string, matchId: string | number) =>
     `matches/seasons/${seg(seasonId)}/${seg(matchId)}`,
