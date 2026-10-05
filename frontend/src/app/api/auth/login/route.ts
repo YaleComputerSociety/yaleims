@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
+import { safeReturnPath } from "@/lib/returnPath";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
   }
-  const from = request.nextUrl.searchParams.get("from") || "/";
+  // Only pages on this site; anything else returns to "/" after login.
+  const from = safeReturnPath(request.nextUrl.searchParams.get("from"), BASE_URL);
   const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(from)}`;
   const encodedServiceUrl = encodeURIComponent(serviceUrl);
   

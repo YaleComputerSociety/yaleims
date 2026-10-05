@@ -3,6 +3,7 @@ import { parseString } from "xml2js";
 import { functionUrl } from "@/utils/functionUrls";
 import { setSessionCookie } from "@/server/session";
 import { getCurrentSeason } from "@/server/data/seasons";
+import { safeReturnPath } from "@/lib/returnPath";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
@@ -80,7 +81,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         }
       );
       const result1 = await response1.json();
-      const redirectTo = from.startsWith("http") ? from : `${BASE_URL.replace(/\/$/, "")}${from.startsWith("/") ? from : "/" + from}`;
+      // Only pages on this site (no open redirect to other sites).
+      const redirectTo = `${BASE_URL.replace(/\/$/, "")}${safeReturnPath(from, BASE_URL)}`;
       const redirectResponse = NextResponse.redirect(redirectTo);
       // Defaults matter: jwt.sign drops undefined values, and user docs carry no
       // role/matches_played, so without them the token ships incomplete.
@@ -100,7 +102,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(from)}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(safeReturnPath(from, BASE_URL))}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
     
     if (BASE_URL === "http://localhost:3000") {
