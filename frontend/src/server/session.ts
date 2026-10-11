@@ -28,7 +28,7 @@ function jwtSecret(): string {
   return secret;
 }
 
-/** The raw session token, for the routes that still forward it to a Cloud Function. */
+/** The raw session token; routes check it first to tell "not signed in" from "invalid session". */
 export async function getSessionToken(): Promise<string | undefined> {
   return (await cookies()).get(SESSION_COOKIE)?.value;
 }

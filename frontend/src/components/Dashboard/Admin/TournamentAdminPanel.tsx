@@ -107,14 +107,6 @@ const TournamentAdminPanel: React.FC = () => {
       );
       const data = await readResponse(response);
 
-      if (response.status === 404) {
-        // The proxy route exists, so a 404 means the upstream cloud function is
-        // missing -- almost always because it has not been deployed yet.
-        setListError(
-          "The tournaments service is unreachable. If this is a new deploy, run `firebase deploy --only functions`."
-        );
-        return;
-      }
       if (!response.ok) {
         setListError(data.error || "Could not load tournaments.");
         return;
@@ -214,12 +206,7 @@ const TournamentAdminPanel: React.FC = () => {
       });
       const data = await readResponse(response);
       if (!response.ok) {
-        throw new Error(
-          data.error ||
-            (response.status === 404
-              ? "Tournaments service unreachable -- deploy the cloud functions first."
-              : "Failed to create tournament")
-        );
+        throw new Error(data.error || "Failed to create tournament");
       }
       toast.success(`Tournament '${name.trim()}' created!`);
       setName("");

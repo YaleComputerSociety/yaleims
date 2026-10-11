@@ -28,9 +28,9 @@ export const db = getFirestore(firebaseApp);
 
 // ─── Emulator wiring (local dev/QA only) ──────────────────────
 // When NEXT_PUBLIC_USE_EMULATOR === "true", point the client Firestore SDK at
-// the local Firestore emulator instead of production. This must match the flag
-// used by src/utils/functionUrls.ts so the whole app targets the emulator
-// consistently. Guarded by a module-level flag to survive Next.js HMR.
+// the local Firestore emulator instead of production (src/server/firebaseAdmin.ts
+// does the same for the server). Guarded by a module-level flag to survive
+// Next.js HMR.
 let emulatorConnected = false;
 if (
   process.env.NEXT_PUBLIC_USE_EMULATOR === "true" &&
