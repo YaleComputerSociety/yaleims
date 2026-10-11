@@ -1,5 +1,7 @@
-// Users: users/{email} and their per-season docs users/{email}/seasons/{seasonId}.
+// Users: users/{email}, their per-season docs users/{email}/seasons/{seasonId},
+// and usernames/{username} (which user holds a username).
 import "server-only";
+import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import { WithId, isNotFound, withId } from "./util";
@@ -70,6 +72,72 @@ export async function updateUserRoles(
   }
 }
 
+/**
+ * Gives the user `username` and frees their old one, unless another doc
+ * already holds it. Checked and written in one transaction.
+ */
+export async function changeUsername(
+  email: string,
+  username: string
+): Promise<"ok" | "taken" | "no-user"> {
+  const usernameRef = adminDb.doc(paths.username(username));
+  const userRef = adminDb.doc(paths.user(email));
+  return adminDb.runTransaction(async (tx) => {
+    const [usernameSnap, userSnap] = await tx.getAll(usernameRef, userRef);
+    if (usernameSnap.exists) return "taken";
+    if (!userSnap.exists) return "no-user";
+
+    const oldUsername = (userSnap.data() as UserDoc).username;
+    tx.set(usernameRef, { userId: email });
+    tx.update(userRef, { username });
+    if (oldUsername) {
+      tx.delete(adminDb.doc(paths.username(oldUsername)));
+    }
+    return "ok";
+  });
+}
+
+/**
+ * Adds or removes `sport` from the user's sportsCaptainOf, and the captain
+ * role with it (kept while they captain any sport). mRoles always keeps
+ * "user". Returns false if the user doesn't exist.
+ */
+export async function setSportCaptain(
+  email: string,
+  sport: string,
+  { assign, remove }: { assign?: boolean; remove?: boolean }
+): Promise<boolean> {
+  const userRef = adminDb.doc(paths.user(email));
+  return adminDb.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    if (!snap.exists) return false;
+
+    const stored = snap.data() as UserDoc;
+    const sports = Array.isArray(stored.sportsCaptainOf) ? [...stored.sportsCaptainOf] : [];
+    const roles = Array.isArray(stored.mRoles) ? [...stored.mRoles] : ["user"];
+
+    if (assign) {
+      if (!sports.includes(sport)) sports.push(sport);
+      if (!roles.includes("captain")) roles.push("captain");
+    }
+    if (remove) {
+      const idx = sports.indexOf(sport);
+      if (idx !== -1) sports.splice(idx, 1);
+      if (sports.length === 0) {
+        const capIdx = roles.indexOf("captain");
+        if (capIdx !== -1) roles.splice(capIdx, 1);
+      }
+    }
+    if (!roles.includes("user")) roles.push("user");
+
+    tx.update(userRef, {
+      sportsCaptainOf: sports.length > 0 ? sports : FieldValue.delete(),
+      mRoles: roles,
+    });
+    return true;
+  });
+}
+
 /** All users of a college. */
 export async function listCollegeUsers(college: string): Promise<UserDoc[]> {
   const snap = await adminDb
@@ -77,6 +145,14 @@ export async function listCollegeUsers(college: string): Promise<UserDoc[]> {
     .where("college", "==", college)
     .get();
   return snap.docs.map((d) => d.data() as UserDoc);
+}
+
+/** The user-season doc, for services that change it in a transaction. */
+export function userSeasonRef(
+  email: string,
+  seasonId: string
+): DocumentReference<UserSeasonDoc> {
+  return adminDb.doc(paths.userSeason(email, seasonId)) as DocumentReference<UserSeasonDoc>;
 }
 
 export async function getUserSeason(

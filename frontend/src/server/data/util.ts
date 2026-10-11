@@ -1,5 +1,14 @@
 import "server-only";
-import type { DocumentSnapshot } from "firebase-admin/firestore";
+import type { DocumentSnapshot, Transaction } from "firebase-admin/firestore";
+import { adminDb } from "../firebaseAdmin";
+
+/**
+ * Runs `fn` in a Firestore transaction (retried on contention). For services
+ * whose writes span entities; they get document refs from the data modules.
+ */
+export function runTransaction<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> {
+  return adminDb.runTransaction(fn);
+}
 
 /** A document's data plus its id, in the shape the API has always returned. */
 export type WithId<T> = T & { id: string };

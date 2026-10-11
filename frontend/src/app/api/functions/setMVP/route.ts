@@ -1,24 +1,32 @@
-import { cookies } from "next/headers";
-import { functionUrl } from "@/utils/functionUrls";
- 
+import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
+import { setCollegeMvp } from "@/server/data/mvps";
+
+/** A college rep names a week's MVP for a college. */
 export async function POST(req: Request) {
-    const { season, weekId, residentialCollege, mvpEmail, mvpFName, mvpLName } = await req.json();
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
+  try {
+    const { season, weekId, residentialCollege, mvpEmail, mvpFName, mvpLName } =
+      await req.json();
+    if (!(await getSessionToken())) {
+      return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-    const response = await fetch(functionUrl("setMVP"), {
-            method: "POST",
-            headers: {"Content-Type": "application/json", Authorization: `Bearer ${token.value}`},
-            body: JSON.stringify({ season, weekId, residentialCollege, mvpEmail, mvpFName, mvpLName }),
-        }
-    );
-
-    if (!response.ok) {
-        return new Response(await response.text(), { status: response.status });
+    const session = await getSession();
+    if (!session) {
+      return Response.json({ error: "Invalid token" }, { status: 401 });
+    }
+    if (!hasAnyRole(session, ["college_rep"])) {
+      return Response.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    if (!season || !residentialCollege || !weekId || !mvpEmail || !mvpFName || !mvpLName) {
+      return Response.json({ error: "Missing required field(s)" }, { status: 400 });
     }
 
-    const data = await response.json();
-    return Response.json(data);
+    await setCollegeMvp(String(season), String(residentialCollege), String(weekId), String(mvpEmail), {
+      fname: mvpFName,
+      lname: mvpLName,
+    });
+    return Response.json({ success: true, weekId });
+  } catch (err) {
+    console.error("Error setting MVP:", err);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

@@ -18,6 +18,9 @@ export const paths = {
   userSeason: (email: string, seasonId: string) =>
     `users/${seg(email)}/seasons/${seg(seasonId)}`,
 
+  /** Taken usernames: usernames/{username}, one doc per user. */
+  username: (username: string) => `usernames/${seg(username)}`,
+
   currentSeason: "seasons/current",
   pastSeasons: "seasons/past",
 

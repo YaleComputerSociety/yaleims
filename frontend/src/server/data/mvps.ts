@@ -14,3 +14,16 @@ export async function listCollegeMvps(
   const snap = await adminDb.collection(paths.collegeMvps(seasonId, college)).get();
   return Object.fromEntries(snap.docs.map((d) => [d.id, d.data() as MvpWeekDoc]));
 }
+
+/** Adds (or replaces) one MVP in a college's week doc, keeping the others. */
+export async function setCollegeMvp(
+  seasonId: string,
+  college: string,
+  weekId: string,
+  email: string,
+  name: { fname: string; lname: string }
+): Promise<void> {
+  await adminDb
+    .doc(paths.collegeMvp(seasonId, college, weekId))
+    .set({ [email]: name }, { merge: true });
+}

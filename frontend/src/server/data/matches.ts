@@ -1,6 +1,11 @@
 // Matches: matches/seasons/{seasonId}/{matchId}.
 import "server-only";
-import { Filter, type Query, type Timestamp } from "firebase-admin/firestore";
+import {
+  Filter,
+  type DocumentReference,
+  type Query,
+  type Timestamp,
+} from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import { WithId, isNotFound, withId } from "./util";
@@ -40,6 +45,14 @@ export interface MatchDoc {
   playoff_bracket_slot?: number;
   tournament_id?: string;
   tournament_name?: string;
+}
+
+/** The match doc, for services that change it in a transaction. */
+export function matchRef(
+  seasonId: string,
+  matchId: string | number
+): DocumentReference<MatchDoc> {
+  return adminDb.doc(paths.match(seasonId, matchId)) as DocumentReference<MatchDoc>;
 }
 
 export async function getMatch(
