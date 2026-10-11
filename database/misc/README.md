@@ -14,6 +14,7 @@ These use `./firebaseAdmin.js`, which targets the emulator when
 | `start_new_season.js <YYYY-YYYY> [--update-season-metadata] [--prod]` | Season rollover: creates `colleges/seasons/{season}/{abbr}` (only missing docs; never resets points), optionally updates `seasons/current` and `seasons/past`, then prints the remaining steps. |
 | `addNewSeasonUser.js <YYYY-YYYY> [--prod]` | Season rollover: gives every user an empty `users/{email}/seasons/{season}` doc (only missing ones). |
 | `create_season_indexes.sh <YYYY-YYYY>` | Season rollover: per-season composite indexes (gcloud). |
+| `remove_bye_credit.js <YYYY-YYYY> [--apply] [--prod]` | **One-off (D23), delete after its production run.** Takes back the game/win/points that brackets and tournaments credited to bye winners, then re-ranks. Dry run unless `--apply`; idempotent (marks each doc `bye_credit_removed`). |
 
 ## Legacy (browser SDK) — will stop working
 
