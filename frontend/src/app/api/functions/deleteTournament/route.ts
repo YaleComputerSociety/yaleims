@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         {
           error:
             `Tournament has ${result.scoredMatchIds.length} scored match(es). ` +
-            "Undo those scores first, or resend with force to delete anyway.",
+            "Deleting it takes back the points they earned.",
           scoredMatchIds: result.scoredMatchIds,
         },
         { status: 409 }

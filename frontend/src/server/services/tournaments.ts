@@ -4,12 +4,19 @@
 // college standings, so each runs in one transaction.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
-import { collegeStandingRef } from "../data/colleges";
-import { isAlreadyExists, matchRef } from "../data/matches";
-import { getPointsForWin } from "../data/sports";
+import { collegeStandingRef, recalculateRanks } from "../data/colleges";
+import { isAlreadyExists } from "../data/matches";
 import { tournamentRef } from "../data/tournaments";
 import { runTransaction } from "../data/util";
-import { BRACKET_SLOTS, createSlotMatches, type CreateResult, type SlotInput } from "./brackets";
+import {
+  BRACKET_SLOTS,
+  createSlotMatches,
+  readSlotMatches,
+  type CreateResult,
+  type DeleteResult,
+  type SlotInput,
+} from "./brackets";
+import { readPointsForWin, reverseResults } from "./standings";
 
 /** Bracket slots that settle placements: the final (1st/2nd) and the third place game. */
 export const FINAL_SLOT = 15;
@@ -100,70 +107,45 @@ export async function createTournament(
   }
 }
 
-export type DeleteTournamentResult =
-  | { status: "deleted"; matchCount: number }
-  | { status: "not-found" }
-  | { status: "has-scored-matches"; scoredMatchIds: string[] };
-
 /**
- * Deletes a tournament and its matches, and takes back the points it handed
- * out at creation (bye wins) and as placement bonuses. Refuses while any
- * non-bye match is scored unless `force`, because those win points would be
- * stranded; undo those scores first.
+ * Deletes a tournament and its matches and takes back every point they
+ * earned: each scored game's result and the placement bonuses (D24). While
+ * games are scored it refuses unless `force`, so the admin confirms first.
+ * Then re-ranks the season.
  */
 export async function deleteTournament(
   seasonId: string,
   tournamentId: string,
   force: boolean
-): Promise<DeleteTournamentResult> {
+): Promise<DeleteResult> {
   const ref = tournamentRef(seasonId, tournamentId);
-  return runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const tournament = snap.data();
+  const result = await runTransaction(async (tx): Promise<DeleteResult> => {
+    const tournament = (await tx.get(ref)).data();
     if (!tournament) return { status: "not-found" };
 
     const entries = tournament.matches || [];
-    const matchRefs = entries.map((entry) => matchRef(seasonId, entry.match_id));
-    const matchSnaps = matchRefs.length > 0 ? await tx.getAll(...matchRefs) : [];
-
-    const scoredMatchIds = matchSnaps
-      .filter((s) => s.exists && s.data()?.winner && s.data()?.type !== "Bye")
-      .map((s) => s.id);
-    if (scoredMatchIds.length > 0 && !force) {
-      return { status: "has-scored-matches", scoredMatchIds };
+    const slots = await readSlotMatches(tx, seasonId, entries);
+    if (slots.scoredMatchIds.length > 0 && !force) {
+      return { status: "has-scored-matches", scoredMatchIds: slots.scoredMatchIds };
     }
+    const pointsForWin = await readPointsForWin(tx, slots.matches);
 
-    const pointsForWin = await getPointsForWin(tournament.sport, tx);
-
-    for (const matchDocRef of matchRefs) {
-      tx.delete(matchDocRef);
-    }
-    // Byes were credited as wins at creation time.
-    for (const s of matchSnaps) {
-      const match = s.data();
-      if (!match || match.type !== "Bye" || !match.winner) continue;
-      tx.update(collegeStandingRef(seasonId, match.winner), {
-        games: FieldValue.increment(-1),
-        wins: FieldValue.increment(-1),
-        points: FieldValue.increment(-pointsForWin),
-      });
-    }
+    reverseResults(tx, seasonId, slots.matches, pointsForWin);
     const points = normalizePlacementPoints(tournament.placement_points);
     const placements = tournament.placements || {};
-    const awarded: [string | null | undefined, number][] = [
-      [placements.first, points.first],
-      [placements.second, points.second],
-      [placements.third, points.third],
-    ];
-    for (const [college, bonus] of awarded) {
+    for (const key of ["first", "second", "third"] as const) {
+      const college = placements[key];
       if (!college) continue;
       tx.update(collegeStandingRef(seasonId, college), {
-        points: FieldValue.increment(-bonus),
+        points: FieldValue.increment(-points[key]),
       });
     }
+    for (const matchDocRef of slots.refs) tx.delete(matchDocRef);
     tx.delete(ref);
     return { status: "deleted", matchCount: entries.length };
   });
+  if (result.status === "deleted") await recalculateRanks(seasonId);
+  return result;
 }
 
 /**

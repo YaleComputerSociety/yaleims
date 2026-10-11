@@ -44,21 +44,28 @@ const BracketAdminPanel: React.FC = () => {
 
   const handleDeleteBracket = async (
     sport: string,
-    setDeleteLoading: React.Dispatch<React.SetStateAction<boolean>>
+    setDeleteLoading: React.Dispatch<React.SetStateAction<boolean>>,
+    force = false
   ) => {
     setDeleteLoading(true);
     try {
-      const dataToSend = { sport };
-
       const response = await fetch("/api/functions/deleteBracket", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify({ sport, force }),
       });
 
       const data = await response.json();
+
+      // Deleting takes back the points of scored games; the admin confirms that.
+      if (response.status === 409 && !force) {
+        if (window.confirm(`${data.error}\n\nDelete anyway?`)) {
+          await handleDeleteBracket(sport, setDeleteLoading, true);
+        }
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to delete bracket");

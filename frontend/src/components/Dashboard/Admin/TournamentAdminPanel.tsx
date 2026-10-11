@@ -252,8 +252,7 @@ const TournamentAdminPanel: React.FC = () => {
       });
       const data = await readResponse(response);
 
-      // Scored matches block a plain delete so their points are not stranded;
-      // the admin gets one explicit chance to override.
+      // Deleting takes back the points of scored games; the admin confirms that.
       if (response.status === 409 && !force) {
         if (window.confirm(`${data.error}\n\nDelete anyway?`)) {
           await handleDelete(tournament, true);

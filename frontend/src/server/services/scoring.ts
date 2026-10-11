@@ -3,65 +3,14 @@
 // then playoff and tournament brackets advance, tournament placement bonuses
 // are settled, and the season is re-ranked.
 import "server-only";
-import { FieldValue, type Transaction } from "firebase-admin/firestore";
-import { collegeStandingRef, recalculateRanks } from "../data/colleges";
+import { recalculateRanks } from "../data/colleges";
 import { matchRef, type MatchDoc } from "../data/matches";
 import { getPointsForWin } from "../data/sports";
 import { runTransaction } from "../data/util";
+import { applyStandingChanges, standingChanges, type Winner } from "./standings";
 import { awardPlacements, reversePlacements } from "./tournaments";
 
-/** A college name, or "Draw", or "Default" (both sides forfeited). */
-type Winner = string;
-
 const isDecisive = (winner: Winner) => !!winner && winner !== "Default" && winner !== "Draw";
-
-type StatField = "games" | "wins" | "losses" | "ties" | "forfeits" | "points";
-type StandingChanges = Record<string, Partial<Record<StatField, number>>>;
-
-/**
- * What a result adds to each college's standing. Undoing a result applies
- * the same changes negated. A winner matching neither college changes nothing.
- */
-function standingChanges(
-  home: string,
-  away: string,
-  winner: Winner,
-  forfeit: boolean,
-  pointsForWin: number
-): StandingChanges {
-  const half = pointsForWin / 2;
-  const win = { games: 1, wins: 1, points: pointsForWin };
-  const lossOrForfeit = forfeit ? { games: 1, forfeits: 1 } : { games: 1, losses: 1 };
-  if (winner === "Default") {
-    return {
-      [home]: { games: 1, forfeits: 1, points: half },
-      [away]: { games: 1, forfeits: 1, points: half },
-    };
-  }
-  if (winner === "Draw") {
-    return {
-      [home]: { games: 1, ties: 1, points: half },
-      [away]: { games: 1, ties: 1, points: half },
-    };
-  }
-  if (winner === home) return { [home]: win, [away]: lossOrForfeit };
-  if (winner === away) return { [home]: lossOrForfeit, [away]: win };
-  return {};
-}
-
-function applyStandingChanges(
-  tx: Transaction,
-  seasonId: string,
-  changes: StandingChanges,
-  sign: 1 | -1
-): void {
-  for (const [college, fields] of Object.entries(changes)) {
-    const update = Object.fromEntries(
-      Object.entries(fields).map(([field, delta]) => [field, FieldValue.increment(sign * delta)])
-    );
-    tx.update(collegeStandingRef(seasonId, college), update);
-  }
-}
 
 export interface ScoreInput {
   seasonId: string;
@@ -161,16 +110,18 @@ async function advanceBrackets(
 
 /**
  * Clears a match's result and takes its points back. Bracket advancement is
- * not undone (the next match keeps the advanced college).
+ * not undone (the next match keeps the advanced college). A bye has no
+ * score to undo (D23).
  */
 export async function undoScore(
   seasonId: string,
   matchId: string
-): Promise<"undone" | "not-found" | "incomplete"> {
+): Promise<"undone" | "not-found" | "incomplete" | "bye"> {
   const ref = matchRef(seasonId, matchId);
   const undone = await runTransaction(async (tx) => {
     const match = (await tx.get(ref)).data();
     if (!match) return "not-found" as const;
+    if (match.type === "Bye") return "bye" as const;
     const { home_college: home, away_college: away, winner, sport, forfeit } = match;
     if (!home || !away || !sport || !winner || typeof forfeit !== "boolean") {
       return "incomplete" as const;

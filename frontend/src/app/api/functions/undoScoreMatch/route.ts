@@ -29,6 +29,9 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
+    if (result === "bye") {
+      return Response.json({ error: "A bye has no score to undo." }, { status: 400 });
+    }
     if (result === "incomplete") {
       return Response.json({ error: "Match data is incomplete or invalid." }, { status: 400 });
     }

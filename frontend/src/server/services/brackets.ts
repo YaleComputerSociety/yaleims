@@ -2,10 +2,23 @@
 // match docs that point at the slot their winner moves to. Tournaments use
 // the same shape plus slot 16, the third place game (services/tournaments).
 import "server-only";
-import { FieldValue, Timestamp, type Transaction } from "firebase-admin/firestore";
+import {
+  FieldValue,
+  Timestamp,
+  type DocumentReference,
+  type Transaction,
+} from "firebase-admin/firestore";
 import { bracketRef, type BracketEntry } from "../data/brackets";
-import { createMatch, isAlreadyExists, reserveMatchIds } from "../data/matches";
+import { recalculateRanks } from "../data/colleges";
+import {
+  createMatch,
+  isAlreadyExists,
+  matchRef,
+  reserveMatchIds,
+  type MatchDoc,
+} from "../data/matches";
 import { runTransaction } from "../data/util";
+import { isScoredGame, readPointsForWin, reverseResults } from "./standings";
 
 export const BRACKET_SLOTS = 15;
 
@@ -167,4 +180,59 @@ export async function createBracket(
     if (isAlreadyExists(err)) return "id-taken";
     throw err;
   }
+}
+
+/**
+ * Reads a bracket's match docs inside `tx`: their refs (to delete), the
+ * existing docs, and the ids of games with a result.
+ */
+export async function readSlotMatches(
+  tx: Transaction,
+  seasonId: string,
+  entries: { match_id: number | string }[]
+): Promise<{ refs: DocumentReference<MatchDoc>[]; matches: MatchDoc[]; scoredMatchIds: string[] }> {
+  const refs = entries.filter((e) => e.match_id).map((e) => matchRef(seasonId, e.match_id));
+  const snaps = refs.length > 0 ? await tx.getAll(...refs) : [];
+  const existing = snaps.filter((s) => s.exists);
+  return {
+    refs,
+    matches: existing.map((s) => s.data()!),
+    scoredMatchIds: existing.filter((s) => isScoredGame(s.data()!)).map((s) => s.id),
+  };
+}
+
+/** Outcome of deleting a bracket or tournament. */
+export type DeleteResult =
+  | { status: "deleted"; matchCount: number }
+  | { status: "not-found" }
+  | { status: "has-scored-matches"; scoredMatchIds: string[] };
+
+/**
+ * Deletes a season's bracket for `sport` and its matches, taking back every
+ * point the scored games earned (D24). While games are scored it refuses
+ * unless `force`, so the admin confirms first. Then re-ranks the season.
+ */
+export async function deleteBracket(
+  seasonId: string,
+  sport: string,
+  force: boolean
+): Promise<DeleteResult> {
+  const ref = bracketRef(seasonId, sport);
+  const result = await runTransaction(async (tx): Promise<DeleteResult> => {
+    const bracket = (await tx.get(ref)).data();
+    if (!bracket) return { status: "not-found" };
+
+    const slots = await readSlotMatches(tx, seasonId, bracket.matches || []);
+    if (slots.scoredMatchIds.length > 0 && !force) {
+      return { status: "has-scored-matches", scoredMatchIds: slots.scoredMatchIds };
+    }
+    const pointsForWin = await readPointsForWin(tx, slots.matches);
+
+    reverseResults(tx, seasonId, slots.matches, pointsForWin);
+    for (const matchDocRef of slots.refs) tx.delete(matchDocRef);
+    tx.delete(ref);
+    return { status: "deleted", matchCount: slots.refs.length };
+  });
+  if (result.status === "deleted") await recalculateRanks(seasonId);
+  return result;
 }
