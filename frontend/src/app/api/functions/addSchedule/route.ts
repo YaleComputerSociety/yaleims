@@ -27,8 +27,15 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!(await addScheduledMatches(String(schedule.season), schedule.sport, schedule.matches))) {
+    const result = await addScheduledMatches(String(schedule.season), schedule.sport, schedule.matches);
+    if (result === "no-counter") {
       return Response.json({ error: "Cannot find next match ID" }, { status: 500 });
+    }
+    if (result === "id-taken") {
+      return Response.json(
+        { error: "A new match id is already in use (check counters/matches); nothing was added." },
+        { status: 409 }
+      );
     }
     return Response.json({ success: true });
   } catch (err: any) {

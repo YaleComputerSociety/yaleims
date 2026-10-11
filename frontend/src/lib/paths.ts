@@ -32,7 +32,7 @@ export const paths = {
   match: (seasonId: string, matchId: string | number) =>
     `matches/seasons/${seg(seasonId)}/${seg(matchId)}`,
 
-  /** { count }: the last match id handed out (addSchedule's convention). */
+  /** { count }: the last match id handed out (D22). */
   matchIdCounter: "counters/matches",
 
   scoreReports: (seasonId: string, matchId: string | number) =>

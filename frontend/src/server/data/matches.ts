@@ -5,6 +5,7 @@ import {
   Timestamp,
   type DocumentReference,
   type Query,
+  type Transaction,
 } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
@@ -47,6 +48,27 @@ export interface MatchDoc {
   tournament_name?: string;
 }
 
+/**
+ * Reserves `n` new match ids from counters/matches, which holds the last id
+ * handed out (D22): returns the first, or null if the counter is missing or
+ * malformed. Callers create the matches in the same transaction, with
+ * tx.create, so an id that is somehow taken fails the transaction instead
+ * of overwriting a match.
+ */
+export async function reserveMatchIds(tx: Transaction, n: number): Promise<number | null> {
+  const counterRef = adminDb.doc(paths.matchIdCounter);
+  const count = (await tx.get(counterRef)).data()?.count;
+  if (typeof count !== "number") return null;
+  tx.set(counterRef, { count: count + n }, { merge: true });
+  return count + 1;
+}
+
+/** Firestore's error for tx.create on an existing doc (gRPC ALREADY_EXISTS). */
+export function isAlreadyExists(err: unknown): boolean {
+  const code = (err as { code?: unknown } | null)?.code;
+  return code === 6 || code === "already-exists";
+}
+
 /** A regular-season game from an uploaded schedule. */
 export interface ScheduledMatch {
   timestamp: string;
@@ -57,45 +79,45 @@ export interface ScheduledMatch {
 }
 
 /**
- * Adds a schedule's games to a season with fresh ids from counters/matches,
- * in one transaction. Returns false if the counter is missing or malformed.
+ * Adds a schedule's games to a season with fresh ids, in one transaction.
  * At most 499 games (one write goes to the counter).
  */
 export async function addScheduledMatches(
   seasonId: string,
   sport: string,
   scheduled: ScheduledMatch[]
-): Promise<boolean> {
-  const counterRef = adminDb.doc(paths.matchIdCounter);
-  return adminDb.runTransaction(async (tx) => {
-    const count = (await tx.get(counterRef)).data()?.count;
-    if (typeof count !== "number") return false;
-
-    // count is the last id handed out, so the next free id is one past it.
-    let nextId = count + 1;
-    for (const match of scheduled) {
-      const date = new Date(match.timestamp);
-      tx.set(adminDb.doc(paths.match(seasonId, nextId)), {
-        id: nextId,
-        away_college: match.awayCollege,
-        away_college_participants: [],
-        away_college_score: null,
-        home_college: match.homeCollege,
-        home_college_participants: [],
-        home_college_score: null,
-        forfeit: null,
-        location: match.location,
-        location_extra: match.locationExtra || null,
-        sport,
-        timestamp: isNaN(date.getTime()) ? null : Timestamp.fromDate(date),
-        type: "Regular",
-        winner: null,
+): Promise<"ok" | "no-counter" | "id-taken"> {
+  try {
+    return await adminDb.runTransaction(async (tx) => {
+      const firstId = await reserveMatchIds(tx, scheduled.length);
+      if (firstId === null) return "no-counter";
+      scheduled.forEach((match, i) => {
+        const id = firstId + i;
+        const date = new Date(match.timestamp);
+        // Untyped ref: an unparsable date is stored as a null timestamp.
+        tx.create(adminDb.doc(paths.match(seasonId, id)), {
+          id,
+          away_college: match.awayCollege,
+          away_college_participants: [],
+          away_college_score: null,
+          home_college: match.homeCollege,
+          home_college_participants: [],
+          home_college_score: null,
+          forfeit: null,
+          location: match.location,
+          location_extra: match.locationExtra || null,
+          sport,
+          timestamp: isNaN(date.getTime()) ? null : Timestamp.fromDate(date),
+          type: "Regular",
+          winner: null,
+        });
       });
-      nextId++;
-    }
-    tx.set(counterRef, { count: nextId - 1 }, { merge: true });
-    return true;
-  });
+      return "ok";
+    });
+  } catch (err) {
+    if (isAlreadyExists(err)) return "id-taken";
+    throw err;
+  }
 }
 
 /** The match doc, for services that change it in a transaction. */
