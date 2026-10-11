@@ -10,6 +10,10 @@ import { getPointsForWin } from "../data/sports";
 import { tournamentRef } from "../data/tournaments";
 import { runTransaction } from "../data/util";
 
+/** Bracket slots that settle placements: the final (1st/2nd) and the third place game. */
+export const FINAL_SLOT = 15;
+export const THIRD_PLACE_SLOT = 16;
+
 export interface PlacementPoints {
   first: number;
   second: number;
@@ -96,5 +100,83 @@ export async function deleteTournament(
     }
     tx.delete(ref);
     return { status: "deleted", matchCount: entries.length };
+  });
+}
+
+/**
+ * After a final or third place game is scored: awards the placement bonuses
+ * it settles (final: first + second; third place game: third). Each is
+ * recorded on the tournament and awarded only once.
+ */
+export async function awardPlacements(
+  seasonId: string,
+  tournamentId: string,
+  slot: number,
+  winner: string,
+  loser: string | null
+): Promise<void> {
+  if (slot !== FINAL_SLOT && slot !== THIRD_PLACE_SLOT) return;
+  if (!winner || winner === "Draw" || winner === "Default") return;
+
+  const ref = tournamentRef(seasonId, tournamentId);
+  await runTransaction(async (tx) => {
+    const tournament = (await tx.get(ref)).data();
+    if (!tournament) return;
+    const points = normalizePlacementPoints(tournament.placement_points);
+    const placements = { ...(tournament.placements || {}) };
+
+    const awards: { college: string; bonus: number; key: keyof PlacementPoints }[] = [];
+    if (slot === FINAL_SLOT) {
+      if (!placements.first) awards.push({ college: winner, bonus: points.first, key: "first" });
+      if (!placements.second && loser) awards.push({ college: loser, bonus: points.second, key: "second" });
+    } else if (!placements.third) {
+      awards.push({ college: winner, bonus: points.third, key: "third" });
+    }
+
+    for (const { college, bonus, key } of awards) {
+      placements[key] = college;
+      tx.update(collegeStandingRef(seasonId, college), {
+        points: FieldValue.increment(bonus),
+      });
+    }
+    if (awards.length > 0) {
+      tx.update(ref, { placements });
+    }
+  });
+}
+
+/**
+ * After a final or third place game is unscored: takes back the placement
+ * bonuses the tournament recorded for it (only those, so undoing twice
+ * can't drain points).
+ */
+export async function reversePlacements(
+  seasonId: string,
+  tournamentId: string,
+  slot: number
+): Promise<void> {
+  if (slot !== FINAL_SLOT && slot !== THIRD_PLACE_SLOT) return;
+
+  const ref = tournamentRef(seasonId, tournamentId);
+  await runTransaction(async (tx) => {
+    const tournament = (await tx.get(ref)).data();
+    if (!tournament) return;
+    const points = normalizePlacementPoints(tournament.placement_points);
+    const placements = { ...(tournament.placements || {}) };
+
+    const keys: (keyof PlacementPoints)[] = slot === FINAL_SLOT ? ["first", "second"] : ["third"];
+    let changed = false;
+    for (const key of keys) {
+      const college = placements[key];
+      if (!college) continue;
+      tx.update(collegeStandingRef(seasonId, college), {
+        points: FieldValue.increment(-points[key]),
+      });
+      placements[key] = null;
+      changed = true;
+    }
+    if (changed) {
+      tx.update(ref, { placements });
+    }
   });
 }
