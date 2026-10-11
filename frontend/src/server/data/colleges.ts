@@ -1,6 +1,6 @@
 // College standings per season: colleges/seasons/{seasonId}/{abbr}.
 import "server-only";
-import type { Timestamp } from "firebase-admin/firestore";
+import type { DocumentReference, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import { WithId, withId } from "./util";
@@ -21,6 +21,14 @@ export interface CollegeStandingDoc {
   /** Date of the last rank snapshot, "d-m-yyyy". */
   today: string;
   migratedAt?: Timestamp;
+}
+
+/** A college's standing doc, for services that change it in a transaction. */
+export function collegeStandingRef(
+  seasonId: string,
+  abbr: string
+): DocumentReference<CollegeStandingDoc> {
+  return adminDb.doc(paths.collegeStanding(seasonId, abbr)) as DocumentReference<CollegeStandingDoc>;
 }
 
 /**

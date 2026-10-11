@@ -2,9 +2,9 @@
 import "server-only";
 import {
   Filter,
+  Timestamp,
   type DocumentReference,
   type Query,
-  type Timestamp,
 } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
@@ -45,6 +45,57 @@ export interface MatchDoc {
   playoff_bracket_slot?: number;
   tournament_id?: string;
   tournament_name?: string;
+}
+
+/** A regular-season game from an uploaded schedule. */
+export interface ScheduledMatch {
+  timestamp: string;
+  homeCollege: string;
+  awayCollege: string;
+  location: string;
+  locationExtra?: string;
+}
+
+/**
+ * Adds a schedule's games to a season with fresh ids from counters/matches,
+ * in one transaction. Returns false if the counter is missing or malformed.
+ * At most 499 games (one write goes to the counter).
+ */
+export async function addScheduledMatches(
+  seasonId: string,
+  sport: string,
+  scheduled: ScheduledMatch[]
+): Promise<boolean> {
+  const counterRef = adminDb.doc(paths.matchIdCounter);
+  return adminDb.runTransaction(async (tx) => {
+    const count = (await tx.get(counterRef)).data()?.count;
+    if (typeof count !== "number") return false;
+
+    // count is the last id handed out, so the next free id is one past it.
+    let nextId = count + 1;
+    for (const match of scheduled) {
+      const date = new Date(match.timestamp);
+      tx.set(adminDb.doc(paths.match(seasonId, nextId)), {
+        id: nextId,
+        away_college: match.awayCollege,
+        away_college_participants: [],
+        away_college_score: null,
+        home_college: match.homeCollege,
+        home_college_participants: [],
+        home_college_score: null,
+        forfeit: null,
+        location: match.location,
+        location_extra: match.locationExtra || null,
+        sport,
+        timestamp: isNaN(date.getTime()) ? null : Timestamp.fromDate(date),
+        type: "Regular",
+        winner: null,
+      });
+      nextId++;
+    }
+    tx.set(counterRef, { count: nextId - 1 }, { merge: true });
+    return true;
+  });
 }
 
 /** The match doc, for services that change it in a transaction. */

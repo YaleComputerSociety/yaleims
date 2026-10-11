@@ -30,6 +30,9 @@ export const paths = {
   match: (seasonId: string, matchId: string | number) =>
     `matches/seasons/${seg(seasonId)}/${seg(matchId)}`,
 
+  /** { count }: the last match id handed out (addSchedule's convention). */
+  matchIdCounter: "counters/matches",
+
   scoreReports: (seasonId: string, matchId: string | number) =>
     `matches/score_reports/${seg(seasonId)}/${seg(matchId)}/reports`,
   scoreReport: (seasonId: string, matchId: string | number, reportId: string) =>
@@ -45,6 +48,8 @@ export const paths = {
   tournaments: (seasonId: string) => `tournaments/seasons/${seg(seasonId)}`,
   tournament: (seasonId: string, tournamentId: string) =>
     `tournaments/seasons/${seg(seasonId)}/${seg(tournamentId)}`,
+
+  sports: "sports",
 
   collegeMvps: (seasonId: string, college: string) =>
     `mvps/${seg(seasonId)}/${seg(college)}`,

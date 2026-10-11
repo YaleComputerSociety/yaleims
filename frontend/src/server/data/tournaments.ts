@@ -1,6 +1,6 @@
 // Tournaments: tournaments/seasons/{seasonId}/{tournamentId}.
 import "server-only";
-import type { Timestamp } from "firebase-admin/firestore";
+import type { DocumentReference, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { WithId } from "./util";
@@ -12,13 +12,31 @@ export interface TournamentMatchEntry {
   [field: string]: unknown;
 }
 
+/** Colleges awarded each placement bonus (null once reversed). */
+export interface TournamentPlacements {
+  first?: string | null;
+  second?: string | null;
+  third?: string | null;
+}
+
 export interface TournamentDoc {
   name: string;
   sport: string;
   season: string;
   createdAt?: Timestamp;
   matches?: TournamentMatchEntry[];
+  /** Bonus points per placement; missing or invalid values use the defaults. */
+  placement_points?: unknown;
+  placements?: TournamentPlacements;
   [field: string]: unknown;
+}
+
+/** The tournament doc, for services that change it in a transaction. */
+export function tournamentRef(
+  seasonId: string,
+  tournamentId: string
+): DocumentReference<TournamentDoc> {
+  return adminDb.doc(paths.tournament(seasonId, tournamentId)) as DocumentReference<TournamentDoc>;
 }
 
 /** A season's tournaments. `id` is the doc id (it wins over a stored `id` field). */
