@@ -38,12 +38,9 @@ const USE_EMULATOR = process.env.NEXT_PUBLIC_USE_EMULATOR === "true";
 export const FUNCTION_NAMES = [
   "scoreMatch",
   "undoScoreMatch",
-  "fetchOrAddUser",
-  "addSchedule",
   "createBracket",
   "deleteBracket",
   "createTournament",
-  "deleteTournament",
 ] as const;
 
 export type FunctionName = (typeof FUNCTION_NAMES)[number];
