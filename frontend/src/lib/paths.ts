@@ -20,6 +20,8 @@ export const paths = {
 
   /** Taken usernames: usernames/{username}, one doc per user. */
   username: (username: string) => `usernames/${seg(username)}`,
+  /** { count }: how many usernames have been generated (the number in them). */
+  usernameCounter: "counters/usernames",
 
   currentSeason: "seasons/current",
   pastSeasons: "seasons/past",

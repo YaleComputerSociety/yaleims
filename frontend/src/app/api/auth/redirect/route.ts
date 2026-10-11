@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { parseString } from "xml2js";
-import { functionUrl } from "@/utils/functionUrls";
 import { setSessionCookie } from "@/server/session";
 import { getCurrentSeason } from "@/server/data/seasons";
+import { getOrCreateAccount } from "@/server/services/accounts";
 import { safeReturnPath } from "@/lib/returnPath";
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -62,25 +62,17 @@ export async function GET(request: Request): Promise<NextResponse> {
         body: JSON.stringify({ filters: { netid } }),
       });
       const yaliesJSON = await yaliesResponse.json();
-      const email = yaliesJSON[0].email;
-      const name = `${yaliesJSON[0].first_name} ${yaliesJSON[0].last_name}`;
+      const profile = yaliesJSON[0];
+      const email = profile.email;
+      const name = `${profile.first_name} ${profile.last_name}`;
 
       const currentSeasonId = (await getCurrentSeason())?.year;
       if (!currentSeasonId) {
         throw new Error("Current season is missing");
       }
 
-      const response1 = await fetch(
-        functionUrl("fetchOrAddUser"),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, seasonId: currentSeasonId }),
-        }
-      );
-      const result1 = await response1.json();
+      // First login creates the user (and their current-season doc).
+      const user = await getOrCreateAccount(profile, currentSeasonId);
       // Only pages on this site (no open redirect to other sites).
       const redirectTo = `${BASE_URL.replace(/\/$/, "")}${safeReturnPath(from, BASE_URL)}`;
       const redirectResponse = NextResponse.redirect(redirectTo);
@@ -90,11 +82,11 @@ export async function GET(request: Request): Promise<NextResponse> {
         name,
         netid,
         email,
-        role: result1.user.role ?? "user",
-        mRoles: result1.user.mRoles ?? ["user"],
-        username: result1.user.username ?? "Anonymous",
-        college: result1.user.college ?? "",
-        matches_played: result1.user.matches_played ?? 0,
+        role: user.role ?? "user",
+        mRoles: user.mRoles ?? ["user"],
+        username: user.username ?? "Anonymous",
+        college: user.college ?? "",
+        matches_played: user.matches_played ?? 0,
       });
 
       return redirectResponse;

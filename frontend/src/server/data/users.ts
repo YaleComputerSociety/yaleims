@@ -17,6 +17,57 @@ export interface UserDoc {
   sportsCaptainOf?: string[];
   /** Legacy single role; roles live in mRoles. */
   role?: string;
+  matches_played?: number;
+}
+
+/** Fields of a new user doc. */
+export interface NewUser {
+  email: string;
+  firstname: string;
+  lastname: string;
+  college: string | null;
+}
+
+/**
+ * The user doc, or a newly created one (with an empty doc for `seasonId`)
+ * when there is none. The new user gets `makeUsername(n)`, n being the next
+ * value of the username counter, or "Anonymous" if that name is taken.
+ * Counter, username, user and season docs change in one transaction.
+ */
+export async function getOrCreateUser(
+  newUser: NewUser,
+  seasonId: string,
+  makeUsername: (n: number) => string
+): Promise<{ user: UserDoc; created: boolean }> {
+  const userRef = adminDb.doc(paths.user(newUser.email));
+  const counterRef = adminDb.doc(paths.usernameCounter);
+  return adminDb.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef);
+    if (userSnap.exists) {
+      return { user: userSnap.data() as UserDoc, created: false };
+    }
+    const n = ((await tx.get(counterRef)).data()?.count || 0) + 1;
+    let username = makeUsername(n);
+    const usernameRef = adminDb.doc(paths.username(username));
+    const taken = (await tx.get(usernameRef)).exists;
+    if (taken) {
+      username = "Anonymous";
+    }
+
+    const user = {
+      ...newUser,
+      role: "user", // legacy single role; roles live in mRoles
+      mRoles: ["user"],
+      username,
+    };
+    tx.set(counterRef, { count: n }, { merge: true });
+    if (!taken) {
+      tx.set(usernameRef, { email: newUser.email });
+    }
+    tx.set(userRef, user);
+    tx.set(adminDb.doc(paths.userSeason(newUser.email, seasonId)), { matches: [] });
+    return { user, created: true };
+  });
 }
 
 /** A game a user signed up for, as stored on the user-season doc. */
