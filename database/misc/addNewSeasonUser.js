@@ -1,5 +1,5 @@
 // Season rollover, step 2: give every user an empty users/{email}/seasons/{seasonId}
-// doc (addParticipant requires it).
+// doc (game sign-up, /api/functions/addMatchParticipant, requires it).
 //
 // Usage: node addNewSeasonUser.js 2027-2028 [--prod]
 //

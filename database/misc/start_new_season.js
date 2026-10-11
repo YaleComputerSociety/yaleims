@@ -96,7 +96,7 @@ async function createSeasonDocs() {
       `     Without them the upcoming-matches queries fail and the schedules and signup pages break.\n` +
       `  2. node addNewSeasonUser.js ${seasonId} [--prod]\n` +
       `     Gives every existing user an empty seasons/${seasonId} doc. Until it runs,\n` +
-      `     addParticipant returns 404, so existing users cannot sign up for games.\n` +
+      `     game sign-up returns 404, so existing users cannot sign up for games.\n` +
       `  (Elo is sidelined, so there is no Elo step; see functions/src/sidelined/elo/README.md.)`,
   );
 }

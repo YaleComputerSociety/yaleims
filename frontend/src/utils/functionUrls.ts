@@ -36,13 +36,8 @@ const USE_EMULATOR = process.env.NEXT_PUBLIC_USE_EMULATOR === "true";
  * protection against typos in endpoint names.
  */
 export const FUNCTION_NAMES = [
-  "addParticipant",
-  "removeParticipant",
-  "assignRemoveCaptain",
   "scoreMatch",
   "undoScoreMatch",
-  "setMVP",
-  "updateUsername",
   "fetchOrAddUser",
   "addSchedule",
   "createBracket",
