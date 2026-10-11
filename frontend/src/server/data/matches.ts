@@ -3,6 +3,7 @@ import "server-only";
 import {
   Filter,
   Timestamp,
+  type DocumentData,
   type DocumentReference,
   type Query,
   type Transaction,
@@ -63,6 +64,20 @@ export async function reserveMatchIds(tx: Transaction, n: number): Promise<numbe
   return count + 1;
 }
 
+/**
+ * Creates a match doc inside `tx`; the transaction fails if the id exists.
+ * Untyped data: scheduled and bracket games store fields MatchDoc doesn't
+ * allow (null timestamps and seeds, slot links).
+ */
+export function createMatch(
+  tx: Transaction,
+  seasonId: string,
+  matchId: number,
+  data: DocumentData
+): void {
+  tx.create(adminDb.doc(paths.match(seasonId, matchId)), data);
+}
+
 /** Firestore's error for tx.create on an existing doc (gRPC ALREADY_EXISTS). */
 export function isAlreadyExists(err: unknown): boolean {
   const code = (err as { code?: unknown } | null)?.code;
@@ -94,8 +109,7 @@ export async function addScheduledMatches(
       scheduled.forEach((match, i) => {
         const id = firstId + i;
         const date = new Date(match.timestamp);
-        // Untyped ref: an unparsable date is stored as a null timestamp.
-        tx.create(adminDb.doc(paths.match(seasonId, id)), {
+        createMatch(tx, seasonId, id, {
           id,
           away_college: match.awayCollege,
           away_college_participants: [],
