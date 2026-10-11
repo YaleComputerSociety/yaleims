@@ -1,3 +1,5 @@
+import admin from "./firebaseAdmin.js";
+
 export interface DecodedToken {
   name: string;
   netid: string;
@@ -30,100 +32,15 @@ export function tokenHasRole(decoded: any, allowed: string[]): boolean {
   return allowed.some((role) => roles.includes(role));
 }
 
-
-export interface Sport {
-  id: number;
-  name: string;
-  points: number;
-  season: string;
-  emoji: string;
-}
-
-export const sports: { [key: string]: Sport } = {
-  Soccer: { id: 1, name: "Soccer", points: 11, season: "fall", emoji: "⚽" },
-  "Flag Football": {
-    id: 2,
-    name: "Flag Football",
-    points: 6,
-    season: "fall",
-    emoji: "🏈",
-  },
-  Spikeball: {
-    id: 3,
-    name: "Spikeball",
-    points: 6,
-    season: "fall",
-    emoji: "🦔",
-  },
-  Cornhole: { id: 4, name: "Cornhole", points: 6, season: "fall", emoji: "🌽" },
-  Pickleball: {
-    id: 5,
-    name: "Pickleball",
-    points: 6,
-    season: "fall",
-    emoji: "🥒",
-  },
-  "Table Tennis": {
-    id: 6,
-    name: "Table Tennis",
-    points: 10,
-    season: "fall",
-    emoji: "🏓",
-  },
-  "WHoops": {
-    id: 7,
-    name: "WHoops",
-    points: 5,
-    season: "winter",
-    emoji: "🏀",
-  },
-  "MHoops": {
-    id: 8,
-    name: "MHoops",
-    points: 5,
-    season: "winter",
-    emoji: "🏀",
-  },
-  "CHoops": {
-    id: 9,
-    name: "CHoops",
-    points: 5,
-    season: "winter",
-    emoji: "🏀",
-  },
-  Dodgeball: {
-    id: 10,
-    name: "Dodgeball",
-    points: 8,
-    season: "winter",
-    emoji: "🤾",
-  },
-  Broomball: {
-    id: 11,
-    name: "Broomball",
-    points: 6,
-    season: "winter",
-    emoji: "🧹",
-  },
-  "Indoor Soccer": {
-    id: 12,
-    name: "Indoor Soccer",
-    points: 5,
-    season: "spring",
-    emoji: "🥅",
-  },
-  Volleyball: {
-    id: 13,
-    name: "Volleyball",
-    points: 6,
-    season: "spring",
-    emoji: "🏐",
-  },
-  Badminton: {
-    id: 14,
-    name: "Badminton",
-    points: 6,
-    season: "spring",
-    emoji: "🏸",
-  },
+/** points_for_win of the sport named `sportName` (0 if unset); throws if none. */
+export const getPointsForWinBySportName = async (sportName: string) => {
+  const querySnapshot = await admin
+    .firestore()
+    .collection("sports")
+    .where("name", "==", sportName)
+    .get();
+  if (querySnapshot.empty) {
+    throw new Error(`No sport found with the name: ${sportName}`);
+  }
+  return querySnapshot.docs[0].data().points_for_win || 0;
 };

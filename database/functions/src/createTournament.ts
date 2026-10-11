@@ -2,8 +2,11 @@ import * as functions from "firebase-functions";
 import admin from "./firebaseAdmin.js";
 import { corsHandler } from "./cors.js";
 import { authenticateRequest } from "./auth.js";
-import { isValidDecodedToken, tokenHasRole } from "./helpers.js";
-import { getPointsForWinBySportName } from "./scoreMatch.js";
+import {
+  getPointsForWinBySportName,
+  isValidDecodedToken,
+  tokenHasRole,
+} from "./helpers.js";
 import {
   TOURNAMENT_SLOT_COUNT,
   THIRD_PLACE_SLOT,
