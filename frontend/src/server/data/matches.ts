@@ -11,8 +11,43 @@ import {
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { MatchJson } from "@/types/api";
-import type { MatchDoc } from "@/types/firestore";
-import { isNotFound, withId } from "./util";
+import type { MatchDoc, MatchParticipant } from "@/types/firestore";
+import { isNotFound, pickFields } from "./util";
+
+const MATCH_FIELDS: Record<keyof MatchDoc, true> = {
+  id: true, sport: true, type: true,
+  home_college: true, away_college: true,
+  home_college_score: true, away_college_score: true,
+  home_college_participants: true, away_college_participants: true,
+  winner: true, forfeit: true, timestamp: true,
+  location: true, location_extra: true, division: true,
+  home_seed: true, away_seed: true,
+  next_match_id: true, next_match_loser_id: true, playoff_bracket_slot: true,
+  tournament_id: true, tournament_name: true,
+};
+
+const PARTICIPANT_FIELDS: Record<keyof MatchParticipant, true> = {
+  email: true, name: true, firstname: true, lastname: true,
+};
+
+/**
+ * A stored match as reads return it: MatchDoc's fields only, and roster
+ * entries only MatchParticipant's (D25). Old docs also hold frozen
+ * odds/betting fields and roster entries copied from whole user docs;
+ * those stay in Firestore.
+ */
+function readMatch(data: DocumentData): MatchDoc {
+  const match = pickFields<MatchDoc>(data, MATCH_FIELDS);
+  for (const side of ["home_college_participants", "away_college_participants"] as const) {
+    const roster = match[side];
+    if (Array.isArray(roster)) {
+      match[side] = roster.map((p) =>
+        p && typeof p === "object" ? pickFields<MatchParticipant>(p, PARTICIPANT_FIELDS) : p
+      );
+    }
+  }
+  return match;
+}
 
 /**
  * Reserves `n` new match ids from counters/matches, which holds the last id
@@ -112,7 +147,7 @@ export async function getMatch(
   matchId: string | number
 ): Promise<MatchDoc | null> {
   const snap = await adminDb.doc(paths.match(seasonId, matchId)).get();
-  return snap.exists ? (snap.data() as MatchDoc) : null;
+  return snap.exists ? readMatch(snap.data()!) : null;
 }
 
 /** Updates fields of an existing match. Returns false if it doesn't exist. */
@@ -144,7 +179,8 @@ export async function listUnscoredPastMatches(
     .where("timestamp", "<", now)
     .orderBy("timestamp", "asc")
     .get();
-  return snap.docs.map((d) => withId<MatchDoc>(d));
+  // { id: doc id, ...doc }, so the stored numeric id wins.
+  return snap.docs.map((d) => Object.assign({ id: d.id }, readMatch(d.data())));
 }
 
 /**
@@ -168,7 +204,7 @@ export async function listUpcomingCollegeMatches(
       .get();
   const [home, away] = await Promise.all([side("home_college"), side("away_college")]);
   return [...home.docs, ...away.docs]
-    .map((d) => d.data() as MatchDoc)
+    .map((d) => readMatch(d.data()))
     .sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
 }
 
@@ -270,7 +306,7 @@ export async function listSeasonMatches(
     query = query.offset(page.offset).limit(page.limit);
   }
   const snap = await query.get();
-  return snap.docs.map((d) => ({ docId: d.id, seasonId, match: d.data() as MatchDoc }));
+  return snap.docs.map((d) => ({ docId: d.id, seasonId, match: readMatch(d.data()) }));
 }
 
 /**
@@ -292,7 +328,7 @@ export async function listPlayedMatchesAllSeasons(
         .where("timestamp", "<", range.before);
       if (range.from) query = query.where("timestamp", ">=", range.from);
       const snap = await query.get();
-      return snap.docs.map((d) => ({ docId: d.id, seasonId, match: d.data() as MatchDoc }));
+      return snap.docs.map((d) => ({ docId: d.id, seasonId, match: readMatch(d.data()) }));
     })
   );
   const played = perSeason

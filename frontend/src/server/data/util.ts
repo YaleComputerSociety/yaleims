@@ -1,5 +1,5 @@
 import "server-only";
-import type { DocumentSnapshot, Transaction } from "firebase-admin/firestore";
+import type { DocumentData, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import type { WithId } from "@/types/firestore";
 
@@ -9,6 +9,18 @@ import type { WithId } from "@/types/firestore";
  */
 export function runTransaction<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> {
   return adminDb.runTransaction(fn);
+}
+
+/**
+ * Only the given fields of stored data, in stored order. Reads use it so
+ * they return a document's typed fields, not the frozen betting fields old
+ * docs still hold (D25). `fields` must list every key of T. Read-only:
+ * never write the result back over a document.
+ */
+export function pickFields<T>(data: DocumentData, fields: Record<keyof T, true>): T {
+  return Object.fromEntries(
+    Object.entries(data).filter(([key]) => Object.hasOwn(fields, key))
+  ) as T;
 }
 
 export function withId<T>(snap: DocumentSnapshot): WithId<T> {

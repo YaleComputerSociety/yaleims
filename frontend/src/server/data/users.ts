@@ -1,7 +1,7 @@
 // Users: users/{email}, their per-season docs users/{email}/seasons/{seasonId},
 // and usernames/{username} (which user holds a username).
 import "server-only";
-import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
+import { FieldValue, type DocumentData, type DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type {
@@ -10,7 +10,36 @@ import type {
   UserSeasonMatch,
   WithId,
 } from "@/types/firestore";
-import { isNotFound, withId } from "./util";
+import { isNotFound, pickFields } from "./util";
+
+const USER_FIELDS: Record<keyof UserDoc, true> = {
+  email: true, firstname: true, lastname: true, college: true, username: true,
+  mRoles: true, sportsCaptainOf: true, role: true, matches_played: true,
+};
+
+const SIGNUP_FIELDS: Record<keyof UserSeasonMatch, true> = { id: true, timestamp: true };
+
+/** A stored user as reads return it: UserDoc's fields only, no frozen betting fields (D25). */
+function readUser(data: DocumentData): UserDoc {
+  return pickFields<UserDoc>(data, USER_FIELDS);
+}
+
+/**
+ * A stored user-season doc as reads return it: only `matches`, each signup
+ * only { id, timestamp } (some old entries copy a whole match, rosters
+ * included). A non-array `matches` is returned as stored (D25).
+ */
+function readUserSeason(data: DocumentData): UserSeasonDoc {
+  const { matches } = data;
+  if (matches === undefined) return {};
+  return {
+    matches: Array.isArray(matches)
+      ? matches.map((m) =>
+          m && typeof m === "object" ? pickFields<UserSeasonMatch>(m, SIGNUP_FIELDS) : m
+        )
+      : matches,
+  };
+}
 
 /** Fields of a new user doc. */
 export interface NewUser {
@@ -36,7 +65,7 @@ export async function getOrCreateUser(
   return adminDb.runTransaction(async (tx) => {
     const userSnap = await tx.get(userRef);
     if (userSnap.exists) {
-      return { user: userSnap.data() as UserDoc, created: false };
+      return { user: readUser(userSnap.data()!), created: false };
     }
     const n = ((await tx.get(counterRef)).data()?.count || 0) + 1;
     let username = makeUsername(n);
@@ -64,7 +93,7 @@ export async function getOrCreateUser(
 
 export async function getUser(email: string): Promise<UserDoc | null> {
   const snap = await adminDb.doc(paths.user(email)).get();
-  return snap.exists ? (snap.data() as UserDoc) : null;
+  return snap.exists ? readUser(snap.data()!) : null;
 }
 
 /** Users holding `role` in mRoles, across all colleges. */
@@ -73,7 +102,7 @@ export async function listUsersWithRole(role: string): Promise<WithId<UserDoc>[]
     .collection(paths.users)
     .where("mRoles", "array-contains", role)
     .get();
-  return snap.docs.map((d) => withId<UserDoc>(d));
+  return snap.docs.map((d) => ({ id: d.id, ...readUser(d.data()) }));
 }
 
 /** Users of `college` holding any of `roles` in mRoles. */
@@ -86,7 +115,7 @@ export async function listCollegeUsersWithAnyRole(
     .where("college", "==", college)
     .where("mRoles", "array-contains-any", roles)
     .get();
-  return snap.docs.map((d) => withId<UserDoc>(d));
+  return snap.docs.map((d) => ({ id: d.id, ...readUser(d.data()) }));
 }
 
 /** Sets mRoles and sportsCaptainOf. Returns false if the user doesn't exist. */
@@ -176,7 +205,7 @@ export async function listCollegeUsers(college: string): Promise<UserDoc[]> {
     .collection(paths.users)
     .where("college", "==", college)
     .get();
-  return snap.docs.map((d) => d.data() as UserDoc);
+  return snap.docs.map((d) => readUser(d.data()));
 }
 
 /** The user-season doc, for services that change it in a transaction. */
@@ -192,7 +221,7 @@ export async function getUserSeason(
   seasonId: string
 ): Promise<UserSeasonDoc | null> {
   const snap = await adminDb.doc(paths.userSeason(email, seasonId)).get();
-  return snap.exists ? (snap.data() as UserSeasonDoc) : null;
+  return snap.exists ? readUserSeason(snap.data()!) : null;
 }
 
 /**
