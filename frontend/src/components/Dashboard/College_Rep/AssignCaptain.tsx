@@ -2,35 +2,25 @@ import { seasonSports } from "@src/utils/helpers";
 import { useSeason } from "@src/context/SeasonContext";
 import { useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "@src/components/LoadingSpinner";
-
-interface User {
-  email: string;
-  firstName?: string; lastName?: string;
-  firstname?: string; lastname?: string;
-  captain?: string[];
-}
-
-interface Captain {
-  email: string;
-  sportsCaptainOf: string[];
-}
+import type { CollegeCaptain, UsersInCollegeResponse } from "@src/types/api";
+import type { UserDoc } from "@src/types/firestore";
 
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();
-  const [usersInCollege, setUsersInCollege] = useState<User[]>([]);
-  const [currentCaptains, setCurrentCaptains] = useState<Captain[]>([]);
+  const [usersInCollege, setUsersInCollege] = useState<UserDoc[]>([]);
+  const [currentCaptains, setCurrentCaptains] = useState<CollegeCaptain[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [selectSport, setSelectSport] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectUser, setSelectUser] = useState<User | null>(null);
+  const [selectUser, setSelectUser] = useState<UserDoc | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const nameOf = (u: User) =>
-    `${u.firstName ?? u.firstname ?? ""} ${u.lastName ?? u.lastname ?? ""}`.trim();
+  const nameOf = (u: UserDoc) =>
+    `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,7 +28,7 @@ export default function AssignCaptain() {
     try {
       const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=true");
       if (!res.ok) throw new Error(res.statusText);
-      const data = await res.json();
+      const data: UsersInCollegeResponse = await res.json();
       setUsersInCollege(Array.isArray(data?.users) ? data.users : []);
       setCurrentCaptains(Array.isArray(data?.captains) ? data.captains : []);
     } catch (err: any) {
@@ -56,13 +46,13 @@ export default function AssignCaptain() {
     if (!term) return [];
     return usersInCollege.filter((u) => {
       const full = nameOf(u).toLowerCase();
-      return full.includes(term) || u.email.toLowerCase().includes(term);
+      return full.includes(term) || (u.email ?? "").toLowerCase().includes(term);
     });
   }, [searchTerm, usersInCollege]);
 
   // captains grouped by sport
   const captainsBySport = useMemo(() => {
-    const map: Record<string, Captain[]> = {};
+    const map: Record<string, CollegeCaptain[]> = {};
     for (const c of currentCaptains) {
       for (const s of c.sportsCaptainOf ?? []) {
         (map[s] ||= []).push(c);

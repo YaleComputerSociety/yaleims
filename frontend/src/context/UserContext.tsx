@@ -11,13 +11,13 @@ import {
 } from "react";
 import { db } from "../../lib/firebase";
 import { paths } from "@/lib/paths";
-import { User } from "@src/types/components";
+import type { SessionUser, VerifyResponse } from "@src/types/api";
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  user: User | null;
+  user: SessionUser | null;
   loading: boolean;
-  setUser: React.Dispatch<React.SetStateAction<User | null>> | null;
+  setUser: React.Dispatch<React.SetStateAction<SessionUser | null>> | null;
   casSignOut: () => Promise<void>;
   checkCasAuth: () => Promise<void>;
 }
@@ -37,7 +37,7 @@ const LOGOUT_KEY = "logout_version";
 let authCheckPromise: Promise<void> | null = null;
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -81,9 +81,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     authCheckPromise = fetch("/api/auth/verify")
       .then(async (response) => {
         if (response.ok) {
-          const data = await response.json();
+          const data: VerifyResponse = await response.json();
           setIsLoggedIn(data.isLoggedIn);
-          setUser(data.user);
+          setUser(data.isLoggedIn ? data.user : null);
         } else {
           setIsLoggedIn(false);
           setUser(null);

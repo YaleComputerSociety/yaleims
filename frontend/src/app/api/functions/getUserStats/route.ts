@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserSeason } from "@/server/data/users";
+import type { UserStatsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -17,7 +18,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     // Only games played; the user-season doc still holds frozen betting fields.
     const userSeason = await getUserSeason(email, seasonId);
     return NextResponse.json(
-      { matches: userSeason?.matches ?? [] },
+      { matches: userSeason?.matches ?? [] } satisfies UserStatsResponse,
       { status: 200 }
     );
   } catch (err) {

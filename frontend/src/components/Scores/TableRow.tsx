@@ -1,7 +1,7 @@
 import Image from "next/image";
 import TournamentBadge from "@src/components/ui/TournamentBadge";
 import { getMatchTypeLabel } from "@src/utils/helpers";
-import { toCollegeName, sportsMap, emojiMap } from "@src/utils/helpers";
+import { toCollegeName, sportsMap, emojiMap, matchDate } from "@src/utils/helpers";
 import { TableRowProps } from "@src/types/components";
 import { useState } from "react";
 import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
@@ -27,8 +27,8 @@ const TableRow: React.FC<TableRowProps> = ({
 
   const [unscored, setUnscored] = useState(false);
 
-  const getTimeString = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString("en-US", {
+  const getTimeString = (timestamp: string | null) => {
+    return matchDate(timestamp).toLocaleString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,

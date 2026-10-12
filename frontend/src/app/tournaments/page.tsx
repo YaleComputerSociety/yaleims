@@ -14,7 +14,7 @@ import { useNavbar } from "@src/context/NavbarContext";
 import PageHeading from "@src/components/PageHeading";
 import { getVersionedImage } from "@/utils/versionedImages";
 import useElementHeight from "@src/hooks/useElementHeight";
-import { Tournament, TournamentBracketMatch } from "@src/types/components";
+import type { TournamentJson, TournamentSlotJson, TournamentsResponse } from "@src/types/api";
 import BracketConnectorSvg, {
   TOURNAMENT_EDGES,
   useBracketConnectors,
@@ -52,7 +52,7 @@ const TournamentsPage: React.FC = () => {
   const [season, setSeason] = useState<string>(
     currentSeason?.year || currentYear
   );
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [matchDetails, setMatchDetails] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<boolean>(false);
@@ -79,8 +79,8 @@ const TournamentsPage: React.FC = () => {
         );
         if (!response.ok) throw new Error("Failed to load tournaments");
 
-        const data = await response.json();
-        const list: Tournament[] = data.tournaments || [];
+        const data: TournamentsResponse = await response.json();
+        const list: TournamentJson[] = data.tournaments || [];
         setTournaments(list);
         setSelectedId(list.length > 0 ? list[0].id : "");
         if (list.length === 0) {
@@ -104,7 +104,7 @@ const TournamentsPage: React.FC = () => {
     [tournaments, selectedId]
   );
 
-  const bracket: TournamentBracketMatch[] | null = useMemo(() => {
+  const bracket: TournamentSlotJson[] | null = useMemo(() => {
     if (!selected) return null;
     return [...selected.matches].sort(
       (a, b) => a.bracket_placement - b.bracket_placement

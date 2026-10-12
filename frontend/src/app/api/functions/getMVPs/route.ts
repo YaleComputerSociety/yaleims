@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionToken } from "@/server/session";
 import { listCollegeMvps } from "@/server/data/mvps";
+import type { MvpsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -26,7 +27,9 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    return NextResponse.json(await listCollegeMvps(seasonId, collegeId));
+    return NextResponse.json(
+      (await listCollegeMvps(seasonId, collegeId)) satisfies MvpsResponse
+    );
   } catch (err) {
     console.error("Error in getMvps:", err);
     return NextResponse.json(

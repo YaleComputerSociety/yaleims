@@ -4,6 +4,7 @@
 // college standings, so each runs in one transaction.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
+import type { PlacementPoints } from "@/types/firestore";
 import { collegeStandingRef, recalculateRanks } from "../data/colleges";
 import { isAlreadyExists } from "../data/matches";
 import { tournamentRef } from "../data/tournaments";
@@ -24,12 +25,6 @@ export const THIRD_PLACE_SLOT = 16;
 const TOURNAMENT_SLOTS = BRACKET_SLOTS + 1;
 /** Semifinal losers drop into the third place game. */
 const LOSER_SLOT: Record<number, number> = { 13: THIRD_PLACE_SLOT, 14: THIRD_PLACE_SLOT };
-
-export interface PlacementPoints {
-  first: number;
-  second: number;
-  third: number;
-}
 
 export const DEFAULT_PLACEMENT_POINTS: PlacementPoints = {
   first: 20,

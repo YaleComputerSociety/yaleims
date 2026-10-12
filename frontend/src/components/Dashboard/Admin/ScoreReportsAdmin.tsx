@@ -4,24 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FaSpinner, FaCheck } from "react-icons/fa";
 import { useSeason } from "@src/context/SeasonContext";
 import { toast } from "react-toastify";
-
-interface ScoreReportItem {
-  id: string;
-  reason: string;
-  reportedBy: string;
-  reportedByEmail: string;
-  reportedAt: { _seconds: number; _nanoseconds?: number } | string;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: { _seconds: number; _nanoseconds?: number } | string;
-  matchId: string;
-  season: string;
-  matchHomeCollege?: string;
-  matchAwayCollege?: string;
-  homeScore?: number;
-  awayScore?: number;
-  sport?: string;
-}
+import type { ScoreReport, ScoreReportsResponse } from "@src/types/api";
 
 function formatReportDate(raw: { _seconds: number } | string): string {
   if (typeof raw === "string") return raw;
@@ -34,7 +17,7 @@ function formatReportDate(raw: { _seconds: number } | string): string {
 const ScoreReportsAdmin: React.FC = () => {
   const { currentSeason } = useSeason();
   const season = currentSeason?.year ?? "";
-  const [reports, setReports] = useState<ScoreReportItem[]>([]);
+  const [reports, setReports] = useState<ScoreReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
@@ -45,7 +28,7 @@ const ScoreReportsAdmin: React.FC = () => {
         `/api/functions/getScoreReports?season=${encodeURIComponent(season)}&all=true`
       );
       if (res.ok) {
-        const data = await res.json();
+        const data: ScoreReportsResponse = await res.json();
         setReports(data.reports ?? []);
       } else {
         setReports([]);
@@ -61,7 +44,7 @@ const ScoreReportsAdmin: React.FC = () => {
     fetchReports();
   }, [fetchReports]);
 
-  const handleResolve = async (report: ScoreReportItem) => {
+  const handleResolve = async (report: ScoreReport) => {
     setResolvingId(report.id);
     try {
       const res = await fetch("/api/functions/resolveScoreReport", {

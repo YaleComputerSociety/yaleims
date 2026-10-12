@@ -14,12 +14,9 @@ import {
   validateTournamentData,
   TOURNAMENT_SLOT_COUNT,
 } from "@src/utils/helpers";
-import {
-  ParsedMatch,
-  PlacementPoints,
-  Tournament,
-  TournamentData,
-} from "@src/types/components";
+import { ParsedMatch, TournamentData } from "@src/types/components";
+import type { TournamentJson } from "@src/types/api";
+import type { PlacementPoints } from "@src/types/firestore";
 import { useSeason } from "@src/context/SeasonContext";
 
 // Slot labels mirror the bracket the backend builds, so an admin filling the
@@ -93,7 +90,7 @@ const TournamentAdminPanel: React.FC = () => {
     useState<PlacementPoints>(DEFAULT_PLACEMENT);
   const [matches, setMatches] = useState<ParsedMatch[]>(buildEmptyMatches);
   const [creating, setCreating] = useState(false);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string>("");
   const [listError, setListError] = useState<string>("");
@@ -220,7 +217,7 @@ const TournamentAdminPanel: React.FC = () => {
     }
   };
 
-  const handleDelete = async (tournament: Tournament, force = false) => {
+  const handleDelete = async (tournament: TournamentJson, force = false) => {
     if (
       !force &&
       !window.confirm(

@@ -4,6 +4,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import Pagination from "@src/components/Scores/Pagination";
 import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
 import LoadingSpinner from "@src/components/LoadingSpinner";
+import type { CaptainSportsResponse, MatchPageResponse } from "@src/types/api";
 
 const ViewTeamSignups = () => {
   const { user } = useUser();
@@ -45,7 +46,7 @@ const ViewTeamSignups = () => {
     try {
       const response = await fetch(`/api/functions/getCaptainSports?email=${user.email}`);
       if (!response.ok) throw new Error("Error fetching captain sports");
-      const data = await response.json();
+      const data: CaptainSportsResponse = await response.json();
       const list = Array.isArray(data) ? data : [];
       setCaptainSports(list);
       if (list.length > 0) setSelectedSport(list[0]);
@@ -103,10 +104,11 @@ const ViewTeamSignups = () => {
         if (!response.ok)
           throw new Error(`Error fetching matches: ${response.statusText}`);
 
-        const data = await response.json();
+        const data: MatchPageResponse = await response.json();
         setFilteredMatches(Array.isArray(data.matches) ? data.matches : []);
-        if (data.firstVisible) setFirstVisible(data.firstVisible);
-        if (data.lastVisible) setLastVisible(data.lastVisible);
+        // Cursors are match ids; the URL carries them as text.
+        if (data.firstVisible) setFirstVisible(String(data.firstVisible));
+        if (data.lastVisible) setLastVisible(String(data.lastVisible));
         if (data.totalPages) setTotalPages(data.totalPages);
       } catch (error) {
         console.error("Failed to fetch matches:", error);

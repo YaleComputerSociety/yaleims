@@ -1,5 +1,6 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
 import { listCollegeUsers } from "@/server/data/users";
+import type { UsersInCollegeResponse } from "@/types/api";
 
 /**
  * The college rep's own college: all its users, plus its captains when
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
       return Response.json({ error: "No users found" }, { status: 404 });
     }
     if (new URL(req.url).searchParams.get("wantCaptains") !== "true") {
-      return Response.json({ users });
+      return Response.json({ users } satisfies UsersInCollegeResponse);
     }
 
     const captains = users
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
         email: u.email,
         sportsCaptainOf: u.sportsCaptainOf,
       }));
-    return Response.json({ users, captains });
+    return Response.json({ users, captains } satisfies UsersInCollegeResponse);
   } catch (err) {
     console.error("Error fetching users in college:", err);
     return new Response("Internal Server Error", { status: 500 });

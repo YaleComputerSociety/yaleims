@@ -1,4 +1,5 @@
 import { listCollegeStandings } from "@/server/data/colleges";
+import type { LeaderboardEntry, RouteBody } from "@/types/api";
 
 /** A season's college standings, best first. */
 export async function GET(req: Request) {
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
     if (standings.length === 0) {
       return new Response("No colleges found.", { status: 404 });
     }
-    return Response.json(standings);
+    return Response.json(standings satisfies RouteBody<LeaderboardEntry[]>);
   } catch (err) {
     console.error("Error fetching leaderboard:", err);
     return new Response("Internal Server Error", { status: 500 });

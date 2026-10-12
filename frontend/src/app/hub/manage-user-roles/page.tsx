@@ -4,7 +4,7 @@ import PageHeading from "@src/components/PageHeading";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
 import React, { useState, useEffect, useMemo } from "react";
 import { colleges, sports } from "@src/utils/helpers";
-import { User } from "@src/types/components";
+import type { UserDoc, WithId } from "@src/types/firestore";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "captain", "college_rep", "user"];
@@ -76,7 +76,7 @@ const ManageUserRolesPage = () => {
   const [selectedCollege, setSelectedCollege] = useState<string>(
     dropdownOptions[0] || ""
   );
-  const [specialRoleUsers, setSpecialRoleUsers] = useState<User[]>([]);
+  const [specialRoleUsers, setSpecialRoleUsers] = useState<WithId<UserDoc>[]>([]);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editingRoles, setEditingRoles] = useState<string[]>([]);
   const [editingSportsCaptainOf, setEditingSportsCaptainOf] = useState<
@@ -111,7 +111,7 @@ const ManageUserRolesPage = () => {
 
   // Group users by role
   const usersByRole = useMemo(() => {
-    const grouped: Record<string, User[]> = {
+    const grouped: Record<string, WithId<UserDoc>[]> = {
       admin: [],
       dev: [],
       captain: [],
@@ -207,7 +207,7 @@ const ManageUserRolesPage = () => {
     );
   };
 
-  const RoleTable = ({ role, users }: { role: string; users: User[] }) => {
+  const RoleTable = ({ role, users }: { role: string; users: WithId<UserDoc>[] }) => {
     if (users.length === 0) return null;
 
     return (
@@ -346,7 +346,7 @@ const ManageUserRolesPage = () => {
                     {editingUser === user.email ? (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => saveRoleChanges(user.email)}
+                          onClick={() => saveRoleChanges(user.email ?? user.id)}
                           className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 font-medium"
                         >
                           Done
@@ -362,7 +362,7 @@ const ManageUserRolesPage = () => {
                       <button
                         onClick={() =>
                           startEditing(
-                            user.email,
+                            user.email ?? user.id, // the doc id is the email
                             user.mRoles || [],
                             user.sportsCaptainOf || []
                           )

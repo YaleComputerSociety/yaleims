@@ -12,17 +12,18 @@ import React, { useState } from "react";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { toast } from "react-toastify";
 import { FaEdit, FaSpinner } from "react-icons/fa";
-import { Match } from "@src/types/components";
+import type { MatchJson } from "@src/types/api";
+import type { ScheduleMatch } from "@src/types/components";
 import { useUser } from "@src/context/UserContext";
 
 interface EditMatchModalProps {
   setModalOpen: (value: React.SetStateAction<boolean>) => void;
-  match?: Match;
+  match?: MatchJson | ScheduleMatch;
   setUnscored?: (value: React.SetStateAction<boolean>) => void;
 }
 
 interface EditMatchButtonProps {
-  match: Match;
+  match: MatchJson | ScheduleMatch;
   setUnscored?: (value: React.SetStateAction<boolean>) => void;
 }
 
@@ -321,7 +322,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
                     <input
                       className="w-full border rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                       type="number"
-                      defaultValue={match.home_college_score}
+                      defaultValue={match.home_college_score ?? undefined}
                       name="home_college_score"
                     />
                   </div>
@@ -332,7 +333,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
                     <input
                       className="w-full border rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
                       type="number"
-                      defaultValue={match.away_college_score}
+                      defaultValue={match.away_college_score ?? undefined}
                       name="away_college_score"
                     />
                   </div>

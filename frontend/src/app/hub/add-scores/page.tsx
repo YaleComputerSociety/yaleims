@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Matchv2 as Match } from "@src/types/components";
+import type { UnscoredMatch, UnscoredMatchesResponse } from "@src/types/api";
 import MatchCard from "@src/components/AddScores/MatchCard";
 import LoadingScreen from "@src/components/LoadingScreen";
 import { useSeason } from "@src/context/SeasonContext";
@@ -13,11 +13,11 @@ import AddScoresFilterBar, {
   AddScoresSortOrder,
 } from "@src/components/AddScores/AddScoresFilterBar";
 
-const matchTime = (match: Match) =>
+const matchTime = (match: UnscoredMatch) =>
   match.timestamp._seconds * 1000 + match.timestamp._nanoseconds / 1000000;
 
 const AddScoresPage: React.FC = () => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<UnscoredMatch[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [unscoreId, setUnscoreId] = useState<string>(""); // For unscore input
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
@@ -27,7 +27,7 @@ const AddScoresPage: React.FC = () => {
   const [collegeFilter, setCollegeFilter] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<AddScoresSortOrder>("oldest");
-  const [scoredIds, setScoredIds] = useState<Set<string>>(new Set());
+  const [scoredIds, setScoredIds] = useState<Set<UnscoredMatch["id"]>>(new Set());
   const { currentSeason, seasonLoading } = useSeason();
   const year = currentSeason?.year || currentYear;
 
@@ -40,7 +40,7 @@ const AddScoresPage: React.FC = () => {
         );
 
         if (response.ok) {
-          const data = await response.json();
+          const data: UnscoredMatchesResponse = await response.json();
           setMatches(data.matches);
           setScoredIds(new Set());
         }
@@ -114,7 +114,7 @@ const AddScoresPage: React.FC = () => {
     );
   }, [matchList, sportFilter, collegeFilter, search]);
 
-  const handleScored = (matchId: string) =>
+  const handleScored = (matchId: UnscoredMatch["id"]) =>
     setScoredIds((prev) => new Set(prev).add(matchId));
 
   const remainingCount = matchList.filter((m) => !scoredIds.has(m.id)).length;

@@ -3,15 +3,12 @@ import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import Image from "next/image";
 import { getCollegeFlag } from "@/utils/versionedImages";
-
-interface UserStats {
-  matches: any[];
-}
+import type { UserStatsResponse } from "@src/types/api";
 
 export default function HeroStats() {
   const { user } = useUser();
   const { currentSeason } = useSeason();
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [userStats, setUserStats] = useState<UserStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +21,7 @@ export default function HeroStats() {
           `/api/functions/getUserStats?seasonId=${currentSeason?.year}&email=${user.email}`
         );
         if (!response.ok) throw new Error("Error fetching user stats");
-        const data = await response.json();
+        const data: UserStatsResponse = await response.json();
         setUserStats(data);
       } catch (error) {
         console.error("Failed to fetch stats:", error);
@@ -63,7 +60,7 @@ export default function HeroStats() {
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">
-            Welcome back, {user.firstname || user.name?.split(" ")[0] || "there"}! 👋
+            Welcome back, {user.name?.split(" ")[0] || "there"}! 👋
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
             {user.college} • {currentSeason?.year} {currentSeason?.season ? currentSeason.season.charAt(0).toUpperCase() + currentSeason.season.slice(1) : ""} Season

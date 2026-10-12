@@ -6,12 +6,12 @@ import React from "react";
 import LoadingScreen from "../LoadingScreen";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
-import { Match } from "@src/types/components";
+import type { MatchJson } from "@src/types/api";
 
 interface UndoScoreMatchModalProps {
   unscoreId: string;
   setShowConfirmation: (value: React.SetStateAction<boolean>) => void;
-  match?: Match;
+  match?: MatchJson;
   setUnscored?: (value: React.SetStateAction<boolean>) => void;
 
   // these will only be used if it's coming from the add scores page

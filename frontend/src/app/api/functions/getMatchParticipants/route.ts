@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMatch } from "@/server/data/matches";
+import type { MatchParticipantsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -24,7 +25,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     return NextResponse.json({
       home_college_participants: match?.home_college_participants || [],
       away_college_participants: match?.away_college_participants || [],
-    });
+    } satisfies MatchParticipantsResponse);
   } catch (err) {
     console.error("Error in getMatchParticipants:", err);
     return NextResponse.json(

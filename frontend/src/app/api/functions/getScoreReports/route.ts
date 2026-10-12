@@ -4,29 +4,10 @@ import {
   listMatchScoreReports,
   listSeasonScoreReports,
 } from "@/server/data/scoreReports";
+import type { ScoreReport, ScoreReportsResponse, SerializedTimestamp } from "@/types/api";
 import type { ScoreReportDoc, StoredTimestamp, WithId } from "@/types/firestore";
 
-type ApiTimestamp = { _seconds: number; _nanoseconds?: number };
-
-export interface ScoreReport {
-  id: string;
-  reason: string;
-  reportedBy: string;
-  reportedByEmail: string;
-  reportedAt: ApiTimestamp | string;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: ApiTimestamp | string;
-  matchId: string;
-  season: string;
-  matchHomeCollege?: string | null;
-  matchAwayCollege?: string | null;
-  homeScore?: number | null;
-  awayScore?: number | null;
-  sport?: string | null;
-}
-
-const apiTimestamp = (ts: StoredTimestamp | undefined | null): ApiTimestamp | undefined =>
+const apiTimestamp = (ts: StoredTimestamp | undefined | null): SerializedTimestamp | undefined =>
   ts ? { _seconds: ts.seconds, _nanoseconds: ts.nanoseconds } : undefined;
 
 function formatReport(
@@ -80,7 +61,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       const reports = (await listSeasonScoreReports(season)).map((r) =>
         formatReport(r, r.matchId, season)
       );
-      return NextResponse.json({ reports }, { status: 200 });
+      return NextResponse.json({ reports } satisfies ScoreReportsResponse, { status: 200 });
     }
 
     if (!matchId) {
@@ -93,7 +74,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     const reports = (await listMatchScoreReports(season, matchId)).map((r) =>
       formatReport(r, matchId, season)
     );
-    return NextResponse.json({ reports }, { status: 200 });
+    return NextResponse.json({ reports } satisfies ScoreReportsResponse, { status: 200 });
   } catch (err) {
     console.error("Error fetching score reports:", err);
     return NextResponse.json(

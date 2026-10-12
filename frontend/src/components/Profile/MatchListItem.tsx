@@ -5,13 +5,13 @@ import {
   emojiMap,
   generateGoogleCalendarLink,
 } from "@src/utils/helpers";
-import { Match } from "@src/types/components";
+import type { CollegeMatchJson } from "@src/types/api";
 import { useUser } from "../../context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import { currentYear } from "@src/utils/helpers";
 
 interface MatchListItemProps {
-  match: Match;
+  match: CollegeMatchJson;
   user: any;
   isSignedUp: boolean; // Initial state from parent
 }

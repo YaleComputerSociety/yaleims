@@ -1,5 +1,5 @@
 import { useGoogleLogin } from "@react-oauth/google";
-import {Match} from "@src/types/components"
+import type { MatchJson } from "@src/types/api";
 
 let cachedToken: string | null = null;
 let tokenExpiryTime: number | null = null;
@@ -16,7 +16,7 @@ export const useAddToGCal = () => {
     scope: "https://www.googleapis.com/auth/calendar.events",
   });
 
-  const addToGCal = async (match: Match) => {
+  const addToGCal = async (match: MatchJson) => {
     try {
       if (!cachedToken || (tokenExpiryTime && Date.now() >= tokenExpiryTime)) {
         await triggerGoogleLogin();

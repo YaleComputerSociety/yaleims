@@ -5,20 +5,13 @@ import "server-only";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import type { SessionUser } from "@/types/api";
 
 export const SESSION_COOKIE = "token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
-export interface Session {
-  name: string;
-  netid: string;
-  email: string;
-  role: string;
-  mRoles: string[];
-  username: string;
-  college: string;
-  matches_played: number;
-}
+/** The token's payload (shared with the client, which gets it from /api/auth/verify). */
+export type Session = SessionUser;
 
 function jwtSecret(): string {
   const secret = process.env.JWT_SECRET;

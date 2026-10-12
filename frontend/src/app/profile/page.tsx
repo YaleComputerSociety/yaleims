@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
 import Image from "next/image";
 import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
-import { Match, Participant } from "@src/types/components";
+import type { CollegeMatchJson } from "@src/types/api";
+import type { MatchParticipant } from "@src/types/firestore";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
@@ -14,7 +15,7 @@ import SignInPrompt from "@src/components/SignInPrompt";
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<CollegeMatchJson[]>([]);
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || "");
@@ -44,7 +45,7 @@ const Profile = () => {
           throw new Error(`Error fetching matches: ${response.statusText}`);
         }
 
-        const fetchedMatches: Match[] = await response.json();
+        const fetchedMatches: CollegeMatchJson[] = await response.json();
 
         setMatches(fetchedMatches);
       } catch (error) {
@@ -67,10 +68,10 @@ const Profile = () => {
 
     return (
       homeParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       ) ||
       awayParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       )
     );
   });
@@ -81,10 +82,10 @@ const Profile = () => {
 
     return (
       !homeParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       ) &&
       !awayParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       )
     );
   });

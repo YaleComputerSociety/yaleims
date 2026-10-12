@@ -158,18 +158,31 @@ export interface TournamentPlacements {
   third?: string | null;
 }
 
-/** tournaments/seasons/{seasonId}/{tournamentId}. */
+/** Bonus points per tournament placement. */
+export interface PlacementPoints {
+  first: number;
+  second: number;
+  third: number;
+}
+
+/** tournaments/seasons/{seasonId}/{tournamentId}; the doc id is a slug of the name. */
 export interface TournamentDoc {
+  /** Same as the doc id. */
+  id?: string;
   name: string;
   sport: string;
   season: string;
   createdAt?: StoredTimestamp;
   /** Its 16 slots, shaped like a bracket's; the games are match docs. */
   matches?: BracketEntry[];
-  /** Bonus points per placement; missing or invalid values use the defaults. */
-  placement_points?: unknown;
+  /** Slot of the third place game (16). */
+  third_place_slot?: number;
+  /**
+   * As stored, so a value may be missing; the server reads it through
+   * normalizePlacementPoints, which uses the defaults for those.
+   */
+  placement_points?: Partial<PlacementPoints>;
   placements?: TournamentPlacements;
-  [field: string]: unknown;
 }
 
 // ── MVPs: mvps/{seasonId}/{college}/{weekId} ───────────────────────────────

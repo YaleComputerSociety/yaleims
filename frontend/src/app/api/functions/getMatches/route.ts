@@ -7,6 +7,7 @@ import {
   listSeasonMatches,
   seasonMatchJson,
 } from "@/server/data/matches";
+import type { MatchPageResponse } from "@/types/api";
 
 /** Past-results windows: start = local midnight this many days ago. */
 const PAST_WINDOWS = { today: 0, yesterday: 1, last7days: 7, last30days: 30, last60days: 60 };
@@ -124,5 +125,5 @@ function pageResponse(rows: SeasonMatch[], totalPages: number) {
     firstVisible: matches[0]?.id || null,
     lastVisible: matches[matches.length - 1]?.id || null,
     totalPages,
-  });
+  } satisfies MatchPageResponse);
 }

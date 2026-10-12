@@ -11,7 +11,7 @@ import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
 import { useUser } from "@src/context/UserContext";
 import SignInPrompt from "@src/components/SignInPrompt";
-import { Match } from "@src/types/components";
+import type { MatchJson, MatchPageResponse } from "@src/types/api";
 import Pagination from "@src/components/Scores/Pagination";
 import { toast } from "react-toastify";
 
@@ -30,7 +30,7 @@ const SchedulePage: React.FC = () => {
   const [queryType, setQueryType] = useState<string>("index");
   const [totalPages, setTotalPages] = useState<number>(10);
   const [sortOrder] = useState<string>("asc");
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const [filteredMatches, setFilteredMatches] = useState<MatchJson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const {currentSeason} = useSeason()
@@ -102,12 +102,13 @@ const SchedulePage: React.FC = () => {
         }
         if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
 
-        const data = await response.json();
+        const data: MatchPageResponse = await response.json();
         // console.log(data.matches)
         setFilteredMatches(data.matches);
         
-        if (data.firstVisible) setFirstVisible(data.firstVisible);
-        if (data.lastVisible) setLastVisible(data.lastVisible);
+        // Cursors are match ids; the URL carries them as text.
+        if (data.firstVisible) setFirstVisible(String(data.firstVisible));
+        if (data.lastVisible) setLastVisible(String(data.lastVisible));
         if (data.totalPages) setTotalPages(data.totalPages);
         
       } catch (error) {

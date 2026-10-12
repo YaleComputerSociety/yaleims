@@ -1,5 +1,6 @@
 import { getSession, getSessionToken } from "@/server/session";
 import { listUpcomingSignups } from "@/server/data/users";
+import type { UserSignupsResponse } from "@/types/api";
 
 /** ?seasonId=: the signed-in user's upcoming game sign-ups ({ id, timestamp }). */
 export async function GET(req: Request) {
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
     if (!signups) {
       return new Response("User not found", { status: 404 });
     }
-    return Response.json(signups);
+    return Response.json(signups satisfies UserSignupsResponse);
   } catch (err) {
     console.error("Error fetching user matches:", err);
     return new Response("Internal Server Error", { status: 500 });

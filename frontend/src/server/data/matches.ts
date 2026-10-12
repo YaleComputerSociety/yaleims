@@ -10,7 +10,8 @@ import {
 } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import type { MatchDoc, WithId } from "@/types/firestore";
+import type { MatchJson } from "@/types/api";
+import type { MatchDoc } from "@/types/firestore";
 import { isNotFound, withId } from "./util";
 
 /**
@@ -129,11 +130,14 @@ export async function updateMatch(
   }
 }
 
-/** Matches that have started but have no winner yet, oldest first. */
+/**
+ * Matches that have started but have no winner yet, oldest first. Each is
+ * `{ id: doc id, ...doc }`, so the stored numeric id wins.
+ */
 export async function listUnscoredPastMatches(
   seasonId: string,
   now: Date
-): Promise<WithId<MatchDoc>[]> {
+): Promise<MatchDoc[]> {
   const snap = await adminDb
     .collection(paths.matches(seasonId))
     .where("winner", "==", null)
@@ -179,10 +183,10 @@ export interface SeasonMatch {
  * The shape the match-list endpoints have always returned: the doc id,
  * overridden by the stored numeric `id`, and an ISO `timestamp`.
  */
-export function seasonMatchJson({ docId, seasonId, match }: SeasonMatch) {
-  const fields: Partial<MatchDoc> = match; // a stored `id` wins
+export function seasonMatchJson({ docId, seasonId, match }: SeasonMatch): MatchJson {
+  const { id, ...fields } = match;
   return {
-    id: docId,
+    id: id !== undefined ? id : docId, // a stored `id` wins
     seasonId,
     ...fields,
     timestamp: match.timestamp?.toDate?.()?.toISOString() || null,

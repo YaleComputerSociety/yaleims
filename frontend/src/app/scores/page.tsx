@@ -7,7 +7,8 @@ import CollegeSummaryCardMobile from "@src/components/Scores/CollegeSummaryCardM
 import { FiltersContext } from "@src/context/FiltersContext";
 import TableHeader from "@src/components/Scores/TableHeader";
 import MatchesTable from "@src/components/Scores/MatchTable";
-import { Match, CollegeStats } from "@src/types/components";
+import type { MatchJson, MatchPageResponse } from "@src/types/api";
+import type { CollegeStandingDoc } from "@src/types/firestore";
 import Pagination from "@src/components/Scores/Pagination";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
@@ -32,11 +33,11 @@ const ScoresPage: React.FC = () => {
   const { filter, setFilter } = filtersContext;
 
   // State for matches
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const [filteredMatches, setFilteredMatches] = useState<MatchJson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for college stats
-  const [collegeStats, setCollegeStats] = useState<CollegeStats | null>(null);
+  const [collegeStats, setCollegeStats] = useState<CollegeStandingDoc | null>(null);
   const [collegeIsLoading, setCollegeIsLoading] = useState(false);
 
   // State for pagination
@@ -128,11 +129,12 @@ const ScoresPage: React.FC = () => {
         }
         if (!response.ok)
           throw new Error(`Error fetching matches: ${response.statusText}`);
-        const data = await response.json();
+        const data: MatchPageResponse = await response.json();
 
         setFilteredMatches(data.matches);
-        setFirstVisible(data.firstVisible);
-        setLastVisible(data.lastVisible);
+        // Cursors are match ids (or null); the URL carries them as text, "null" included.
+        setFirstVisible(String(data.firstVisible));
+        setLastVisible(String(data.lastVisible));
         setTotalPages(data.totalPages);
       } catch (error) {
         console.error("Failed to fetch scores:", error);
@@ -157,7 +159,7 @@ const ScoresPage: React.FC = () => {
       unsub = onSnapshot(
         q,
         (snap) => {
-          setCollegeStats(snap.exists() ? (snap.data() as CollegeStats) : null);
+          setCollegeStats(snap.exists() ? (snap.data() as CollegeStandingDoc) : null);
           setCollegeIsLoading(false);
         },
         (err) => {

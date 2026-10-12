@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { VerifyResponse } from "@/types/api";
 import {
   Session,
   clearSessionCookie,
@@ -29,7 +30,7 @@ async function freshUserFields(email: string) {
 
 export async function GET(): Promise<NextResponse> {
   if (!(await getSessionToken())) {
-    return NextResponse.json({ isLoggedIn: false }, { status: 200 });
+    return NextResponse.json({ isLoggedIn: false } satisfies VerifyResponse);
   }
 
   let session: Session | null;
@@ -37,10 +38,12 @@ export async function GET(): Promise<NextResponse> {
     session = await getSession();
   } catch (error) {
     console.error("verify: cannot check the session:", error);
-    return NextResponse.json({ isLoggedIn: false }, { status: 500 });
+    return NextResponse.json({ isLoggedIn: false } satisfies VerifyResponse, { status: 500 });
   }
   if (!session) {
-    const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });
+    const response = NextResponse.json({ isLoggedIn: false } satisfies VerifyResponse, {
+      status: 401,
+    });
     clearSessionCookie(response);
     return response;
   }
@@ -67,7 +70,10 @@ export async function GET(): Promise<NextResponse> {
     mergedUser.username !== session.username ||
     mergedUser.college !== session.college;
 
-  const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
+  const res = NextResponse.json(
+    { isLoggedIn: true, user: mergedUser } satisfies VerifyResponse,
+    { status: 200 }
+  );
   if (changed) {
     setSessionCookie(res, mergedUser);
   }

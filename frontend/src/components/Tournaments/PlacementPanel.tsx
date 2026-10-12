@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { Tournament } from "@src/types/components";
+import type { TournamentJson } from "@src/types/api";
 import { toCollegeName } from "@src/utils/helpers";
 
 interface PlacementPanelProps {
-  tournament: Tournament;
+  tournament: TournamentJson;
 }
 
 const PODIUM: {

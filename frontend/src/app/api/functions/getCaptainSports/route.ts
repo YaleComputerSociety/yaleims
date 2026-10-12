@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/server/data/users";
+import type { CaptainSportsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -18,13 +19,15 @@ export async function GET(req: Request): Promise<NextResponse> {
         {
           error: `User ${email} is not a captain`,
           sportsCaptainOf: [],
-        },
+        } satisfies CaptainSportsResponse,
         { status: 200 }
       );
     }
 
     return NextResponse.json(
-      Array.isArray(user.sportsCaptainOf) ? user.sportsCaptainOf : [],
+      (Array.isArray(user.sportsCaptainOf)
+        ? user.sportsCaptainOf
+        : []) satisfies CaptainSportsResponse,
       { status: 200 }
     );
   } catch (err) {

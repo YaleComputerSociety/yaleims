@@ -3,6 +3,7 @@ import {
   listCollegeUsersWithAnyRole,
   listUsersWithRole,
 } from "@/server/data/users";
+import type { SpecialUsersResponse } from "@/types/api";
 
 export async function GET(req: Request) {
   try {
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
           ? await listUsersWithRole("dev")
           : await listCollegeUsersWithAnyRole(college, ["captain", "college_rep"]);
 
-    return new Response(JSON.stringify({ users: specialUsers }), {
+    return new Response(JSON.stringify({ users: specialUsers } satisfies SpecialUsersResponse), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

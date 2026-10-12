@@ -1,5 +1,6 @@
 import { getCurrentSeason } from "@/server/data/seasons";
 import { listTournaments } from "@/server/data/tournaments";
+import type { TournamentsResponse } from "@/types/api";
 
 /** ?year=<seasonId> (default: current season): its tournaments, newest first, timestamps in ms. */
 export async function GET(req: Request) {
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
       }))
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-    return Response.json({ year, tournaments });
+    return Response.json({ year, tournaments } satisfies TournamentsResponse);
   } catch (err) {
     console.error("Error fetching tournaments:", err);
     return Response.json({ error: "Internal Server Error" }, { status: 500 });

@@ -1,5 +1,6 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
 import { listUnscoredPastMatches } from "@/server/data/matches";
+import type { RouteBody, UnscoredMatchesResponse } from "@/types/api";
 
 /** ?seasonId=: matches that started but have no score yet (admin/dev). */
 export async function GET(req: Request) {
@@ -20,7 +21,10 @@ export async function GET(req: Request) {
     }
 
     const matches = await listUnscoredPastMatches(seasonId, new Date());
-    return Response.json({ success: true, matches });
+    return Response.json({
+      success: true,
+      matches,
+    } satisfies RouteBody<UnscoredMatchesResponse>);
   } catch (err) {
     console.error("Error fetching unscored matches:", err);
     return new Response("Internal Server Error", { status: 500 });

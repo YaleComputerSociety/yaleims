@@ -1,6 +1,7 @@
 import { getSession, getSessionToken } from "@/server/session";
 import { listUpcomingSignups } from "@/server/data/users";
 import { getMatch } from "@/server/data/matches";
+import type { UserMatchObjectsResponse } from "@/types/api";
 
 /** ?seasonId=: the full match docs of the user's upcoming games (timestamps as ISO strings). */
 export async function GET(req: Request) {
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
         return match && { ...match, timestamp: match.timestamp?.toDate().toISOString() };
       })
     );
-    return Response.json(matches);
+    return Response.json(matches satisfies UserMatchObjectsResponse);
   } catch (err) {
     console.error("Error fetching user match objects:", err);
     return new Response("Internal Server Error", { status: 500 });

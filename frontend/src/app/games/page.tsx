@@ -4,10 +4,15 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } fr
 import { useSearchParams } from "next/navigation";
 import PageHeading from "@src/components/PageHeading";
 import Link from "next/link";
-import { Match } from "@src/types/components";
+import type {
+  LeaderboardEntry,
+  MatchJson,
+  MatchPageV2Response,
+  UserSignupsResponse,
+} from "@src/types/api";
 import { useSeason } from "@src/context/SeasonContext";
 import { useUser } from "@src/context/UserContext";
-import { toCollegeName, toCollegeAbbreviation, currentYear, getPlace } from "@src/utils/helpers";
+import { toCollegeName, toCollegeAbbreviation, currentYear, getPlace, matchDate } from "@src/utils/helpers";
 import GameCard, { getMatchStatus } from "@src/components/Games/GameCard";
 import DateScroller from "@src/components/Games/DateScroller";
 import GamesFilterBar from "@src/components/Games/GamesFilterBar";
@@ -50,10 +55,10 @@ function isSameDay(a: Date, b: Date): boolean {
   return toYMD(a) === toYMD(b);
 }
 
-function groupByTime(matches: Match[]): Map<string, Match[]> {
-  const map = new Map<string, Match[]>();
+function groupByTime(matches: MatchJson[]): Map<string, MatchJson[]> {
+  const map = new Map<string, MatchJson[]>();
   matches.forEach((m) => {
-    const key = new Date(m.timestamp).toLocaleTimeString("en-US", {
+    const key = matchDate(m.timestamp).toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -102,22 +107,11 @@ const GamesPage: React.FC = () => {
   );
 
   // ── fetch ALL matches for the selected season once ───────────────────────────
-  const [allMatches, setAllMatches] = useState<Match[]>([]);
+  const [allMatches, setAllMatches] = useState<MatchJson[]>([]);
   const [seasonLoading, setSeasonLoading] = useState(true);
 
   // ── fetch leaderboard (same source as standings page) for college stats ─────────
-  type LeaderboardCollege = {
-    id: string;
-    name: string;
-    games: number;
-    wins: number;
-    ties: number;
-    losses: number;
-    forfeits: number;
-    points: number;
-    rank: number;
-  };
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardCollege[]>([]);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
     const fetchAllMatches = async () => {
@@ -203,7 +197,8 @@ const GamesPage: React.FC = () => {
 
   // ── user sign-up state ────────────────────────────────────────────────────────
   const { user } = useUser();
-  const [userMatches, setUserMatches] = useState<Match[]>([]);
+  // The user's signups ({ id, timestamp }); signing up adds the whole match.
+  const [userMatches, setUserMatches] = useState<Pick<MatchJson, "id" | "timestamp">[]>([]);
   // Until these land we can't tell sign-up state apart from not-signed-up, so the
   // cards show a skeleton rather than flashing "Sign Up" at someone already playing.
   const [userMatchesLoading, setUserMatchesLoading] = useState(true);
@@ -219,7 +214,7 @@ const GamesPage: React.FC = () => {
           { signal: controller.signal }
         );
         if (!res.ok) throw new Error("Failed to fetch user matches");
-        const data = (await res.json()) as Match[];
+        const data: UserSignupsResponse = await res.json();
         setUserMatches(data);
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== "AbortError") {
@@ -240,7 +235,7 @@ const GamesPage: React.FC = () => {
   }, [userMatches]);
 
   const handleSignUpStatusChange = useCallback(
-    (matchId: string, signed: boolean) => {
+    (matchId: MatchJson["id"], signed: boolean) => {
       setUserMatches((prev) => {
         if (signed) {
           const found = allMatches.find((m) => m.id === matchId);
@@ -264,13 +259,13 @@ const GamesPage: React.FC = () => {
   }, [searchParams]);
 
   // ── matches for the selected day (client-side filter) ───────────────────────
-  const dayMatches = useMemo<Match[]>(
+  const dayMatches = useMemo<MatchJson[]>(
     () => allMatches.filter((m) => isSameDay(parseTimestamp(m.timestamp), selectedDate)),
     [allMatches, selectedDate]
   );
 
   // ── tab + sport/college filtered list ────────────────────────────────────────
-  const displayMatches = useMemo<Match[]>(() => {
+  const displayMatches = useMemo<MatchJson[]>(() => {
     let result = dayMatches.filter((m) => {
       if (sportFilter && m.sport !== sportFilter) return false;
       if (
@@ -304,7 +299,7 @@ const GamesPage: React.FC = () => {
       const sb = getMatchStatus(b);
       if (sa === "live" && sb !== "live") return -1;
       if (sb === "live" && sa !== "live") return 1;
-      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      return matchDate(a.timestamp).getTime() - matchDate(b.timestamp).getTime();
     });
   }, [dayMatches, activeTab, sportFilter, collegeFilter]);
 
@@ -383,7 +378,7 @@ const GamesPage: React.FC = () => {
       let losses = 0;
       let ties = 0;
       let forfeits = 0;
-      const isDraw = (m: Match) =>
+      const isDraw = (m: MatchJson) =>
         m.winner === "Draw" ||
         m.winner === "Tie" ||
         (!m.forfeit &&

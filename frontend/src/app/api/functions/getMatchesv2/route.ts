@@ -4,6 +4,7 @@ import {
   listSeasonMatches,
   seasonMatchJson,
 } from "@/server/data/matches";
+import type { MatchPageV2Response } from "@/types/api";
 
 const text = (status: number, message: string) => new Response(message, { status });
 
@@ -88,7 +89,7 @@ export async function GET(req: Request) {
       lastVisible: matches[matches.length - 1]?.id || null,
       totalPages,
       totalResults,
-    });
+    } satisfies MatchPageV2Response);
   } catch (error) {
     console.error("Error fetching matches:", error);
     return text(500, "Internal Server Error");

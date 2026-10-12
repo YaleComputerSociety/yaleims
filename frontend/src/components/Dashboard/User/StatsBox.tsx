@@ -3,11 +3,12 @@ import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import Image from "next/image";
 import { getCollegeFlag } from "@/utils/versionedImages";
+import type { UserStatsResponse } from "@src/types/api";
 
 export default function StatsBox() {    
     const { user } = useUser();
     const { currentSeason } = useSeason();
-    const [ userStats, setUserStats ] = useState<any>(null);
+    const [ userStats, setUserStats ] = useState<UserStatsResponse | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -17,7 +18,7 @@ export default function StatsBox() {
                 if (!currentSeason?.year) return;
                 const response = await fetch(`/api/functions/getUserStats?seasonId=${currentSeason.year}&email=${user.email}`);
                 if (!response.ok) throw new Error("Error fetching user stats");
-                const data = await response.json();
+                const data: UserStatsResponse = await response.json();
                 setUserStats(data)
             } catch (error) {
                 console.error("Failed to fetch user stats:", error);

@@ -1,5 +1,6 @@
 import { getCurrentSeason } from "@/server/data/seasons";
 import { listUpcomingCollegeMatches } from "@/server/data/matches";
+import type { CollegeMatchJson } from "@/types/api";
 
 /** ?college=<abbr>&limit=<n>: the college's next matches this season, up to n home + n away. */
 export async function GET(req: Request) {
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
         winner: m.winner,
         type: m.type,
         timestamp: m.timestamp.toDate().toISOString(),
-      }))
+      })) satisfies CollegeMatchJson[]
     );
   } catch (err) {
     console.error("Error fetching college matches:", err);

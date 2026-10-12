@@ -4,12 +4,13 @@ import Image from "next/image";
 import TournamentBadge from "@src/components/ui/TournamentBadge";
 import { useState } from "react";
 import { FaCircle, FaMapMarkerAlt } from "react-icons/fa";
-import { Match } from "@src/types/components";
+import type { MatchJson } from "@src/types/api";
 import {
   toCollegeName,
   emojiMap,
   sportsMap,
   getMatchTypeLabel,
+  matchDate,
 } from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";
 import { EditMatchButton } from "@src/components/Dashboard/Admin/EditMatchModal";
@@ -19,13 +20,13 @@ const LIVE_WINDOW_MS = 1 * 60 * 60 * 1000; // 1 hour
 
 export type MatchStatus = "live" | "upcoming" | "completed";
 
-export function getMatchStatus(match: Match): MatchStatus {
-  const matchTime = new Date(match.timestamp).getTime();
+export function getMatchStatus(match: MatchJson): MatchStatus {
+  const matchTime = matchDate(match.timestamp).getTime();
   const now = Date.now();
   const hasResult =
     match.winner !== null ||
-    match.home_college_score > 0 ||
-    match.away_college_score > 0;
+    (match.home_college_score ?? 0) > 0 ||
+    (match.away_college_score ?? 0) > 0;
 
   if (hasResult) return "completed";
   if (matchTime <= now && now - matchTime < LIVE_WINDOW_MS) return "live";
@@ -34,13 +35,13 @@ export function getMatchStatus(match: Match): MatchStatus {
 }
 
 interface GameCardProps {
-  match: Match;
+  match: MatchJson;
   onCollegeClick?: (college: string) => void;
   onSportClick?: (sport: string) => void;
   user?: any;
   isSignedUp?: boolean;
   signUpStatusLoading?: boolean;
-  onStatusChange?: (matchId: string, signed: boolean) => void;
+  onStatusChange?: (matchId: MatchJson["id"], signed: boolean) => void;
   seasonId?: string;
 }
 
@@ -72,7 +73,7 @@ const GameCard: React.FC<GameCardProps> = ({
     (toCollegeName[match.home_college] === user.college ||
       toCollegeName[match.away_college] === user.college);
 
-  const isPastMatch = new Date(match.timestamp) < new Date();
+  const isPastMatch = matchDate(match.timestamp) < new Date();
 
   const handleSignUp = async () => {
     if (!user || !seasonId) return;
@@ -156,8 +157,8 @@ const GameCard: React.FC<GameCardProps> = ({
 
   const points = isDraw ? (sportsMap[sport] ?? 6) / 2 : (sportsMap[sport] ?? 6);
 
-  const matchDate = new Date(timestamp);
-  const timeStr = matchDate.toLocaleTimeString("en-US", {
+  const startTime = matchDate(timestamp);
+  const timeStr = startTime.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
