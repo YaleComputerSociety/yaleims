@@ -20,6 +20,7 @@ import BracketConnectorSvg, {
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
+import type { MatchDoc } from "@src/types/firestore";
 
 // Tournaments reuse the 14-team playoff shape, so slot n lives at index n - 1.
 const LEFT_PLAYOFF_INDICES = [0, 1, 2, 3];
@@ -54,7 +55,7 @@ const TournamentsPage: React.FC = () => {
   );
   const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [matchDetails, setMatchDetails] = useState<Record<string, any>>({});
+  const [matchDetails, setMatchDetails] = useState<Record<string, MatchDoc | null>>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);

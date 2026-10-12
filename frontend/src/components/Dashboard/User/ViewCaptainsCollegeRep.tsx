@@ -3,6 +3,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../../../lib/firebase";
 import { paths } from "@/lib/paths";
 import { useUser } from "@src/context/UserContext";
+import type { UserDoc } from "@src/types/firestore";
 
 type Person = {
   email: string;
@@ -41,11 +42,11 @@ export default function ViewCaptainsCollegeRep() {
         const reps: Person[]       = [];
 
         snap.forEach(d => {
-          const u = d.data() as any;
+          const u = d.data() as UserDoc;
           const person: Person = {
             email: u.email ?? d.id,
-            firstName: u.firstname ?? u.firstName ?? "",
-            lastName: u.lastname ?? u.lastName ?? "",
+            firstName: u.firstname ?? "",
+            lastName: u.lastname ?? "",
             sportsCaptainOf: u.sportsCaptainOf ?? [],
           };
 

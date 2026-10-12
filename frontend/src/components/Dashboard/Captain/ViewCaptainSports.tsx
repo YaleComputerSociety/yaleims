@@ -5,6 +5,7 @@ import { db } from "../../../../lib/firebase";
 import { paths } from "@/lib/paths";
 import { useUser } from "@src/context/UserContext";
 import SportCard from "@src/app/About/SportCard";
+import type { UserDoc } from "@src/types/firestore";
 
 export default function ViewCaptainSports() {
     const { user } = useUser();
@@ -25,7 +26,7 @@ export default function ViewCaptainSports() {
                 return;
                 }
 
-                const data = snap.data() as any;
+                const data = snap.data() as UserDoc;
                 const isCaptain = data.mRoles?.includes("captain");
                 const sportsArr = Array.isArray(data.sportsCaptainOf)
                 ? data.sportsCaptainOf

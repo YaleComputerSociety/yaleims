@@ -24,6 +24,7 @@ import {
 import { db } from "../../../lib/firebase";
 import { paths } from "@/lib/paths";
 import { useChampionship } from "@src/utils/useChampionship";
+import type { CollegeStandingDoc, WithId } from "@src/types/firestore";
 
 // Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
@@ -32,7 +33,7 @@ const BANNER_MESSAGE = "";
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
-  const [sortedColleges, setSortedColleges] = useState<any[]>([]);
+  const [sortedColleges, setSortedColleges] = useState<WithId<CollegeStandingDoc>[]>([]);
   const { filter } = useContext(FiltersContext);
   const { currentSeason } = useSeason();
   const [selected, setSelected] = useState<string>(
@@ -66,7 +67,7 @@ const AAHomeComponent: React.FC = () => {
     unsub = onSnapshot(
       q,
       (snap) => {
-        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as CollegeStandingDoc) }));
         rows.sort((a, b) => Number(a.rank) - Number(b.rank));
         setSortedColleges(rows);
         setLoading(false);

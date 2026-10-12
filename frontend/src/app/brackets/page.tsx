@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
-import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { paths } from "@/lib/paths";
 import { useRef } from "react";
@@ -18,13 +18,7 @@ import BracketConnectorSvg, {
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
-
-interface FirestoreBracketMatch {
-  bracket_placement: number;
-  match_id: string;
-  round: string;
-  timestamp: Timestamp;
-}
+import type { BracketEntry, MatchDoc } from "@src/types/firestore";
 
 // mapping index in bracket array to the type of location of the match in the bracket
 const leftPlayoffIndices = [0, 1, 2, 3];
@@ -43,10 +37,10 @@ const BracketsPage: React.FC = () => {
   const [sport, setSport] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [bracket, setBracket] = useState<FirestoreBracketMatch[] | null>(null);
+  const [bracket, setBracket] = useState<BracketEntry[] | null>(null);
   const [season, setSeason] = useState<string>(currentSeason?.year || currentYear);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
-  const [matchDetails, setMatchDetails] = useState<Record<string, any>>({});
+  const [matchDetails, setMatchDetails] = useState<Record<string, MatchDoc | null>>({});
   // console.log("Hovered Team:", hoveredTeam);
 
   useEffect(() => {
@@ -90,7 +84,7 @@ const BracketsPage: React.FC = () => {
           setError(`Bracket for ${sport} (${season}) not found`);
           setBracket(null);
         } else {
-          const matches = bracketDoc.data()?.matches as FirestoreBracketMatch[];
+          const matches = bracketDoc.data()?.matches as BracketEntry[];
           matches.sort((a, b) => a.bracket_placement - b.bracket_placement);
           setBracket(matches);
           // console.log("Fetched Bracket:", matches);
