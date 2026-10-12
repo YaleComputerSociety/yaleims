@@ -21,7 +21,7 @@ import {
   query,
   Unsubscribe,
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 import { useChampionship } from "@src/utils/useChampionship";
 import type { CollegeStandingDoc, WithId } from "@src/types/firestore";

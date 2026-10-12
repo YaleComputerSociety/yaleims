@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 import { currentYear } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";

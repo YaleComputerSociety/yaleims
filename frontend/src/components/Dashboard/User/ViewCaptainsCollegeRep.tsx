@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 import { useUser } from "@src/context/UserContext";
 import type { UserDoc } from "@src/types/firestore";

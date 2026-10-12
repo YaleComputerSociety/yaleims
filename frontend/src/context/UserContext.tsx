@@ -9,7 +9,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { db } from "../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 import type { SessionUser, VerifyResponse } from "@src/types/api";
 

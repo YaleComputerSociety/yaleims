@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 import { colleges } from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";

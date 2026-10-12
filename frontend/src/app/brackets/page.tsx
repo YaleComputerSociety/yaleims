@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 import { useRef } from "react";
 import BracketCell from "@src/components/Brackets/BracketCell";

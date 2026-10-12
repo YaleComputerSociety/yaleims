@@ -8,7 +8,7 @@ import { UserProvider } from "@src/context/UserContext";
 import FiltersProvider from "@src/context/FiltersContext";
 import { ThemeProvider } from "next-themes";
 import Footer from "@src/components/Footer";
-import { initAnalytics } from "../../lib/firebase";
+import { initAnalytics } from "@/lib/firebase";
 import React from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

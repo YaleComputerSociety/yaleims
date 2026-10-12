@@ -25,7 +25,7 @@ import {
   query,
   Unsubscribe,
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
 
 const ScoresPage: React.FC = () => {
