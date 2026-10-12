@@ -61,16 +61,6 @@ export interface PaginationProps {
   setPageNumber: React.Dispatch<React.SetStateAction<number>>;
   setQueryType: React.Dispatch<React.SetStateAction<string>>;
 }
-export interface CalendarViewProps {
-  events: {
-    title: string;
-    start: Date;
-    end: Date;
-    match: MatchJson;
-  }[];
-  onMatchClick: (match: MatchJson) => void;
-}
-
 /** A match whose start time the schedule list has parsed into a Date. */
 export type ScheduleMatch = Omit<MatchJson, "timestamp"> & { timestamp: Date };
 
@@ -78,10 +68,6 @@ export interface CalendarMatchListProps {
   matches: MatchJson[];
   topDate: Date;
   setTopDate: React.Dispatch<React.SetStateAction<Date>>;
-}
-
-export interface MatchSignUpProps {
-  match: MatchJson;
 }
 
 export interface CalendarFiltersProps {
