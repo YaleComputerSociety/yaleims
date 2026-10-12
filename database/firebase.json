@@ -16,14 +16,6 @@
       ]
     }
   ],
-  "hosting": {
-    "rewrites": [
-      {
-        "source": "/api/**",
-        "function": "expressApp"
-      }
-    ]
-  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
