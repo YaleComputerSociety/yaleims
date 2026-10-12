@@ -1,27 +1,11 @@
 // Score reports (users flag a wrong score):
 // matches/score_reports/{seasonId}/{matchId}/reports/{reportId}.
 import "server-only";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { collectionGroups, paths, scoreReportPathIds } from "@/lib/paths";
-import { WithId, withId } from "./util";
-
-export interface ScoreReportDoc {
-  reason: string;
-  reportedBy: string;
-  reportedByEmail: string;
-  reportedAt: Timestamp;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: Timestamp;
-  season: string;
-  matchId: string;
-  matchHomeCollege: string | null;
-  matchAwayCollege: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
-  sport: string | null;
-}
+import type { ScoreReportDoc, WithId } from "@/types/firestore";
+import { withId } from "./util";
 
 export type NewScoreReport = Omit<
   ScoreReportDoc,

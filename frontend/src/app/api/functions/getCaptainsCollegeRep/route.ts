@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { UserDoc, listCollegeUsersWithAnyRole } from "@/server/data/users";
-import type { WithId } from "@/server/data/util";
+import { listCollegeUsersWithAnyRole } from "@/server/data/users";
+import type { UserDoc, WithId } from "@/types/firestore";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {

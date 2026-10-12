@@ -2,9 +2,7 @@
 import "server-only";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-
-/** One week's MVPs of a college, keyed by email. */
-export type MvpWeekDoc = Record<string, { fname?: string; lname?: string }>;
+import type { MvpWeekDoc } from "@/types/firestore";
 
 /** A college's MVPs for a season, keyed by week id (e.g. "week_4"). */
 export async function listCollegeMvps(

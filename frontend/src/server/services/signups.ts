@@ -2,8 +2,9 @@
 // roster (home_college_participants / away_college_participants) and the
 // match on the player's user-season doc. Both change in one transaction.
 import "server-only";
-import { matchRef, type MatchParticipant } from "../data/matches";
-import { userSeasonRef, type UserSeasonMatch } from "../data/users";
+import type { MatchParticipant, UserSeasonMatch } from "@/types/firestore";
+import { matchRef } from "../data/matches";
+import { userSeasonRef } from "../data/users";
 import { runTransaction } from "../data/util";
 
 export const ROSTER_SIDES = [

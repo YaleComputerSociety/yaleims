@@ -10,44 +10,8 @@ import {
 } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import { WithId, isNotFound, withId } from "./util";
-
-export interface MatchParticipant {
-  email: string;
-  name?: string;
-  firstname?: string;
-  lastname?: string;
-}
-
-/**
- * A match doc. Old docs also hold frozen odds/betting fields
- * (`*_odds`, `*_volume`, `predictions`), not typed here.
- */
-export interface MatchDoc {
-  /** Numeric id; overrides the doc id in API responses. */
-  id: number;
-  sport: string;
-  type: string;
-  home_college: string;
-  away_college: string;
-  home_college_score: number | null;
-  away_college_score: number | null;
-  home_college_participants?: MatchParticipant[];
-  away_college_participants?: MatchParticipant[];
-  winner: string | null;
-  forfeit: boolean | null;
-  timestamp: Timestamp;
-  location?: string;
-  location_extra?: string;
-  division?: string;
-  home_seed?: number;
-  away_seed?: number;
-  next_match_id?: number | string;
-  next_match_loser_id?: number | string;
-  playoff_bracket_slot?: number;
-  tournament_id?: string;
-  tournament_name?: string;
-}
+import type { MatchDoc, WithId } from "@/types/firestore";
+import { isNotFound, withId } from "./util";
 
 /**
  * Reserves `n` new match ids from counters/matches, which holds the last id

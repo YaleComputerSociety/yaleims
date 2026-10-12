@@ -1,31 +1,9 @@
 // Tournaments: tournaments/seasons/{seasonId}/{tournamentId}.
 import "server-only";
-import type { DocumentReference, Timestamp } from "firebase-admin/firestore";
+import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import type { BracketEntry } from "./brackets";
-import type { WithId } from "./util";
-
-
-/** Colleges awarded each placement bonus (null once reversed). */
-export interface TournamentPlacements {
-  first?: string | null;
-  second?: string | null;
-  third?: string | null;
-}
-
-export interface TournamentDoc {
-  name: string;
-  sport: string;
-  season: string;
-  createdAt?: Timestamp;
-  /** Its 16 slots, shaped like a bracket's; the games are match docs. */
-  matches?: BracketEntry[];
-  /** Bonus points per placement; missing or invalid values use the defaults. */
-  placement_points?: unknown;
-  placements?: TournamentPlacements;
-  [field: string]: unknown;
-}
+import type { TournamentDoc, WithId } from "@/types/firestore";
 
 /** The tournament doc, for services that change it in a transaction. */
 export function tournamentRef(

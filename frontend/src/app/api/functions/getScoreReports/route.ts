@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import type { Timestamp } from "firebase-admin/firestore";
 import { getSession, hasAnyRole } from "@/server/session";
 import {
-  ScoreReportDoc,
   listMatchScoreReports,
   listSeasonScoreReports,
 } from "@/server/data/scoreReports";
-import type { WithId } from "@/server/data/util";
+import type { ScoreReportDoc, StoredTimestamp, WithId } from "@/types/firestore";
 
 type ApiTimestamp = { _seconds: number; _nanoseconds?: number };
 
@@ -28,7 +26,7 @@ export interface ScoreReport {
   sport?: string | null;
 }
 
-const apiTimestamp = (ts: Timestamp | undefined | null): ApiTimestamp | undefined =>
+const apiTimestamp = (ts: StoredTimestamp | undefined | null): ApiTimestamp | undefined =>
   ts ? { _seconds: ts.seconds, _nanoseconds: ts.nanoseconds } : undefined;
 
 function formatReport(

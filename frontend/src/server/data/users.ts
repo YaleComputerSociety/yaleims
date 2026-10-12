@@ -4,21 +4,13 @@ import "server-only";
 import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import { WithId, isNotFound, withId } from "./util";
-
-/** users/{email}. Old docs also hold frozen betting fields, not typed here. */
-export interface UserDoc {
-  email?: string;
-  firstname?: string;
-  lastname?: string;
-  college?: string | null;
-  username?: string;
-  mRoles?: string[];
-  sportsCaptainOf?: string[];
-  /** Legacy single role; roles live in mRoles. */
-  role?: string;
-  matches_played?: number;
-}
+import type {
+  UserDoc,
+  UserSeasonDoc,
+  UserSeasonMatch,
+  WithId,
+} from "@/types/firestore";
+import { isNotFound, withId } from "./util";
 
 /** Fields of a new user doc. */
 export interface NewUser {
@@ -68,17 +60,6 @@ export async function getOrCreateUser(
     tx.set(adminDb.doc(paths.userSeason(newUser.email, seasonId)), { matches: [] });
     return { user, created: true };
   });
-}
-
-/** A game a user signed up for, as stored on the user-season doc. */
-export interface UserSeasonMatch {
-  id: number | string;
-  timestamp: string;
-}
-
-/** users/{email}/seasons/{seasonId}. Some old docs hold `matches` as a non-array. */
-export interface UserSeasonDoc {
-  matches?: UserSeasonMatch[];
 }
 
 export async function getUser(email: string): Promise<UserDoc | null> {

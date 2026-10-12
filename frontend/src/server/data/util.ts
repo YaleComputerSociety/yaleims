@@ -1,6 +1,7 @@
 import "server-only";
 import type { DocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
+import type { WithId } from "@/types/firestore";
 
 /**
  * Runs `fn` in a Firestore transaction (retried on contention). For services
@@ -9,9 +10,6 @@ import { adminDb } from "../firebaseAdmin";
 export function runTransaction<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> {
   return adminDb.runTransaction(fn);
 }
-
-/** A document's data plus its id, in the shape the API has always returned. */
-export type WithId<T> = T & { id: string };
 
 export function withId<T>(snap: DocumentSnapshot): WithId<T> {
   return { id: snap.id, ...(snap.data() as T) };

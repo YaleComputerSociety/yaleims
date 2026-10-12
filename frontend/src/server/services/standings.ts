@@ -2,8 +2,8 @@
 // undoing or deleting (-1) a result.
 import "server-only";
 import { FieldValue, type Transaction } from "firebase-admin/firestore";
+import type { MatchDoc } from "@/types/firestore";
 import { collegeStandingRef } from "../data/colleges";
-import type { MatchDoc } from "../data/matches";
 import { getPointsForWin } from "../data/sports";
 
 /** A college name, or "Draw", or "Default" (both sides forfeited). */

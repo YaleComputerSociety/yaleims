@@ -1,27 +1,10 @@
 // College standings per season: colleges/seasons/{seasonId}/{abbr}.
 import "server-only";
-import type { DocumentReference, Timestamp } from "firebase-admin/firestore";
+import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import { WithId, withId } from "./util";
-
-/** A college's standing in one season; the doc id is its abbreviation. */
-export interface CollegeStandingDoc {
-  name: string;
-  abbreviation: string;
-  season: string;
-  points: number;
-  wins: number;
-  losses: number;
-  ties: number;
-  forfeits: number;
-  games: number;
-  rank: number;
-  prevRank: number;
-  /** Date of the last rank snapshot, "d-m-yyyy". */
-  today: string;
-  migratedAt?: Timestamp;
-}
+import type { CollegeStandingDoc, WithId } from "@/types/firestore";
+import { withId } from "./util";
 
 /** A college's standing doc, for services that change it in a transaction. */
 export function collegeStandingRef(

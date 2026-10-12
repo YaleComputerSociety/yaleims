@@ -1,7 +1,8 @@
 // Accounts: the user record behind a Yale login. The first login creates it,
 // with a generated username, from the Yalies profile found by the login.
 import "server-only";
-import { getOrCreateUser, type UserDoc } from "../data/users";
+import type { UserDoc } from "@/types/firestore";
+import { getOrCreateUser } from "../data/users";
 
 // Generated usernames: adjective + noun + the username counter, e.g.
 // "NobleFalcon1042". Some nouns repeat; kept as they were.

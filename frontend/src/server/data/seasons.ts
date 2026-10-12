@@ -1,9 +1,10 @@
 // Seasons: seasons/current (the active season + championship banner) and
 // seasons/past ({ years }).
 import "server-only";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
+import type { CurrentSeasonDoc } from "@/types/firestore";
 
 /** Sets the champion banner on the current season. */
 export async function setChampionship(
@@ -18,17 +19,6 @@ export async function setChampionship(
     },
     { merge: true }
   );
-}
-
-/** seasons/current. */
-export interface CurrentSeasonDoc {
-  /** The season id, e.g. "2026-2027". */
-  year: string;
-  /** "fall" | "winter" | "spring". */
-  season: string;
-  winningCollegeId?: string | null;
-  celebrationActive?: boolean;
-  championshipUpdatedAt?: Timestamp;
 }
 
 export async function getCurrentSeason(): Promise<CurrentSeasonDoc | null> {

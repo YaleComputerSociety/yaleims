@@ -8,14 +8,14 @@ import {
   type DocumentReference,
   type Transaction,
 } from "firebase-admin/firestore";
-import { bracketRef, type BracketEntry } from "../data/brackets";
+import type { BracketEntry, MatchDoc } from "@/types/firestore";
+import { bracketRef } from "../data/brackets";
 import { recalculateRanks } from "../data/colleges";
 import {
   createMatch,
   isAlreadyExists,
   matchRef,
   reserveMatchIds,
-  type MatchDoc,
 } from "../data/matches";
 import { runTransaction } from "../data/util";
 import { isScoredGame, readPointsForWin, reverseResults } from "./standings";
