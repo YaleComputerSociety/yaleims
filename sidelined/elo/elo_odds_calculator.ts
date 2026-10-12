@@ -18,7 +18,7 @@
 // - elo_system.ts  -> getEloWinProbabilities(...), ELO_CONFIG
 // - Firestore docs created/updated by initEloSeason.ts + updateEloRatings(...)
 // -----------------------------------------------------------------------------
-import admin from "../../firebaseAdmin.js";
+import admin from "./firebaseAdmin.js";
 import { getEloWinProbabilities, ELO_CONFIG } from "./elo_system.js";
 
 const db = admin.firestore();

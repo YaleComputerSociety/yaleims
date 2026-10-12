@@ -1,0 +1,17 @@
+{
+  // Type-checks this sidelined code so it doesn't rot. Emits nothing:
+  // nothing here is built or deployed.
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "Node",
+    "noImplicitReturns": true,
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

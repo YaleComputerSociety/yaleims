@@ -1,5 +1,5 @@
 // Top-level Firestore collections that make up a meaningful seed dataset.
-// Derived from the collections referenced across database/functions/src.
+// Derived from the collections the app reads and writes (frontend/src/lib/paths.ts).
 // The *_testing collections are intentionally excluded.
 //
 // If you add a new top-level collection to the app, add it here so it gets

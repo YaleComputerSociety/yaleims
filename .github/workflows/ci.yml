@@ -36,22 +36,21 @@ jobs:
       # Builds without any env vars or secrets (verified from a clean clone).
       - run: npm run build
 
-  functions:
-    name: Cloud Functions (build)
+  sidelined-elo:
+    name: Sidelined Elo (type-check, import guard)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: database/functions
+        working-directory: sidelined/elo
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: database/functions/package-lock.json
+          cache-dependency-path: sidelined/elo/package-lock.json
       - run: npm ci
-      - run: npm run build
-      # Elo code is switched off (src/sidelined/elo/README.md): keep it compiling,
-      # and make sure nothing pulls it back into the deployed build.
-      - run: npm run typecheck:sidelined
-      - run: npm run check:sidelined
+      # Elo code is switched off (sidelined/elo/README.md): keep it compiling,
+      # and make sure nothing in the app imports it.
+      - run: npm run typecheck
+      - run: npm run check:not-imported

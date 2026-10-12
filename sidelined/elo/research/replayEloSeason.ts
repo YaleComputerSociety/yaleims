@@ -15,7 +15,7 @@
  *   GOOGLE_CLOUD_PROJECT=yims-125a2 node lib/scripts/replayEloSeason.js
  */
 
-import admin from "../../../firebaseAdmin.js";
+import admin from "../firebaseAdmin.js";
 import { updateEloRatings } from "../elo_system.js";
 import { hybridOddsCalculator } from "../elo_odds_calculator.js";
 

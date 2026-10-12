@@ -12,7 +12,7 @@
 // -----------------------------------------------------------------------------
 // TODO: Incorporate in upload matches and upload brackets - for each match, it gives the correct odds when added
 // TODO: make sure that odds are not set for matches that are still TBD / not fully filled out yet
-import admin from "../../firebaseAdmin.js";
+import admin from "./firebaseAdmin.js";
 
 const db = admin.firestore();
 const inc = admin.firestore.FieldValue.increment;

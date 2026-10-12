@@ -7,7 +7,7 @@
 // -----------------------------------------------------------------------------
 
 import * as functions from "firebase-functions";
-import admin from "../../../firebaseAdmin.js";
+import admin from "../firebaseAdmin.js";
 import * as fs from "fs";
 import * as path from "path";
 

@@ -1,9 +1,0 @@
-{
-  // Type-checks src/sidelined/ (switched-off code) so it doesn't rot.
-  // Emits nothing; the deployed build (tsconfig.json) excludes this folder.
-  "extends": "./tsconfig.json",
-  // Research scripts keep a few unused helpers; not worth editing recovered code.
-  "compilerOptions": { "noEmit": true, "noUnusedLocals": false },
-  "include": ["src/sidelined/**/*.ts"],
-  "exclude": ["node_modules", "lib"]
-}

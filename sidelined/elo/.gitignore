@@ -6,3 +6,6 @@ experiment_output*/
 research/experiment_output*/
 stats/
 *.csv
+
+# Dependencies
+node_modules/

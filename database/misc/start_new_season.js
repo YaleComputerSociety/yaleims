@@ -97,7 +97,7 @@ async function createSeasonDocs() {
       `  2. node addNewSeasonUser.js ${seasonId} [--prod]\n` +
       `     Gives every existing user an empty seasons/${seasonId} doc. Until it runs,\n` +
       `     game sign-up returns 404, so existing users cannot sign up for games.\n` +
-      `  (Elo is sidelined, so there is no Elo step; see functions/src/sidelined/elo/README.md.)`,
+      `  (Elo is sidelined, so there is no Elo step; see sidelined/elo/README.md.)`,
   );
 }
 

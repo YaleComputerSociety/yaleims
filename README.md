@@ -33,7 +33,7 @@ If you wish to design your own feature, we encourage you to reach out to the yim
 ## Tech Stack
 
 - **Frontend:** Next.js, React, Tailwind CSS
-- **Backend:** Firebase Firestore, Firebase Cloud Functions
+- **Backend:** Next.js API routes, Firebase Firestore
 - **Authentication:** Firebase Authentication
 - **Database:** Firebase Firestore
 - **Deployment:** Firebase Hosting
@@ -46,44 +46,19 @@ If you wish to design your own feature, we encourage you to reach out to the yim
 - Firebase account
 - Yale CAS setup for authentication
 
-### Backend Setup
+### Backend
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/your-username/YaleComputerSociety/yaleims.git
-   cd database/functions
-   ```
-
-2. Install the dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Set up Firebase:
-
-   - Create a Firebase project and enable Firestore.
-   - Add your Firebase credentials in a `.env` file:
-     ```bash
-     FIREBASE_API_KEY=your_firebase_api_key
-     FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-     FIREBASE_PROJECT_ID=your_project_id
-     ```
-
-4. Start the backend server:
-
-   - Then, start the backend server:
-     ```bash
-     npm run start
-     ```
+There is no separate backend: the server code is the Next.js app's API
+routes (`frontend/src/app/api`), backed by Firestore. Firestore rules and
+indexes live in `database/`.
 
 ### Frontend Setup
 
-1. Navigate to the frontend folder:
+1. Clone the repository and go to the frontend folder:
 
    ```bash
-   cd ../frontend
+   git clone https://github.com/YaleComputerSociety/yaleims.git
+   cd yaleims/frontend
    ```
 
 2. Install the dependencies:
@@ -107,7 +82,9 @@ If you wish to design your own feature, we encourage you to reach out to the yim
 
 ## Project Structure
 
-'./database/functions/src': Houses all our Firebase Functions that handle database querying and inputting. All functions are written in TypeScript('.ts' file ending)
+'./frontend/src/app/api': The server: Next.js API routes that read and write Firestore.
+
+'./sidelined/elo': Switched-off Elo ratings code, kept for future use (see its README).
 
 'yaleims/frontend/src': Houses all the React components for the different pages of the web app.
 

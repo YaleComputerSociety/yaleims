@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import admin from "../../firebaseAdmin.js";
+import admin from "./firebaseAdmin.js";
 
 import { updateEloRatings } from "./elo_system.js";
 import { hybridOddsCalculator } from "./elo_odds_calculator.js";

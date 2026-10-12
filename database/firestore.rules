@@ -3,7 +3,7 @@ rules_version = '2';
 // Public reads, no client writes.
 //
 // The browser never writes to Firestore: every write goes through the server
-// (Next.js API routes and Cloud Functions), which use the Admin SDK and are not
+// (Next.js API routes), which use the Admin SDK and are not
 // subject to these rules. The site has no Firebase Auth, so the browser can't be
 // told apart from anyone else; reads stay public for now (locking them down is
 // a later phase).

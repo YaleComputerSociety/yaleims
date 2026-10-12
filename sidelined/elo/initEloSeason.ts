@@ -16,7 +16,7 @@
 // -----------------------------------------------------------------------------
 
 import { pathToFileURL } from "url";
-import admin from "../../firebaseAdmin.js";
+import admin from "./firebaseAdmin.js";
 import { ELO_CONFIG } from "./elo_system.js";
 
 const db = admin.firestore();
