@@ -1,5 +1,5 @@
-import type { MatchJson, UnscoredMatch } from "./api";
-import type { CollegeStandingDoc, PlacementPoints } from "./firestore";
+import type { BracketUpload, MatchJson, SlotInput, UnscoredMatch } from "./api";
+import type { CollegeStandingDoc } from "./firestore";
 
 export interface CollegeSummaryCardProps {
   stats: CollegeStandingDoc | null;
@@ -113,43 +113,17 @@ export interface SportCardProps {
 export interface BracketModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: BracketData) => void;
+  onSave: (data: BracketUpload) => void;
   sport: string;
   loading: boolean;
 }
 
-export interface BracketData {
-  sport: string;
-  matches: ParsedMatch[];
-}
-
-export interface Team {
-  college: string;
-  seed: string | number;
-  division: "green" | "blue" | "none";
-  matchSlot: string | number;
-  matchDatetime: string;
-  location: string;
-}
-
-export interface ParsedMatch {
-  match_slot: number;
-  away_college: string;
-  away_seed: number;
-  home_college: string;
-  home_seed: number;
-  location: string;
-  location_extra?: string;
-  timestamp: string;
+/** A row of the bracket/tournament upload forms: a slot plus the fields it is edited in. */
+export interface ParsedMatch extends SlotInput {
   division: string;
   date?: string;
   time?: string;
 }
 
-/** Payload the admin panel posts to createTournament. */
-export interface TournamentData {
-  name: string;
-  sport: string;
-  matches: ParsedMatch[];
-  placement_points: PlacementPoints;
-}
+/** The bracket upload form's data: an upload whose slots are form rows. */
+export type BracketForm = Omit<BracketUpload, "matches"> & { matches: ParsedMatch[] };

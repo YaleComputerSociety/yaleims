@@ -8,6 +8,7 @@ import {
   type DocumentReference,
   type Transaction,
 } from "firebase-admin/firestore";
+import type { SlotInput } from "@/types/api";
 import type { BracketEntry, MatchDoc } from "@/types/firestore";
 import { bracketRef } from "../data/brackets";
 import { recalculateRanks } from "../data/colleges";
@@ -43,20 +44,6 @@ const NEXT_SLOT: Record<number, number> = {
 const FEEDER_SLOTS: Record<number, [number, number]> = {
   5: [1, 2], 6: [3, 4], 11: [7, 8], 12: [9, 10], 13: [5, 6], 14: [11, 12],
 };
-
-/** One slot as uploaded by the admin page. */
-export interface SlotInput {
-  match_slot: number;
-  home_college: string;
-  home_seed: number;
-  away_college: string;
-  away_seed: number;
-  location: string;
-  location_extra?: string;
-  timestamp: string;
-  /** Brackets only: "green" | "blue" | "final" | "none". */
-  division?: string;
-}
 
 /**
  * The match docs and slot entries of a new bracket, ids from `firstId` up.

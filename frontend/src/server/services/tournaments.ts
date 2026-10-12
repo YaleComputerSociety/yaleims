@@ -4,6 +4,7 @@
 // college standings, so each runs in one transaction.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
+import type { SlotInput } from "@/types/api";
 import type { PlacementPoints } from "@/types/firestore";
 import { collegeStandingRef, recalculateRanks } from "../data/colleges";
 import { isAlreadyExists } from "../data/matches";
@@ -15,7 +16,6 @@ import {
   readSlotMatches,
   type CreateResult,
   type DeleteResult,
-  type SlotInput,
 } from "./brackets";
 import { readPointsForWin, reverseResults } from "./standings";
 

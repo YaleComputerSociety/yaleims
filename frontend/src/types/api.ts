@@ -1,8 +1,9 @@
 // Response bodies of the API routes (src/app/api), built from the stored
-// document types. The routes check what they send against these
-// (`satisfies`), and pages type what they read with them. Types only.
-// Only the bodies pages read are typed here; errors are { error } or
-// { message } or plain text, depending on the route.
+// document types, plus the request bodies the admin uploads send. The
+// routes check what they send against these (`satisfies`), and pages type
+// what they read and send with them. Types only. Only the bodies pages read
+// are typed here; errors are { error } or { message } or plain text,
+// depending on the route.
 import type {
   BracketEntry,
   CollegeStandingDoc,
@@ -10,6 +11,7 @@ import type {
   MatchDoc,
   MatchParticipant,
   MvpWeekDoc,
+  PlacementPoints,
   StoredTimestamp,
   TournamentDoc,
   UserDoc,
@@ -223,3 +225,43 @@ export interface UserStatsResponse {
 export type CaptainSportsResponse =
   | string[]
   | { error: string; sportsCaptainOf: [] };
+
+// ── Request bodies ─────────────────────────────────────────────────────────
+
+/** One bracket or tournament slot as the admin pages upload it. */
+export interface SlotInput {
+  match_slot: number;
+  home_college: string;
+  home_seed: number;
+  away_college: string;
+  away_seed: number;
+  location: string;
+  location_extra?: string;
+  timestamp: string;
+  /** Brackets only: "green" | "blue" | "final" | "none". */
+  division?: string;
+}
+
+/** A playoff bracket upload. */
+export interface BracketUpload {
+  sport: string;
+  matches: SlotInput[];
+}
+
+/** POST createBracket */
+export interface CreateBracketRequest {
+  bracketData: BracketUpload;
+}
+
+/** A tournament upload; missing placement points use the defaults. */
+export interface TournamentUpload {
+  name: string;
+  sport: string;
+  matches: SlotInput[];
+  placement_points?: Partial<PlacementPoints>;
+}
+
+/** POST createTournament */
+export interface CreateTournamentRequest {
+  tournamentData: TournamentUpload;
+}

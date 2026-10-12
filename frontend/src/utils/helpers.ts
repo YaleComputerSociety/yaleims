@@ -138,7 +138,7 @@ type EmojiMap = Record<string, string>;
 type SeasonSportsMap = { [x: string]: string[] };
 
 import type { MatchJson } from "@src/types/api";
-import { BracketData, Sport } from "@src/types/components";
+import { BracketForm, Sport } from "@src/types/components";
 import { toast } from "react-toastify";
 
 export const colleges = [
@@ -569,7 +569,7 @@ export const isValidEmail = (input: string) => {
 // Fallback if year context fails
 export const currentYear = getYearFromTimestamp(new Date());
 
-export const validateBracketData = (bracketData: BracketData): boolean => {
+export const validateBracketData = (bracketData: BracketForm): boolean => {
   const matches = bracketData.matches;
   let isValid = true;
   const collegeAbbrs = colleges.map((c) => c.id);

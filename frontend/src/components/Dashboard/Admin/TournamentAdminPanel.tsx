@@ -14,8 +14,8 @@ import {
   validateTournamentData,
   TOURNAMENT_SLOT_COUNT,
 } from "@src/utils/helpers";
-import { ParsedMatch, TournamentData } from "@src/types/components";
-import type { TournamentJson } from "@src/types/api";
+import { ParsedMatch } from "@src/types/components";
+import type { CreateTournamentRequest, TournamentJson, TournamentUpload } from "@src/types/api";
 import type { PlacementPoints } from "@src/types/firestore";
 import { useSeason } from "@src/context/SeasonContext";
 
@@ -187,7 +187,7 @@ const TournamentAdminPanel: React.FC = () => {
 
     if (!validateTournamentData(withTimestamps)) return;
 
-    const tournamentData: TournamentData = {
+    const tournamentData: TournamentUpload = {
       name: name.trim(),
       sport,
       matches: withTimestamps,
@@ -199,7 +199,7 @@ const TournamentAdminPanel: React.FC = () => {
       const response = await fetch("/api/functions/createTournament", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tournamentData }),
+        body: JSON.stringify({ tournamentData } satisfies CreateTournamentRequest),
       });
       const data = await readResponse(response);
       if (!response.ok) {

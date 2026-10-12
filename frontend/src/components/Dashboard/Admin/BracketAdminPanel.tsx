@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import BracketCreateModal from "@src/components/Dashboard/Admin/BracketCreateModal";
 import BracketInterface from "@src/components/Dashboard/Admin/BracketInterface";
-import { BracketData } from "@src/types/components";
+import type { BracketUpload, CreateBracketRequest } from "@src/types/api";
 import { toast } from "react-toastify";
 
 const BracketAdminPanel: React.FC = () => {
@@ -17,7 +17,7 @@ const BracketAdminPanel: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (bracketData: BracketData): Promise<void> => {
+  const handleSave = async (bracketData: BracketUpload): Promise<void> => {
     try {
       setCreateBracketLoading(true);
       const response = await fetch("/api/functions/createBracket", {
@@ -25,7 +25,7 @@ const BracketAdminPanel: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ bracketData }),
+        body: JSON.stringify({ bracketData } satisfies CreateBracketRequest),
       });
       const data = await response.json();
       if (!response.ok) {
