@@ -90,13 +90,11 @@ async function createSeasonDocs() {
 
   console.log(`Done seeding colleges/seasons/${seasonId}.`);
   console.log(
-    `\nRemaining rollover steps for ${seasonId}:\n` +
-      `  1. ./create_season_indexes.sh ${seasonId}\n` +
+    `\nRemaining rollover step for ${seasonId}:\n` +
+      `  ./create_season_indexes.sh ${seasonId}\n` +
       `     Firestore composite indexes are per collection id, so the new season has none.\n` +
       `     Without them the upcoming-matches queries fail and the schedules and signup pages break.\n` +
-      `  2. node addNewSeasonUser.js ${seasonId} [--prod]\n` +
-      `     Gives every existing user an empty seasons/${seasonId} doc. Until it runs,\n` +
-      `     game sign-up returns 404, so existing users cannot sign up for games.\n` +
+      `  (Users' seasons/${seasonId} docs are created on their first game sign-up.)\n` +
       `  (Elo is sidelined, so there is no Elo step; see sidelined/elo/README.md.)`,
   );
 }
