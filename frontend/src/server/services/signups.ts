@@ -20,10 +20,9 @@ export function isRosterSide(value: unknown): value is RosterSide {
 /** Why a sign-up or withdrawal didn't happen. */
 type CommonRefusal =
   | "no-match"
-  | "no-rosters" // the match doc lacks a participants array
-  | "no-user-season";
+  | "no-rosters"; // the match doc lacks a participants array
 export type SignUpResult = "ok" | CommonRefusal | "already-signed-up";
-export type WithdrawResult = "ok" | CommonRefusal | "not-signed-up";
+export type WithdrawResult = "ok" | CommonRefusal | "no-user-season" | "not-signed-up";
 
 interface SignupTarget {
   email: string;
@@ -32,18 +31,32 @@ interface SignupTarget {
   side: RosterSide;
 }
 
-// Stored values aren't validated on write; a non-array would make the old
-// functions throw (500), so it still does instead of being overwritten.
+// Stored values aren't validated on write. An empty object reads as an empty
+// list (some user-season docs store `matches: {}`); any other non-array would
+// make the old functions throw (500), so it still does instead of being
+// overwritten.
 function storedList<T>(value: unknown): T[] {
   if (!value) return [];
+  if (isEmptyObject(value)) return [];
   if (!Array.isArray(value)) throw new Error("Stored list is not an array");
   return [...value];
+}
+
+function isEmptyObject(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Object.getPrototypeOf(value) === Object.prototype &&
+    Object.keys(value).length === 0
+  );
 }
 
 /**
  * Adds the player to the match roster and the match to their season.
  * Either side may already be recorded (a half-applied earlier attempt), so
- * only the missing one is written; "already-signed-up" if both are.
+ * only the missing one is written; "already-signed-up" if both are. A
+ * missing user-season doc (no season rollover script creates it any more)
+ * is created here.
  */
 export async function signUp({
   email,
@@ -63,10 +76,9 @@ export async function signUp({
       return "no-rosters";
     }
     const userSeason = userSeasonSnap.data();
-    if (!userSeason) return "no-user-season";
 
     const roster = storedList<MatchParticipant>(match[side]);
-    const signups = storedList<UserSeasonMatch>(userSeason.matches);
+    const signups = storedList<UserSeasonMatch>(userSeason?.matches);
     const onRoster = roster.some((p) => p.email === email);
     const inSeason = signups.some((m) => Number(m?.id) === Number(matchId));
     if (onRoster && inSeason) return "already-signed-up";
@@ -75,9 +87,12 @@ export async function signUp({
       tx.update(mRef, { [side]: [...roster, { email, name }] });
     }
     if (!inSeason) {
-      tx.update(uRef, {
-        matches: [...signups, { id: Number(matchId), timestamp: matchTimestamp }],
-      });
+      const matches = [...signups, { id: Number(matchId), timestamp: matchTimestamp }];
+      if (userSeason) {
+        tx.update(uRef, { matches });
+      } else {
+        tx.create(uRef, { matches });
+      }
     }
     return "ok";
   });

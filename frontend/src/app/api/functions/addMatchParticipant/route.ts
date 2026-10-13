@@ -10,8 +10,6 @@ function refusal(result: Exclude<SignUpResult, "ok">, email: string): Response {
         { error: "Invalid match data, missing participant fields" },
         { status: 400 }
       );
-    case "no-user-season":
-      return Response.json({ error: "User not found" }, { status: 404 });
     case "already-signed-up":
       return Response.json({ error: `${email} is already a participant` }, { status: 400 });
   }
