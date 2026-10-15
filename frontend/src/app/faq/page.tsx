@@ -137,31 +137,6 @@ export default function Faq() {
         },
       ],
     },
-    {
-      title: "Predicting Game Outcomes",
-      faqs: [
-        {
-          question: "How do predictions work?",
-          answer:
-            "Odds is a fun game of speculation where you can place virtual predictions on Yale intramural games using Ycoins, showcasing your prediction skills and college spirit. Odds determine your potential winnings based on the likelihood of the outcome.",
-        },
-        {
-          question: "What are YCoins?",
-          answer:
-            "YCoins are virtual coins used in YaleIMs. Each user starts with 500 YCoins to place predictions on intramural games. Winnings depend on your predictions and the odds of the match.",
-        },
-        {
-          question: "How do YCoins work? Can I lose all my YCoins?",
-          answer:
-            "Each week, you receive 500 YCoins to place predictions on intramural games. If your predictions are incorrect, you can lose your YCoins, but the game is designed to be fun and not financially impactful.",
-        },
-        {
-          question: "How are odds determined?",
-          answer:
-            "Odds are calculated using an algorithm that considers team performance, such as frequent winners versus underdogs. This affects your potential winnings from predictions.",
-        },
-      ],
-    },
   ];
 
   return (

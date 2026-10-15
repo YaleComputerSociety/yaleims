@@ -2,16 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
+import { db } from "@/lib/firebase";
+import { paths } from "@/lib/paths";
 import { colleges } from "@src/utils/helpers";
 import { getCollegeFlag } from "@src/utils/versionedImages";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
-
-interface SeasonDoc {
-  winningCollegeId?: string | null;
-  celebrationActive?: boolean;
-}
+import type { CurrentSeasonDoc } from "@src/types/firestore";
 
 const ChampionControls: React.FC = () => {
   const [winningCollegeId, setWinningCollegeId] = useState<string>("");
@@ -20,8 +17,8 @@ const ChampionControls: React.FC = () => {
   const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "seasons", "current"), (snap) => {
-      const data = snap.data() as SeasonDoc | undefined;
+    const unsub = onSnapshot(doc(db, paths.currentSeason), (snap) => {
+      const data = snap.data() as CurrentSeasonDoc | undefined;
       setWinningCollegeId(data?.winningCollegeId ?? "");
       setCelebrationActive(!!data?.celebrationActive);
       setLoaded(true);

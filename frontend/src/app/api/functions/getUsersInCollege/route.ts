@@ -1,22 +1,43 @@
-import { cookies } from "next/headers";
+import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
+import { listCollegeUsers } from "@/server/data/users";
+import type { UsersInCollegeResponse } from "@/types/api";
 
+/**
+ * The college rep's own college: all its users, plus its captains when
+ * ?wantCaptains=true.
+ */
 export async function GET(req: Request) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
+  try {
+    if (!(await getSessionToken())) {
+      return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-    const url = new URL(req.url);
-    const wantCaptains = url.searchParams.get("wantCaptains")
-    const response= await fetch(
-        `https://getusersincollege-65477nrg6a-uc.a.run.app?wantCaptains=${wantCaptains}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
-    );
-
-    if (!response.ok) {
-        return new Response(await response.text(), { status: response.status });
+    const session = await getSession();
+    if (!session) {
+      return Response.json({ error: "Invalid token" }, { status: 401 });
+    }
+    if (!hasAnyRole(session, ["college_rep"])) {
+      return Response.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const data = await response.json();
-    return Response.json(data);
+    const users = await listCollegeUsers(session.college);
+    if (users.length === 0) {
+      return Response.json({ error: "No users found" }, { status: 404 });
+    }
+    if (new URL(req.url).searchParams.get("wantCaptains") !== "true") {
+      return Response.json({ users } satisfies UsersInCollegeResponse);
+    }
+
+    const captains = users
+      .filter((u) => u.mRoles?.includes("captain") || u.role === "captain")
+      .map((u) => ({
+        firstName: u.firstname,
+        lastName: u.lastname,
+        email: u.email,
+        sportsCaptainOf: u.sportsCaptainOf,
+      }));
+    return Response.json({ users, captains } satisfies UsersInCollegeResponse);
+  } catch (err) {
+    console.error("Error fetching users in college:", err);
+    return new Response("Internal Server Error", { status: 500 });
+  }
 }

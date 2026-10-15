@@ -1,93 +1,44 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
-import { db } from "../../../../../lib/firebase";
+import { getSession, hasAnyRole } from "@/server/session";
 import {
-  doc,
-  collection,
-  collectionGroup,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
+  listMatchScoreReports,
+  listSeasonScoreReports,
+} from "@/server/data/scoreReports";
+import type { ScoreReport, ScoreReportsResponse, SerializedTimestamp } from "@/types/api";
+import type { ScoreReportDoc, StoredTimestamp, WithId } from "@/types/firestore";
 
-export interface ScoreReport {
-  id: string;
-  reason: string;
-  reportedBy: string;
-  reportedByEmail: string;
-  reportedAt: { _seconds: number; _nanoseconds?: number } | string;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: { _seconds: number; _nanoseconds?: number } | string;
-  matchId: string;
-  season: string;
-  matchHomeCollege?: string;
-  matchAwayCollege?: string;
-  homeScore?: number;
-  awayScore?: number;
-  sport?: string;
-}
+const apiTimestamp = (ts: StoredTimestamp | undefined | null): SerializedTimestamp | undefined =>
+  ts ? { _seconds: ts.seconds, _nanoseconds: ts.nanoseconds } : undefined;
 
 function formatReport(
-  docSnap: { id: string; data: () => Record<string, unknown> },
+  d: WithId<ScoreReportDoc>,
   matchId: string,
   season: string
 ): ScoreReport {
-  const d = docSnap.data();
-  const reportedAt = d.reportedAt as
-    | { _seconds: number; _nanoseconds?: number }
-    | { seconds: number; nanoseconds?: number }
-    | null;
-  const resolvedAt = d.resolvedAt as
-    | { _seconds: number; _nanoseconds?: number }
-    | { seconds: number; nanoseconds?: number }
-    | null;
-
   return {
-    id: docSnap.id,
-    reason: (d.reason as string) ?? "",
-    reportedBy: (d.reportedBy as string) ?? "",
-    reportedByEmail: (d.reportedByEmail as string) ?? "",
-    reportedAt: reportedAt
-      ? "_seconds" in reportedAt
-        ? reportedAt
-        : { _seconds: reportedAt.seconds, _nanoseconds: reportedAt.nanoseconds }
-      : "",
-    resolved: (d.resolved as boolean) ?? false,
-    resolvedBy: d.resolvedBy as string | undefined,
-    resolvedAt: resolvedAt
-      ? "_seconds" in resolvedAt
-        ? resolvedAt
-        : { _seconds: resolvedAt.seconds, _nanoseconds: resolvedAt.nanoseconds }
-      : undefined,
+    id: d.id,
+    reason: d.reason ?? "",
+    reportedBy: d.reportedBy ?? "",
+    reportedByEmail: d.reportedByEmail ?? "",
+    reportedAt: apiTimestamp(d.reportedAt) ?? "",
+    resolved: d.resolved ?? false,
+    resolvedBy: d.resolvedBy,
+    resolvedAt: apiTimestamp(d.resolvedAt),
     matchId,
     season,
-    matchHomeCollege: d.matchHomeCollege as string | undefined,
-    matchAwayCollege: d.matchAwayCollege as string | undefined,
-    homeScore: d.homeScore as number | undefined,
-    awayScore: d.awayScore as number | undefined,
-    sport: d.sport as string | undefined,
+    matchHomeCollege: d.matchHomeCollege,
+    matchAwayCollege: d.matchAwayCollege,
+    homeScore: d.homeScore,
+    awayScore: d.awayScore,
+    sport: d.sport,
   };
 }
 
 /** GET reports: ?season=<seasonId>&matchId=123 (for a match) or ?season=<seasonId>&all=true (admin, all reports) */
 export async function GET(req: Request): Promise<NextResponse> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-    let user: { name?: string; username?: string; email: string; mRoles?: string[] };
-    try {
-      user = jwt.verify(token.value, JWT_SECRET) as typeof user;
-    } catch {
+    const user = await getSession();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -103,32 +54,14 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    const seasonStr = String(season);
-    const scoreReportsRoot = doc(db, "matches", "score_reports");
-    const seasonCol = collection(scoreReportsRoot, seasonStr);
-
     if (all) {
-      const isAdmin = user.mRoles?.includes("admin") || user.mRoles?.includes("dev");
-      if (!isAdmin) {
+      if (!hasAnyRole(user, ["admin", "dev"])) {
         return NextResponse.json({ error: "Forbidden: admin required" }, { status: 403 });
       }
-
-      const q = query(
-        collectionGroup(db, "reports"),
-        orderBy("reportedAt", "desc")
+      const reports = (await listSeasonScoreReports(season)).map((r) =>
+        formatReport(r, r.matchId, season)
       );
-      const snap = await getDocs(q);
-
-      const allReports: ScoreReport[] = [];
-      for (const docSnap of snap.docs) {
-        const pathParts = docSnap.ref.path.split("/");
-        const seasonFromPath = pathParts[2] ?? "";
-        if (seasonFromPath !== seasonStr) continue;
-        const mId = (docSnap.data().matchId as string) ?? pathParts[3] ?? "";
-        allReports.push(formatReport(docSnap, mId, seasonStr));
-      }
-
-      return NextResponse.json({ reports: allReports }, { status: 200 });
+      return NextResponse.json({ reports } satisfies ScoreReportsResponse, { status: 200 });
     }
 
     if (!matchId) {
@@ -138,16 +71,10 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    const matchDocRef = doc(seasonCol, String(matchId));
-    const reportsCol = collection(matchDocRef, "reports");
-    const q = query(reportsCol, orderBy("reportedAt", "desc"));
-    const snap = await getDocs(q);
-
-    const reports: ScoreReport[] = snap.docs.map((docSnap) =>
-      formatReport(docSnap, String(matchId), seasonStr)
+    const reports = (await listMatchScoreReports(season, matchId)).map((r) =>
+      formatReport(r, matchId, season)
     );
-
-    return NextResponse.json({ reports }, { status: 200 });
+    return NextResponse.json({ reports } satisfies ScoreReportsResponse, { status: 200 });
   } catch (err) {
     console.error("Error fetching score reports:", err);
     return NextResponse.json(

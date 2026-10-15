@@ -9,7 +9,6 @@ import { useTheme } from "next-themes";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { MdOutlineScoreboard } from "react-icons/md";
 import { GrSchedules } from "react-icons/gr";
-import { PiHandCoinsLight } from "react-icons/pi";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { VscFeedback } from "react-icons/vsc";
 import { usePathname } from "next/navigation";
@@ -71,7 +70,6 @@ const NavBar: React.FC = () => {
     { href: "/games", text: "Games", icon: <MdSports /> },
     { href: "/brackets", text: "Playoff Brackets", icon: <TbBrackets /> },
     { href: "/tournaments", text: "Tournaments", icon: <TbTournament /> },
-    { href: "/odds", text: "Odds", icon: <PiHandCoinsLight /> },
     { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
     { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
     { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },

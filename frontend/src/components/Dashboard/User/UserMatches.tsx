@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Match } from "@src/types/components";
+import type { MatchWithIsoTime, UserMatchObjectsResponse } from "@src/types/api";
 import { FaCalendar } from "react-icons/fa";
 import {
   currentYear,
@@ -13,7 +13,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import LoadingSpinner from "@src/components/LoadingSpinner";
 
 interface MatchListItemProps {
-  match: Match;
+  match: MatchWithIsoTime;
   roundedClass?: string;
   seasonId?: string;
 }
@@ -79,7 +79,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          matchId: match.id as string,
+          matchId: match.id,
           participantType:
             toCollegeName[userCollege] === toCollegeName[match.home_college]
               ? "home_college_participants"
@@ -205,7 +205,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   );
 };
 
-const MatchList: React.FC<{ matches: Match[]; seasonId: string }> = ({
+const MatchList: React.FC<{ matches: UserMatchObjectsResponse; seasonId: string }> = ({
   matches,
   seasonId,
 }) => {
@@ -266,7 +266,7 @@ const MatchList: React.FC<{ matches: Match[]; seasonId: string }> = ({
 };
 
 const UserMatches = () => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<UserMatchObjectsResponse>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { currentSeason } = useSeason();
   const currentSeasonId = currentSeason ? currentSeason.year : currentYear;
@@ -281,7 +281,7 @@ const UserMatches = () => {
         );
         if (!response.ok)
           throw new Error(`Error fetching matches: ${response.statusText}`);
-        const data = await response.json();
+        const data: UserMatchObjectsResponse = await response.json();
 
         setMatches(data);
       } catch (error) {

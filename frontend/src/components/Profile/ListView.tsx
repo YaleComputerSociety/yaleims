@@ -1,9 +1,9 @@
 import React from "react";
 import MatchListItem from "./MatchListItem";
-import { Match } from "@src/types/components";
+import type { CollegeMatchJson } from "@src/types/api";
 
 interface ListViewProps {
-  matches: Match[];
+  matches: CollegeMatchJson[];
   isSignedUp: boolean; // Determines initial state for MatchListItems
 }
 

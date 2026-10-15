@@ -1,0 +1,15 @@
+{
+  "name": "yims-seed",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tooling to build a sanitized seed dataset for the Firebase Emulator Suite / QA.",
+  "scripts": {
+    "export": "node export-prod.mjs",
+    "sanitize": "node sanitize.mjs",
+    "load": "node load-emulator.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
+  }
+}

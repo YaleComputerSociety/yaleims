@@ -1,1 +1,10 @@
 database/misc/serviceaccount.json
+# Schedule spreadsheets/CSVs for format_schedule.py stay out of git
+database/misc/**/*.xlsx
+database/misc/**/*.csv
+
+# Local env files (contain real secrets: JWT_SECRET, YALIES_API_KEY, etc.)
+.env.local
+.env*.local
+**/.env.local
+**/.env*.local

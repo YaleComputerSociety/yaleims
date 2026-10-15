@@ -4,47 +4,40 @@ import { useEffect, useState } from "react";
 import { useUser } from "@src/context/UserContext";
 import Image from "next/image";
 import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
-import { Match, Participant } from "@src/types/components";
+import type { CollegeMatchJson } from "@src/types/api";
+import type { MatchParticipant } from "@src/types/firestore";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
-import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/utils/versionedImages";
+import SignInPrompt from "@src/components/SignInPrompt";
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<CollegeMatchJson[]>([]);
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
-  const [availablePoints, setAvailablePoints] = useState(0);
-  const [correctPrediction, setCorrectPredictions] = useState(0);
 
-  const userEmail = user ? user.email : null;
   const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
-
-  const cloudFunctionUrl = "https://getcollegematches-65477nrg6a-uc.a.run.app";
 
   useEffect(() => {
     const fetchUserMatches = async () => {
       if (!user || !user.email || matches.length > 0) return;
 
-      const userToken = sessionStorage.getItem("userToken")
       setFetching(true);
       try {
         const userCollegeAbbreviation =
           toCollegeAbbreviation[user.college] || user.college;
 
         const response = await fetch(
-          `${cloudFunctionUrl}?college=${userCollegeAbbreviation}&type=future&sortOrder=asc&limit=${matchesLimit}`,
+          `/api/functions/getCollegeMatches?college=${userCollegeAbbreviation}&limit=${matchesLimit}`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${userToken}`
-            },
+            headers: { "Content-Type": "application/json" },
           }
         );
 
@@ -52,7 +45,7 @@ const Profile = () => {
           throw new Error(`Error fetching matches: ${response.statusText}`);
         }
 
-        const fetchedMatches: Match[] = await response.json();
+        const fetchedMatches: CollegeMatchJson[] = await response.json();
 
         setMatches(fetchedMatches);
       } catch (error) {
@@ -66,31 +59,8 @@ const Profile = () => {
   }, [user, matches.length]);
 
   useEffect(() => {
-    if (!userEmail) return;
-
-    const fetchMyPoints = async () => {
-      try {
-        const userToken = sessionStorage.getItem("userToken")
-
-        const response = await fetch(
-          `https://us-central1-yims-125a2.cloudfunctions.net/getMyAvailablePoints?email=${userEmail}`, 
-          {
-            headers: {Authorization: `Bearer ${userToken}`}
-          }
-        );
-        if (!response.ok)
-          throw new Error(`Error fetching points: ${response.statusText}`);
-        const data = await response.json();
-        setAvailablePoints(data.points);
-        setCorrectPredictions(data.correctPredictions);
-        setNewUsername(data.username);
-      } catch (error) {
-        console.error("Failed to fetch points:", error);
-      }
-    };
-
-    fetchMyPoints();
-  }, [userEmail]);
+    if (user?.username) setNewUsername(user.username);
+  }, [user?.username]);
 
   const signedUpMatches = matches.filter((match) => {
     const homeParticipants = match.home_college_participants || [];
@@ -98,10 +68,10 @@ const Profile = () => {
 
     return (
       homeParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       ) ||
       awayParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       )
     );
   });
@@ -112,10 +82,10 @@ const Profile = () => {
 
     return (
       !homeParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       ) &&
       !awayParticipants.some(
-        (participant: Participant) => participant.email === user?.email
+        (participant: MatchParticipant) => participant.email === user?.email
       )
     );
   });
@@ -125,22 +95,11 @@ const Profile = () => {
     setError("");
 
     try {
-      const userToken = sessionStorage.getItem("userToken")
-
-      const response = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/updateUsername",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
-          },
-          body: JSON.stringify({
-            userId: user?.email,
-            newUsername: newUsername.trim(),
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/updateUsername", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newUsername: newUsername.trim() }),
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -182,8 +141,8 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center h-screen text-xl text-gray-500">
-        <span>User not signed in</span>
+      <div className="flex justify-center items-center h-screen px-4">
+        <SignInPrompt message="Sign in to see your profile." />
       </div>
     );
   }
@@ -212,7 +171,7 @@ const Profile = () => {
               </div>
               <div className="flex items-center flex-col">
                 <p className="text-md font-bold flex items-center mb-3">
-                  Yodds Username: {newUsername || "Anonymous"}
+                  Username: {newUsername || "Anonymous"}
                   <span className="ml-2 flex items-center">
                     <MdModeEditOutline
                       style={{ fontSize: "24px" }} // Ensures a fixed size
@@ -220,21 +179,6 @@ const Profile = () => {
                       onClick={() => setIsEditing(true)}
                     />
                   </span>
-                </p>
-                <div className="flex flex-row items-center space-x-2">
-                  <p className="text-md font-bold">
-                    YCoins: {availablePoints.toFixed(2) || 0}
-                  </p>
-                  <Image
-                    src={getVersionedImage("/YCoin.png")}
-                    alt="YCoin"
-                    height={25} // Retains the specified height
-                    width={25} // Retains the specified width
-                    style={{ objectFit: "contain" }} // Proper usage of objectFit
-                  />
-                </div>
-                <p className="text-md font-bold">
-                  Correct Predictions: {correctPrediction}
                 </p>
               </div>
             </div>

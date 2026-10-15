@@ -14,12 +14,9 @@ import {
   validateTournamentData,
   TOURNAMENT_SLOT_COUNT,
 } from "@src/utils/helpers";
-import {
-  ParsedMatch,
-  PlacementPoints,
-  Tournament,
-  TournamentData,
-} from "@src/types/components";
+import { ParsedMatch } from "@src/types/components";
+import type { CreateTournamentRequest, TournamentJson, TournamentUpload } from "@src/types/api";
+import type { PlacementPoints } from "@src/types/firestore";
 import { useSeason } from "@src/context/SeasonContext";
 
 // Slot labels mirror the bracket the backend builds, so an admin filling the
@@ -93,7 +90,7 @@ const TournamentAdminPanel: React.FC = () => {
     useState<PlacementPoints>(DEFAULT_PLACEMENT);
   const [matches, setMatches] = useState<ParsedMatch[]>(buildEmptyMatches);
   const [creating, setCreating] = useState(false);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string>("");
   const [listError, setListError] = useState<string>("");
@@ -107,14 +104,6 @@ const TournamentAdminPanel: React.FC = () => {
       );
       const data = await readResponse(response);
 
-      if (response.status === 404) {
-        // The proxy route exists, so a 404 means the upstream cloud function is
-        // missing -- almost always because it has not been deployed yet.
-        setListError(
-          "The tournaments service is unreachable. If this is a new deploy, run `firebase deploy --only functions`."
-        );
-        return;
-      }
       if (!response.ok) {
         setListError(data.error || "Could not load tournaments.");
         return;
@@ -198,7 +187,7 @@ const TournamentAdminPanel: React.FC = () => {
 
     if (!validateTournamentData(withTimestamps)) return;
 
-    const tournamentData: TournamentData = {
+    const tournamentData: TournamentUpload = {
       name: name.trim(),
       sport,
       matches: withTimestamps,
@@ -210,16 +199,11 @@ const TournamentAdminPanel: React.FC = () => {
       const response = await fetch("/api/functions/createTournament", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tournamentData }),
+        body: JSON.stringify({ tournamentData } satisfies CreateTournamentRequest),
       });
       const data = await readResponse(response);
       if (!response.ok) {
-        throw new Error(
-          data.error ||
-            (response.status === 404
-              ? "Tournaments service unreachable -- deploy the cloud functions first."
-              : "Failed to create tournament")
-        );
+        throw new Error(data.error || "Failed to create tournament");
       }
       toast.success(`Tournament '${name.trim()}' created!`);
       setName("");
@@ -233,7 +217,7 @@ const TournamentAdminPanel: React.FC = () => {
     }
   };
 
-  const handleDelete = async (tournament: Tournament, force = false) => {
+  const handleDelete = async (tournament: TournamentJson, force = false) => {
     if (
       !force &&
       !window.confirm(
@@ -252,8 +236,7 @@ const TournamentAdminPanel: React.FC = () => {
       });
       const data = await readResponse(response);
 
-      // Scored matches block a plain delete so their points are not stranded;
-      // the admin gets one explicit chance to override.
+      // Deleting takes back the points of scored games; the admin confirms that.
       if (response.status === 409 && !force) {
         if (window.confirm(`${data.error}\n\nDelete anyway?`)) {
           await handleDelete(tournament, true);

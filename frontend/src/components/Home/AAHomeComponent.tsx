@@ -16,22 +16,24 @@ import ChampionConfetti from "./ChampionConfetti";
 import { useConfettiEnabled } from "@src/utils/preferences";
 import {
   collection,
-  doc,
   onSnapshot,
   orderBy,
   query,
   Unsubscribe,
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
+import { paths } from "@/lib/paths";
+import { useChampionship } from "@src/utils/useChampionship";
+import type { CollegeStandingDoc, WithId } from "@src/types/firestore";
 
+// Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
-const BANNER_MESSAGE =
-  "🎮 The odds challenge for the Nintendo Switch is still on! Place bets to compete!";
+const BANNER_MESSAGE = "";
 
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
-  const [sortedColleges, setSortedColleges] = useState<any[]>([]);
+  const [sortedColleges, setSortedColleges] = useState<WithId<CollegeStandingDoc>[]>([]);
   const { filter } = useContext(FiltersContext);
   const { currentSeason } = useSeason();
   const [selected, setSelected] = useState<string>(
@@ -40,27 +42,11 @@ const AAHomeComponent: React.FC = () => {
       : currentSeason?.year || currentYear,
   );
   const [bannerOpen, setBannerOpen] = useState(true);
-  const [championship, setChampionship] = useState<{
-    winningCollegeId: string | null;
-    celebrationActive: boolean;
-  } | null>(null);
+  const championship = useChampionship();
   const confettiEnabled = useConfettiEnabled();
 
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, "seasons", "current"), (snap) => {
-      const data = snap.data() as
-        | { winningCollegeId?: string | null; celebrationActive?: boolean }
-        | undefined;
-      setChampionship({
-        winningCollegeId: data?.winningCollegeId ?? null,
-        celebrationActive: !!data?.celebrationActive,
-      });
-    });
-    return () => unsub();
-  }, []);
-
   const winningCollege =
-    championship?.celebrationActive && championship.winningCollegeId
+    championship.celebrationActive && championship.winningCollegeId
       ? colleges.find((c) => c.id === championship.winningCollegeId)
       : undefined;
 
@@ -74,14 +60,14 @@ const AAHomeComponent: React.FC = () => {
     setLoading(true);
 
     const q = query(
-      collection(db, "colleges", "seasons", selected),
+      collection(db, paths.collegeStandings(selected)),
       orderBy("rank", "asc"),
     );
 
     unsub = onSnapshot(
       q,
       (snap) => {
-        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as CollegeStandingDoc) }));
         rows.sort((a, b) => Number(a.rank) - Number(b.rank));
         setSortedColleges(rows);
         setLoading(false);

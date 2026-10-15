@@ -3,31 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFlag, FaSpinner, FaCheck } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
-import { Match } from "@src/types/components";
+import type { MatchJson, ScoreReport, ScoreReportsResponse } from "@src/types/api";
 import { useUser } from "@src/context/UserContext";
 import { userIsAdminOrDev } from "@src/utils/helpers";
 import { toast } from "react-toastify";
 
-export interface ScoreReportItem {
-  id: string;
-  reason: string;
-  reportedBy: string;
-  reportedByEmail: string;
-  reportedAt: { _seconds: number; _nanoseconds?: number } | string;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: { _seconds: number; _nanoseconds?: number } | string;
-  matchId: string;
-  season: string;
-  matchHomeCollege?: string;
-  matchAwayCollege?: string;
-  homeScore?: number;
-  awayScore?: number;
-  sport?: string;
-}
-
 interface ReportScoreButtonProps {
-  match: Match;
+  match: MatchJson;
   seasonId?: string;
 }
 
@@ -72,7 +54,7 @@ export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({
 };
 
 interface ReportScoreModalProps {
-  match: Match;
+  match: MatchJson;
   seasonId?: string;
   setModalOpen: (open: boolean) => void;
 }
@@ -94,7 +76,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
   const isAdminOrDev = userIsAdminOrDev(user);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [reports, setReports] = useState<ScoreReportItem[]>([]);
+  const [reports, setReports] = useState<ScoreReport[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
@@ -108,7 +90,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
         `/api/functions/getScoreReports?season=${encodeURIComponent(season)}&matchId=${encodeURIComponent(String(match.id))}`
       );
       if (res.ok) {
-        const data = await res.json();
+        const data: ScoreReportsResponse = await res.json();
         setReports(data.reports ?? []);
       }
     } catch {
@@ -167,7 +149,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
     }
   };
 
-  const handleResolve = async (report: ScoreReportItem) => {
+  const handleResolve = async (report: ScoreReport) => {
     if (!isAdminOrDev) return;
     setResolvingId(report.id);
     try {

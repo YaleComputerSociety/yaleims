@@ -7,11 +7,11 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { CurrentSeason, PastSeasons } from "@src/types/components";
+import type { SeasonsResponse } from "@src/types/api";
 
 interface SeasonContextType {
-  currentSeason: CurrentSeason | null;
-  pastSeasons: PastSeasons | null;
+  currentSeason: SeasonsResponse["current"] | null;
+  pastSeasons: SeasonsResponse["past"] | null;
   seasonLoading: boolean;
 }
 
@@ -22,10 +22,10 @@ const SeasonContext = createContext<SeasonContextType>({
 });
 
 export const SeasonProvider = ({ children }: { children: ReactNode }) => {
-  const [currentSeason, setCurrentSeason] = useState<CurrentSeason | null>(
+  const [currentSeason, setCurrentSeason] = useState<SeasonsResponse["current"] | null>(
     null
   );
-  const [pastSeasons, setPastSeasons] = useState<PastSeasons | null>(null);
+  const [pastSeasons, setPastSeasons] = useState<SeasonsResponse["past"] | null>(null);
   const [seasonLoading, setSeasonLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export const SeasonProvider = ({ children }: { children: ReactNode }) => {
       try {
         const res = await fetch("/api/functions/getSeasons");
         if (!res.ok) throw new Error("Failed to load season");
-        const data = await res.json();
+        const data: SeasonsResponse = await res.json();
         setCurrentSeason(data.current);
         setPastSeasons(data.past);
       } catch (err) {

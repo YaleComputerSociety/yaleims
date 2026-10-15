@@ -1,25 +1,32 @@
-import { cookies } from "next/headers";
+import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
+import { listUnscoredPastMatches } from "@/server/data/matches";
+import type { RouteBody, UnscoredMatchesResponse } from "@/types/api";
 
+/** ?seasonId=: matches that started but have no score yet (admin/dev). */
 export async function GET(req: Request) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
+  try {
+    if (!(await getSessionToken())) {
+      return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-    const url = new URL(req.url);
-    const seasonId = url.searchParams.get("seasonId");
+    const seasonId = new URL(req.url).searchParams.get("seasonId");
     if (!seasonId) {
-        return Response.json({ error: "seasonId is required" }, { status: 400 });
+      return Response.json({ error: "seasonId is required" }, { status: 400 });
     }
-    const response= await fetch(
-        `https://getunscoredmatches-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
-    );
-
-    if (!response.ok) {
-        return new Response(await response.text(), { status: response.status });
+    const session = await getSession();
+    if (!session) {
+      return Response.json({ error: "Invalid token" }, { status: 401 });
+    }
+    if (!hasAnyRole(session, ["admin", "dev"])) {
+      return Response.json({ error: "Unauthorized User" }, { status: 401 });
     }
 
-    const data = await response.json();
-    return Response.json(data);
+    const matches = await listUnscoredPastMatches(seasonId, new Date());
+    return Response.json({
+      success: true,
+      matches,
+    } satisfies RouteBody<UnscoredMatchesResponse>);
+  } catch (err) {
+    console.error("Error fetching unscored matches:", err);
+    return new Response("Internal Server Error", { status: 500 });
+  }
 }

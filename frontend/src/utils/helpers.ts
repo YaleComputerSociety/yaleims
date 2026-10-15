@@ -1,6 +1,6 @@
 // Helper to parse and validate bracket CSV for BracketCreateModal
 import { ParsedMatch } from "@src/types/components";
-import { User } from "@src/types/components";
+import type { SessionUser } from "@src/types/api";
 
 /**
  * Parses and validates a bracket CSV file for the bracket creation modal.
@@ -137,7 +137,8 @@ type SportMap = Record<string, number>;
 type EmojiMap = Record<string, string>;
 type SeasonSportsMap = { [x: string]: string[] };
 
-import { BracketData, Match, Sport } from "@src/types/components";
+import type { MatchJson } from "@src/types/api";
+import { BracketForm, Sport } from "@src/types/components";
 import { toast } from "react-toastify";
 
 export const colleges = [
@@ -348,9 +349,6 @@ export const sports: Sport[] = [
   },
 ];
 
-export const totalOddsCalc = (bets: { betOdds: number }[]): number =>
-  bets.reduce((prod, { betOdds }) => prod * betOdds, 1);
-
 export const sportsMap: SportMap = {
   "Flag Football": 6,
   Spikeball: 6,
@@ -479,14 +477,22 @@ export const getRatioAsString = (
   return `${ratio}%`;
 };
 
-export const groupByDate = (allMatches: Match[]) => {
-  const groupedData: { [key: string]: Match[] } = {};
+/**
+ * A match's start time. A match without one (null) reads as the epoch, as
+ * `new Date(null)` always did.
+ */
+export const matchDate = (timestamp: string | Date | null): Date => new Date(timestamp ?? 0);
+
+export const groupByDate = <M extends Pick<MatchJson, "timestamp">>(
+  allMatches: (M | null)[]
+) => {
+  const groupedData: { [key: string]: M[] } = {};
 
   // Filter out null matches
-  const validMatches = allMatches.filter((item) => item !== null);
+  const validMatches = allMatches.filter((item): item is M => item !== null);
 
   validMatches.forEach((item) => {
-    const date: string = new Date(item.timestamp).toLocaleDateString("en-CA", {
+    const date: string = matchDate(item.timestamp).toLocaleDateString("en-CA", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -511,10 +517,16 @@ function formatDateTime(date: Date | string): string {
   return isoString.replace(/[-:]/g, "").split(".")[0] + "Z";
 }
 
-export function generateGoogleCalendarLink(match: Match): string {
+/** The fields a calendar event is built from; any match shape the pages hold has them. */
+type CalendarMatch = Pick<
+  MatchJson,
+  "sport" | "home_college" | "away_college" | "location" | "location_extra"
+> & { timestamp: string | Date | null };
+
+export function generateGoogleCalendarLink(match: CalendarMatch): string {
   const baseUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE";
 
-  const start = new Date(match.timestamp);
+  const start = matchDate(match.timestamp);
   const end = new Date(start);
   end.setHours(start.getHours() + 1); // 1 hour long event
 
@@ -531,49 +543,6 @@ export function generateGoogleCalendarLink(match: Match): string {
 
   return `${baseUrl}&${params.toString()}`;
 }
-
-// export const groupBetByDate = (allBets: any[]) => {
-//   const groupedData: { [key: string]: any[] } = {};
-
-//   allBets.forEach((item) => {
-//     const date: string = new Date(item.matchTimestamp).toLocaleDateString(
-//       "en-CA",
-//       {
-//         year: "numeric",
-//         month: "2-digit",
-//         day: "2-digit",
-//       }
-//     );
-//     if (!groupedData[date]) {
-//       groupedData[date] = [];
-//     }
-//     groupedData[date].push(item);
-//   });
-
-//   return groupedData;
-// };
-
-export const groupBetByDate = (allBets: any[]) => {
-  const groupedData: { [key: string]: any[] } = {};
-
-  allBets.forEach((item) => {
-    const timestamp = new Date(item.matchTimestamp);
-
-    // Convert to EST (UTC-5) — adjust based on daylight saving time if needed
-    const estTimestamp = new Date(
-      timestamp.getTime() - 5 * 60 * 60 * 1000 // Subtract 5 hours
-    );
-
-    // Format to a date string in EST
-    const date = estTimestamp.toISOString().split("T")[0];
-    if (!groupedData[date]) {
-      groupedData[date] = [];
-    }
-    groupedData[date].push(item);
-  });
-
-  return groupedData;
-};
 
 export const allTimeStandings = [
   ["Timothy Dwight", 14],
@@ -600,7 +569,7 @@ export const isValidEmail = (input: string) => {
 // Fallback if year context fails
 export const currentYear = getYearFromTimestamp(new Date());
 
-export const validateBracketData = (bracketData: BracketData): boolean => {
+export const validateBracketData = (bracketData: BracketForm): boolean => {
   const matches = bracketData.matches;
   let isValid = true;
   const collegeAbbrs = colleges.map((c) => c.id);
@@ -858,7 +827,7 @@ export const toTimestamp = (
 
 /** Returns the IM season string (e.g. "2024-2025") for a given timestamp */
 export function getYearFromTimestamp(
-  timestamp: Date | string | number
+  timestamp: Date | string | number | null
 ): string {
   let date: Date;
   if (timestamp instanceof Date) {
@@ -883,7 +852,7 @@ export function getYearFromTimestamp(
   return `${year - 1}-${year}`;
 }
 
-export const userIsAdminOrDev = (user: User | null): boolean => {
+export const userIsAdminOrDev = (user: SessionUser | null): boolean => {
   if (!user) return false;
 
   const isAdmin =

@@ -1,25 +1,29 @@
-import { cookies } from "next/headers";
+import { getSession, getSessionToken } from "@/server/session";
+import { listUpcomingSignups } from "@/server/data/users";
+import type { UserSignupsResponse } from "@/types/api";
 
+/** ?seasonId=: the signed-in user's upcoming game sign-ups ({ id, timestamp }). */
 export async function GET(req: Request) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401 });
+  try {
+    if (!(await getSessionToken())) {
+      return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-    const url = new URL(req.url);
-    const seasonId = url.searchParams.get("seasonId");
+    const seasonId = new URL(req.url).searchParams.get("seasonId");
     if (!seasonId) {
-        return Response.json({ error: "seasonId is required" }, { status: 400 });
+      return Response.json({ error: "seasonId is required" }, { status: 400 });
     }
-    const response= await fetch(
-        `https://getusermatches-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.value}` } }
-    );
-
-    if (!response.ok) {
-        return new Response(await response.text(), { status: response.status });
+    const session = await getSession();
+    if (!session) {
+      return Response.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const data = await response.json();
-    return Response.json(data);
+    const signups = await listUpcomingSignups(session.email, seasonId, new Date());
+    if (!signups) {
+      return new Response("User not found", { status: 404 });
+    }
+    return Response.json(signups satisfies UserSignupsResponse);
+  } catch (err) {
+    console.error("Error fetching user matches:", err);
+    return new Response("Internal Server Error", { status: 500 });
+  }
 }

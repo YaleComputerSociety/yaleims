@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
+import { paths } from "@/lib/paths";
 import { currentYear } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import BracketCell from "@src/components/Brackets/BracketCell";
@@ -13,12 +14,13 @@ import { useNavbar } from "@src/context/NavbarContext";
 import PageHeading from "@src/components/PageHeading";
 import { getVersionedImage } from "@/utils/versionedImages";
 import useElementHeight from "@src/hooks/useElementHeight";
-import { Tournament, TournamentBracketMatch } from "@src/types/components";
+import type { TournamentJson, TournamentSlotJson, TournamentsResponse } from "@src/types/api";
 import BracketConnectorSvg, {
   TOURNAMENT_EDGES,
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
+import type { MatchDoc } from "@src/types/firestore";
 
 // Tournaments reuse the 14-team playoff shape, so slot n lives at index n - 1.
 const LEFT_PLAYOFF_INDICES = [0, 1, 2, 3];
@@ -51,9 +53,9 @@ const TournamentsPage: React.FC = () => {
   const [season, setSeason] = useState<string>(
     currentSeason?.year || currentYear
   );
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [matchDetails, setMatchDetails] = useState<Record<string, any>>({});
+  const [matchDetails, setMatchDetails] = useState<Record<string, MatchDoc | null>>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
@@ -78,8 +80,8 @@ const TournamentsPage: React.FC = () => {
         );
         if (!response.ok) throw new Error("Failed to load tournaments");
 
-        const data = await response.json();
-        const list: Tournament[] = data.tournaments || [];
+        const data: TournamentsResponse = await response.json();
+        const list: TournamentJson[] = data.tournaments || [];
         setTournaments(list);
         setSelectedId(list.length > 0 ? list[0].id : "");
         if (list.length === 0) {
@@ -103,7 +105,7 @@ const TournamentsPage: React.FC = () => {
     [tournaments, selectedId]
   );
 
-  const bracket: TournamentBracketMatch[] | null = useMemo(() => {
+  const bracket: TournamentSlotJson[] | null = useMemo(() => {
     if (!selected) return null;
     return [...selected.matches].sort(
       (a, b) => a.bracket_placement - b.bracket_placement
@@ -125,7 +127,7 @@ const TournamentsPage: React.FC = () => {
         setError(null);
         const docs = await Promise.all(
           bracket.map(async (m) => {
-            const ref = doc(db, "matches", "seasons", season, `${m.match_id}`);
+            const ref = doc(db, paths.match(season, m.match_id));
             const snapshot = await getDoc(ref);
             return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
           })

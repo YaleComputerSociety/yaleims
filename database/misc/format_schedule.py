@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn an IM schedule .xlsx into the flat CSV that add_matches.js reads.
+"""Turn an IM schedule .xlsx into the flat CSV the hub's Upload Schedule page reads.
 
 The workbooks are laid out as a visual calendar: a "WEEK n" banner, a row of day
 headers like "Monday (9/14)", and under each day header a three-column block of
@@ -12,12 +12,14 @@ In the outdoor shape the time is written once per group and the rows beneath it
 inherit it; in the indoor shape the room is written once per day and inherits.
 
 Output columns are Date,Time,Home College,Away College,Sport,Location,Room --
-exactly what add_matches.js destructures, with Location -> location and
-Room -> location_extra.
+the columns the Upload Schedule page (frontend/src/app/hub/upload-schedule)
+accepts, with Location -> location and Room -> location_extra.
 
 Usage:
-  ./format_schedule.py "data/Cornhole Fall 2026.xlsx"
-  ./format_schedule.py "data/Cornhole Fall 2026.xlsx" -o data/out.csv --sport Cornhole
+  ./format_schedule.py "Cornhole Fall 2026.xlsx"
+  ./format_schedule.py "Cornhole Fall 2026.xlsx" -o out.csv --sport Cornhole
+
+Keep the spreadsheets and CSVs out of the repo.
 
 Reads .xlsx with the standard library only (it is a zip of XML), so there is
 nothing to npm/pip install.

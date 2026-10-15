@@ -9,14 +9,15 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { db } from "../../lib/firebase";
-import { User } from "@src/types/components";
+import { db } from "@/lib/firebase";
+import { paths } from "@/lib/paths";
+import type { SessionUser, VerifyResponse } from "@src/types/api";
 
 interface AuthContextType {
   isLoggedIn: boolean;
-  user: User | null;
+  user: SessionUser | null;
   loading: boolean;
-  setUser: React.Dispatch<React.SetStateAction<User | null>> | null;
+  setUser: React.Dispatch<React.SetStateAction<SessionUser | null>> | null;
   casSignOut: () => Promise<void>;
   checkCasAuth: () => Promise<void>;
 }
@@ -36,7 +37,7 @@ const LOGOUT_KEY = "logout_version";
 let authCheckPromise: Promise<void> | null = null;
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -80,9 +81,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     authCheckPromise = fetch("/api/auth/verify")
       .then(async (response) => {
         if (response.ok) {
-          const data = await response.json();
+          const data: VerifyResponse = await response.json();
           setIsLoggedIn(data.isLoggedIn);
-          setUser(data.user);
+          setUser(data.isLoggedIn ? data.user : null);
         } else {
           setIsLoggedIn(false);
           setUser(null);
@@ -103,7 +104,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!user?.email) return;
-    const unsub = onSnapshot(doc(db, "users", user.email), (snap) => {
+    const unsub = onSnapshot(doc(db, paths.user(user.email)), (snap) => {
       const d = snap.data();
       if (!d) return;
       setUser((prev) =>
@@ -116,12 +117,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             }
           : prev
       );
-      const csv = d.mRoles?.join(",") ?? "";
-      fetch(
-        `/api/auth/verify?currentRoles=${encodeURIComponent(
-          csv
-        )}&currentUsername=${encodeURIComponent(d.username)}`
-      );
+      // Re-issue the session cookie; the server reads roles from Firestore.
+      fetch("/api/auth/verify");
     });
     return () => unsub();
   }, [user?.email]);

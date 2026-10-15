@@ -1,0 +1,11 @@
+# Data dumps and experiment outputs contain real student data or are bulky.
+# Never commit them (see README.md).
+data/
+research/data/
+experiment_output*/
+research/experiment_output*/
+stats/
+*.csv
+
+# Dependencies
+node_modules/

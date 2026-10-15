@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useUser } from "@src/context/UserContext";
 import MatchListItem from "./MatchListItem";
-import { Match, CalendarMatchListProps } from "@src/types/components";
+import type { MatchJson, UserSignupsResponse } from "@src/types/api";
+import { CalendarMatchListProps, ScheduleMatch } from "@src/types/components";
 import {
   format,
   addDays,
@@ -11,7 +12,7 @@ import {
 } from "date-fns";
 import { useSeason } from "@src/context/SeasonContext";
 import Link from "next/link";
-import { currentYear } from "@src/utils/helpers";
+import { currentYear, matchDate } from "@src/utils/helpers";
 
 // ⏰ Builds a scrollable list of matches grouped by calendar day.
 //    Fixes the "missing last day" bug by normalising start & end to midnight.
@@ -22,7 +23,8 @@ const ListView: React.FC<CalendarMatchListProps> = ({
   setTopDate,
 }) => {
   const { user } = useUser();
-  const [userMatches, setUserMatches] = useState<Match[]>([]);
+  // The user's signups ({ id, timestamp }); signing up adds the whole match.
+  const [userMatches, setUserMatches] = useState<Pick<MatchJson, "id" | "timestamp">[]>([]);
   const [loading, setLoading] = useState(true);
   const dateRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { currentSeason } = useSeason();
@@ -49,7 +51,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
         );
 
         if (!res.ok) throw new Error("Failed to fetch user matches");
-        const data = (await res.json()) as Match[];
+        const data: UserSignupsResponse = await res.json();
         setUserMatches(data);
       } catch (err: unknown) {
         if ((err as { name?: string }).name !== "AbortError") {
@@ -64,19 +66,11 @@ const ListView: React.FC<CalendarMatchListProps> = ({
     return () => controller.abort();
   }, [user, currentSeason?.year]);
 
-  const uniqueMatches = useMemo<Match[]>(() => {
-    const byId = new Map<string, Match>();
+  const uniqueMatches = useMemo<ScheduleMatch[]>(() => {
+    const byId = new Map<MatchJson["id"], ScheduleMatch>();
 
     matches.forEach((m) => {
-      const dateVal =
-        Object.prototype.toString.call(m.timestamp) === "[object Date]"
-          ? m.timestamp
-          : typeof m.timestamp === "string"
-          ? new Date(m.timestamp)
-          : // Firestore Timestamp – handle both {seconds,nanoseconds} and .toDate()
-          (m as any).timestamp?.toDate
-          ? (m as any).timestamp.toDate()
-          : new Date((m as any).timestamp);
+      const dateVal = matchDate(m.timestamp);
 
       if (!isNaN(dateVal.getTime())) {
         byId.set(m.id, { ...m, timestamp: dateVal });
@@ -102,12 +96,12 @@ const ListView: React.FC<CalendarMatchListProps> = ({
 
   const signedUpIds = useMemo(() => {
     return new Set(
-      userMatches.map((m) => `${m.id}::${new Date(m.timestamp).getTime()}`)
+      userMatches.map((m) => `${m.id}::${matchDate(m.timestamp).getTime()}`)
     );
   }, [userMatches]);
 
   const handleStatusChange = useCallback(
-    (matchId: string, signed: boolean) => {
+    (matchId: MatchJson["id"], signed: boolean) => {
       setUserMatches((prev) => {
         return signed
           ? [...prev, matches.find((m) => m.id === matchId)!]

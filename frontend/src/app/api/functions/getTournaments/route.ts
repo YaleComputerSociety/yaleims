@@ -1,18 +1,33 @@
+import { getCurrentSeason } from "@/server/data/seasons";
+import { listTournaments } from "@/server/data/tournaments";
+import type { TournamentsResponse } from "@/types/api";
+
+/** ?year=<seasonId> (default: current season): its tournaments, newest first, timestamps in ms. */
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const year = searchParams.get("year");
+  try {
+    let year = new URL(req.url).searchParams.get("year") ?? "";
+    if (!year) {
+      const current = await getCurrentSeason();
+      if (!current) {
+        return Response.json({ error: "current season doc missing" }, { status: 404 });
+      }
+      year = current.year;
+    }
 
-  const url = new URL(
-    "https://us-central1-yims-125a2.cloudfunctions.net/getTournaments"
-  );
-  if (year) url.searchParams.set("year", year);
+    const tournaments = (await listTournaments(year))
+      .map((t) => ({
+        ...t,
+        createdAt: t.createdAt?.toMillis?.() ?? null,
+        matches: (t.matches || []).map((match) => ({
+          ...match,
+          timestamp: match.timestamp?.toMillis?.() ?? null,
+        })),
+      }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-  const response = await fetch(url.toString(), { method: "GET" });
-
-  if (!response.ok) {
-    return new Response(await response.text(), { status: response.status });
+    return Response.json({ year, tournaments } satisfies TournamentsResponse);
+  } catch (err) {
+    console.error("Error fetching tournaments:", err);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-  const data = await response.json();
-  return Response.json(data);
 }

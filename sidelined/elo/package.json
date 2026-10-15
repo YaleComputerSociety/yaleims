@@ -1,0 +1,20 @@
+{
+  "name": "yims-sidelined-elo",
+  "private": true,
+  "type": "module",
+  "description": "Switched-off Elo ratings/odds code, kept for future use. Not deployed; see README.md.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "check:not-imported": "node scripts/check-not-imported.mjs"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.0"
+  }
+}

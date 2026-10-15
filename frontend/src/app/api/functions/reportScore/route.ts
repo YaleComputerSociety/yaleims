@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
-import { db } from "../../../../../lib/firebase";
-import {
-  doc,
-  collection,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { getSession } from "@/server/session";
+import { addScoreReport } from "@/server/data/scoreReports";
 
 export interface ScoreReportPayload {
   matchId: string;
@@ -22,19 +15,8 @@ export interface ScoreReportPayload {
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-    let user: { name?: string; username?: string; email: string; mRoles?: string[] };
-    try {
-      user = jwt.verify(token.value, JWT_SECRET) as typeof user;
-    } catch {
+    const user = await getSession();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -57,35 +39,21 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const matchIdStr = String(matchId);
-    const seasonStr = String(season);
-
-    const scoreReportsRoot = doc(db, "matches", "score_reports");
-    const seasonCol = collection(scoreReportsRoot, seasonStr);
-    const matchDoc = doc(seasonCol, matchIdStr);
-    const reportsCol = collection(matchDoc, "reports");
-
-    const reportData = {
+    const reportId = await addScoreReport(String(season), String(matchId), {
       reason: reason.trim(),
       reportedBy: user.name || user.username || "Unknown",
       reportedByEmail: user.email,
-      reportedAt: serverTimestamp(),
-      resolved: false,
-      season: seasonStr,
-      matchId: matchIdStr,
       matchHomeCollege: matchHomeCollege ?? null,
       matchAwayCollege: matchAwayCollege ?? null,
       homeScore: homeScore ?? null,
       awayScore: awayScore ?? null,
       sport: sport ?? null,
-    };
-
-    const docRef = await addDoc(reportsCol, reportData);
+    });
 
     return NextResponse.json(
       {
         success: true,
-        reportId: docRef.id,
+        reportId,
         message: "Score report submitted successfully",
       },
       { status: 201 }

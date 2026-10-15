@@ -1,37 +1,16 @@
-import { db } from "../../../../../lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { setChampionship } from "@/server/data/seasons";
+import { getSession, hasAnyRole } from "@/server/session";
 import { isValidCollegeAbbrev } from "@src/utils/helpers";
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
+    const session = await getSession();
+    if (!session) {
       return new Response(JSON.stringify({ error: "unauthenticated" }), {
         status: 401,
       });
     }
-
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      return new Response(JSON.stringify({ error: "server misconfigured" }), {
-        status: 500,
-      });
-    }
-
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token.value, secret);
-    } catch {
-      return new Response(JSON.stringify({ error: "invalid token" }), {
-        status: 401,
-      });
-    }
-
-    const mRoles: string[] = Array.isArray(decoded?.mRoles) ? decoded.mRoles : [];
-    if (!mRoles.includes("admin")) {
+    if (!hasAnyRole(session, ["admin"])) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 403,
       });
@@ -57,15 +36,7 @@ export async function POST(req: Request) {
       );
     }
 
-    await setDoc(
-      doc(db, "seasons", "current"),
-      {
-        winningCollegeId,
-        celebrationActive,
-        championshipUpdatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await setChampionship(winningCollegeId, celebrationActive);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

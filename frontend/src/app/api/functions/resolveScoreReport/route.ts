@@ -1,34 +1,16 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
-import { db } from "../../../../../lib/firebase";
-import {
-  doc,
-  collection,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { getSession, hasAnyRole } from "@/server/session";
+import { resolveScoreReport } from "@/server/data/scoreReports";
 
 /** POST: resolve a score report. Body: { reportId, matchId, season }. Admin only. */
 export async function POST(req: Request): Promise<NextResponse> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
-    }
-    let user: { name?: string; username?: string; email: string; mRoles?: string[] };
-    try {
-      user = jwt.verify(token.value, JWT_SECRET) as typeof user;
-    } catch {
+    const user = await getSession();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isAdmin = user.mRoles?.includes("admin") || user.mRoles?.includes("dev");
+    const isAdmin = hasAnyRole(user, ["admin", "dev"]);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden: admin required" }, { status: 403 });
     }
@@ -43,17 +25,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const scoreReportsRoot = doc(db, "matches", "score_reports");
-    const seasonCol = collection(scoreReportsRoot, String(season));
-    const matchDocRef = doc(seasonCol, String(matchId));
-    const reportsCol = collection(matchDocRef, "reports");
-    const reportDocRef = doc(reportsCol, String(reportId));
-
-    await updateDoc(reportDocRef, {
-      resolved: true,
-      resolvedBy: user.name || user.username || user.email,
-      resolvedAt: serverTimestamp(),
-    });
+    await resolveScoreReport(
+      String(season),
+      String(matchId),
+      String(reportId),
+      user.name || user.username || user.email
+    );
 
     return NextResponse.json(
       { success: true, message: "Report marked as resolved" },

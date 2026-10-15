@@ -1,8 +1,4 @@
-import {
-  BracketModalProps,
-  ParsedMatch,
-  BracketData,
-} from "@src/types/components";
+import { BracketForm, BracketModalProps, ParsedMatch } from "@src/types/components";
 import React, { useState, useEffect, ChangeEvent } from "react";
 import {
   collegeNamesList,
@@ -87,7 +83,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
   const handleSubmit = () => {
     updateTimestamps();
 
-    const bracketData: BracketData = {
+    const bracketData: BracketForm = {
       sport,
       matches: parsedMatches,
     };

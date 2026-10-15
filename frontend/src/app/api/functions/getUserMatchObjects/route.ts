@@ -1,78 +1,36 @@
-import { cookies } from "next/headers";
-import { db } from "../../../../../lib/firebase";
-import { doc, getDoc } from "@firebase/firestore";
-import { Match } from "@src/types/components";
+import { getSession, getSessionToken } from "@/server/session";
+import { listUpcomingSignups } from "@/server/data/users";
+import { getMatch } from "@/server/data/matches";
+import type { UserMatchObjectsResponse } from "@/types/api";
 
+/** ?seasonId=: the full match docs of the user's upcoming games (timestamps as ISO strings). */
 export async function GET(req: Request) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
-  if (!token) {
-    return new Response(JSON.stringify({ error: "unauthenticated" }), {
-      status: 401,
-    });
-  }
-  const url = new URL(req.url);
-  const seasonId = url.searchParams.get("seasonId");
-  if (!seasonId) {
-    return Response.json({ error: "seasonId is required" }, { status: 400 });
-  }
-  const response = await fetch(
-    `https://getusermatches-65477nrg6a-uc.a.run.app?seasonId=${seasonId}`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token.value}`,
-      },
+  try {
+    if (!(await getSessionToken())) {
+      return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-  );
-
-  if (!response.ok) {
-    return new Response(await response.text(), { status: response.status });
-  }
-
-  const matches = await response.json();
-
-  // Map to promises that fetch each match doc. Ensure we pass a string path
-  // to `doc()` and coerce `match.id` to string — the Firestore helper expects
-  // path segments as strings (or a single string path). Using a single path
-  // string avoids ambiguity with alternating collection/doc segments.
-  const dataPromises = matches.map(async (match: any) => {
-    const matchId = String(match.id);
-    const path = `matches/seasons/${seasonId}/${matchId}`;
-    const matchRef = doc(db, path);
-    const matchSnapshot = await getDoc(matchRef);
-    const matchData = matchSnapshot.exists() ? matchSnapshot.data() : null;
-
-    // Convert Firestore timestamp objects to ISO timestamp strings so the
-    // frontend receives a predictable string instead of a Timestamp-like
-    // object. Support multiple shapes: { seconds, nanoseconds },
-    // { _seconds, _nanoseconds }, or a Firestore Timestamp with toDate().
-    if (matchData && matchData.timestamp != null) {
-      const ts = matchData.timestamp as any;
-      // Prefer explicit numeric seconds fields
-      const seconds =
-        typeof ts.seconds === "number"
-          ? ts.seconds
-          : typeof ts._seconds === "number"
-          ? ts._seconds
-          : undefined;
-
-      if (typeof seconds === "number") {
-        matchData.timestamp = new Date(seconds * 1000).toISOString();
-      } else if (typeof ts.toDate === "function") {
-        // Firestore Timestamp instance
-        try {
-          matchData.timestamp = ts.toDate().toISOString();
-        } catch (e) {
-          // leave timestamp as-is if conversion fails
-        }
-      }
+    const seasonId = new URL(req.url).searchParams.get("seasonId");
+    if (!seasonId) {
+      return Response.json({ error: "seasonId is required" }, { status: 400 });
+    }
+    const session = await getSession();
+    if (!session) {
+      return Response.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    return matchData;
-  });
-
-  // Wait for all fetches to complete and return the resolved array
-  const data = await Promise.all(dataPromises);
-  return Response.json(data);
+    const signups = await listUpcomingSignups(session.email, seasonId, new Date());
+    if (!signups) {
+      return new Response("User not found", { status: 404 });
+    }
+    const matches = await Promise.all(
+      signups.map(async ({ id }) => {
+        const match = await getMatch(seasonId, id);
+        return match && { ...match, timestamp: match.timestamp?.toDate().toISOString() };
+      })
+    );
+    return Response.json(matches satisfies UserMatchObjectsResponse);
+  } catch (err) {
+    console.error("Error fetching user match objects:", err);
+    return new Response("Internal Server Error", { status: 500 });
+  }
 }

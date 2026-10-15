@@ -1,12 +1,9 @@
-import { db } from "../../../../../lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { userTokenHasRoles } from "@src/utils/auth-helpers";
+import { updateUserRoles } from "@/server/data/users";
+import { getSession, hasAnyRole } from "@/server/session";
 
 export async function PUT(req: Request) {
   try {
-    const hasRoles = await userTokenHasRoles(["dev"]);
-
-    if (!hasRoles) {
+    if (!hasAnyRole(await getSession(), ["dev"])) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 403,
       });
@@ -27,24 +24,16 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Get document reference
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
+    const updated = await updateUserRoles(
+      userId,
+      roles,
+      roles.includes("captain") ? sportsCaptainOf : []
+    );
+    if (!updated) {
       return new Response(JSON.stringify({ error: "User not found" }), {
         status: 404,
       });
     }
-
-    if (!roles.includes("captain")) {
-    }
-
-    // Update user roles and sports
-    await updateDoc(userRef, {
-      mRoles: roles,
-      sportsCaptainOf: roles.includes("captain") ? sportsCaptainOf : [],
-    });
 
     return new Response(
       JSON.stringify({

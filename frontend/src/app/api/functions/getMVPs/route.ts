@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { db } from "../../../../../lib/firebase"; 
-import { getDoc, doc, getDocs, collection } from "firebase/firestore";
+import { getSessionToken } from "@/server/session";
+import { listCollegeMvps } from "@/server/data/mvps";
+import type { MvpsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-    if (!token) {
-        return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    // Requires a session cookie but doesn't verify it (unchanged; the data is
+    // publicly readable anyway).
+    if (!(await getSessionToken())) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -20,7 +20,6 @@ export async function GET(req: Request): Promise<NextResponse> {
         { status: 400 }
       );
     }
-
     if (!seasonId) {
       return NextResponse.json(
         { error: "Missing required query param: seasonId" },
@@ -28,20 +27,9 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    const collegeColl = collection(db, "mvps", seasonId, collegeId);
-    const snap = await getDocs(collegeColl);
-
-    if (snap.empty) {
-    return NextResponse.json({});
-    }
-
-    const data: Record<string, unknown> = {};
-    snap.forEach((docSnap) => {
-    data[docSnap.id] = docSnap.data(); 
-    });
-
-    return NextResponse.json(data);
-
+    return NextResponse.json(
+      (await listCollegeMvps(seasonId, collegeId)) satisfies MvpsResponse
+    );
   } catch (err) {
     console.error("Error in getMvps:", err);
     return NextResponse.json(

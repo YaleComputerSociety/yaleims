@@ -3,35 +3,29 @@ import { useSeason } from "@src/context/SeasonContext";
 import LoadingSpinner from "@src/components/LoadingSpinner";
 import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
 import { useUser } from "@src/context/UserContext";
-
-interface User {
-  email: string;
-  firstname?: string;  // handle both shapes
-  lastname?: string;
-  captain?: string[];
-  college: string;
-}
+import type { MvpsResponse, UsersInCollegeResponse } from "@src/types/api";
+import type { UserDoc } from "@src/types/firestore";
 
 export default function SelectMVP() {
-  const [usersInCollege, setUsersInCollege] = useState<User[]>([]);
+  const [usersInCollege, setUsersInCollege] = useState<UserDoc[]>([]);
   const [loading, setLoading] = useState(false);
   const [settingMVP, setSettingMVP] = useState(false);
   const { currentSeason } = useSeason();
 
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectUser, setSelectUser] = useState<User | null>(null);
+  const [selectUser, setSelectUser] = useState<UserDoc | null>(null);
 
   // UI-only states (validation/feedback)
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const [weekId, setWeekId] = useState(getCurrentWeekId(seasonStart));
-  const [mvps, setMvps]  = useState<Record<string, any> | null>(null);
+  const [mvps, setMvps]  = useState<MvpsResponse | null>(null);
   const { user } = useUser();
 
   const weeks = buildWeekOptions(seasonStart);
 
-  const nameOf = (u: User) =>
+  const nameOf = (u: UserDoc) =>
     `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
 
   const fetchData = async () => {
@@ -39,7 +33,7 @@ export default function SelectMVP() {
     try {
       const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=false");
       if (!res.ok) throw new Error(res.statusText);
-      const data = await res.json();
+      const data: UsersInCollegeResponse = await res.json();
       setUsersInCollege(Array.isArray(data?.users) ? data.users : []);
     } catch (err) {
       console.error(err);
@@ -78,7 +72,7 @@ export default function SelectMVP() {
     if (!term) return [];
     return usersInCollege.filter((u) => {
       const full = nameOf(u).toLowerCase();
-      return full.includes(term) || u.email.toLowerCase().includes(term);
+      return full.includes(term) || (u.email ?? "").toLowerCase().includes(term);
     });
   }, [searchTerm, usersInCollege]);
 

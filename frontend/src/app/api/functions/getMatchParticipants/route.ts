@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "../../../../../lib/firebase"; 
-import { getDoc, doc } from "firebase/firestore";
+import { getMatch } from "@/server/data/matches";
+import type { MatchParticipantsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
   try {
@@ -19,32 +19,13 @@ export async function GET(req: Request): Promise<NextResponse> {
         { status: 400 }
       );
     }
-    const matchDocRef = doc(
-      db,
-      "matches",
-      "seasons",
-      seasonId,
-      matchId
-    );
-    const snap = await getDoc(matchDocRef);
-    
-    if (!snap.exists) {
-      return NextResponse.json(
-        { error: `Match with id ${matchId} not found` },
-        { status: 404 }
-      );
-    }
 
-    const matchData = snap.data();
-
-    const participants = {
-      home_college_participants:
-        matchData?.home_college_participants || [],
-      away_college_participants:
-        matchData?.away_college_participants || [],
-    };
-
-    return NextResponse.json(participants);
+    // An unknown match answers with no participants, not a 404 (as always).
+    const match = await getMatch(seasonId, matchId);
+    return NextResponse.json({
+      home_college_participants: match?.home_college_participants || [],
+      away_college_participants: match?.away_college_participants || [],
+    } satisfies MatchParticipantsResponse);
   } catch (err) {
     console.error("Error in getMatchParticipants:", err);
     return NextResponse.json(

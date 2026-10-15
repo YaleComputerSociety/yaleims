@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { parseString } from "xml2js";
-import jwt from "jsonwebtoken";
+import { setSessionCookie } from "@/server/session";
+import { getCurrentSeason } from "@/server/data/seasons";
+import { getOrCreateAccount } from "@/server/services/accounts";
+import { safeReturnPath } from "@/lib/returnPath";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
   if (!BASE_URL) {
     throw new Error("Please define the BASE_URL environment variable");
-  }
-  const JWT_SECRET = process.env.JWT_SECRET as string;
-  if (!JWT_SECRET) {
-    throw new Error("Please define the JWT_SECRET environment variable");
   }
   const YALIES_API_KEY = process.env.YALIES_API_KEY as string;
   if (!YALIES_API_KEY) {
@@ -63,56 +62,31 @@ export async function GET(request: Request): Promise<NextResponse> {
         body: JSON.stringify({ filters: { netid } }),
       });
       const yaliesJSON = await yaliesResponse.json();
-      const email = yaliesJSON[0].email;
-      const name = `${yaliesJSON[0].first_name} ${yaliesJSON[0].last_name}`;
+      const profile = yaliesJSON[0];
+      const email = profile.email;
+      const name = `${profile.first_name} ${profile.last_name}`;
 
-      const currentSeasonResponse = await fetch(
-        "https://getseasons-65477nrg6a-uc.a.run.app"
-      );
-      if (!currentSeasonResponse.ok) {
-        throw new Error("Failed to load current season");
-      }
-      const currentSeasonData = await currentSeasonResponse.json();
-      const currentSeasonId = currentSeasonData.current?.year;
+      const currentSeasonId = (await getCurrentSeason())?.year;
       if (!currentSeasonId) {
         throw new Error("Current season is missing");
       }
 
-      const response1 = await fetch(
-        "https://us-central1-yims-125a2.cloudfunctions.net/fetchOrAddUser",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, seasonId: currentSeasonId }),
-        }
-      );
-      const result1 = await response1.json();
+      // First login creates the user (and their current-season doc).
+      const user = await getOrCreateAccount(profile, currentSeasonId);
+      // Only pages on this site (no open redirect to other sites).
+      const redirectTo = `${BASE_URL.replace(/\/$/, "")}${safeReturnPath(from, BASE_URL)}`;
+      const redirectResponse = NextResponse.redirect(redirectTo);
       // Defaults matter: jwt.sign drops undefined values, and user docs carry no
-      // role/points/matches_played, so without them the token ships incomplete.
-      const token = jwt.sign({
+      // role/matches_played, so without them the token ships incomplete.
+      setSessionCookie(redirectResponse, {
         name,
         netid,
         email,
-        role: result1.user.role ?? "user",
-        mRoles: result1.user.mRoles ?? ["user"],
-        username: result1.user.username ?? "Anonymous",
-        college: result1.user.college ?? "",
-        points: result1.user.points ?? 0,
-        matches_played: result1.user.matches_played ?? 0,
-      }, JWT_SECRET, {
-        expiresIn: "7d",
-      });
-      
-      const redirectTo = from.startsWith("http") ? from : `${BASE_URL.replace(/\/$/, "")}${from.startsWith("/") ? from : "/" + from}`;
-      const redirectResponse = NextResponse.redirect(redirectTo);
-      redirectResponse.cookies.set("token", token, {
-        secure: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-        httpOnly: true,
-        sameSite: "none"
+        role: user.role ?? "user",
+        mRoles: user.mRoles ?? ["user"],
+        username: user.username ?? "Anonymous",
+        college: user.college ?? "",
+        matches_played: user.matches_played ?? 0,
       });
 
       return redirectResponse;
@@ -120,7 +94,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "Authentication failed: " + e }, { status: 401 });
     }
   } else {
-    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(from)}`;
+    const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(safeReturnPath(from, BASE_URL))}`;
     const encodedServiceUrl = encodeURIComponent(serviceUrl);
     
     if (BASE_URL === "http://localhost:3000") {

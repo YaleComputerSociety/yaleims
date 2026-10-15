@@ -1,5 +1,12 @@
-import { firestore } from "./firebase.js";
-import { doc, setDoc, collection, getDoc, updateDoc } from "firebase/firestore";
+// Season rollover, step 0: create colleges/seasons/{seasonId}/{abbr} docs.
+//
+// Usage:
+//   node start_new_season.js 2027-2028 [--update-season-metadata] [--prod]
+//
+// Only creates docs that don't exist yet: re-running never resets a college's
+// points. --update-season-metadata also points seasons/current at the new
+// season and adds the previous one to seasons/past.years.
+import { db } from "./firebaseAdmin.js";
 
 const colleges = [
   { abbreviation: "BF", name: "Benjamin Franklin" },
@@ -18,8 +25,14 @@ const colleges = [
   { abbreviation: "TD", name: "Timothy Dwight" },
 ];
 
-const seasonId = process.argv[2] || "2026-2027";
+const seasonId = process.argv[2];
+if (!/^\d{4}-\d{4}$/.test(seasonId || "")) {
+  console.error("Usage: node start_new_season.js <YYYY-YYYY> [--update-season-metadata] [--prod]");
+  process.exit(1);
+}
 const updateSeasonMetadata = process.argv.includes("--update-season-metadata");
+const startYear = Number(seasonId.slice(0, 4));
+const previousSeason = `${startYear - 1}-${startYear}`;
 
 function formatToday() {
   const d = new Date();
@@ -28,36 +41,33 @@ function formatToday() {
 
 async function createSeasonDocs() {
   const today = formatToday();
+  const seasonCol = db.collection("colleges").doc("seasons").collection(seasonId);
 
   for (const c of colleges) {
-    const seasonCollectionRef = collection(firestore, "colleges", "seasons", seasonId);
-    const collegeSeasonDocRef = doc(seasonCollectionRef, c.abbreviation);
-
-    const seasonData = {
-      abbreviation: c.abbreviation,
-      name: c.name,
-      today,
-      points: 0,
-      games: 0,
-      wins: 0,
-      losses: 0,
-      ties: 0,
-      forfeits: 0,
-      rank: 0,
-      prevRank: 0,
-    };
-
-    await setDoc(collegeSeasonDocRef, seasonData, { merge: false });
-    console.log(`Created ${seasonId} season doc for ${c.abbreviation}`);
+    const ref = seasonCol.doc(c.abbreviation);
+    try {
+      await ref.create({
+        abbreviation: c.abbreviation,
+        name: c.name,
+        today,
+        points: 0,
+        games: 0,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+        forfeits: 0,
+        rank: 0,
+        prevRank: 0,
+      });
+      console.log(`Created ${seasonId} season doc for ${c.abbreviation}`);
+    } catch (err) {
+      if (err.code !== 6) throw err; // 6 = ALREADY_EXISTS
+      console.log(`Skip (already exists): ${c.abbreviation}`);
+    }
   }
 
   if (updateSeasonMetadata) {
-    const previousSeason = "2025-2026";
-    const currentRef = doc(firestore, "seasons", "current");
-    const pastRef = doc(firestore, "seasons", "past");
-
-    await setDoc(
-      currentRef,
+    await db.collection("seasons").doc("current").set(
       {
         year: seasonId,
         season: "fall",
@@ -68,27 +78,24 @@ async function createSeasonDocs() {
     );
     console.log(`Updated seasons/current -> ${seasonId}`);
 
-    const pastSnap = await getDoc(pastRef);
-    const existingYears = pastSnap.exists()
+    const pastRef = db.collection("seasons").doc("past");
+    const pastSnap = await pastRef.get();
+    const existingYears = pastSnap.exists
       ? (pastSnap.data().years || []).filter((y) => typeof y === "string")
       : [];
-
     const years = Array.from(new Set([...existingYears, previousSeason]));
-    await updateDoc(pastRef, { years });
+    await pastRef.set({ years }, { merge: true });
     console.log(`Updated seasons/past.years -> ${years.join(", ")}`);
   }
 
   console.log(`Done seeding colleges/seasons/${seasonId}.`);
   console.log(
-    `\nRemaining rollover steps for ${seasonId}:\n` +
-      `  1. ./create_season_indexes.sh ${seasonId}\n` +
+    `\nRemaining rollover step for ${seasonId}:\n` +
+      `  ./create_season_indexes.sh ${seasonId}\n` +
       `     Firestore composite indexes are per collection id, so the new season has none.\n` +
-      `     Without them the upcoming-matches queries fail and the odds, schedules and signup pages break.\n` +
-      `  2. node addNewSeasonUser.js ${seasonId}\n` +
-      `     Gives every existing user a seasons/${seasonId} doc with 2000 points. Until it runs,\n` +
-      `     getSeasonPoints and addBet return 404 and nobody can see coins or place bets.\n` +
-      `  3. node initEloSeason.js ${seasonId}\n` +
-      `     Seeds the Elo/odds docs so ratings start from a full, consistent shape.`,
+      `     Without them the upcoming-matches queries fail and the schedules and signup pages break.\n` +
+      `  (Users' seasons/${seasonId} docs are created on their first game sign-up.)\n` +
+      `  (Elo is sidelined, so there is no Elo step; see sidelined/elo/README.md.)`,
   );
 }
 

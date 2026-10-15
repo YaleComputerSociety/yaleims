@@ -9,16 +9,17 @@ import {
   userIsAdminOrDev,
   currentYear,
 } from "@src/utils/helpers";
-import { Match } from "@src/types/components";
+import type { MatchJson, MatchParticipantsResponse } from "@src/types/api";
+import type { ScheduleMatch } from "@src/types/components";
 
 interface MatchListItemProps {
-  match: Match;
+  match: ScheduleMatch;
   user: any;
   isSignedUp: boolean; // Pass initial state from parent
-  onStatusChange: (id: string, signed: boolean) => void;
+  onStatusChange: (id: MatchJson["id"], signed: boolean) => void;
 }
 
-import { Participant } from "@src/types/components";
+import type { MatchParticipant } from "@src/types/firestore";
 import { useSeason } from "@src/context/SeasonContext";
 import { EditMatchButton } from "../Dashboard/Admin/EditMatchModal";
 
@@ -32,10 +33,15 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   // const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
   const [participantsShow, setParticipantsShow] = useState(false);
-  const [participantionData, setParticipantionData] = useState({
+  // Undefined after a failed refresh (getMatchParticipants returns nothing).
+  const [participantionData, setParticipantionData] = useState<
+    Partial<MatchParticipantsResponse> | undefined
+  >({
     home_college_participants: match.home_college_participants,
     away_college_participants: match.away_college_participants,
   });
+  const homeParticipants = participantionData?.home_college_participants ?? [];
+  const awayParticipants = participantionData?.away_college_participants ?? [];
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
   const { currentSeason } = useSeason();
 
@@ -101,7 +107,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: MatchParticipantsResponse = await response.json();
       return data;
     } catch (error) {
       console.error("Error fetching match participants:", error);
@@ -306,15 +312,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             <span className="text-black dark:text-gray-400 font-semibold text-animate h-20">
               {toCollegeName[match.home_college]}:
             </span>{" "}
-            {participantionData?.home_college_participants?.length > 0 ? (
-              participantionData.home_college_participants.map(
-                (p: Participant, index: number) => (
+            {homeParticipants.length > 0 ? (
+              homeParticipants.map(
+                (p: MatchParticipant, index: number) => (
                   <span key={index}>
                     {p.firstname && p.firstname.trim() !== ""
                       ? `${p.firstname} ${p.lastname}`.trim()
                       : p.name || ""}
-                    {index <
-                    participantionData.home_college_participants.length - 1
+                    {index < homeParticipants.length - 1
                       ? ", "
                       : ""}
                   </span>
@@ -328,15 +333,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             <span className="text-black dark:text-gray-400 font-semibold">
               {toCollegeName[match.away_college]}:
             </span>{" "}
-            {participantionData?.away_college_participants?.length > 0 ? (
-              participantionData.away_college_participants.map(
-                (p: Participant, index: number) => (
+            {awayParticipants.length > 0 ? (
+              awayParticipants.map(
+                (p: MatchParticipant, index: number) => (
                   <span key={index}>
                     {p.firstname && p.firstname.trim() !== ""
                       ? `${p.firstname} ${p.lastname}`.trim()
                       : p.name || ""}
-                    {index <
-                    participantionData.away_college_participants.length - 1
+                    {index < awayParticipants.length - 1
                       ? ", "
                       : ""}
                   </span>

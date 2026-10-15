@@ -4,7 +4,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { logEvent } from 'firebase/analytics';
-import { initAnalytics } from '../../lib/firebase';
+import { initAnalytics } from "@/lib/firebase";
 
 export default function AnalyticsListener() {
   const pathname = usePathname(); 

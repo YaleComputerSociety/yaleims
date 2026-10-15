@@ -49,18 +49,8 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/odds" className="hover:underline">
-                    Odds
-                  </Link>
-                </li>
-                <li>
                   <Link href="/profile" className="hover:underline">
                     Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/apidocs" className="hover:underline">
-                    Api
                   </Link>
                 </li>
               </ul>

@@ -3,18 +3,12 @@ import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import Image from "next/image";
 import { getCollegeFlag } from "@/utils/versionedImages";
-import { getYCoinImage } from "@/utils/versionedImages";
-
-interface UserStats {
-  points: number;
-  matches: any[];
-  correctPredictions: number;
-}
+import type { UserStatsResponse } from "@src/types/api";
 
 export default function HeroStats() {
   const { user } = useUser();
   const { currentSeason } = useSeason();
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [userStats, setUserStats] = useState<UserStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +21,7 @@ export default function HeroStats() {
           `/api/functions/getUserStats?seasonId=${currentSeason?.year}&email=${user.email}`
         );
         if (!response.ok) throw new Error("Error fetching user stats");
-        const data = await response.json();
+        const data: UserStatsResponse = await response.json();
         setUserStats(data);
       } catch (error) {
         console.error("Failed to fetch stats:", error);
@@ -43,25 +37,11 @@ export default function HeroStats() {
 
   const stats = [
     {
-      label: "YCoins",
-      value: loading ? "..." : userStats?.points?.toFixed(0) || "0",
-      icon: "ycoin",
-      gradient: "from-amber-400/60 to-yellow-500/30",
-      border: "border-amber-500/30",
-    },
-    {
       label: "Games Played",
       value: loading ? "..." : userStats?.matches?.length || "0",
       icon: "🎮",
       gradient: "from-blue-500/20 to-cyan-500/20",
       border: "border-blue-500/30",
-    },
-    {
-      label: "Correct Predictions",
-      value: loading ? "..." : userStats?.correctPredictions || "0",
-      icon: "✓",
-      gradient: "from-emerald-500/20 to-green-500/20",
-      border: "border-emerald-500/30",
     },
   ];
 
@@ -80,7 +60,7 @@ export default function HeroStats() {
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">
-            Welcome back, {user.firstname || user.name?.split(" ")[0] || "there"}! 👋
+            Welcome back, {user.name?.split(" ")[0] || "there"}! 👋
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
             {user.college} • {currentSeason?.year} {currentSeason?.season ? currentSeason.season.charAt(0).toUpperCase() + currentSeason.season.slice(1) : ""} Season
@@ -105,14 +85,7 @@ export default function HeroStats() {
           >
             <div className="flex flex-col">
               <span className="text-2xl md:text-3xl mb-1">
-                {stat.icon === "ycoin" ? (
-                <Image
-                  src={getYCoinImage()}
-                  alt="YCoin"
-                  width={24}
-                  height={24}
-                  className="inline-block"
-                />) : (stat.icon)}
+                {stat.icon}
               </span>
               <span className="text-2xl md:text-4xl font-bold tracking-tight">
                 {stat.value}

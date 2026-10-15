@@ -7,10 +7,13 @@ import CollegeSummaryCardMobile from "@src/components/Scores/CollegeSummaryCardM
 import { FiltersContext } from "@src/context/FiltersContext";
 import TableHeader from "@src/components/Scores/TableHeader";
 import MatchesTable from "@src/components/Scores/MatchTable";
-import { Match, CollegeStats } from "@src/types/components";
+import type { MatchJson, MatchPageResponse } from "@src/types/api";
+import type { CollegeStandingDoc } from "@src/types/firestore";
 import Pagination from "@src/components/Scores/Pagination";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
+import { useUser } from "@src/context/UserContext";
+import SignInPrompt from "@src/components/SignInPrompt";
 
 import "react-loading-skeleton/dist/skeleton.css";
 import { currentYear } from "@src/utils/helpers";
@@ -22,18 +25,19 @@ import {
   query,
   Unsubscribe,
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
+import { paths } from "@/lib/paths";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { filter, setFilter } = filtersContext;
 
   // State for matches
-  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const [filteredMatches, setFilteredMatches] = useState<MatchJson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for college stats
-  const [collegeStats, setCollegeStats] = useState<CollegeStats | null>(null);
+  const [collegeStats, setCollegeStats] = useState<CollegeStandingDoc | null>(null);
   const [collegeIsLoading, setCollegeIsLoading] = useState(false);
 
   // State for pagination
@@ -44,6 +48,11 @@ const ScoresPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(10);
   const [sortOrder, setSortOrder] = useState<string>("desc");
   const { currentSeason } = useSeason();
+  // Scores are for signed-in users for now (interim; see the product decision
+  // on what logged-out visitors can see).
+  const { user, loading: userLoading } = useUser();
+  const signedIn = !!user;
+  const [needsSignIn, setNeedsSignIn] = useState(false);
 
   const resetPaginationState = () => {
     setPage(1); // Reset page number when filter is changed
@@ -99,6 +108,13 @@ const ScoresPage: React.FC = () => {
     };
 
     const fetchMatches = async () => {
+      if (userLoading) return;
+      if (!signedIn) {
+        setNeedsSignIn(true);
+        setIsLoading(false);
+        return;
+      }
+      setNeedsSignIn(false);
       setIsLoading(true);
       try {
         const params = new URLSearchParams(getParams());
@@ -107,13 +123,18 @@ const ScoresPage: React.FC = () => {
             currentSeason?.year || currentYear
           }`
         );
+        if (response.status === 401) {
+          setNeedsSignIn(true);
+          return;
+        }
         if (!response.ok)
           throw new Error(`Error fetching matches: ${response.statusText}`);
-        const data = await response.json();
+        const data: MatchPageResponse = await response.json();
 
         setFilteredMatches(data.matches);
-        setFirstVisible(data.firstVisible);
-        setLastVisible(data.lastVisible);
+        // Cursors are match ids (or null); the URL carries them as text, "null" included.
+        setFirstVisible(String(data.firstVisible));
+        setLastVisible(String(data.lastVisible));
         setTotalPages(data.totalPages);
       } catch (error) {
         console.error("Failed to fetch scores:", error);
@@ -124,7 +145,7 @@ const ScoresPage: React.FC = () => {
 
     window.scrollTo(0, 0);
     fetchMatches();
-  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder]);
+  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder, userLoading, signedIn]);
 
   // Fetch college stats when the college filter changes
   useEffect(() => {
@@ -133,18 +154,12 @@ const ScoresPage: React.FC = () => {
     if (filter.college && filter.college !== "All") {
       setCollegeIsLoading(true);
 
-      const q = doc(
-        db,
-        "colleges",
-        "seasons",
-        currentSeason?.year,
-        filter.college
-      );
+      const q = doc(db, paths.collegeStanding(currentSeason.year, filter.college));
 
       unsub = onSnapshot(
         q,
         (snap) => {
-          setCollegeStats(snap.exists() ? (snap.data() as CollegeStats) : null);
+          setCollegeStats(snap.exists() ? (snap.data() as CollegeStandingDoc) : null);
           setCollegeIsLoading(false);
         },
         (err) => {
@@ -184,8 +199,17 @@ const ScoresPage: React.FC = () => {
     resetPaginationState();
   };
 
-  if (isLoading) {
+  if (isLoading || userLoading) {
     return <LoadingScreen />;
+  }
+
+  if (needsSignIn) {
+    return (
+      <main className="flex flex-col mt-20 min-h-screen max-w-full mx-auto px-4">
+        <PageHeading heading="Scores and Rankings" />
+        <SignInPrompt message="Sign in to see scores and results." />
+      </main>
+    );
   }
 
   return (

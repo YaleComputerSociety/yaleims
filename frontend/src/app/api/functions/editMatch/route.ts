@@ -1,13 +1,11 @@
 import { getYearFromTimestamp } from "@src/utils/helpers";
-import { db } from "../../../../../lib/firebase";
-import { doc, Timestamp, updateDoc } from "firebase/firestore";
-import { userTokenHasRoles } from "@src/utils/auth-helpers";
+import { updateMatch } from "@/server/data/matches";
+import { Timestamp } from "firebase-admin/firestore";
+import { getSession, hasAnyRole } from "@/server/session";
 
 export async function PATCH(req: Request) {
   try {
-    const hasRoles = await userTokenHasRoles(["admin", "dev"]);
-
-    if (!hasRoles) {
+    if (!hasAnyRole(await getSession(), ["admin", "dev"])) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 403,
       });
@@ -50,17 +48,14 @@ export async function PATCH(req: Request) {
       fields.timestamp = Timestamp.fromDate(parsed);
     }
 
-    // Update the match document in Firestore
-    const matchRef = doc(db, "matches", "seasons", year, matchId);
-    await updateDoc(matchRef, fields);
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (err: any) {
-    if (err?.code === "not-found") {
+    if (!(await updateMatch(year, matchId, fields))) {
       return new Response(
         JSON.stringify({ error: "Match not found in that season" }),
         { status: 404 }
       );
     }
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
     });

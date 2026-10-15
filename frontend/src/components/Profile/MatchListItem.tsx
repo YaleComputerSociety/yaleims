@@ -5,11 +5,13 @@ import {
   emojiMap,
   generateGoogleCalendarLink,
 } from "@src/utils/helpers";
-import { Match } from "@src/types/components";
+import type { CollegeMatchJson } from "@src/types/api";
 import { useUser } from "../../context/UserContext";
+import { useSeason } from "@src/context/SeasonContext";
+import { currentYear } from "@src/utils/helpers";
 
 interface MatchListItemProps {
-  match: Match;
+  match: CollegeMatchJson;
   user: any;
   isSignedUp: boolean; // Initial state from parent
 }
@@ -19,30 +21,26 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
+  const { currentSeason } = useSeason();
+  const seasonId = currentSeason ? currentSeason.year : currentYear;
+  const participantType =
+    user && toCollegeName[user.college] === toCollegeName[match.home_college]
+      ? "home_college_participants"
+      : "away_college_participants";
 
   const handleSignUp = async () => {
     setIsLoading(true);
     try {
-      const userToken = sessionStorage.getItem("userToken")
-      const response = await fetch(
-        "https://addparticipant-65477nrg6a-uc.a.run.app",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
-          },
-          body: JSON.stringify({
-            matchId: match.id,
-            participantType:
-              user?.college === match.home_college
-                ? "home_college_participants"
-                : "away_college_participants",
-            user,
-            selectedMatch: match,
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/addMatchParticipant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seasonId,
+          matchId: match.id,
+          matchTimestamp: match.timestamp,
+          participantType,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -60,26 +58,11 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
   const handleUnregister = async () => {
     setIsLoading(true);
     try {
-      const userToken = sessionStorage.getItem("userToken")
-      const response = await fetch(
-        "https://removeparticipant-65477nrg6a-uc.a.run.app",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`
-          },
-          body: JSON.stringify({
-            matchId: match.id,
-            participantType:
-              user?.college === match.home_college
-                ? "home_college_participants"
-                : "away_college_participants",
-            user, // Pass the full user object
-            selectedMatch: match, // Pass the full match object
-          }),
-        }
-      );
+      const response = await fetch("/api/functions/removeMatchParticipant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seasonId, matchId: match.id, participantType }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();

@@ -1,95 +1,81 @@
-import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import type { VerifyResponse } from "@/types/api";
+import {
+  Session,
+  clearSessionCookie,
+  getSession,
+  getSessionToken,
+  setSessionCookie,
+} from "@/server/session";
+import { getUser } from "@/server/data/users";
 
-interface DecodedToken {
-  name: string;
-  netid: string;
-  email: string;
-  role: string;
-  mRoles: string[];
-  username: string;
-  college: string;
-  points: string;
-  matches_played: number;
+const sameRoles = (a: string[] = [], b: string[] = []): boolean =>
+  a.length === b.length && a.every((role) => b.includes(role));
+
+// Roles, username and college always come from the user's Firestore doc, never
+// from the request: this route used to re-sign the session with roles passed
+// in the query string, which let any logged-in user make themselves admin.
+async function freshUserFields(email: string) {
+  const data = (await getUser(email)) ?? {};
+  return {
+    role: typeof data.role === "string" ? data.role : "user",
+    mRoles:
+      Array.isArray(data.mRoles) && data.mRoles.length > 0
+        ? (data.mRoles as string[])
+        : ["user"],
+    username: typeof data.username === "string" ? data.username : undefined,
+    college: typeof data.college === "string" ? data.college : undefined,
+  };
 }
 
-function isValidDecodedToken(decoded: any): decoded is DecodedToken {
-  return (
-    typeof decoded === "object" &&
-    typeof decoded.netid === "string" &&
-    typeof decoded.email === "string"
-  );
-}
+export async function GET(): Promise<NextResponse> {
+  if (!(await getSessionToken())) {
+    return NextResponse.json({ isLoggedIn: false } satisfies VerifyResponse);
+  }
 
-const parseRoles = (csv = ""): string[] =>
-  csv.split(",").map(r => r.trim()).filter(Boolean);
-
-const rolesEqual = (a: string[] = [], b: string[] = []): boolean => {
-  if (a.length !== b.length) return false;
-  const setB = new Set(b);
-  return a.every(role => setB.has(role));
-};
-
-export async function GET(req: Request): Promise<NextResponse> {
+  let session: Session | null;
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token");
-
-    if (!token?.value) {
-      return NextResponse.json({ isLoggedIn: false }, { status: 200 });
-    }
-
-    const JWT_SECRET = process.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      console.error("JWT_SECRET is not defined");
-      return NextResponse.json({ isLoggedIn: false }, { status: 500 });
-    }
-
-    const decoded = jwt.verify(token.value, JWT_SECRET);
-
-    if (!isValidDecodedToken(decoded)) {
-      console.error("Invalid token structure");
-      return NextResponse.json({ isLoggedIn: false }, { status: 401 });
-    }
-
-    const currentRolesCSV = new URL(req.url).searchParams.get("currentRoles");
-    const currentUserNameCSV = new URL(req.url).searchParams.get("currentUsername");
-    const currentRoles = parseRoles(currentRolesCSV || undefined);
-    const currentUsername = currentUserNameCSV?.trim() || undefined;
-
-    const shouldUpdateRoles = currentRoles.length > 0 && !rolesEqual(currentRoles, decoded.mRoles ?? []);
-    const shouldUpdateUsername = currentUsername && currentUsername !== decoded.username;
-
-    const mergedUser: DecodedToken = {
-      name: decoded.name,
-      netid: decoded.netid,
-      email: decoded.email,
-      role: decoded.role,
-      mRoles: shouldUpdateRoles ? currentRoles! : decoded.mRoles,
-      username: shouldUpdateUsername? currentUsername : decoded.username,
-      college: decoded.college,
-      points: decoded.points,
-      matches_played: decoded.matches_played,
-    };
-
-    const res = NextResponse.json({ isLoggedIn: true, user: mergedUser }, { status: 200 });
-
-    if (shouldUpdateRoles || shouldUpdateUsername) {
-      const newToken = jwt.sign(mergedUser, JWT_SECRET, { expiresIn: "7d" });
-      res.cookies.set("token", newToken, {
-        secure: true, 
-        httpOnly: true,
-        sameSite: "none",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    }
-    return res
+    session = await getSession();
   } catch (error) {
-    console.error("Authentication error:", error);
-    const response = NextResponse.json({ isLoggedIn: false }, { status: 401 });
-    response.cookies.delete("token");
+    console.error("verify: cannot check the session:", error);
+    return NextResponse.json({ isLoggedIn: false } satisfies VerifyResponse, { status: 500 });
+  }
+  if (!session) {
+    const response = NextResponse.json({ isLoggedIn: false } satisfies VerifyResponse, {
+      status: 401,
+    });
+    clearSessionCookie(response);
     return response;
   }
+
+  let fresh: Awaited<ReturnType<typeof freshUserFields>> | null = null;
+  try {
+    fresh = await freshUserFields(session.email);
+  } catch (err) {
+    // Firestore unavailable: keep the session as signed rather than log out.
+    console.error("verify: could not read user doc:", err);
+  }
+
+  const mergedUser: Session = {
+    ...session,
+    role: fresh?.role ?? session.role,
+    mRoles: fresh?.mRoles ?? session.mRoles,
+    username: fresh?.username ?? session.username,
+    college: fresh?.college ?? session.college,
+  };
+
+  const changed =
+    mergedUser.role !== session.role ||
+    !sameRoles(mergedUser.mRoles, session.mRoles) ||
+    mergedUser.username !== session.username ||
+    mergedUser.college !== session.college;
+
+  const res = NextResponse.json(
+    { isLoggedIn: true, user: mergedUser } satisfies VerifyResponse,
+    { status: 200 }
+  );
+  if (changed) {
+    setSessionCookie(res, mergedUser);
+  }
+  return res;
 }

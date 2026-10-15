@@ -17,12 +17,6 @@ env:
       - BUILD
       - RUNTIME
 
-  - variable: NEXT_PUBLIC_AUTH_URL
-    value: http://127.0.0.1:5001/yims-125a2/us-central1/handleFirebaseAuth
-    availability:
-      - BUILD
-      - RUNTIME
-
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: FIREBASE_API_KEY
     availability:

@@ -4,12 +4,13 @@ import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
 import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
 import { getMVPImage } from "@/utils/versionedImages";
+import type { MvpsResponse } from "@src/types/api";
 
 const MVPPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useUser();
   const { currentSeason } = useSeason();
-  const [mvps, setMvps] = useState<any>(null);
+  const [mvps, setMvps] = useState<MvpsResponse | null>(null);
   const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekId(seasonStart));  
 
   const weeks = buildWeekOptions(seasonStart);
@@ -50,7 +51,7 @@ const MVPPopup = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data: MvpsResponse = await response.json();
         setMvps(data);
       }
     };
