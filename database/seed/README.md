@@ -60,6 +60,21 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run load
 This refuses to run unless `FIRESTORE_EMULATOR_HOST` is set, so it can never
 write to production.
 
+### Your own admin account locally
+
+The seed has no real emails, so signing in locally with Yale CAS creates
+your account in the emulator with the plain `user` role. To use the admin
+pages, run once after that first sign-in, then reload the page:
+
+```bash
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run make-admin -- <your email>
+```
+
+It adds `admin` and `dev` to your emulator user and, like `load`, refuses
+to run without `FIRESTORE_EMULATOR_HOST`. The emulator keeps nothing when it
+stops; use the snapshot below with `--export-on-exit` to keep your account
+(and any test data) across restarts.
+
 For a fast repeatable loop, snapshot the loaded emulator once:
 
 ```bash

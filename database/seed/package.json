@@ -7,7 +7,8 @@
   "scripts": {
     "export": "node export-prod.mjs",
     "sanitize": "node sanitize.mjs",
-    "load": "node load-emulator.mjs"
+    "load": "node load-emulator.mjs",
+    "make-admin": "node make-admin.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.4.0"
