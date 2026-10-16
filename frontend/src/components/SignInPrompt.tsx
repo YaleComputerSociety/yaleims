@@ -14,6 +14,7 @@ const SignInPrompt: React.FC<{ message: string }> = ({ message }) => {
       <p className="text-gray-700 dark:text-gray-300">{message}</p>
       <Link
         href={`/api/auth/login?from=${encodeURIComponent(pathname)}`}
+        prefetch={false}
         className="px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
       >
         Sign in
