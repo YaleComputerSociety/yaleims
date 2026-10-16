@@ -5,7 +5,7 @@ import { FiltersContext } from "@src/context/FiltersContext";
 import { useUser } from "../context/UserContext";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import Image from "next/image";
-import { useTheme } from "next-themes";
+import useLightTheme from "@src/hooks/useLightTheme";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { MdOutlineScoreboard } from "react-icons/md";
 import { GrSchedules } from "react-icons/gr";
@@ -37,7 +37,7 @@ const NavBar: React.FC = () => {
   const { resetFilters } = filtersContext;
   const [isClick, setisClick] = useState(false);
   const { user, loading } = useUser();
-  const { theme, setTheme } = useTheme();
+  const { isLight, toggleTheme } = useLightTheme();
   const { collapsed, onToggleCollapse } = useNavbar()
    
 
@@ -144,11 +144,11 @@ const NavBar: React.FC = () => {
               ""
             ) : (
               <button
-                onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
+                onClick={toggleTheme}
                 className="rounded transition-colors"
                 aria-label="Toggle Light/Dark Mode"
               >
-                {theme === "light" ? (
+                {isLight ? (
                   <MdOutlineLightMode
                     className="text-gray-800 hover:text-blue-600"
                     size={24}
@@ -173,7 +173,7 @@ const NavBar: React.FC = () => {
               ) : (
                 <Link
                   className={`py-1 px-3 rounded border ${
-                    theme === "light"
+                    isLight
                       ? "border-black hover:border-gray-400 hover:text-gray-400"
                       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
                   }`}
