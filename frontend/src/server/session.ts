@@ -10,6 +10,14 @@ import type { SessionUser } from "@/types/api";
 export const SESSION_COOKIE = "token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
+/**
+ * Production (https) sets the cookie Secure with SameSite=None, as it always
+ * has. `next dev` runs on http://localhost, where Safari drops Secure cookies
+ * (Chrome and Firefox make an exception for localhost), so local sign-in
+ * looped back logged out; there the cookie is plain SameSite=Lax.
+ */
+export const secureCookies = process.env.NODE_ENV === "production";
+
 /** The token's payload (shared with the client, which gets it from /api/auth/verify). */
 export type Session = SessionUser;
 
@@ -79,9 +87,9 @@ export function hasAnyRole(session: Session | null, roles: string[]): boolean {
 export function setSessionCookie(res: NextResponse, session: Session): void {
   const token = jwt.sign(toSession(session), jwtSecret(), { expiresIn: "7d" });
   res.cookies.set(SESSION_COOKIE, token, {
-    secure: true,
+    secure: secureCookies,
     httpOnly: true,
-    sameSite: "none",
+    sameSite: secureCookies ? "none" : "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
   });

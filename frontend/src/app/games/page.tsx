@@ -525,6 +525,7 @@ const GamesPage: React.FC = () => {
             </p>
             <Link
               href="/api/auth/login?from=%2Fgames"
+              prefetch={false}
               className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
             >
               Sign in

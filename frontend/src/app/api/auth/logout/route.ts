@@ -1,5 +1,5 @@
-import { NextURL } from "next/dist/server/web/next-url";
 import { NextResponse } from "next/server";
+import { SESSION_COOKIE, secureCookies } from "@/server/session";
 
 export async function GET(): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
@@ -9,8 +9,8 @@ export async function GET(): Promise<NextResponse> {
   const response = NextResponse.redirect(`${process.env.BASE_URL}/hub`);
 
   response.cookies.delete({
-    name: "token",
-    secure: true,
+    name: SESSION_COOKIE,
+    secure: secureCookies,
     path: "/",
     httpOnly: true,
     sameSite: "strict",

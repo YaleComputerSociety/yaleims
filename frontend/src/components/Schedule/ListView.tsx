@@ -158,6 +158,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
       {!user && (
         <Link
           href="/api/auth/login"
+          prefetch={false}
           className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md hover:shadow-lg hover:scale-105 transition-transform duration-300 text-center"
         >
           <span className="text-white dark:text-gray-200 font-medium">

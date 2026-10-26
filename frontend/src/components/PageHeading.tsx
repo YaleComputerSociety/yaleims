@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useUser } from '../context/UserContext'
-import { useTheme } from 'next-themes';
+import useLightTheme from "@src/hooks/useLightTheme";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import { useNavbar } from '@src/context/NavbarContext';
 import { FaSignOutAlt } from "react-icons/fa";
@@ -116,7 +116,7 @@ interface PageHeadingProps {
 
 export default function PageHeading({ heading }: PageHeadingProps) {
   const { user, loading } = useUser();
-  const { theme, setTheme } = useTheme();
+  const { isLight, toggleTheme } = useLightTheme();
   const { collapsed } = useNavbar();
   const isMobile = useIsMobile();
 
@@ -132,11 +132,11 @@ export default function PageHeading({ heading }: PageHeadingProps) {
             <h1 className="md:text-2xl text-xl font-bold text-gray-900 dark:text-white tracking-tight">{heading}</h1>
             <div className="hidden md:flex flex-row gap-x-4 items-center">
                 <button
-                onClick={() => theme === "light" ? setTheme('dark') : setTheme('light')}
+                onClick={toggleTheme}
                 className="p-2 rounded-xl transition-all duration-200 text-center hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Toggle Light/Dark Mode"
                 >
-                {theme === "light" ? (
+                {isLight ? (
                     <MdOutlineLightMode className="text-gray-600 hover:text-amber-500 transition-colors" size={20} />
                 ) : (
                     <MdDarkMode className="text-gray-300 hover:text-yellow-300 transition-colors" size={20} />
@@ -151,7 +151,8 @@ export default function PageHeading({ heading }: PageHeadingProps) {
                 ) : (
                 <Link
                     className="py-1.5 px-4 rounded-xl border text-sm font-medium cursor-pointer transition-all duration-200 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 hover:bg-blue-500/5"
-                    href="api/auth/login"
+                    href="/api/auth/login"
+                    prefetch={false}
                 >
                     Sign In
                 </Link>
