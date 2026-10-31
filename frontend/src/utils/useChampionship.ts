@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
-import type { CurrentSeasonDoc } from "@src/types/firestore";
+import { legacyPaths } from "@/lib/paths";
+import type { CurrentSeasonDoc } from "@src/types/legacy";
 
 export interface ChampionshipState {
   winningCollegeId: string | null;
@@ -16,7 +16,7 @@ export function useChampionship(): ChampionshipState {
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, paths.currentSeason), (snap) => {
+    const unsub = onSnapshot(doc(db, legacyPaths.currentSeason), (snap) => {
       const data = snap.data() as CurrentSeasonDoc | undefined;
       setState({
         winningCollegeId: data?.winningCollegeId ?? null,

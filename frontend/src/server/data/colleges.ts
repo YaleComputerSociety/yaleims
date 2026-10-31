@@ -2,8 +2,8 @@
 import "server-only";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { paths } from "@/lib/paths";
-import type { CollegeStandingDoc, WithId } from "@/types/firestore";
+import { legacyPaths } from "@/lib/paths";
+import type { CollegeStandingDoc, WithId } from "@/types/legacy";
 import { withId } from "./util";
 
 /** A college's standing doc, for services that change it in a transaction. */
@@ -11,7 +11,7 @@ export function collegeStandingRef(
   seasonId: string,
   abbr: string
 ): DocumentReference<CollegeStandingDoc> {
-  return adminDb.doc(paths.collegeStanding(seasonId, abbr)) as DocumentReference<CollegeStandingDoc>;
+  return adminDb.doc(legacyPaths.collegeStanding(seasonId, abbr)) as DocumentReference<CollegeStandingDoc>;
 }
 
 /**
@@ -22,7 +22,7 @@ export function collegeStandingRef(
 export async function listCollegeStandings(
   seasonId: string
 ): Promise<WithId<CollegeStandingDoc>[]> {
-  const snap = await adminDb.collection(paths.collegeStandings(seasonId)).get();
+  const snap = await adminDb.collection(legacyPaths.collegeStandings(seasonId)).get();
   return snap.docs
     .map((d) => withId<CollegeStandingDoc>(d))
     .sort(
@@ -44,7 +44,7 @@ function rankDay(now: Date): string {
  * prevRank (the leaderboard's rank change).
  */
 export async function recalculateRanks(seasonId: string, now = new Date()): Promise<void> {
-  const standings = adminDb.collection(paths.collegeStandings(seasonId));
+  const standings = adminDb.collection(legacyPaths.collegeStandings(seasonId));
   const today = rankDay(now);
   await adminDb.runTransaction(async (tx) => {
     const snap = await tx.get(standings);

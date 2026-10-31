@@ -3,7 +3,7 @@
 // then playoff and tournament brackets advance, tournament placement bonuses
 // are settled, and the season is re-ranked.
 import "server-only";
-import type { MatchDoc } from "@/types/firestore";
+import type { MatchDoc } from "@/types/legacy";
 import { recalculateRanks } from "../data/colleges";
 import { matchRef } from "../data/matches";
 import { getPointsForWin } from "../data/sports";

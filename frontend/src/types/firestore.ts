@@ -1,8 +1,14 @@
-// Firestore documents as they are stored today, one type per collection.
-// Types only, no runtime code: the server data layer (src/server/data) and
-// browser code both import them. Paths live in src/lib/paths.ts. Old docs
-// also hold frozen betting/odds fields; those are not typed. Phase 2 changes
-// these types, src/lib/paths.ts and src/server/data.
+// Firestore documents of schema v3 (REDESIGN.md section 4), one type per
+// collection. Types only, no runtime code: the server data layer
+// (src/server/data), the browser listeners and the migration
+// (database/migrate) import them. Paths live in src/lib/paths.ts. The schema
+// before v3 is in ./legacy.ts.
+//
+// Everything that belongs to a season lives under seasons/{seasonId} (D29);
+// global are only users, usernames and config/app. References are ids:
+// collegeId = the college's abbreviation ("MY"), sportId = the sports doc id,
+// userId / playerId = an email (a guest player has "guest-<random>"). A field
+// whose value is unknown or doesn't apply is stored as null, not left out.
 
 /**
  * A stored timestamp. Structural, so the Admin SDK's and the browser SDK's
@@ -15,147 +21,258 @@ export interface StoredTimestamp {
   toMillis(): number;
 }
 
-/** A document's data plus its id, in the shape the API has always returned. */
+/** A document's data plus its id. */
 export type WithId<T> = T & { id: string };
 
-// ── Matches: matches/seasons/{seasonId}/{matchId} ──────────────────────────
+/** A calendar day in Eastern time, "yyyy-mm-dd" (the league's day, D34). */
+export type EasternDate = string;
 
-/** A player on a match roster. Some old entries hold more user fields. */
-export interface MatchParticipant {
-  email: string;
-  name?: string;
-  firstname?: string;
-  lastname?: string;
+// ── Global: config/app, users/{email}, usernames/{username} ────────────────
+
+/** config/app: the current season and feature switches. */
+export interface AppConfigDoc {
+  currentSeasonId: string;
+  features: {
+    /** U11 "My stats" in the Hub, hidden until attendance is tracked (D33). */
+    myStats: boolean;
+  };
 }
 
-/** A match doc. Old docs also hold frozen odds/betting fields (`*_odds`, `*_volume`, `predictions`). */
-export interface MatchDoc {
-  /** Numeric id; overrides the doc id in API responses. */
-  id: number;
-  sport: string;
-  type: string;
-  home_college: string;
-  away_college: string;
-  home_college_score: number | null;
-  away_college_score: number | null;
-  home_college_participants?: MatchParticipant[];
-  away_college_participants?: MatchParticipant[];
-  winner: string | null;
-  forfeit: boolean | null;
-  timestamp: StoredTimestamp;
-  location?: string;
-  location_extra?: string;
-  division?: string;
-  home_seed?: number;
-  away_seed?: number;
-  next_match_id?: number | string;
-  next_match_loser_id?: number | string;
-  playoff_bracket_slot?: number;
-  tournament_id?: string;
-  tournament_name?: string;
-}
+/** Roles that hold across seasons. Season roles are on the player (SeasonRole). */
+export type GlobalRole = "admin" | "dev";
 
-// ── Score reports: matches/score_reports/{seasonId}/{matchId}/reports/{id} ─
-
-export interface ScoreReportDoc {
-  reason: string;
-  reportedBy: string;
-  reportedByEmail: string;
-  reportedAt: StoredTimestamp;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedAt?: StoredTimestamp;
-  season: string;
-  matchId: string;
-  matchHomeCollege: string | null;
-  matchAwayCollege: string | null;
-  homeScore: number | null;
-  awayScore: number | null;
-  sport: string | null;
-}
-
-// ── Users: users/{email}, users/{email}/seasons/{seasonId} ──────────────────
-
-/** users/{email}. Old docs also hold frozen betting fields. */
+/**
+ * users/{email}: identity across seasons. Old docs also hold frozen fields
+ * (mRoles, college, role, sportsCaptainOf, betting totals), not read or written.
+ */
 export interface UserDoc {
-  email?: string;
-  firstname?: string;
-  lastname?: string;
-  college?: string | null;
-  username?: string;
-  mRoles?: string[];
-  sportsCaptainOf?: string[];
-  /** Legacy single role; roles live in mRoles. */
-  role?: string;
-  matches_played?: number;
+  email: string;
+  firstname: string;
+  lastname: string;
+  username: string;
+  roles: GlobalRole[];
+  /** The user's first own login; null = created for them by a captain/supervisor (U10). */
+  claimedAt: StoredTimestamp | null;
+  /** Who created the account for them (U10); null = they did, by logging in. */
+  createdBy: string | null;
 }
 
-/** A game a user signed up for, as stored on the user-season doc. */
-export interface UserSeasonMatch {
-  id: number | string;
-  timestamp: string;
+/** usernames/{username}: who holds the username. */
+export interface UsernameDoc {
+  userId: string;
 }
 
-/** users/{email}/seasons/{seasonId}. Some old docs hold `matches` as a non-array. */
-export interface UserSeasonDoc {
-  matches?: UserSeasonMatch[];
+// ── seasons/{seasonId} ─────────────────────────────────────────────────────
+
+export type Term = "fall" | "winter" | "spring";
+
+/** seasons/{seasonId}, e.g. "2026-2027". */
+export interface SeasonDoc {
+  /** As shown, e.g. "2026-2027". */
+  label: string;
+  startYear: number;
+  currentTerm: Term;
+  championCollegeId: string | null;
+  celebrationActive: boolean;
+  championshipUpdatedAt: StoredTimestamp | null;
 }
 
-// ── Seasons: seasons/current, seasons/past ─────────────────────────────────
-
-/** seasons/current. */
-export interface CurrentSeasonDoc {
-  /** The season id, e.g. "2026-2027". */
-  year: string;
-  /** "fall" | "winter" | "spring". */
-  season: string;
-  winningCollegeId?: string | null;
-  celebrationActive?: boolean;
-  championshipUpdatedAt?: StoredTimestamp;
-}
-
-// ── College standings: colleges/seasons/{seasonId}/{abbr} ──────────────────
-
-/** A college's standing in one season; the doc id is its abbreviation. */
-export interface CollegeStandingDoc {
+/** seasons/{s}/sports/{sportId}: the season's lineup (ids = the old sports doc ids). */
+export interface SportDoc {
   name: string;
-  abbreviation: string;
-  season: string;
+  emoji: string;
+  term: Term;
+  pointsForWin: number;
+  active: boolean;
+}
+
+/** The fields a standing counts (a result changes them; scoring is the only writer). */
+export interface StandingStats {
   points: number;
+  games: number;
   wins: number;
   losses: number;
   ties: number;
   forfeits: number;
-  games: number;
+}
+
+/** seasons/{s}/colleges/{collegeId}: a college and its standing this season. */
+export interface CollegeDoc extends StandingStats {
+  name: string;
+  abbreviation: string;
   rank: number;
+  /** The rank before the day's first re-rank (the leaderboard's rank change). */
   prevRank: number;
-  /** Date of the last rank snapshot, "d-m-yyyy". */
-  today: string;
-  migratedAt?: StoredTimestamp;
+  /** The day of the last rank snapshot. */
+  rankDate: EasternDate;
 }
 
-// ── Brackets and tournaments ───────────────────────────────────────────────
+/**
+ * seasons/{s}/colleges/{c}/teams/{sportId}: a college's team in a sport.
+ * Created on first use (a captain or a scored game).
+ */
+export interface TeamDoc {
+  seasonId: string;
+  collegeId: string;
+  sportId: string;
+  captainIds: string[];
+  games: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  forfeits: number;
+  pointsFor: number;
+  pointsAgainst: number;
+}
 
-/** One slot of a bracket (also the shape of a tournament's slots). */
-export interface BracketEntry {
-  bracket_placement: number;
+/** seasons/{s}/colleges/{c}/adjustments/{id}: a manual point change (P7, feature later). */
+export interface AdjustmentDoc {
+  points: number;
+  reason: string;
+  by: string;
+  at: StoredTimestamp;
+}
+
+/** seasons/{s}/colleges/{c}/mvps/{awardId}: one weekly MVP. */
+export interface MvpDoc {
+  seasonId: string;
+  collegeId: string;
+  /** The season week, 1-based. */
+  week: number;
+  playerId: string;
+  name: string;
+  /** null for migrated awards (not recorded before). */
+  awardedBy: string | null;
+  awardedAt: StoredTimestamp | null;
+}
+
+export type SeasonRole = "supervisor" | "college_rep";
+export type JoinedVia = "login" | "captain" | "supervisor" | "migration";
+
+/**
+ * seasons/{s}/players/{playerId}: a person's membership in the season (D30),
+ * created on their first login of the season or when a captain/supervisor
+ * adds them. playerId = their email, or "guest-<random>".
+ */
+export interface PlayerDoc {
+  seasonId: string;
+  /** Fixed for the season (from Yalies when created); null if Yalies has none. */
+  collegeId: string | null;
+  name: string;
+  /** null for a guest. */
+  userId: string | null;
+  roles: SeasonRole[];
+  joinedAt: StoredTimestamp;
+  joinedVia: JoinedVia;
+}
+
+// ── Matches ────────────────────────────────────────────────────────────────
+
+export type Stage = "regular" | "playoff";
+export type Division = "blue" | "green" | "final";
+export type MatchStatus = "scheduled" | "final" | "cancelled";
+export type Outcome = "home" | "away" | "draw" | "double_forfeit";
+
+export interface MatchResult {
+  homeScore: number;
+  awayScore: number;
+  outcome: Outcome;
+  /** The losing side forfeited (a double forfeit has outcome double_forfeit). */
+  forfeit: boolean;
+}
+
+/**
+ * seasons/{s}/matches/{matchId}: one game. Migrated games keep their number
+ * as the doc id; new ones get auto ids (D28). Byes are bracket slots, not
+ * games. The bracket fields are null on regular games.
+ */
+export interface MatchDoc {
+  seasonId: string;
+  sportId: string;
+  /** null while a bracket slot waits for a winner ("TBD"). */
+  homeCollegeId: string | null;
+  awayCollegeId: string | null;
+  /** (derived) the known college ids, for "games of college X". */
+  collegeIds: string[];
+  startsAt: StoredTimestamp;
+  venue: string | null;
+  venueDetail: string | null;
+  division: Division | null;
+  stage: Stage;
+  bracketId: string | null;
+  bracketSlot: number | null;
+  /** "Playoff", "Quarterfinal", "Semifinal", "Final", "Third Place". */
+  round: string | null;
+  homeSeed: number | null;
+  awaySeed: number | null;
+  /** The game the winner moves to. */
+  nextMatchId: string | null;
+  /** The game the loser moves to (a tournament's third place game). */
+  nextLoserMatchId: string | null;
+  /** The sport's points for a win when the game was created. */
+  pointsForWin: number;
+  status: MatchStatus;
+  result: MatchResult | null;
+  /** null for results recorded before v3. */
+  scoredBy: string | null;
+  scoredAt: StoredTimestamp | null;
+  updatedAt: StoredTimestamp;
+}
+
+export type AddedBy = "self" | "captain" | "supervisor" | "legacy";
+export type CaptainStatus = "confirmed" | "removed";
+
+/** seasons/{s}/matches/{m}/roster/{playerId}: one player on one game (D34). */
+export interface RosterEntryDoc {
+  seasonId: string;
+  matchId: string;
+  sportId: string;
+  collegeId: string;
+  playerId: string;
+  name: string;
+  /** (derived) the match's start; a reschedule updates it in the same transaction. */
+  startsAt: StoredTimestamp;
+  addedBy: AddedBy;
+  /** Who added the entry (the player for "self"); null for legacy entries. */
+  addedByUser: string | null;
+  signedUpAt: StoredTimestamp | null;
+  captainStatus: CaptainStatus | null;
+  captainBy: string | null;
+  captainAt: StoredTimestamp | null;
+  /** true = marked present; false = not marked; null = never recorded (legacy). */
+  present: boolean | null;
+  presentBy: string | null;
+  presentAt: StoredTimestamp | null;
+}
+
+export type ScoreReportStatus = "open" | "resolved";
+
+/** seasons/{s}/matches/{m}/scoreReports/{reportId}: a user flags a wrong score. */
+export interface ScoreReportDoc {
+  seasonId: string;
+  matchId: string;
+  reason: string;
+  /** The reporter's email. */
+  reportedBy: string;
+  reporterName: string;
+  reportedAt: StoredTimestamp;
+  /** The score the reporter saw (null if the game had none). */
+  scoreAtReport: { home: number | null; away: number | null };
+  status: ScoreReportStatus;
+  resolvedBy: string | null;
+  resolvedAt: StoredTimestamp | null;
+}
+
+// ── Brackets: playoffs and tournaments ─────────────────────────────────────
+
+export type BracketKind = "playoffs" | "tournament";
+
+/** One slot of a bracket: a game, or a bye (the college moves on without one). */
+export interface BracketSlot {
+  slot: number;
   round: string;
-  match_id: number;
-  timestamp: StoredTimestamp;
-}
-
-/** brackets/seasons/{seasonId}/{sport}, one per sport; the games are match docs. */
-export interface BracketDoc {
-  sport: string;
-  createdAt?: StoredTimestamp;
-  matches?: BracketEntry[];
-}
-
-/** Colleges awarded each placement bonus (null once reversed). */
-export interface TournamentPlacements {
-  first?: string | null;
-  second?: string | null;
-  third?: string | null;
+  matchId: string | null;
+  byeCollegeId: string | null;
 }
 
 /** Bonus points per tournament placement. */
@@ -165,27 +282,40 @@ export interface PlacementPoints {
   third: number;
 }
 
-/** tournaments/seasons/{seasonId}/{tournamentId}; the doc id is a slug of the name. */
-export interface TournamentDoc {
-  /** Same as the doc id. */
-  id?: string;
-  name: string;
-  sport: string;
-  season: string;
-  createdAt?: StoredTimestamp;
-  /** Its 16 slots, shaped like a bracket's; the games are match docs. */
-  matches?: BracketEntry[];
-  /** Slot of the third place game (16). */
-  third_place_slot?: number;
-  /**
-   * As stored, so a value may be missing; the server reads it through
-   * normalizePlacementPoints, which uses the defaults for those.
-   */
-  placement_points?: Partial<PlacementPoints>;
-  placements?: TournamentPlacements;
+/** Colleges awarded each placement bonus (null = not awarded, or taken back). */
+export interface Placements {
+  first: string | null;
+  second: string | null;
+  third: string | null;
 }
 
-// ── MVPs: mvps/{seasonId}/{college}/{weekId} ───────────────────────────────
+/** seasons/{s}/brackets/{bracketId}: a sport's playoffs or a tournament. */
+export interface BracketDoc {
+  seasonId: string;
+  sportId: string;
+  kind: BracketKind;
+  name: string;
+  /** The day of a one-day event (all its games on that day), else null. */
+  date: EasternDate | null;
+  slots: BracketSlot[];
+  /** Tournaments: the third place game's slot. */
+  thirdPlaceSlot: number | null;
+  placementPoints: PlacementPoints | null;
+  placements: Placements | null;
+  createdAt: StoredTimestamp;
+}
 
-/** One week's MVPs of a college, keyed by email. */
-export type MvpWeekDoc = Record<string, { fname?: string; lname?: string }>;
+// ── seasons/{s}/auditLog/{entryId} ─────────────────────────────────────────
+
+/**
+ * One supervisor/admin action (D32), written in the same transaction as the
+ * change. `before` holds each target doc as it was (null = it didn't exist).
+ */
+export interface AuditLogDoc {
+  at: StoredTimestamp;
+  actor: { userId: string; roles: string[] };
+  action: string;
+  params: Record<string, unknown>;
+  targets: string[];
+  before: Record<string, Record<string, unknown> | null>;
+}

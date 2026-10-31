@@ -3,7 +3,7 @@ import { useSeason } from "@src/context/SeasonContext";
 import { useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "@src/components/LoadingSpinner";
 import type { CollegeCaptain, UsersInCollegeResponse } from "@src/types/api";
-import type { UserDoc } from "@src/types/firestore";
+import type { UserDoc } from "@src/types/legacy";
 
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();

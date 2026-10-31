@@ -5,7 +5,7 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import type { SlotInput } from "@/types/api";
-import type { PlacementPoints } from "@/types/firestore";
+import type { PlacementPoints } from "@/types/legacy";
 import { collegeStandingRef, recalculateRanks } from "../data/colleges";
 import { isAlreadyExists } from "../data/matches";
 import { tournamentRef } from "../data/tournaments";

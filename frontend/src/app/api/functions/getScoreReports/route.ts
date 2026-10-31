@@ -5,7 +5,7 @@ import {
   listSeasonScoreReports,
 } from "@/server/data/scoreReports";
 import type { ScoreReport, ScoreReportsResponse, SerializedTimestamp } from "@/types/api";
-import type { ScoreReportDoc, StoredTimestamp, WithId } from "@/types/firestore";
+import type { ScoreReportDoc, StoredTimestamp, WithId } from "@/types/legacy";
 
 const apiTimestamp = (ts: StoredTimestamp | undefined | null): SerializedTimestamp | undefined =>
   ts ? { _seconds: ts.seconds, _nanoseconds: ts.nanoseconds } : undefined;

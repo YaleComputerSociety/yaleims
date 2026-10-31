@@ -17,7 +17,7 @@ import type {
   UserDoc,
   UserSeasonMatch,
   WithId,
-} from "./firestore";
+} from "./legacy";
 
 /** How Response.json writes an Admin SDK Timestamp. */
 export interface SerializedTimestamp {

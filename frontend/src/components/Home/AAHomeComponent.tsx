@@ -22,9 +22,9 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
+import { legacyPaths } from "@/lib/paths";
 import { useChampionship } from "@src/utils/useChampionship";
-import type { CollegeStandingDoc, WithId } from "@src/types/firestore";
+import type { CollegeStandingDoc, WithId } from "@src/types/legacy";
 
 // Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
@@ -60,7 +60,7 @@ const AAHomeComponent: React.FC = () => {
     setLoading(true);
 
     const q = query(
-      collection(db, paths.collegeStandings(selected)),
+      collection(db, legacyPaths.collegeStandings(selected)),
       orderBy("rank", "asc"),
     );
 

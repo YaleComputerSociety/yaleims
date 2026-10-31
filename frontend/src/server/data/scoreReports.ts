@@ -3,8 +3,8 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { collectionGroups, paths, scoreReportPathIds } from "@/lib/paths";
-import type { ScoreReportDoc, WithId } from "@/types/firestore";
+import { legacyPaths, legacyScoreReportPathIds } from "@/lib/paths";
+import type { ScoreReportDoc, WithId } from "@/types/legacy";
 import { withId } from "./util";
 
 export type NewScoreReport = Omit<
@@ -18,7 +18,7 @@ export async function listMatchScoreReports(
   matchId: string
 ): Promise<WithId<ScoreReportDoc>[]> {
   const snap = await adminDb
-    .collection(paths.scoreReports(seasonId, matchId))
+    .collection(legacyPaths.scoreReports(seasonId, matchId))
     .orderBy("reportedAt", "desc")
     .get();
   return snap.docs.map((d) => withId<ScoreReportDoc>(d));
@@ -29,16 +29,16 @@ export async function listSeasonScoreReports(
   seasonId: string
 ): Promise<WithId<ScoreReportDoc>[]> {
   const snap = await adminDb
-    .collectionGroup(collectionGroups.scoreReports)
+    .collectionGroup(legacyPaths.scoreReportsGroup)
     .orderBy("reportedAt", "desc")
     .get();
   return snap.docs
-    .filter((d) => scoreReportPathIds(d.ref.path).seasonId === seasonId)
+    .filter((d) => legacyScoreReportPathIds(d.ref.path).seasonId === seasonId)
     .map((d) => {
       const report = withId<ScoreReportDoc>(d);
       return {
         ...report,
-        matchId: report.matchId ?? scoreReportPathIds(d.ref.path).matchId,
+        matchId: report.matchId ?? legacyScoreReportPathIds(d.ref.path).matchId,
       };
     });
 }
@@ -49,7 +49,7 @@ export async function addScoreReport(
   matchId: string,
   report: NewScoreReport
 ): Promise<string> {
-  const ref = await adminDb.collection(paths.scoreReports(seasonId, matchId)).add({
+  const ref = await adminDb.collection(legacyPaths.scoreReports(seasonId, matchId)).add({
     ...report,
     reportedAt: FieldValue.serverTimestamp(),
     resolved: false,
@@ -66,7 +66,7 @@ export async function resolveScoreReport(
   reportId: string,
   resolvedBy: string
 ): Promise<void> {
-  await adminDb.doc(paths.scoreReport(seasonId, matchId, reportId)).update({
+  await adminDb.doc(legacyPaths.scoreReport(seasonId, matchId, reportId)).update({
     resolved: true,
     resolvedBy,
     resolvedAt: FieldValue.serverTimestamp(),

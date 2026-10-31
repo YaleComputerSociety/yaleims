@@ -8,7 +8,7 @@ import { FiltersContext } from "@src/context/FiltersContext";
 import TableHeader from "@src/components/Scores/TableHeader";
 import MatchesTable from "@src/components/Scores/MatchTable";
 import type { MatchJson, MatchPageResponse } from "@src/types/api";
-import type { CollegeStandingDoc } from "@src/types/firestore";
+import type { CollegeStandingDoc } from "@src/types/legacy";
 import Pagination from "@src/components/Scores/Pagination";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
@@ -26,7 +26,7 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
+import { legacyPaths } from "@/lib/paths";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
@@ -154,7 +154,7 @@ const ScoresPage: React.FC = () => {
     if (filter.college && filter.college !== "All") {
       setCollegeIsLoading(true);
 
-      const q = doc(db, paths.collegeStanding(currentSeason.year, filter.college));
+      const q = doc(db, legacyPaths.collegeStanding(currentSeason.year, filter.college));
 
       unsub = onSnapshot(
         q,

@@ -1,5 +1,5 @@
 import type { BracketUpload, MatchJson, SlotInput, UnscoredMatch } from "./api";
-import type { CollegeStandingDoc } from "./firestore";
+import type { CollegeStandingDoc } from "./legacy";
 
 export interface CollegeSummaryCardProps {
   stats: CollegeStandingDoc | null;

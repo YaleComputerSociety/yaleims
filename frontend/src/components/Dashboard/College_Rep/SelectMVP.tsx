@@ -4,7 +4,7 @@ import LoadingSpinner from "@src/components/LoadingSpinner";
 import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
 import { useUser } from "@src/context/UserContext";
 import type { MvpsResponse, UsersInCollegeResponse } from "@src/types/api";
-import type { UserDoc } from "@src/types/firestore";
+import type { UserDoc } from "@src/types/legacy";
 
 export default function SelectMVP() {
   const [usersInCollege, setUsersInCollege] = useState<UserDoc[]>([]);

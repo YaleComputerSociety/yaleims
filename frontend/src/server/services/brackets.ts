@@ -9,7 +9,7 @@ import {
   type Transaction,
 } from "firebase-admin/firestore";
 import type { SlotInput } from "@/types/api";
-import type { BracketEntry, MatchDoc } from "@/types/firestore";
+import type { BracketEntry, MatchDoc } from "@/types/legacy";
 import { bracketRef } from "../data/brackets";
 import { recalculateRanks } from "../data/colleges";
 import {

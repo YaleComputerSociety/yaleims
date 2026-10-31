@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
+import { legacyPaths } from "@/lib/paths";
 import { currentYear } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import BracketCell from "@src/components/Brackets/BracketCell";
@@ -20,7 +20,7 @@ import BracketConnectorSvg, {
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
-import type { MatchDoc } from "@src/types/firestore";
+import type { MatchDoc } from "@src/types/legacy";
 
 // Tournaments reuse the 14-team playoff shape, so slot n lives at index n - 1.
 const LEFT_PLAYOFF_INDICES = [0, 1, 2, 3];
@@ -127,7 +127,7 @@ const TournamentsPage: React.FC = () => {
         setError(null);
         const docs = await Promise.all(
           bracket.map(async (m) => {
-            const ref = doc(db, paths.match(season, m.match_id));
+            const ref = doc(db, legacyPaths.match(season, m.match_id));
             const snapshot = await getDoc(ref);
             return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
           })

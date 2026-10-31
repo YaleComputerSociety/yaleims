@@ -9,9 +9,9 @@ import {
   type Transaction,
 } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { paths } from "@/lib/paths";
+import { legacyPaths } from "@/lib/paths";
 import type { MatchJson } from "@/types/api";
-import type { MatchDoc, MatchParticipant } from "@/types/firestore";
+import type { MatchDoc, MatchParticipant } from "@/types/legacy";
 import { isNotFound, pickFields } from "./util";
 
 const MATCH_FIELDS: Record<keyof MatchDoc, true> = {
@@ -57,7 +57,7 @@ function readMatch(data: DocumentData): MatchDoc {
  * of overwriting a match.
  */
 export async function reserveMatchIds(tx: Transaction, n: number): Promise<number | null> {
-  const counterRef = adminDb.doc(paths.matchIdCounter);
+  const counterRef = adminDb.doc(legacyPaths.matchIdCounter);
   const count = (await tx.get(counterRef)).data()?.count;
   if (typeof count !== "number") return null;
   tx.set(counterRef, { count: count + n }, { merge: true });
@@ -75,7 +75,7 @@ export function createMatch(
   matchId: number,
   data: DocumentData
 ): void {
-  tx.create(adminDb.doc(paths.match(seasonId, matchId)), data);
+  tx.create(adminDb.doc(legacyPaths.match(seasonId, matchId)), data);
 }
 
 /** Firestore's error for tx.create on an existing doc (gRPC ALREADY_EXISTS). */
@@ -139,14 +139,14 @@ export function matchRef(
   seasonId: string,
   matchId: string | number
 ): DocumentReference<MatchDoc> {
-  return adminDb.doc(paths.match(seasonId, matchId)) as DocumentReference<MatchDoc>;
+  return adminDb.doc(legacyPaths.match(seasonId, matchId)) as DocumentReference<MatchDoc>;
 }
 
 export async function getMatch(
   seasonId: string,
   matchId: string | number
 ): Promise<MatchDoc | null> {
-  const snap = await adminDb.doc(paths.match(seasonId, matchId)).get();
+  const snap = await adminDb.doc(legacyPaths.match(seasonId, matchId)).get();
   return snap.exists ? readMatch(snap.data()!) : null;
 }
 
@@ -157,7 +157,7 @@ export async function updateMatch(
   fields: Partial<MatchDoc>
 ): Promise<boolean> {
   try {
-    await adminDb.doc(paths.match(seasonId, matchId)).update(fields);
+    await adminDb.doc(legacyPaths.match(seasonId, matchId)).update(fields);
     return true;
   } catch (err) {
     if (isNotFound(err)) return false;
@@ -174,7 +174,7 @@ export async function listUnscoredPastMatches(
   now: Date
 ): Promise<MatchDoc[]> {
   const snap = await adminDb
-    .collection(paths.matches(seasonId))
+    .collection(legacyPaths.matches(seasonId))
     .where("winner", "==", null)
     .where("timestamp", "<", now)
     .orderBy("timestamp", "asc")
@@ -195,7 +195,7 @@ export async function listUpcomingCollegeMatches(
 ): Promise<MatchDoc[]> {
   const side = (field: "home_college" | "away_college") =>
     adminDb
-      .collection(paths.matches(seasonId))
+      .collection(legacyPaths.matches(seasonId))
       .where(field, "==", college)
       .where("winner", "==", null)
       .where("timestamp", ">", now)
@@ -256,7 +256,7 @@ function seasonMatchQuery(
   order: SortOrder
 ): Query {
   let query = adminDb
-    .collection(paths.matches(seasonId))
+    .collection(legacyPaths.matches(seasonId))
     .orderBy("timestamp", order);
   if (filter.college) {
     query = query.where(
@@ -296,7 +296,7 @@ export async function listSeasonMatches(
 ): Promise<SeasonMatch[] | null> {
   let query = seasonMatchQuery(seasonId, filter, order);
   if (page.kind === "after" || page.kind === "before") {
-    const cursor = await adminDb.doc(paths.match(seasonId, page.cursorId)).get();
+    const cursor = await adminDb.doc(legacyPaths.match(seasonId, page.cursorId)).get();
     if (!cursor.exists) return null;
     query =
       page.kind === "after"
@@ -319,12 +319,12 @@ export async function listPlayedMatchesAllSeasons(
   filter: Pick<SeasonMatchFilter, "college" | "sport">,
   order: SortOrder
 ): Promise<SeasonMatch[]> {
-  const seasons = await adminDb.doc(paths.matchSeasons).listCollections();
+  const seasons = await adminDb.doc(legacyPaths.matchSeasons).listCollections();
   const perSeason = await Promise.all(
     seasons.map(async ({ id: seasonId }) => {
       // A range query on one field returns timestamp asc, then doc id.
       let query: Query = adminDb
-        .collection(paths.matches(seasonId))
+        .collection(legacyPaths.matches(seasonId))
         .where("timestamp", "<", range.before);
       if (range.from) query = query.where("timestamp", ">=", range.from);
       const snap = await query.get();

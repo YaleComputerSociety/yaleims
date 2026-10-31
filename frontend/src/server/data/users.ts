@@ -3,13 +3,13 @@
 import "server-only";
 import { FieldValue, type DocumentData, type DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { paths } from "@/lib/paths";
+import { paths, legacyPaths } from "@/lib/paths";
 import type {
   UserDoc,
   UserSeasonDoc,
   UserSeasonMatch,
   WithId,
-} from "@/types/firestore";
+} from "@/types/legacy";
 import { isNotFound, pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
@@ -86,7 +86,7 @@ export async function getOrCreateUser(
       tx.set(usernameRef, { email: newUser.email });
     }
     tx.set(userRef, user);
-    tx.set(adminDb.doc(paths.userSeason(newUser.email, seasonId)), { matches: [] });
+    tx.set(adminDb.doc(legacyPaths.userSeason(newUser.email, seasonId)), { matches: [] });
     return { user, created: true };
   });
 }
@@ -213,14 +213,14 @@ export function userSeasonRef(
   email: string,
   seasonId: string
 ): DocumentReference<UserSeasonDoc> {
-  return adminDb.doc(paths.userSeason(email, seasonId)) as DocumentReference<UserSeasonDoc>;
+  return adminDb.doc(legacyPaths.userSeason(email, seasonId)) as DocumentReference<UserSeasonDoc>;
 }
 
 export async function getUserSeason(
   email: string,
   seasonId: string
 ): Promise<UserSeasonDoc | null> {
-  const snap = await adminDb.doc(paths.userSeason(email, seasonId)).get();
+  const snap = await adminDb.doc(legacyPaths.userSeason(email, seasonId)).get();
   return snap.exists ? readUserSeason(snap.data()!) : null;
 }
 

@@ -16,7 +16,7 @@ import {
 } from "@src/utils/helpers";
 import { ParsedMatch } from "@src/types/components";
 import type { CreateTournamentRequest, TournamentJson, TournamentUpload } from "@src/types/api";
-import type { PlacementPoints } from "@src/types/firestore";
+import type { PlacementPoints } from "@src/types/legacy";
 import { useSeason } from "@src/context/SeasonContext";
 
 // Slot labels mirror the bracket the backend builds, so an admin filling the

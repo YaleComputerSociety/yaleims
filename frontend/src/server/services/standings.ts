@@ -2,7 +2,7 @@
 // undoing or deleting (-1) a result.
 import "server-only";
 import { FieldValue, type Transaction } from "firebase-admin/firestore";
-import type { MatchDoc } from "@/types/firestore";
+import type { MatchDoc } from "@/types/legacy";
 import { collegeStandingRef } from "../data/colleges";
 import { getPointsForWin } from "../data/sports";
 

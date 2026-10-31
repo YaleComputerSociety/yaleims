@@ -4,7 +4,7 @@ import { currentYear, sports } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
+import { legacyPaths } from "@/lib/paths";
 import { useRef } from "react";
 import BracketCell from "@src/components/Brackets/BracketCell";
 import { useSeason } from "@src/context/SeasonContext";
@@ -18,7 +18,7 @@ import BracketConnectorSvg, {
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
-import type { BracketEntry, MatchDoc } from "@src/types/firestore";
+import type { BracketEntry, MatchDoc } from "@src/types/legacy";
 
 // mapping index in bracket array to the type of location of the match in the bracket
 const leftPlayoffIndices = [0, 1, 2, 3];
@@ -77,7 +77,7 @@ const BracketsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const bracketDocRef = doc(db, paths.bracket(season, sport));
+        const bracketDocRef = doc(db, legacyPaths.bracket(season, sport));
         const bracketDoc = await getDoc(bracketDocRef);
 
         if (!bracketDoc.exists() || !bracketDoc.data()?.matches) {
@@ -91,7 +91,7 @@ const BracketsPage: React.FC = () => {
         
           const matchDocs = await Promise.all(
             matches.map(async (m) => {
-              const docRef = doc(db, paths.match(season, m.match_id));
+              const docRef = doc(db, legacyPaths.match(season, m.match_id));
               const snapshot = await getDoc(docRef);
               return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
             })
