@@ -1,33 +1,89 @@
-// Users: users/{email}, their per-season docs users/{email}/seasons/{seasonId},
-// and usernames/{username} (which user holds a username).
+// Users: users/{email} (identity across seasons, global roles) and
+// usernames/{username} (who holds a username). Old user docs also hold frozen
+// pre-v3 fields (mRoles, college, sportsCaptainOf, betting totals); reads
+// return only the v3 fields (D25).
 import "server-only";
-import { FieldValue, type DocumentData, type DocumentReference } from "firebase-admin/firestore";
+import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { paths, legacyPaths } from "@/lib/paths";
-import type {
-  UserDoc,
-  UserSeasonDoc,
-  UserSeasonMatch,
-  WithId,
-} from "@/types/legacy";
-import { isNotFound, pickFields } from "./util";
+import { legacyPaths, paths } from "@/lib/paths";
+import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
+import type { UserSeasonDoc, UserSeasonMatch } from "@/types/legacy";
+import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
-  email: true, firstname: true, lastname: true, college: true, username: true,
-  mRoles: true, sportsCaptainOf: true, role: true, matches_played: true,
+  email: true, firstname: true, lastname: true, username: true,
+  roles: true, claimedAt: true, createdBy: true,
 };
 
-const SIGNUP_FIELDS: Record<keyof UserSeasonMatch, true> = { id: true, timestamp: true };
+/**
+ * A stored user's v3 fields. A doc the migration hasn't reached yet (made by
+ * the old code during the cutover) has no roles and counts as claimed.
+ */
+export function readUser(data: DocumentData): UserDoc {
+  const user = pickFields<UserDoc>(data, USER_FIELDS);
+  return { ...user, roles: user.roles ?? [], claimedAt: user.claimedAt ?? null, createdBy: user.createdBy ?? null };
+}
 
-/** A stored user as reads return it: UserDoc's fields only, no frozen betting fields (D25). */
-function readUser(data: DocumentData): UserDoc {
-  return pickFields<UserDoc>(data, USER_FIELDS);
+export function userRef(email: string): DocumentReference {
+  return adminDb.doc(paths.user(email));
+}
+
+export function usernameRef(username: string): DocumentReference {
+  return adminDb.doc(paths.username(username));
+}
+
+/** { count }: how many usernames have been generated. */
+export function usernameCounterRef(): DocumentReference {
+  return adminDb.doc(paths.usernameCounter);
+}
+
+export async function getUser(email: string): Promise<UserDoc | null> {
+  const snap = await userRef(email).get();
+  return snap.exists ? readUser(snap.data()!) : null;
+}
+
+/** The users with these emails (missing ones left out), by email. */
+export async function getUsers(emails: string[]): Promise<Map<string, UserDoc>> {
+  if (emails.length === 0) return new Map();
+  const snaps = await adminDb.getAll(...emails.map(userRef));
+  return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
+}
+
+/** Users holding a global role. */
+export async function listUsersWithRole(role: GlobalRole): Promise<WithId<UserDoc>[]> {
+  const snap = await adminDb.collection(paths.users).where("roles", "array-contains", role).get();
+  return snap.docs.map((d) => ({ id: d.id, ...readUser(d.data()) }));
 }
 
 /**
+ * Gives the user `username` and frees their old one, unless another user
+ * already holds it. Checked and written in one transaction.
+ */
+export async function changeUsername(
+  email: string,
+  username: string
+): Promise<"ok" | "taken" | "no-user"> {
+  return adminDb.runTransaction(async (tx) => {
+    const [usernameSnap, userSnap] = await tx.getAll(usernameRef(username), userRef(email));
+    if (usernameSnap.exists) return "taken";
+    if (!userSnap.exists) return "no-user";
+
+    const oldUsername = readUser(userSnap.data()!).username;
+    tx.set(usernameRef(username), { userId: email });
+    tx.update(userRef(email), { username });
+    if (oldUsername) tx.delete(usernameRef(oldUsername));
+    return "ok";
+  });
+}
+
+// ── Pre-v3 user-season docs, users/{email}/seasons/{seasonId}: sign-ups use
+// them until the roster moves to v3 (the next step of the v3 series). ──────
+
+const SIGNUP_FIELDS: Record<keyof UserSeasonMatch, true> = { id: true, timestamp: true };
+
+/**
  * A stored user-season doc as reads return it: only `matches`, each signup
- * only { id, timestamp } (some old entries copy a whole match, rosters
- * included). A non-array `matches` is returned as stored (D25).
+ * only { id, timestamp }. A non-array `matches` is returned as stored (D25).
  */
 function readUserSeason(data: DocumentData): UserSeasonDoc {
   const { matches } = data;
@@ -39,173 +95,6 @@ function readUserSeason(data: DocumentData): UserSeasonDoc {
         )
       : matches,
   };
-}
-
-/** Fields of a new user doc. */
-export interface NewUser {
-  email: string;
-  firstname: string;
-  lastname: string;
-  college: string | null;
-}
-
-/**
- * The user doc, or a newly created one (with an empty doc for `seasonId`)
- * when there is none. The new user gets `makeUsername(n)`, n being the next
- * value of the username counter, or "Anonymous" if that name is taken.
- * Counter, username, user and season docs change in one transaction.
- */
-export async function getOrCreateUser(
-  newUser: NewUser,
-  seasonId: string,
-  makeUsername: (n: number) => string
-): Promise<{ user: UserDoc; created: boolean }> {
-  const userRef = adminDb.doc(paths.user(newUser.email));
-  const counterRef = adminDb.doc(paths.usernameCounter);
-  return adminDb.runTransaction(async (tx) => {
-    const userSnap = await tx.get(userRef);
-    if (userSnap.exists) {
-      return { user: readUser(userSnap.data()!), created: false };
-    }
-    const n = ((await tx.get(counterRef)).data()?.count || 0) + 1;
-    let username = makeUsername(n);
-    const usernameRef = adminDb.doc(paths.username(username));
-    const taken = (await tx.get(usernameRef)).exists;
-    if (taken) {
-      username = "Anonymous";
-    }
-
-    const user = {
-      ...newUser,
-      role: "user", // legacy single role; roles live in mRoles
-      mRoles: ["user"],
-      username,
-    };
-    tx.set(counterRef, { count: n }, { merge: true });
-    if (!taken) {
-      tx.set(usernameRef, { email: newUser.email });
-    }
-    tx.set(userRef, user);
-    tx.set(adminDb.doc(legacyPaths.userSeason(newUser.email, seasonId)), { matches: [] });
-    return { user, created: true };
-  });
-}
-
-export async function getUser(email: string): Promise<UserDoc | null> {
-  const snap = await adminDb.doc(paths.user(email)).get();
-  return snap.exists ? readUser(snap.data()!) : null;
-}
-
-/** Users holding `role` in mRoles, across all colleges. */
-export async function listUsersWithRole(role: string): Promise<WithId<UserDoc>[]> {
-  const snap = await adminDb
-    .collection(paths.users)
-    .where("mRoles", "array-contains", role)
-    .get();
-  return snap.docs.map((d) => ({ id: d.id, ...readUser(d.data()) }));
-}
-
-/** Users of `college` holding any of `roles` in mRoles. */
-export async function listCollegeUsersWithAnyRole(
-  college: string,
-  roles: string[]
-): Promise<WithId<UserDoc>[]> {
-  const snap = await adminDb
-    .collection(paths.users)
-    .where("college", "==", college)
-    .where("mRoles", "array-contains-any", roles)
-    .get();
-  return snap.docs.map((d) => ({ id: d.id, ...readUser(d.data()) }));
-}
-
-/** Sets mRoles and sportsCaptainOf. Returns false if the user doesn't exist. */
-export async function updateUserRoles(
-  email: string,
-  mRoles: string[],
-  sportsCaptainOf: string[]
-): Promise<boolean> {
-  try {
-    await adminDb.doc(paths.user(email)).update({ mRoles, sportsCaptainOf });
-    return true;
-  } catch (err) {
-    if (isNotFound(err)) return false;
-    throw err;
-  }
-}
-
-/**
- * Gives the user `username` and frees their old one, unless another doc
- * already holds it. Checked and written in one transaction.
- */
-export async function changeUsername(
-  email: string,
-  username: string
-): Promise<"ok" | "taken" | "no-user"> {
-  const usernameRef = adminDb.doc(paths.username(username));
-  const userRef = adminDb.doc(paths.user(email));
-  return adminDb.runTransaction(async (tx) => {
-    const [usernameSnap, userSnap] = await tx.getAll(usernameRef, userRef);
-    if (usernameSnap.exists) return "taken";
-    if (!userSnap.exists) return "no-user";
-
-    const oldUsername = (userSnap.data() as UserDoc).username;
-    tx.set(usernameRef, { userId: email });
-    tx.update(userRef, { username });
-    if (oldUsername) {
-      tx.delete(adminDb.doc(paths.username(oldUsername)));
-    }
-    return "ok";
-  });
-}
-
-/**
- * Adds or removes `sport` from the user's sportsCaptainOf, and the captain
- * role with it (kept while they captain any sport). mRoles always keeps
- * "user". Returns false if the user doesn't exist.
- */
-export async function setSportCaptain(
-  email: string,
-  sport: string,
-  { assign, remove }: { assign?: boolean; remove?: boolean }
-): Promise<boolean> {
-  const userRef = adminDb.doc(paths.user(email));
-  return adminDb.runTransaction(async (tx) => {
-    const snap = await tx.get(userRef);
-    if (!snap.exists) return false;
-
-    const stored = snap.data() as UserDoc;
-    const sports = Array.isArray(stored.sportsCaptainOf) ? [...stored.sportsCaptainOf] : [];
-    const roles = Array.isArray(stored.mRoles) ? [...stored.mRoles] : ["user"];
-
-    if (assign) {
-      if (!sports.includes(sport)) sports.push(sport);
-      if (!roles.includes("captain")) roles.push("captain");
-    }
-    if (remove) {
-      const idx = sports.indexOf(sport);
-      if (idx !== -1) sports.splice(idx, 1);
-      if (sports.length === 0) {
-        const capIdx = roles.indexOf("captain");
-        if (capIdx !== -1) roles.splice(capIdx, 1);
-      }
-    }
-    if (!roles.includes("user")) roles.push("user");
-
-    tx.update(userRef, {
-      sportsCaptainOf: sports.length > 0 ? sports : FieldValue.delete(),
-      mRoles: roles,
-    });
-    return true;
-  });
-}
-
-/** All users of a college. */
-export async function listCollegeUsers(college: string): Promise<UserDoc[]> {
-  const snap = await adminDb
-    .collection(paths.users)
-    .where("college", "==", college)
-    .get();
-  return snap.docs.map((d) => readUser(d.data()));
 }
 
 /** The user-season doc, for services that change it in a transaction. */

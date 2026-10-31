@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/server/data/users";
+import { getCurrentSeasonId } from "@/server/data/seasons";
+import { captainSportNames } from "@/server/services/roles";
 import type { CaptainSportsResponse } from "@/types/api";
 
+/** ?email=: the sports the user captains this season (an error object, status 200, if none). */
 export async function GET(req: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(req.url);
@@ -13,8 +15,9 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    const user = await getUser(email);
-    if (!user?.mRoles?.includes("captain")) {
+    const seasonId = await getCurrentSeasonId();
+    const sports = seasonId ? await captainSportNames(seasonId, email) : [];
+    if (sports.length === 0) {
       return NextResponse.json(
         {
           error: `User ${email} is not a captain`,
@@ -23,13 +26,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         { status: 200 }
       );
     }
-
-    return NextResponse.json(
-      (Array.isArray(user.sportsCaptainOf)
-        ? user.sportsCaptainOf
-        : []) satisfies CaptainSportsResponse,
-      { status: 200 }
-    );
+    return NextResponse.json(sports satisfies CaptainSportsResponse, { status: 200 });
   } catch (err) {
     console.error("Error in getting sports for captain:", err);
     return NextResponse.json(

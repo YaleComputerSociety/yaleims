@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { parseString } from "xml2js";
 import { setSessionCookie } from "@/server/session";
 import { getCurrentSeasonId } from "@/server/data/seasons";
-import { getOrCreateAccount } from "@/server/services/accounts";
+import { signIn } from "@/server/services/accounts";
 import { safeReturnPath } from "@/lib/returnPath";
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -71,23 +71,12 @@ export async function GET(request: Request): Promise<NextResponse> {
         throw new Error("Current season is missing");
       }
 
-      // First login creates the user (and their current-season doc).
-      const user = await getOrCreateAccount(profile, currentSeasonId);
+      // The first login creates the user; the first of a season, their player doc.
+      const account = await signIn(profile, currentSeasonId);
       // Only pages on this site (no open redirect to other sites).
       const redirectTo = `${BASE_URL.replace(/\/$/, "")}${safeReturnPath(from, BASE_URL)}`;
       const redirectResponse = NextResponse.redirect(redirectTo);
-      // Defaults matter: jwt.sign drops undefined values, and user docs carry no
-      // role/matches_played, so without them the token ships incomplete.
-      setSessionCookie(redirectResponse, {
-        name,
-        netid,
-        email,
-        role: user.role ?? "user",
-        mRoles: user.mRoles ?? ["user"],
-        username: user.username ?? "Anonymous",
-        college: user.college ?? "",
-        matches_played: user.matches_played ?? 0,
-      });
+      setSessionCookie(redirectResponse, { name, netid, email, ...account });
 
       return redirectResponse;
     } catch (e) {

@@ -102,23 +102,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return authCheckPromise;
   }, [casSignOut]);
 
+  // A change to the user's doc (username, global roles): refresh the session.
+  // The server merges the roles from all their places (services/roles) and
+  // re-issues the cookie; season-role changes arrive with the next refresh.
   useEffect(() => {
     if (!user?.email) return;
-    const unsub = onSnapshot(doc(db, paths.user(user.email)), (snap) => {
-      const d = snap.data();
-      if (!d) return;
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              role: d.role,
-              mRoles: d.mRoles,
-              username: d.username,
-            }
-          : prev
-      );
-      // Re-issue the session cookie; the server reads roles from Firestore.
-      fetch("/api/auth/verify");
+    const unsub = onSnapshot(doc(db, paths.user(user.email)), async (snap) => {
+      if (!snap.exists()) return;
+      const res = await fetch("/api/auth/verify");
+      const data: VerifyResponse | null = res.ok ? await res.json() : null;
+      if (!data?.isLoggedIn) return;
+      const { role, mRoles, username, college } = data.user;
+      setUser((prev) => (prev ? { ...prev, role, mRoles, username, college } : prev));
     });
     return () => unsub();
   }, [user?.email]);

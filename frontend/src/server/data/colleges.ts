@@ -1,10 +1,20 @@
-// College standings per season: colleges/seasons/{seasonId}/{abbr}.
+// Colleges and their standings, per season: seasons/{seasonId}/colleges/{collegeId}.
 import "server-only";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { legacyPaths } from "@/lib/paths";
+import { legacyPaths, paths } from "@/lib/paths";
+import type { CollegeDoc } from "@/types/firestore";
 import type { CollegeStandingDoc, WithId } from "@/types/legacy";
 import { withId } from "./util";
+
+/** The season's colleges (id = abbreviation), unsorted. */
+export async function listColleges(seasonId: string): Promise<WithId<CollegeDoc>[]> {
+  const snap = await adminDb.collection(paths.colleges(seasonId)).get();
+  return snap.docs.map((d) => withId<CollegeDoc>(d));
+}
+
+// ── Pre-v3 standings, colleges/seasons/{seasonId}/{abbr}: scoring and the
+// leaderboard use them until they move to v3 (a later step of the series). ──
 
 /** A college's standing doc, for services that change it in a transaction. */
 export function collegeStandingRef(

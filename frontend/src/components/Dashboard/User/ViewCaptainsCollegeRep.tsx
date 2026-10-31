@@ -1,82 +1,63 @@
 import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
+import { useSeason } from "@src/context/SeasonContext";
 import { useUser } from "@src/context/UserContext";
-import type { UserDoc } from "@src/types/legacy";
+import { toCollegeAbbreviation } from "@src/utils/helpers";
+import type { PlayerDoc, SportDoc, TeamDoc } from "@src/types/firestore";
 
-type Person = {
-  email: string;
-  firstname?: string;
-  lastname?: string;
-  firstName?: string;
-  lastName?: string;
-  sportsCaptainOf?: string[];
-};
+type CaptainRow = { sport: string; name: string };
+type RepRow = { name: string; email: string };
 
-type ApiData = {
-  captains: Person[];
-  college_rep: Person[];
-};
-
-const displayName = (p: Person) =>
-  `${p.firstname ?? p.firstName ?? ""} ${p.lastname ?? p.lastName ?? ""}`.trim() || p.email;
-
+/** The user's college this season: its captains (from its teams) and its college reps, live. */
 export default function ViewCaptainsCollegeRep() {
   const { user } = useUser();
-  const [data, setData] = useState<ApiData | null>(null);
+  const seasonId = useSeason().currentSeason?.year;
+  const collegeId = user ? toCollegeAbbreviation[user.college] : undefined;
   const [view, setView] = useState<"captains" | "college_rep">("captains");
+  const [captainRows, setCaptainRows] = useState<CaptainRow[] | null>(null);
+  const [repRows, setRepRows] = useState<RepRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.college) return; 
-    try {
-      const q = query(
-        collection(db, paths.users),
-        where("college", "==", user.college),
-        where("mRoles", "array-contains-any", ["captain", "college_rep"])
-      );
-
-      const unsub = onSnapshot(q, snap => {
-        const captains: Person[]   = [];
-        const reps: Person[]       = [];
-
-        snap.forEach(d => {
-          const u = d.data() as UserDoc;
-          const person: Person = {
-            email: u.email ?? d.id,
-            firstName: u.firstname ?? "",
-            lastName: u.lastname ?? "",
-            sportsCaptainOf: u.sportsCaptainOf ?? [],
-          };
-
-          if (u.mRoles?.includes("captain"))      captains.push(person);
-          if (u.mRoles?.includes("college_rep")) reps.push({ ...person, sportsCaptainOf: [] });
-        });
-
-        setData({ captains, college_rep: reps });
-      });
-
-      return () => unsub(); 
-    } catch (e: any) {
+    if (!seasonId || !collegeId) return;
+    const onError = (e: Error) => {
       console.error(e);
       setError(e.message ?? "Listener failed");
-    }
-  }, [user?.college]);
+    };
 
-  const captainRows =
-    data?.captains?.flatMap((c) =>
-      (c.sportsCaptainOf ?? []).map((sport) => ({
-        sport,
-        name: displayName(c),
-      }))
-    ) ?? [];
+    const reps = query(
+      collection(db, paths.players(seasonId)),
+      where("collegeId", "==", collegeId),
+      where("roles", "array-contains", "college_rep")
+    );
+    const unsubReps = onSnapshot(reps, (snap) => {
+      setRepRows(snap.docs.map((d) => ({ name: (d.data() as PlayerDoc).name, email: d.id })));
+    }, onError);
 
-  const repRows =
-    data?.college_rep?.map((p) => ({
-      name: displayName(p),
-      email: p.email,
-    })) ?? [];
+    // Captains are on the college's teams; names from their player docs.
+    const unsubTeams = onSnapshot(collection(db, paths.teams(seasonId, collegeId)), async (snap) => {
+      const teams = snap.docs.map((d) => d.data() as TeamDoc);
+      const captainIds = [...new Set(teams.flatMap((t) => t.captainIds))];
+      const [sports, players] = await Promise.all([
+        getDocs(collection(db, paths.sports(seasonId))),
+        Promise.all(captainIds.map((id) => getDoc(doc(db, paths.player(seasonId, id))))),
+      ]);
+      const sportName = new Map(sports.docs.map((d) => [d.id, (d.data() as SportDoc).name]));
+      const name = new Map(players.map((p) => [p.id, (p.data() as PlayerDoc | undefined)?.name ?? p.id]));
+      setCaptainRows(
+        teams.flatMap((t) =>
+          t.captainIds.map((id) => ({ sport: sportName.get(t.sportId) ?? t.sportId, name: name.get(id)! }))
+        )
+      );
+    }, onError);
+
+    return () => {
+      unsubReps();
+      unsubTeams();
+    };
+  }, [seasonId, collegeId]);
 
   return (
     <div className="overflow-y-auto">
@@ -101,7 +82,7 @@ export default function ViewCaptainsCollegeRep() {
 
       {error && <div className="text-red-600 dark:text-red-300 text-xs md:text-sm">{error}</div>}
       <div className="overflow-y-auto max-h-32">
-        {!data ? (
+        {!captainRows || !repRows ? (
           <div className="text-gray-600 dark:text-gray-400 animate-pulse text-xs md:text-sm">Loading…</div>
         ) : view === "captains" ? (
           captainRows.length === 0 ? (
