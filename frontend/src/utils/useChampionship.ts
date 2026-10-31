@@ -1,30 +1,38 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { legacyPaths } from "@/lib/paths";
-import type { CurrentSeasonDoc } from "@src/types/legacy";
+import { paths } from "@/lib/paths";
+import { useSeason } from "@src/context/SeasonContext";
+import type { SeasonDoc } from "@src/types/firestore";
 
 export interface ChampionshipState {
   winningCollegeId: string | null;
   celebrationActive: boolean;
+  /** False until the season doc has been read once. */
+  loaded: boolean;
 }
 
+/** The current season's champion banner, live (seasons/{seasonId}). */
 export function useChampionship(): ChampionshipState {
+  const seasonId = useSeason().currentSeason?.year;
   const [state, setState] = useState<ChampionshipState>({
     winningCollegeId: null,
     celebrationActive: false,
+    loaded: false,
   });
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, legacyPaths.currentSeason), (snap) => {
-      const data = snap.data() as CurrentSeasonDoc | undefined;
+    if (!seasonId) return;
+    const unsub = onSnapshot(doc(db, paths.season(seasonId)), (snap) => {
+      const data = snap.data() as SeasonDoc | undefined;
       setState({
-        winningCollegeId: data?.winningCollegeId ?? null,
+        winningCollegeId: data?.championCollegeId ?? null,
         celebrationActive: !!data?.celebrationActive,
+        loaded: true,
       });
     });
     return () => unsub();
-  }, []);
+  }, [seasonId]);
 
   return state;
 }

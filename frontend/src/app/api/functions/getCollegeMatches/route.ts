@@ -1,4 +1,4 @@
-import { getCurrentSeason } from "@/server/data/seasons";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { listUpcomingCollegeMatches } from "@/server/data/matches";
 import type { CollegeMatchJson } from "@/types/api";
 
@@ -14,12 +14,12 @@ export async function GET(req: Request) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
       return Response.json({ error: "limit must be 1-50" }, { status: 400 });
     }
-    const current = await getCurrentSeason();
-    if (!current) {
+    const seasonId = await getCurrentSeasonId();
+    if (!seasonId) {
       return Response.json({ error: "current season doc missing" }, { status: 404 });
     }
 
-    const matches = await listUpcomingCollegeMatches(current.year, college, new Date(), limit);
+    const matches = await listUpcomingCollegeMatches(seasonId, college, new Date(), limit);
     return Response.json(
       matches.map((m) => ({
         id: m.id,

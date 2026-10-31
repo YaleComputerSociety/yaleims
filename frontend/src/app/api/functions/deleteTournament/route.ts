@@ -1,5 +1,5 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { getCurrentSeason } from "@/server/data/seasons";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { deleteTournament } from "@/server/services/tournaments";
 
 /** { tournamentId, force? }: deletes a current-season tournament (admin/dev). */
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const seasonId = (await getCurrentSeason())?.year;
+    const seasonId = await getCurrentSeasonId();
     if (!seasonId) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }

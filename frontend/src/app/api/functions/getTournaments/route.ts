@@ -1,17 +1,13 @@
-import { getCurrentSeason } from "@/server/data/seasons";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { listTournaments } from "@/server/data/tournaments";
 import type { TournamentsResponse } from "@/types/api";
 
 /** ?year=<seasonId> (default: current season): its tournaments, newest first, timestamps in ms. */
 export async function GET(req: Request) {
   try {
-    let year = new URL(req.url).searchParams.get("year") ?? "";
+    const year = new URL(req.url).searchParams.get("year") || (await getCurrentSeasonId());
     if (!year) {
-      const current = await getCurrentSeason();
-      if (!current) {
-        return Response.json({ error: "current season doc missing" }, { status: 404 });
-      }
-      year = current.year;
+      return Response.json({ error: "current season doc missing" }, { status: 404 });
     }
 
     const tournaments = (await listTournaments(year))

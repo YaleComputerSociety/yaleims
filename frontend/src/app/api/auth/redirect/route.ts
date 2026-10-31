@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseString } from "xml2js";
 import { setSessionCookie } from "@/server/session";
-import { getCurrentSeason } from "@/server/data/seasons";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { getOrCreateAccount } from "@/server/services/accounts";
 import { safeReturnPath } from "@/lib/returnPath";
 
@@ -66,7 +66,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       const email = profile.email;
       const name = `${profile.first_name} ${profile.last_name}`;
 
-      const currentSeasonId = (await getCurrentSeason())?.year;
+      const currentSeasonId = await getCurrentSeasonId();
       if (!currentSeasonId) {
         throw new Error("Current season is missing");
       }

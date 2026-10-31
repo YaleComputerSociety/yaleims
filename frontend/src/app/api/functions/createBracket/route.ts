@@ -1,5 +1,5 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { getCurrentSeason } from "@/server/data/seasons";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { createBracket } from "@/server/services/brackets";
 
 /** { bracketData: { sport, matches } }: creates this season's bracket for a sport (admin/dev). */
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       );
     }
     const sport = String(bracketData.sport);
-    const seasonId = (await getCurrentSeason())?.year;
+    const seasonId = await getCurrentSeasonId();
     if (!seasonId) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
