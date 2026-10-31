@@ -1,0 +1,19 @@
+{
+  "name": "yims-migrate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Schema v3 migration (Phase 2): old collections → seasons/{seasonId}/...; see README.md",
+  "scripts": {
+    "migrate": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}

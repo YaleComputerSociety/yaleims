@@ -9,6 +9,17 @@ import type { StoredTimestamp } from "./firestore";
 
 export type { StoredTimestamp, WithId } from "./firestore";
 
+// ── Sports: sports/{id} ────────────────────────────────────────────────────
+
+/** sports/{id}: match docs store the sport's name, not this id. */
+export interface SportDoc {
+  name: string;
+  emoji?: string;
+  points_for_win?: number;
+  /** Stale: the term in one old season only. */
+  season?: Record<string, string>;
+}
+
 // ── Matches: matches/seasons/{seasonId}/{matchId} ──────────────────────────
 
 /** A player on a match roster. Some old entries hold more user fields. */

@@ -36,6 +36,23 @@ jobs:
       # Builds without any env vars or secrets (verified from a clean clone).
       - run: npm run build
 
+  migrate:
+    name: Schema v3 migration (type-check)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: database/migrate
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: database/migrate/package-lock.json
+      - run: npm ci
+      # Also type-checks the frontend types and lib modules it imports.
+      - run: npm run typecheck
+
   sidelined-elo:
     name: Sidelined Elo (type-check, import guard)
     runs-on: ubuntu-latest

@@ -174,8 +174,9 @@ export type MatchStatus = "scheduled" | "final" | "cancelled";
 export type Outcome = "home" | "away" | "draw" | "double_forfeit";
 
 export interface MatchResult {
-  homeScore: number;
-  awayScore: number;
+  /** null only for old results recorded without a score. */
+  homeScore: number | null;
+  awayScore: number | null;
   outcome: Outcome;
   /** The losing side forfeited (a double forfeit has outcome double_forfeit). */
   forfeit: boolean;
