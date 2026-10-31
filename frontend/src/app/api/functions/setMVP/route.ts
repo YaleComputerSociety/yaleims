@@ -1,7 +1,9 @@
+import { collegeIdOfName } from "@/lib/colleges";
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { setCollegeMvp } from "@/server/data/mvps";
+import { listColleges } from "@/server/data/colleges";
+import { setMvp } from "@/server/data/mvps";
 
-/** A college rep names a week's MVP for a college. */
+/** A college rep names a week's MVP for a college (residentialCollege: its name or id). */
 export async function POST(req: Request) {
   try {
     const { season, weekId, residentialCollege, mvpEmail, mvpFName, mvpLName } =
@@ -19,10 +21,17 @@ export async function POST(req: Request) {
     if (!season || !residentialCollege || !weekId || !mvpEmail || !mvpFName || !mvpLName) {
       return Response.json({ error: "Missing required field(s)" }, { status: 400 });
     }
+    const week = /^week_(\d+)$/.exec(String(weekId))?.[1];
+    const collegeId = collegeIdOfName(await listColleges(String(season)), residentialCollege);
+    if (!week || !collegeId) {
+      return Response.json({ error: "Invalid weekId or residentialCollege" }, { status: 400 });
+    }
 
-    await setCollegeMvp(String(season), String(residentialCollege), String(weekId), String(mvpEmail), {
-      fname: mvpFName,
-      lname: mvpLName,
+    await setMvp(String(season), collegeId, {
+      week: Number(week),
+      playerId: String(mvpEmail),
+      name: `${mvpFName} ${mvpLName}`,
+      awardedBy: session.email,
     });
     return Response.json({ success: true, weekId });
   } catch (err) {
