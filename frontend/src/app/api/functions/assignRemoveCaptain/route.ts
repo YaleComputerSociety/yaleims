@@ -5,8 +5,8 @@ import { setCaptain } from "@/server/services/roles";
 
 /**
  * { email, sport, assign | remove }: makes a player captain of their
- * college's team in a sport this season, or not (audit-logged). Any
- * signed-in user may call it today (see NEXT-STEPS backlog).
+ * college's team in a sport this season, or not (audit-logged). Only that
+ * college's rep or an admin may (D42).
  */
 export async function POST(req: Request) {
   try {
@@ -33,6 +33,9 @@ export async function POST(req: Request) {
     }
 
     const result = await setCaptain(seasonId, String(email), String(sport), !remove, actorOf(session));
+    if (result === "forbidden") {
+      return Response.json({ error: "Only the player's college rep or an admin can change captains" }, { status: 403 });
+    }
     if (result === "not-in-season") {
       return Response.json({ error: "User not found in this season" }, { status: 404 });
     }

@@ -22,3 +22,11 @@ export function easternDate(date: Date): EasternDate {
 export function seasonStart(startYear: number): Date {
   return new Date(Date.UTC(startYear, 6, 1, 4));
 }
+
+/** The Monday of the week `day` falls in (weeks run Monday to Sunday). */
+export function mondayOf(day: EasternDate): EasternDate {
+  const [y, m, d] = day.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(d - ((date.getUTCDay() + 6) % 7));
+  return date.toISOString().slice(0, 10);
+}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useUser } from "@src/context/UserContext";
 import { useSeason } from "@src/context/SeasonContext";
-import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
+import { mvpWeekOne, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
 import { getMVPImage } from "@/utils/versionedImages";
 import type { MvpsResponse } from "@src/types/api";
 
@@ -11,9 +11,15 @@ const MVPPopup = () => {
   const { user } = useUser();
   const { currentSeason } = useSeason();
   const [mvps, setMvps] = useState<MvpsResponse | null>(null);
-  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekId(seasonStart));  
+  const [selectedWeek, setSelectedWeek] = useState("");
 
-  const weeks = buildWeekOptions(seasonStart);
+  const weekOne = mvpWeekOne(currentSeason?.mvpWeekOne);
+  const weeks = weekOne ? buildWeekOptions(weekOne) : [];
+  // Open on the current week once the season (and its week 1) has loaded.
+  useEffect(() => {
+    const one = mvpWeekOne(currentSeason?.mvpWeekOne);
+    if (one) setSelectedWeek(getCurrentWeekId(one));
+  }, [currentSeason?.mvpWeekOne]);
 
   function getWeeklyMvps(): { email: string; data: any }[] {
     if (!mvps || !mvps[selectedWeek]) return [];
