@@ -1,4 +1,4 @@
-import { easternDate, mondayOf } from "@/lib/dates";
+import { easternDate, mondayOf, seasonStart } from "@/lib/dates";
 import { firstMatchStart } from "@/server/data/matches";
 import { getCurrentSeasonId, listSeasons } from "@/server/data/seasons";
 import type { RouteBody, SeasonsResponse } from "@/types/api";
@@ -14,7 +14,8 @@ export async function GET() {
     if (!current) {
       return Response.json({ error: "current season doc missing" }, { status: 404 });
     }
-    const firstGame = await firstMatchStart(current.id);
+    // Within the season, so a stray early date can't stretch the MVP weeks.
+    const firstGame = await firstMatchStart(current.id, seasonStart(current.startYear));
     return Response.json({
       current: {
         year: current.id,

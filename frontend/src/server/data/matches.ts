@@ -92,9 +92,17 @@ export async function listSeasonMatches(
   return snap.docs.map((d) => withId<MatchDoc>(d));
 }
 
-/** When the season's first game starts (null: no games yet). */
-export async function firstMatchStart(seasonId: string): Promise<Date | null> {
-  const snap = await adminDb.collection(paths.matches(seasonId)).orderBy("startsAt", "asc").limit(1).get();
+/**
+ * When the season's first game starts, counting only games from `from` on
+ * (null: none yet). The range also skips games without a time.
+ */
+export async function firstMatchStart(seasonId: string, from: Date): Promise<Date | null> {
+  const snap = await adminDb
+    .collection(paths.matches(seasonId))
+    .where("startsAt", ">=", from)
+    .orderBy("startsAt", "asc")
+    .limit(1)
+    .get();
   return snap.empty ? null : withId<MatchDoc>(snap.docs[0]).startsAt.toDate();
 }
 
