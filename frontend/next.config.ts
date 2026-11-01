@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The integration tests (scripts/test-integration.mts) run a second dev
+  // server next to yours, with its own build directory.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   images: {
     // Using unoptimized images means they're served directly; rely on cache headers below
     unoptimized: true,
