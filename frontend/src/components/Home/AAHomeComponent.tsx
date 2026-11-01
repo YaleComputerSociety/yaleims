@@ -22,9 +22,9 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { legacyPaths } from "@/lib/paths";
+import { paths } from "@/lib/paths";
 import { useChampionship } from "@src/utils/useChampionship";
-import type { CollegeStandingDoc, WithId } from "@src/types/legacy";
+import type { CollegeDoc, WithId } from "@src/types/firestore";
 
 // Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
@@ -33,7 +33,7 @@ const BANNER_MESSAGE = "";
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(true);
-  const [sortedColleges, setSortedColleges] = useState<WithId<CollegeStandingDoc>[]>([]);
+  const [sortedColleges, setSortedColleges] = useState<WithId<CollegeDoc>[]>([]);
   const { filter } = useContext(FiltersContext);
   const { currentSeason } = useSeason();
   const [selected, setSelected] = useState<string>(
@@ -60,14 +60,14 @@ const AAHomeComponent: React.FC = () => {
     setLoading(true);
 
     const q = query(
-      collection(db, legacyPaths.collegeStandings(selected)),
+      collection(db, paths.colleges(selected)),
       orderBy("rank", "asc"),
     );
 
     unsub = onSnapshot(
       q,
       (snap) => {
-        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as CollegeStandingDoc) }));
+        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as CollegeDoc) }));
         rows.sort((a, b) => Number(a.rank) - Number(b.rank));
         setSortedColleges(rows);
         setLoading(false);
@@ -111,7 +111,7 @@ const AAHomeComponent: React.FC = () => {
       {winningCollege && confettiEnabled && <ChampionConfetti />}
       <Title
         selected={selected}
-        lastUpdated={sortedColleges[0]?.today ?? ""}
+        lastUpdated={sortedColleges[0]?.rankDate ?? ""}
         onFilterChange={handleSelectedChange}
       />
       {selected === "All Time" ? (

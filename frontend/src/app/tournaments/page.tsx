@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { legacyPaths } from "@/lib/paths";
+import { useLegacyBracket } from "@src/utils/useLegacyBracket";
 import { currentYear } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
 import BracketCell from "@src/components/Brackets/BracketCell";
@@ -20,7 +18,6 @@ import BracketConnectorSvg, {
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
-import type { MatchDoc } from "@src/types/legacy";
 
 // Tournaments reuse the 14-team playoff shape, so slot n lives at index n - 1.
 const LEFT_PLAYOFF_INDICES = [0, 1, 2, 3];
@@ -55,7 +52,6 @@ const TournamentsPage: React.FC = () => {
   );
   const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [matchDetails, setMatchDetails] = useState<Record<string, MatchDoc | null>>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
@@ -112,48 +108,13 @@ const TournamentsPage: React.FC = () => {
     );
   }, [selected]);
 
-  // Live match docs carry the scores and advancing teams; the tournament doc
-  // only stores the bracket skeleton.
+  // The games carry the scores and advancing teams; the tournament list only
+  // the bracket skeleton (pre-v3 shapes, built from v3 docs).
+  const games = useLegacyBracket(season, selected ? selected.id : null);
+  const matchDetails = games.matchDetails;
   useEffect(() => {
-    if (!bracket || !season) {
-      setMatchDetails({});
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchMatches = async () => {
-      try {
-        setError(null);
-        const docs = await Promise.all(
-          bracket.map(async (m) => {
-            const ref = doc(db, legacyPaths.match(season, m.match_id));
-            const snapshot = await getDoc(ref);
-            return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
-          })
-        );
-
-        if (cancelled) return;
-
-        const map: Record<string, any> = {};
-        docs.forEach(({ id, data }) => {
-          map[id] = data;
-        });
-        setMatchDetails(map);
-      } catch (err) {
-        // Without this the readiness gate below would wait forever on a bracket
-        // whose matches can never load.
-        if (cancelled) return;
-        console.error("Error fetching tournament matches:", err);
-        setError("Could not load this tournament's matches.");
-      }
-    };
-
-    fetchMatches();
-    return () => {
-      cancelled = true;
-    };
-  }, [bracket, season]);
+    if (games.error) setError("Could not load this tournament's matches.");
+  }, [games.error]);
 
   // Match docs load in a second pass, and effects run after render, so a
   // loading flag would still leave one render with no data. Derive readiness

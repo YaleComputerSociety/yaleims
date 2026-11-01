@@ -1,74 +1,77 @@
-// Score reports (users flag a wrong score):
-// matches/score_reports/{seasonId}/{matchId}/reports/{reportId}.
+// Score reports (a user flags a wrong score):
+// seasons/{seasonId}/matches/{matchId}/scoreReports/{reportId}.
 import "server-only";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type CollectionReference, type DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { legacyPaths, legacyScoreReportPathIds } from "@/lib/paths";
-import type { ScoreReportDoc, WithId } from "@/types/legacy";
+import { collectionGroups, paths } from "@/lib/paths";
+import type { ScoreReportDoc, WithId } from "@/types/firestore";
+import { logAction, type Actor } from "./auditLog";
 import { withId } from "./util";
 
-export type NewScoreReport = Omit<
-  ScoreReportDoc,
-  "reportedAt" | "resolved" | "resolvedBy" | "resolvedAt" | "season" | "matchId"
->;
+/** A game's reports, for services that read them in a transaction. */
+export function scoreReportsRef(seasonId: string, matchId: string): CollectionReference<ScoreReportDoc> {
+  return adminDb.collection(paths.scoreReports(seasonId, matchId)) as CollectionReference<ScoreReportDoc>;
+}
 
 /** A match's reports, newest first. */
 export async function listMatchScoreReports(
   seasonId: string,
   matchId: string
 ): Promise<WithId<ScoreReportDoc>[]> {
+  const snap = await scoreReportsRef(seasonId, matchId).orderBy("reportedAt", "desc").get();
+  return snap.docs.map((d) => withId<ScoreReportDoc>(d));
+}
+
+/** A season's reports across all its matches, newest first. */
+export async function listSeasonScoreReports(seasonId: string): Promise<WithId<ScoreReportDoc>[]> {
   const snap = await adminDb
-    .collection(legacyPaths.scoreReports(seasonId, matchId))
+    .collectionGroup(collectionGroups.scoreReports)
+    .where("seasonId", "==", seasonId)
     .orderBy("reportedAt", "desc")
     .get();
   return snap.docs.map((d) => withId<ScoreReportDoc>(d));
 }
 
-/** A season's reports across all matches, newest first. */
-export async function listSeasonScoreReports(
-  seasonId: string
-): Promise<WithId<ScoreReportDoc>[]> {
-  const snap = await adminDb
-    .collectionGroup(legacyPaths.scoreReportsGroup)
-    .orderBy("reportedAt", "desc")
-    .get();
-  return snap.docs
-    .filter((d) => legacyScoreReportPathIds(d.ref.path).seasonId === seasonId)
-    .map((d) => {
-      const report = withId<ScoreReportDoc>(d);
-      return {
-        ...report,
-        matchId: report.matchId ?? legacyScoreReportPathIds(d.ref.path).matchId,
-      };
-    });
-}
-
-/** Files an unresolved report; returns its id. */
+/** Files an open report; returns its id. */
 export async function addScoreReport(
   seasonId: string,
   matchId: string,
-  report: NewScoreReport
+  report: Pick<ScoreReportDoc, "reason" | "reportedBy" | "reporterName" | "scoreAtReport">
 ): Promise<string> {
-  const ref = await adminDb.collection(legacyPaths.scoreReports(seasonId, matchId)).add({
+  const ref = await scoreReportsRef(seasonId, matchId).add({
+    seasonId,
+    matchId,
     ...report,
     reportedAt: FieldValue.serverTimestamp(),
-    resolved: false,
-    season: seasonId,
-    matchId,
+    status: "open",
+    resolvedBy: null,
+    resolvedAt: null,
   });
   return ref.id;
 }
 
-/** Marks a report resolved. Throws if it doesn't exist. */
+/** Marks a report resolved (audit-logged). False if it doesn't exist. */
 export async function resolveScoreReport(
   seasonId: string,
   matchId: string,
   reportId: string,
-  resolvedBy: string
-): Promise<void> {
-  await adminDb.doc(legacyPaths.scoreReport(seasonId, matchId, reportId)).update({
-    resolved: true,
-    resolvedBy,
-    resolvedAt: FieldValue.serverTimestamp(),
+  actor: Actor
+): Promise<boolean> {
+  const ref = adminDb.doc(paths.scoreReport(seasonId, matchId, reportId)) as DocumentReference<ScoreReportDoc>;
+  return adminDb.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return false;
+    tx.update(ref, {
+      status: "resolved",
+      resolvedBy: actor.userId,
+      resolvedAt: FieldValue.serverTimestamp(),
+    });
+    logAction(tx, seasonId, {
+      actor,
+      action: "resolveScoreReport",
+      params: { matchId, reportId },
+      changed: [snap],
+    });
+    return true;
   });
 }

@@ -1,9 +1,10 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { addScheduledMatches } from "@/server/data/matches";
+import { actorOf } from "@/server/data/auditLog";
+import { addSchedule } from "@/server/services/schedule";
 
 const MAX_MATCHES = 499;
 
-/** { schedule: { season, sport, matches } }: adds a season's games (admin/dev). */
+/** { schedule: { season, sport, matches } }: adds a season's games (admin/dev; audit-logged). */
 export async function POST(req: Request) {
   try {
     const { schedule } = await req.json();
@@ -27,14 +28,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await addScheduledMatches(String(schedule.season), schedule.sport, schedule.matches);
-    if (result === "no-counter") {
-      return Response.json({ error: "Cannot find next match ID" }, { status: 500 });
+    const result = await addSchedule(
+      String(schedule.season),
+      String(schedule.sport),
+      schedule.matches,
+      actorOf(session)
+    );
+    if (result.status === "unknown-sport") {
+      return Response.json({ error: `Unknown sport: ${schedule.sport}` }, { status: 400 });
     }
-    if (result === "id-taken") {
+    if (result.status === "bad-rows") {
       return Response.json(
-        { error: "A new match id is already in use (check counters/matches); nothing was added." },
-        { status: 409 }
+        { error: `Nothing was added. ${result.problems.join("; ")}` },
+        { status: 400 }
       );
     }
     return Response.json({ success: true });

@@ -1,95 +1,80 @@
-// What results do to the college standings: one table for scoring (+1) and
-// undoing or deleting (-1) a result.
+// What a game's result does: the two colleges' standings and the two teams'
+// records (lib/results.ts has the table), applied (+1) when the game is
+// scored and taken back (-1) when the score is undone or its bracket deleted,
+// inside the caller's transaction. Standings and records have this one writer.
 import "server-only";
-import { FieldValue, type Transaction } from "firebase-admin/firestore";
-import type { MatchDoc } from "@/types/legacy";
-import { collegeStandingRef } from "../data/colleges";
-import { getPointsForWin } from "../data/sports";
+import {
+  FieldValue,
+  type DocumentReference,
+  type DocumentSnapshot,
+  type Transaction,
+} from "firebase-admin/firestore";
+import { standingDeltas, teamDeltas } from "@/lib/results";
+import type { MatchDoc, MatchResult } from "@/types/firestore";
+import { collegeRef } from "../data/colleges";
+import { newTeam, teamRef } from "../data/teams";
 
-/** A college name, or "Draw", or "Default" (both sides forfeited). */
-export type Winner = string;
+/** A game with a result between two known colleges. */
+export type ScoredGame = MatchDoc & {
+  homeCollegeId: string;
+  awayCollegeId: string;
+  result: MatchResult;
+};
 
-type StatField = "games" | "wins" | "losses" | "ties" | "forfeits" | "points";
-type StandingChanges = Record<string, Partial<Record<StatField, number>>>;
-
-/**
- * What a result adds to each college's standing. Undoing a result applies
- * the same changes negated. A winner matching neither college changes nothing.
- */
-export function standingChanges(
-  home: string,
-  away: string,
-  winner: Winner,
-  forfeit: boolean,
-  pointsForWin: number
-): StandingChanges {
-  const half = pointsForWin / 2;
-  const win = { games: 1, wins: 1, points: pointsForWin };
-  const lossOrForfeit = forfeit ? { games: 1, forfeits: 1 } : { games: 1, losses: 1 };
-  if (winner === "Default") {
-    return {
-      [home]: { games: 1, forfeits: 1, points: half },
-      [away]: { games: 1, forfeits: 1, points: half },
-    };
-  }
-  if (winner === "Draw") {
-    return {
-      [home]: { games: 1, ties: 1, points: half },
-      [away]: { games: 1, ties: 1, points: half },
-    };
-  }
-  if (winner === home) return { [home]: win, [away]: lossOrForfeit };
-  if (winner === away) return { [home]: lossOrForfeit, [away]: win };
-  return {};
+export function isScoredGame(m: MatchDoc): m is ScoredGame {
+  return m.status === "final" && !!m.result && !!m.homeCollegeId && !!m.awayCollegeId;
 }
 
-export function applyStandingChanges(
-  tx: Transaction,
-  seasonId: string,
-  changes: StandingChanges,
-  sign: 1 | -1
-): void {
-  for (const [college, fields] of Object.entries(changes)) {
-    const update = Object.fromEntries(
-      Object.entries(fields).map(([field, delta]) => [field, FieldValue.increment(sign * delta)])
-    );
-    tx.update(collegeStandingRef(seasonId, college), update);
-  }
+/** The colleges' and teams' docs a game's result changes. */
+function docsChangedBy(seasonId: string, g: ScoredGame): DocumentReference[] {
+  return [
+    collegeRef(seasonId, g.homeCollegeId),
+    collegeRef(seasonId, g.awayCollegeId),
+    teamRef(seasonId, g.homeCollegeId, g.sportId),
+    teamRef(seasonId, g.awayCollegeId, g.sportId),
+  ];
 }
 
 /**
- * Reads, inside `tx`, what reversing these games' results needs: the
- * points_for_win of each sport among the scored ones. Call before any write.
+ * Reads, inside `tx`, every doc these games' results change (for the audit
+ * log, and to know which teams exist yet). Call before any write.
  */
-export async function readPointsForWin(
-  tx: Transaction,
-  matches: MatchDoc[]
-): Promise<Map<string, number>> {
-  const sports = [...new Set(matches.filter(isScoredGame).map((m) => m.sport))];
-  const points = await Promise.all(sports.map((sport) => getPointsForWin(sport, tx)));
-  return new Map(sports.map((sport, i) => [sport, points[i]]));
-}
-
-/** A game with a result that changed the standings (byes never do, D23). */
-export function isScoredGame(match: MatchDoc): boolean {
-  return !!match.winner && match.type !== "Bye";
-}
-
-/** Takes back the standing changes of every scored game in `matches`. */
-export function reverseResults(
+export async function readStandingDocs(
   tx: Transaction,
   seasonId: string,
-  matches: MatchDoc[],
-  pointsForWin: Map<string, number>
+  games: ScoredGame[]
+): Promise<DocumentSnapshot[]> {
+  const refs = new Map(games.flatMap((g) => docsChangedBy(seasonId, g)).map((r) => [r.path, r]));
+  return refs.size > 0 ? tx.getAll(...refs.values()) : [];
+}
+
+/**
+ * Applies (+1) or takes back (-1) a game's result. `read`: what
+ * readStandingDocs returned in this transaction. A team plays its first
+ * game here: its doc is created.
+ */
+export function applyResult(
+  tx: Transaction,
+  seasonId: string,
+  game: ScoredGame,
+  sign: 1 | -1,
+  read: DocumentSnapshot[]
 ): void {
-  for (const m of matches.filter(isScoredGame)) {
-    const changes = standingChanges(
-      m.home_college,
-      m.away_college,
-      m.winner!,
-      !!m.forfeit,
-      pointsForWin.get(m.sport)!
+  const { homeCollegeId: home, awayCollegeId: away, result } = game;
+  const increments = (delta: Record<string, number | undefined>) =>
+    Object.fromEntries(
+      Object.entries(delta).map(([field, n]) => [field, FieldValue.increment(sign * (n ?? 0))])
     );
-    applyStandingChanges(tx, seasonId, changes, -1);
+
+  for (const [collegeId, delta] of Object.entries(standingDeltas(home, away, result, game.pointsForWin))) {
+    tx.update(collegeRef(seasonId, collegeId), increments(delta));
+  }
+  for (const [collegeId, delta] of Object.entries(teamDeltas(home, away, result))) {
+    const ref = teamRef(seasonId, collegeId, game.sportId);
+    if (read.find((s) => s.ref.path === ref.path)?.exists) {
+      tx.update(ref, increments(delta));
+    } else if (sign === 1) {
+      tx.create(ref, { ...newTeam(seasonId, collegeId, game.sportId), ...delta });
+    }
   }
 }

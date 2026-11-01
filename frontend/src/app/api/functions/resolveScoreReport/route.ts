@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSession, hasAnyRole } from "@/server/session";
+import { actorOf } from "@/server/data/auditLog";
 import { resolveScoreReport } from "@/server/data/scoreReports";
 
-/** POST: resolve a score report. Body: { reportId, matchId, season }. Admin only. */
+/** POST: resolve a score report. Body: { reportId, matchId, season }. Admin only; audit-logged. */
 export async function POST(req: Request): Promise<NextResponse> {
   try {
     const user = await getSession();
@@ -25,12 +26,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    await resolveScoreReport(
-      String(season),
-      String(matchId),
-      String(reportId),
-      user.name || user.username || user.email
-    );
+    if (!(await resolveScoreReport(String(season), String(matchId), String(reportId), actorOf(user)))) {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    }
 
     return NextResponse.json(
       { success: true, message: "Report marked as resolved" },

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUserSeason } from "@/server/data/users";
+import { legacyMatchId } from "@/lib/legacyMatch";
+import { listPlayerEntries } from "@/server/data/roster";
 import type { UserStatsResponse } from "@/types/api";
 
+/** ?email&seasonId: the games the user signed up for that season ({ id, timestamp }). */
 export async function GET(req: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(req.url);
@@ -15,12 +17,10 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    // Only games played; the user-season doc still holds frozen betting fields.
-    const userSeason = await getUserSeason(email, seasonId);
-    return NextResponse.json(
-      { matches: userSeason?.matches ?? [] } satisfies UserStatsResponse,
-      { status: 200 }
-    );
+    const matches = (await listPlayerEntries(seasonId, email))
+      .filter((e) => e.captainStatus !== "removed")
+      .map((e) => ({ id: legacyMatchId(e.matchId), timestamp: e.startsAt.toDate().toISOString() }));
+    return NextResponse.json({ matches } satisfies UserStatsResponse, { status: 200 });
   } catch (err) {
     console.error("Error getting user stats:", err);
     return NextResponse.json(

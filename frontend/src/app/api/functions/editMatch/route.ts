@@ -1,63 +1,56 @@
 import { getYearFromTimestamp } from "@src/utils/helpers";
-import { updateMatch } from "@/server/data/matches";
-import { Timestamp } from "firebase-admin/firestore";
+import { actorOf } from "@/server/data/auditLog";
+import { editMatch, type EditResult, type MatchEdit } from "@/server/services/schedule";
 import { getSession, hasAnyRole } from "@/server/session";
 
+const json = (status: number, body: object) => new Response(JSON.stringify(body), { status });
+
+const REFUSALS: Record<Exclude<EditResult, "ok">, [number, string]> = {
+  "not-found": [404, "Match not found in that season"],
+  scored: [409, "A scored match's colleges and sport can't change; undo the score first"],
+  "unknown-sport": [400, "Unknown sport"],
+  "unknown-college": [400, "Unknown college"],
+  "bad-time": [400, "Invalid timestamp"],
+};
+
+/**
+ * { id, seasonId, home_college, away_college, location, location_extra,
+ * timestamp (ISO), sport }: edits a game (admin/dev; audit-logged). Other
+ * fields are ignored.
+ */
 export async function PATCH(req: Request) {
   try {
-    if (!hasAnyRole(await getSession(), ["admin", "dev"])) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 403,
-      });
+    const session = await getSession();
+    if (!session || !hasAnyRole(session, ["admin", "dev"])) {
+      return json(403, { error: "unauthorized" });
     }
 
-    const matchData = await req.json();
-    const { id, seasonId, ...fields } = matchData;
-
+    const { id, seasonId, home_college, away_college, location, location_extra, timestamp, sport } =
+      await req.json();
     const matchId = String(id);
-
     if (!matchId || matchId === "undefined" || matchId === "null") {
-      return new Response(JSON.stringify({ error: "Missing matchId" }), {
-        status: 400,
-      });
+      return json(400, { error: "Missing matchId" });
     }
 
-    // The season the doc actually lives in. Falling back to the timestamp would
-    // move the write to a different collection whenever a match is rescheduled
-    // across the season boundary, so an explicit seasonId wins.
+    // The season the game lives in. Falling back to the timestamp would look
+    // in another season whenever a game is moved across the season boundary,
+    // so an explicit seasonId wins.
     const year =
       typeof seasonId === "string" && /^\d{4}-\d{4}$/.test(seasonId)
         ? seasonId
-        : getYearFromTimestamp(fields.timestamp);
-
+        : getYearFromTimestamp(timestamp);
     if (!year) {
-      return new Response(JSON.stringify({ error: "Error calculating year" }), {
-        status: 400,
-      });
+      return json(400, { error: "Error calculating year" });
     }
 
-    // The client sends an absolute ISO instant; anything else would be parsed in
-    // the server's timezone (UTC in production) and silently shift the kickoff.
-    if (fields.timestamp) {
-      const parsed = new Date(fields.timestamp);
-      if (isNaN(parsed.getTime())) {
-        return new Response(JSON.stringify({ error: "Invalid timestamp" }), {
-          status: 400,
-        });
-      }
-      fields.timestamp = Timestamp.fromDate(parsed);
+    const edit: MatchEdit = { home_college, away_college, location, location_extra, timestamp, sport };
+    const result = await editMatch(year, matchId, edit, actorOf(session));
+    if (result !== "ok") {
+      const [status, error] = REFUSALS[result];
+      return json(status, { error });
     }
-
-    if (!(await updateMatch(year, matchId, fields))) {
-      return new Response(
-        JSON.stringify({ error: "Match not found in that season" }),
-        { status: 404 }
-      );
-    }
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return json(200, { success: true });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-    });
+    return json(500, { error: err.message });
   }
 }

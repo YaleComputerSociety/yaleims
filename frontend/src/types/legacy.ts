@@ -32,8 +32,12 @@ export interface MatchParticipant {
 
 /** A match doc. Old docs also hold frozen odds/betting fields (`*_odds`, `*_volume`, `predictions`). */
 export interface MatchDoc {
-  /** Numeric id; overrides the doc id in API responses. */
-  id: number;
+  /**
+   * Numeric id; overrides the doc id in API responses. Built from v3 docs
+   * (lib/legacyMatch.ts): a game created after v3 has its string auto id, a
+   * bracket bye "bye-<slot>".
+   */
+  id: number | string;
   sport: string;
   type: string;
   home_college: string;
@@ -48,8 +52,8 @@ export interface MatchDoc {
   location?: string;
   location_extra?: string;
   division?: string;
-  home_seed?: number;
-  away_seed?: number;
+  home_seed?: number | null;
+  away_seed?: number | null;
   next_match_id?: number | string;
   next_match_loser_id?: number | string;
   playoff_bracket_slot?: number;
@@ -142,7 +146,8 @@ export interface CollegeStandingDoc {
 export interface BracketEntry {
   bracket_placement: number;
   round: string;
-  match_id: number;
+  /** Built from v3: as MatchDoc.id (a bye slot: "bye-<slot>"). */
+  match_id: number | string;
   timestamp: StoredTimestamp;
 }
 

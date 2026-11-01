@@ -2,8 +2,9 @@ import {
   SeasonMatchPage,
   countSeasonMatches,
   listSeasonMatches,
-  seasonMatchJson,
 } from "@/server/data/matches";
+import { findSportByName } from "@/server/data/sports";
+import { matchListJson } from "@/server/legacy";
 import type { MatchPageV2Response } from "@/types/api";
 
 const text = (status: number, message: string) => new Response(message, { status });
@@ -45,10 +46,21 @@ export async function GET(req: Request) {
     const sport = params.get("sport");
     const dateFrom = params.get("dateFrom");
     const dateTo = params.get("dateTo");
+    // Sports are named in the request, by id in the games; an unknown name matches nothing.
+    const sportId = sport && sport !== "All" ? ((await findSportByName(seasonId, sport))?.id ?? null) : undefined;
+    if (sportId === null) {
+      return Response.json({
+        matches: [],
+        firstVisible: null,
+        lastVisible: null,
+        totalPages: paginate ? 0 : 1,
+        totalResults: 0,
+      } satisfies MatchPageV2Response);
+    }
     const filter = {
-      college: college && college !== "All" ? college : undefined,
-      sport: sport && sport !== "All" ? sport : undefined,
-      scored: scored === "all" ? undefined : scored === "scored",
+      collegeId: college && college !== "All" ? college : undefined,
+      sportId,
+      status: scored === "all" ? undefined : scored === "scored" ? ("final" as const) : ("scheduled" as const),
       from: dateFrom ? new Date(dateFrom) : undefined,
       to: dateTo ? new Date(dateTo) : undefined,
     };
@@ -81,7 +93,7 @@ export async function GET(req: Request) {
           : "First visible document not found"
       );
     }
-    const matches = rows.map(seasonMatchJson);
+    const matches = await matchListJson(rows);
     if (!paginate) totalResults = matches.length;
     return Response.json({
       matches,

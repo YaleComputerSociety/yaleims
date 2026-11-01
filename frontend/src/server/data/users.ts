@@ -5,9 +5,8 @@
 import "server-only";
 import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import { legacyPaths, paths } from "@/lib/paths";
+import { paths } from "@/lib/paths";
 import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
-import type { UserSeasonDoc, UserSeasonMatch } from "@/types/legacy";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
@@ -74,56 +73,4 @@ export async function changeUsername(
     if (oldUsername) tx.delete(usernameRef(oldUsername));
     return "ok";
   });
-}
-
-// ── Pre-v3 user-season docs, users/{email}/seasons/{seasonId}: sign-ups use
-// them until the roster moves to v3 (the next step of the v3 series). ──────
-
-const SIGNUP_FIELDS: Record<keyof UserSeasonMatch, true> = { id: true, timestamp: true };
-
-/**
- * A stored user-season doc as reads return it: only `matches`, each signup
- * only { id, timestamp }. A non-array `matches` is returned as stored (D25).
- */
-function readUserSeason(data: DocumentData): UserSeasonDoc {
-  const { matches } = data;
-  if (matches === undefined) return {};
-  return {
-    matches: Array.isArray(matches)
-      ? matches.map((m) =>
-          m && typeof m === "object" ? pickFields<UserSeasonMatch>(m, SIGNUP_FIELDS) : m
-        )
-      : matches,
-  };
-}
-
-/** The user-season doc, for services that change it in a transaction. */
-export function userSeasonRef(
-  email: string,
-  seasonId: string
-): DocumentReference<UserSeasonDoc> {
-  return adminDb.doc(legacyPaths.userSeason(email, seasonId)) as DocumentReference<UserSeasonDoc>;
-}
-
-export async function getUserSeason(
-  email: string,
-  seasonId: string
-): Promise<UserSeasonDoc | null> {
-  const snap = await adminDb.doc(legacyPaths.userSeason(email, seasonId)).get();
-  return snap.exists ? readUserSeason(snap.data()!) : null;
-}
-
-/**
- * The games a user signed up for that start after `now`, or null if the
- * user has no doc for that season.
- */
-export async function listUpcomingSignups(
-  email: string,
-  seasonId: string,
-  now: Date
-): Promise<UserSeasonMatch[] | null> {
-  const userSeason = await getUserSeason(email, seasonId);
-  if (!userSeason) return null;
-  const matches = Array.isArray(userSeason.matches) ? userSeason.matches : [];
-  return matches.filter((m) => new Date(m.timestamp) > now);
 }

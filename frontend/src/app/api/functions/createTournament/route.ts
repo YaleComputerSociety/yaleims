@@ -1,14 +1,12 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
+import { actorOf } from "@/server/data/auditLog";
+import { bracketIdOf } from "@/lib/brackets";
 import { getCurrentSeasonId } from "@/server/data/seasons";
-import {
-  createTournament,
-  normalizePlacementPoints,
-  tournamentSlug,
-} from "@/server/services/tournaments";
+import { createBracket, normalizePlacementPoints } from "@/server/services/brackets";
 
 /**
  * { tournamentData: { name, sport, matches, placement_points? } }: creates a
- * tournament in the current season (admin/dev).
+ * tournament in the current season (admin/dev; audit-logged).
  */
 export async function POST(req: Request) {
   try {
@@ -35,7 +33,7 @@ export async function POST(req: Request) {
       );
     }
     const name = String(tournamentData.name).trim();
-    const tournamentId = tournamentSlug(name);
+    const tournamentId = bracketIdOf(name);
     if (!tournamentId) {
       return Response.json(
         { error: "Tournament name must contain letters or numbers." },
@@ -47,27 +45,29 @@ export async function POST(req: Request) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
 
-    const result = await createTournament(seasonId, {
-      id: tournamentId,
-      name,
-      sport: String(tournamentData.sport),
-      input: tournamentData.matches,
-      placementPoints: normalizePlacementPoints(tournamentData.placement_points),
-    });
-    if (result === "exists") {
+    const result = await createBracket(
+      seasonId,
+      {
+        id: tournamentId,
+        kind: "tournament",
+        name,
+        sportName: String(tournamentData.sport),
+        input: tournamentData.matches,
+        placementPoints: normalizePlacementPoints(tournamentData.placement_points),
+      },
+      actorOf(session)
+    );
+    if (result.status === "exists") {
       return Response.json(
         { error: `Tournament '${name}' already exists this season.` },
         { status: 409 }
       );
     }
-    if (result === "no-counter") {
-      return Response.json({ error: "Cannot find next match ID" }, { status: 500 });
+    if (result.status === "unknown-sport") {
+      return Response.json({ error: `Unknown sport: ${tournamentData.sport}` }, { status: 400 });
     }
-    if (result === "id-taken") {
-      return Response.json(
-        { error: "A new match id is already in use (check counters/matches); nothing was created." },
-        { status: 409 }
-      );
+    if (result.status === "bad-input") {
+      return Response.json({ error: result.error }, { status: 400 });
     }
     return Response.json({
       message: `Tournament '${name}' created successfully.`,

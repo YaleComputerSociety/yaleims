@@ -8,7 +8,7 @@ import { FiltersContext } from "@src/context/FiltersContext";
 import TableHeader from "@src/components/Scores/TableHeader";
 import MatchesTable from "@src/components/Scores/MatchTable";
 import type { MatchJson, MatchPageResponse } from "@src/types/api";
-import type { CollegeStandingDoc } from "@src/types/legacy";
+import type { CollegeDoc } from "@src/types/firestore";
 import Pagination from "@src/components/Scores/Pagination";
 import PageHeading from "@src/components/PageHeading";
 import { useSeason } from "@src/context/SeasonContext";
@@ -26,7 +26,7 @@ import {
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { legacyPaths } from "@/lib/paths";
+import { paths } from "@/lib/paths";
 
 const ScoresPage: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
@@ -37,7 +37,7 @@ const ScoresPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // State for college stats
-  const [collegeStats, setCollegeStats] = useState<CollegeStandingDoc | null>(null);
+  const [collegeStats, setCollegeStats] = useState<CollegeDoc | null>(null);
   const [collegeIsLoading, setCollegeIsLoading] = useState(false);
 
   // State for pagination
@@ -154,12 +154,12 @@ const ScoresPage: React.FC = () => {
     if (filter.college && filter.college !== "All") {
       setCollegeIsLoading(true);
 
-      const q = doc(db, legacyPaths.collegeStanding(currentSeason.year, filter.college));
+      const q = doc(db, paths.college(currentSeason.year, filter.college));
 
       unsub = onSnapshot(
         q,
         (snap) => {
-          setCollegeStats(snap.exists() ? (snap.data() as CollegeStandingDoc) : null);
+          setCollegeStats(snap.exists() ? (snap.data() as CollegeDoc) : null);
           setCollegeIsLoading(false);
         },
         (err) => {

@@ -1,5 +1,7 @@
 import { getSession, getSessionToken } from "@/server/session";
-import { listUpcomingSignups } from "@/server/data/users";
+import { legacyMatchId } from "@/lib/legacyMatch";
+import { getPlayer } from "@/server/data/players";
+import { listPlayerEntries } from "@/server/data/roster";
 import type { UserSignupsResponse } from "@/types/api";
 
 /** ?seasonId=: the signed-in user's upcoming game sign-ups ({ id, timestamp }). */
@@ -17,10 +19,14 @@ export async function GET(req: Request) {
       return Response.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const signups = await listUpcomingSignups(session.email, seasonId, new Date());
-    if (!signups) {
+    // Not a member of that season (D30): nothing to list.
+    if (!(await getPlayer(seasonId, session.email))) {
       return new Response("User not found", { status: 404 });
     }
+    const now = Date.now();
+    const signups = (await listPlayerEntries(seasonId, session.email))
+      .filter((e) => e.captainStatus !== "removed" && e.startsAt.toMillis() > now)
+      .map((e) => ({ id: legacyMatchId(e.matchId), timestamp: e.startsAt.toDate().toISOString() }));
     return Response.json(signups satisfies UserSignupsResponse);
   } catch (err) {
     console.error("Error fetching user matches:", err);

@@ -1,17 +1,15 @@
-// Scoring a match and undoing it. The result and both colleges' standings
-// change in one transaction (which also refuses a second score / undo);
-// then playoff and tournament brackets advance, tournament placement bonuses
-// are settled, and the season is re-ranked.
+// Scoring a game and undoing it. One transaction each: the game's result,
+// both colleges' standings and teams' records, the bracket (winner moves on,
+// placement bonuses) and the audit entry. Then the season is re-ranked.
 import "server-only";
-import type { MatchDoc } from "@/types/legacy";
+import { FieldValue } from "firebase-admin/firestore";
+import type { MatchDoc, MatchResult, Outcome } from "@/types/firestore";
+import { logAction, type Actor } from "../data/auditLog";
 import { recalculateRanks } from "../data/colleges";
 import { matchRef } from "../data/matches";
-import { getPointsForWin } from "../data/sports";
 import { runTransaction } from "../data/util";
-import { applyStandingChanges, standingChanges, type Winner } from "./standings";
-import { awardPlacements, reversePlacements } from "./tournaments";
-
-const isDecisive = (winner: Winner) => !!winner && winner !== "Default" && winner !== "Draw";
+import { applyBracketMoves, movedDocs, readBracketMoves, reversePlacements } from "./brackets";
+import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
 export interface ScoreInput {
   seasonId: string;
@@ -20,133 +18,113 @@ export interface ScoreInput {
   awayScore: number;
   homeForfeit: boolean;
   awayForfeit: boolean;
-  /** Used only when the match doc has no college on that side. */
+  /** Used only when the game has no college on that side yet. */
   homeTeam?: string;
   awayTeam?: string;
-  /** The sport whose points_for_win applies (as sent by the admin page). */
-  sport: string;
 }
 
-export async function scoreMatch(input: ScoreInput): Promise<"scored" | "not-found" | "already-scored"> {
-  const { seasonId, homeScore, awayScore, homeForfeit, awayForfeit } = input;
+/** The outcome of a score: a forfeit loses, two forfeits are a double forfeit, equal scores a draw. */
+function outcomeOf(input: ScoreInput): Outcome {
+  if (input.homeForfeit && input.awayForfeit) return "double_forfeit";
+  if (input.homeForfeit) return "away";
+  if (input.awayForfeit) return "home";
+  if (input.homeScore === input.awayScore) return "draw";
+  return input.homeScore > input.awayScore ? "home" : "away";
+}
+
+export async function scoreMatch(
+  input: ScoreInput,
+  actor: Actor
+): Promise<"scored" | "not-found" | "already-scored" | "incomplete"> {
+  const { seasonId } = input;
   const ref = matchRef(seasonId, input.matchId);
-
-  const scored = await runTransaction(async (tx) => {
-    const match = (await tx.get(ref)).data();
+  const outcome = await runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const match = snap.data();
     if (!match) return "not-found" as const;
-    if (match.winner) return "already-scored" as const;
+    if (match.status === "final") return "already-scored" as const;
+    const homeCollegeId = match.homeCollegeId ?? input.homeTeam ?? null;
+    const awayCollegeId = match.awayCollegeId ?? input.awayTeam ?? null;
+    if (!homeCollegeId || !awayCollegeId) return "incomplete" as const;
 
-    const home = match.home_college || input.homeTeam!;
-    const away = match.away_college || input.awayTeam!;
-    let winner: Winner;
-    if (homeForfeit && awayForfeit) winner = "Default";
-    else if (homeForfeit) winner = away;
-    else if (awayForfeit) winner = home;
-    else if (homeScore == awayScore) winner = "Draw";
-    else winner = homeScore > awayScore ? home : away;
-    const forfeit = homeForfeit || awayForfeit;
+    const result: MatchResult = {
+      homeScore: input.homeScore,
+      awayScore: input.awayScore,
+      outcome: outcomeOf(input),
+      forfeit: input.homeForfeit || input.awayForfeit,
+    };
+    const scored: MatchDoc = {
+      ...match,
+      homeCollegeId,
+      awayCollegeId,
+      collegeIds: [...new Set([homeCollegeId, awayCollegeId])],
+      status: "final",
+      result,
+    };
+    if (!isScoredGame(scored)) return "incomplete" as const;
+    const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
+    const moves = await readBracketMoves(tx, seasonId, scored);
 
-    const pointsForWin = await getPointsForWin(input.sport, tx);
     tx.update(ref, {
-      home_college_score: homeScore,
-      away_college_score: awayScore,
-      forfeit,
-      winner,
+      homeCollegeId,
+      awayCollegeId,
+      collegeIds: scored.collegeIds,
+      status: "final",
+      result,
+      scoredBy: actor.userId,
+      scoredAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
-    applyStandingChanges(tx, seasonId, standingChanges(home, away, winner, forfeit, pointsForWin), 1);
-    return { match, home, away, winner };
+    applyResult(tx, seasonId, scored, 1, standingDocs);
+    applyBracketMoves(tx, seasonId, scored, moves);
+    logAction(tx, seasonId, {
+      actor,
+      action: "scoreMatch",
+      params: input,
+      changed: [snap, ...standingDocs, ...movedDocs(moves)],
+    });
+    return "scored" as const;
   });
-  if (typeof scored === "string") return scored;
-
-  await advanceBrackets(seasonId, scored.match, scored.home, scored.away, scored.winner);
-  await recalculateRanks(seasonId);
-  return "scored";
+  if (outcome === "scored") await recalculateRanks(seasonId);
+  return outcome;
 }
 
 /**
- * Moves a decisive result through the bracket. Playoff winners go to
- * next_match_id (not from a Regular game or the Final, and only when the
- * winner has a seed); tournament semifinal losers go to next_match_loser_id.
- * An odd slot fills the destination's away side, an even slot its home side.
- * Then tournament placement bonuses are settled; their failure is logged and
- * the score stands.
- */
-async function advanceBrackets(
-  seasonId: string,
-  match: MatchDoc,
-  home: string,
-  away: string,
-  winner: Winner
-): Promise<void> {
-  if (!isDecisive(winner)) return;
-  const slot = match.playoff_bracket_slot;
-  const side = (s: number) => (s % 2 === 1 ? "away" : "home");
-
-  const type = match.type || "Regular";
-  if (type !== "Regular" && type !== "Final") {
-    const winnerSeed = winner == home ? match.home_seed : match.away_seed;
-    if (match.next_match_id && slot && winnerSeed) {
-      await matchRef(seasonId, match.next_match_id).update({
-        [`${side(slot)}_college`]: winner,
-        [`${side(slot)}_seed`]: winnerSeed,
-      });
-    }
-  }
-
-  if (!match.tournament_id) return;
-  const loser = winner === home ? away : home;
-  if (match.next_match_loser_id && slot) {
-    const loserSeed = winner === home ? match.away_seed : match.home_seed;
-    await matchRef(seasonId, match.next_match_loser_id).update({
-      [`${side(slot)}_college`]: loser,
-      [`${side(slot)}_seed`]: loserSeed ?? null,
-    });
-  }
-  try {
-    await awardPlacements(seasonId, match.tournament_id, slot!, winner, loser);
-  } catch (err) {
-    console.error("Placement points failed (match already scored):", err);
-  }
-}
-
-/**
- * Clears a match's result and takes its points back. Bracket advancement is
- * not undone (the next match keeps the advanced college). A bye has no
- * score to undo (D23).
+ * Clears a game's result and takes its points back (and the placement
+ * bonuses it settled). Bracket advancement is not undone: the next game keeps
+ * the college that moved in. "incomplete": the game has no result.
  */
 export async function undoScore(
   seasonId: string,
-  matchId: string
-): Promise<"undone" | "not-found" | "incomplete" | "bye"> {
+  matchId: string,
+  actor: Actor
+): Promise<"undone" | "not-found" | "incomplete"> {
   const ref = matchRef(seasonId, matchId);
-  const undone = await runTransaction(async (tx) => {
-    const match = (await tx.get(ref)).data();
+  const outcome = await runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const match = snap.data();
     if (!match) return "not-found" as const;
-    if (match.type === "Bye") return "bye" as const;
-    const { home_college: home, away_college: away, winner, sport, forfeit } = match;
-    if (!home || !away || !sport || !winner || typeof forfeit !== "boolean") {
-      return "incomplete" as const;
-    }
+    if (!isScoredGame(match)) return "incomplete" as const;
+    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
+    const moves = await readBracketMoves(tx, seasonId, match);
 
-    const pointsForWin = await getPointsForWin(sport, tx);
     tx.update(ref, {
-      home_college_score: null,
-      away_college_score: null,
-      forfeit: null,
-      winner: null,
+      status: "scheduled",
+      result: null,
+      scoredBy: null,
+      scoredAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
     });
-    applyStandingChanges(tx, seasonId, standingChanges(home, away, winner, forfeit, pointsForWin), -1);
-    return match;
+    applyResult(tx, seasonId, match, -1, standingDocs);
+    reversePlacements(tx, seasonId, match, moves);
+    logAction(tx, seasonId, {
+      actor,
+      action: "undoScoreMatch",
+      params: { matchId },
+      changed: [snap, ...standingDocs, ...(moves.bracket?.exists ? [moves.bracket] : [])],
+    });
+    return "undone" as const;
   });
-  if (typeof undone === "string") return undone;
-
-  if (undone.tournament_id && undone.playoff_bracket_slot) {
-    try {
-      await reversePlacements(seasonId, undone.tournament_id, undone.playoff_bracket_slot);
-    } catch (err) {
-      console.error("Reversing placement points failed (score already undone):", err);
-    }
-  }
-  await recalculateRanks(seasonId);
-  return "undone";
+  if (outcome === "undone") await recalculateRanks(seasonId);
+  return outcome;
 }
