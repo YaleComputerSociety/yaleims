@@ -6,6 +6,14 @@ export default function ReleaseNotes() {
         <p className="text-sm sm:text-md">January 21, 2025</p>
         <br></br>
 
+        {/* P4: kept as written (with its credits) until the next release's notes. */}
+        <div className="rounded-lg border border-amber-400 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm sm:text-md">
+          <strong>These notes are partly outdated.</strong> They describe the
+          January 2025 launch: odds, predictions and the prediction leaderboard
+          have since been removed from YaleIMs. A new release is coming.
+        </div>
+        <br></br>
+
         <section>
           <p className="text-sm sm:text-md">
             We are excited to announce the launch of YaleIMs, your new platform
@@ -110,7 +118,7 @@ export default function ReleaseNotes() {
         <br></br>
 
         <section>
-          <h3 className="text-md sm:text-lg underline">Odds Feature</h3>
+          <h3 className="text-md sm:text-lg underline">Odds Feature (outdated: removed)</h3>
           <p className="text-sm sm:text-md">
             The odds feature provides predictions based on historical game data.
             The prediction algorithm, based on the{" "}
