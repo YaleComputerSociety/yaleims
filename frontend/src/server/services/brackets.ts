@@ -87,8 +87,7 @@ export type CreateResult =
 /**
  * Creates a bracket and its games in one transaction. Empty slots get no
  * colleges ("TBD"). A bye's college moves straight into the quarterfinal it
- * feeds (it earns nothing, D23). Playoffs: a slot without a division takes
- * its feeders' shared one, so the semifinals inherit the quarterfinals'.
+ * feeds (it earns nothing, D23).
  */
 export async function createBracket(
   seasonId: string,
@@ -133,17 +132,18 @@ export async function createBracket(
     if (home === undefined || away === undefined) {
       return { status: "bad-input", error: `Slot ${slot}: unknown college` };
     }
-    if (round === "Bye") {
-      slots.push({ slot, round, matchId: null, byeCollegeId: home });
-      continue;
-    }
-
+    // Playoffs: a slot without a division takes its feeders' shared one (a
+    // bye's included), so the semifinals inherit the quarterfinals'.
     let division: Division | null = null;
     if (!tournament) {
       division = toDivision(input?.division);
       const feeders = FEEDER_SLOTS[slot]?.map((s) => divisions.get(s));
       if (!division && feeders && feeders[0] && feeders[0] === feeders[1]) division = feeders[0];
       if (input) divisions.set(slot, division);
+    }
+    if (round === "Bye") {
+      slots.push({ slot, round, matchId: null, byeCollegeId: home });
+      continue;
     }
 
     // A quarterfinal fed by a bye starts with the bye's college on its away side.
