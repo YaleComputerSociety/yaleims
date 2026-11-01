@@ -141,8 +141,19 @@ export async function createBracket(
       if (!division && feeders && feeders[0] && feeders[0] === feeders[1]) division = feeders[0];
       if (input) divisions.set(slot, division);
     }
+    const startsAt = input?.timestamp ? new Date(input.timestamp) : now.toDate();
+    if (isNaN(startsAt.getTime())) {
+      return { status: "bad-input", error: `Slot ${slot}: invalid date` };
+    }
     if (round === "Bye") {
-      slots.push({ slot, round, matchId: null, byeCollegeId: home });
+      slots.push({
+        slot,
+        round,
+        matchId: null,
+        byeCollegeId: home,
+        byeSeed: input?.home_seed || null,
+        byeStartsAt: input ? Timestamp.fromDate(startsAt) : null,
+      });
       continue;
     }
 
@@ -152,13 +163,9 @@ export async function createBracket(
       : undefined;
     const homeCollegeId = home;
     const awayCollegeId = bye ? (college(bye.home_college) ?? null) : away;
-    const startsAt = input?.timestamp ? new Date(input.timestamp) : now.toDate();
-    if (isNaN(startsAt.getTime())) {
-      return { status: "bad-input", error: `Slot ${slot}: invalid date` };
-    }
 
     const ref = refs.get(slot)!;
-    slots.push({ slot, round, matchId: ref.id, byeCollegeId: null });
+    slots.push({ slot, round, matchId: ref.id, byeCollegeId: null, byeSeed: null, byeStartsAt: null });
     games.push([ref, {
       seasonId,
       sportId: sport.id,

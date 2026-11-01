@@ -345,10 +345,18 @@ function mapBrackets(ctx: Context, season: Season): Brackets {
             .map(str)
             .find((c) => c !== null && ctx.collegeIds.has(c));
           if (!byeCollegeId) ctx.note({ kind: "bye-without-college", seasonId: season.id, ref: m.path });
-          return { slot: e.bracket_placement, round: e.round, matchId: null, byeCollegeId: byeCollegeId ?? null };
+          const seed = m.data.home_seed;
+          return {
+            slot: e.bracket_placement,
+            round: e.round,
+            matchId: null,
+            byeCollegeId: byeCollegeId ?? null,
+            byeSeed: typeof seed === "number" && seed > 0 ? seed : null,
+            byeStartsAt: isTimestamp(m.data.timestamp) ? m.data.timestamp : null,
+          };
         }
         if (!m) ctx.note({ kind: "bracket-slot-without-match", seasonId: season.id, ref, detail: `slot ${e.bracket_placement}, match ${matchId}` });
-        return { slot: e.bracket_placement, round: e.round, matchId: m ? matchId : null, byeCollegeId: null };
+        return { slot: e.bracket_placement, round: e.round, matchId: m ? matchId : null, byeCollegeId: null, byeSeed: null, byeStartsAt: null };
       });
 
   // The day of a one-day event: all its games start on the same Eastern day.

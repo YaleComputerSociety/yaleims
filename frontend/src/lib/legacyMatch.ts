@@ -64,7 +64,10 @@ export function toLegacyMatch(matchId: string, m: MatchDoc, ctx: LegacyMatchCont
   return match;
 }
 
-/** A bracket's bye slot as the pre-v3 "Bye" match (the college on both sides, and the winner). */
+/**
+ * A bracket's bye slot as the pre-v3 "Bye" match (the college on both sides,
+ * and the winner); `time` is shown when the bye has none of its own.
+ */
 export function toLegacyBye(
   slot: BracketSlot,
   bracket: BracketDoc,
@@ -81,9 +84,11 @@ export function toLegacyBye(
     away_college_score: null,
     home_college_participants: [],
     away_college_participants: [],
+    home_seed: slot.byeSeed,
+    away_seed: slot.byeSeed,
     winner: slot.byeCollegeId,
     forfeit: false,
-    timestamp: ctx.time,
+    timestamp: slot.byeStartsAt ?? ctx.time,
     location: "",
     location_extra: "Bye",
     playoff_bracket_slot: slot.slot,
@@ -93,7 +98,7 @@ export function toLegacyBye(
 
 /**
  * A bracket's slots in the pre-v3 shape, by slot: each game's id and start;
- * a bye's key and the bracket's first start (a bye has no time of its own).
+ * a bye's key and its time (else the bracket's first start).
  */
 export function toLegacySlots(
   bracket: BracketDoc,
@@ -106,7 +111,7 @@ export function toLegacySlots(
       bracket_placement: s.slot,
       round: s.round,
       match_id: s.matchId ? legacyMatchId(s.matchId) : byeKey(s.slot),
-      timestamp: (s.matchId && startsAt(s.matchId)) || first!,
+      timestamp: (s.matchId ? startsAt(s.matchId) : s.byeStartsAt) || first!,
     }));
 }
 

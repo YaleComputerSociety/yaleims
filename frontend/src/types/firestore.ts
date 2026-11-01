@@ -274,6 +274,10 @@ export interface BracketSlot {
   round: string;
   matchId: string | null;
   byeCollegeId: string | null;
+  /** The bye college's seed (display only, D31). */
+  byeSeed: number | null;
+  /** The time shown on a bye (the upload's time for it); null for a game. */
+  byeStartsAt: StoredTimestamp | null;
 }
 
 /** Bonus points per tournament placement. */
