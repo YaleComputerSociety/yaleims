@@ -12,11 +12,6 @@ export function bracketRef(seasonId: string, id: string): DocumentReference<Brac
   return adminDb.doc(paths.bracket(seasonId, id)) as DocumentReference<BracketDoc>;
 }
 
-export async function getBracket(seasonId: string, id: string): Promise<BracketDoc | null> {
-  const snap = await bracketRef(seasonId, id).get();
-  return snap.exists ? snap.data()! : null;
-}
-
 /** A season's brackets, optionally of one kind. */
 export async function listBrackets(seasonId: string, kind?: BracketKind): Promise<WithId<BracketDoc>[]> {
   let query: FirebaseFirestore.Query = adminDb.collection(paths.brackets(seasonId));
