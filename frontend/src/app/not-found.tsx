@@ -17,7 +17,7 @@ export default function NotFound() {
       </div>
       <div>
         <Image
-          src={getVersionedImage("404.png")}
+          src={getVersionedImage("/404.png")}
           width={450}
           height={450}
           alt="404 illustration"

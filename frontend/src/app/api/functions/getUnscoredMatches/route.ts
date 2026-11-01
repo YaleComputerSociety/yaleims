@@ -1,5 +1,6 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
 import { listUnscoredPastMatches } from "@/server/data/matches";
+import { legacyMatches } from "@/server/legacy";
 import type { RouteBody, UnscoredMatchesResponse } from "@/types/api";
 
 /** ?seasonId=: matches that started but have no score yet (admin/dev). */
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
       return Response.json({ error: "Unauthorized User" }, { status: 401 });
     }
 
-    const matches = await listUnscoredPastMatches(seasonId, new Date());
+    const matches = await legacyMatches(seasonId, await listUnscoredPastMatches(seasonId, new Date()));
     return Response.json({
       success: true,
       matches,

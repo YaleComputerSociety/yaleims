@@ -1,11 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
 import { useUser } from "@src/context/UserContext";
 import SportCard from "@src/app/About/SportCard";
-import type { UserDoc } from "@src/types/firestore";
+import type { CaptainSportsResponse } from "@src/types/api";
 
 export default function ViewCaptainSports() {
     const { user } = useUser();
@@ -15,39 +12,18 @@ export default function ViewCaptainSports() {
 
     useEffect(() => {
         if (!user?.email) return;                // wait for auth/context
-        const ref = doc(db, paths.user(user.email));
-
-        const unsub = onSnapshot(ref,
-            snap => {
-                if (!snap.exists()) {
-                setError("User not found");
-                setCaptainSports([]);
-                setLoading(false);
-                return;
-                }
-
-                const data = snap.data() as UserDoc;
-                const isCaptain = data.mRoles?.includes("captain");
-                const sportsArr = Array.isArray(data.sportsCaptainOf)
-                ? data.sportsCaptainOf
-                : [];
-
-                if (!isCaptain) {
-                setError("You are not a captain");
-                setCaptainSports([]);
-                } else {
-                setError(null);
-                setCaptainSports(sportsArr);
-                }
-                setLoading(false);
-            }, err => {
-                    console.error(err);
-                    setError("Listener failed");
-                    setLoading(false);
-                }
-            );
-
-        return () => unsub(); 
+        fetch(`/api/functions/getCaptainSports?email=${encodeURIComponent(user.email)}`)
+            .then((res) => res.json() as Promise<CaptainSportsResponse>)
+            .then((data) => {
+                // Not a captain: an error object instead of a list.
+                setCaptainSports(Array.isArray(data) ? data : []);
+                setError(Array.isArray(data) ? null : "You are not a captain");
+            })
+            .catch((err) => {
+                console.error(err);
+                setError("Couldn’t load your sports");
+            })
+            .finally(() => setLoading(false));
     }, [user?.email]);
 
 

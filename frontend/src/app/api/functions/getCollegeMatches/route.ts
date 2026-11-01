@@ -1,5 +1,6 @@
-import { getCurrentSeason } from "@/server/data/seasons";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { listUpcomingCollegeMatches } from "@/server/data/matches";
+import { legacyMatches } from "@/server/legacy";
 import type { CollegeMatchJson } from "@/types/api";
 
 /** ?college=<abbr>&limit=<n>: the college's next matches this season, up to n home + n away. */
@@ -14,12 +15,13 @@ export async function GET(req: Request) {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
       return Response.json({ error: "limit must be 1-50" }, { status: 400 });
     }
-    const current = await getCurrentSeason();
-    if (!current) {
+    const seasonId = await getCurrentSeasonId();
+    if (!seasonId) {
       return Response.json({ error: "current season doc missing" }, { status: 404 });
     }
 
-    const matches = await listUpcomingCollegeMatches(current.year, college, new Date(), limit);
+    const games = await listUpcomingCollegeMatches(seasonId, college, new Date(), limit);
+    const matches = await legacyMatches(seasonId, games);
     return Response.json(
       matches.map((m) => ({
         id: m.id,

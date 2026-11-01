@@ -7,25 +7,26 @@ import {
   getSessionToken,
   setSessionCookie,
 } from "@/server/session";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { getUser } from "@/server/data/users";
+import { accountFields, joinSeason, type AccountFields } from "@/server/services/accounts";
 
 const sameRoles = (a: string[] = [], b: string[] = []): boolean =>
   a.length === b.length && a.every((role) => b.includes(role));
 
-// Roles, username and college always come from the user's Firestore doc, never
-// from the request: this route used to re-sign the session with roles passed
-// in the query string, which let any logged-in user make themselves admin.
-async function freshUserFields(email: string) {
-  const data = (await getUser(email)) ?? {};
-  return {
-    role: typeof data.role === "string" ? data.role : "user",
-    mRoles:
-      Array.isArray(data.mRoles) && data.mRoles.length > 0
-        ? (data.mRoles as string[])
-        : ["user"],
-    username: typeof data.username === "string" ? data.username : undefined,
-    college: typeof data.college === "string" ? data.college : undefined,
-  };
+// Roles, username and college always come from Firestore, never from the
+// request: this route used to re-sign the session with roles passed in the
+// query string, which let any logged-in user make themselves admin. A session
+// older than the season (or than the v3 cutover) joins the season here, as a
+// login would (D30). Without a user doc only the roles drop; null when there
+// is no current season.
+async function freshUserFields(session: Session): Promise<Partial<AccountFields> | null> {
+  const seasonId = await getCurrentSeasonId();
+  if (!seasonId) return null;
+  const user = await getUser(session.email);
+  if (!user) return { role: "user", mRoles: ["user"] };
+  const player = await joinSeason(seasonId, session.email, session.name, session.college);
+  return accountFields(seasonId, session.email, user, player);
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -48,9 +49,9 @@ export async function GET(): Promise<NextResponse> {
     return response;
   }
 
-  let fresh: Awaited<ReturnType<typeof freshUserFields>> | null = null;
+  let fresh: Partial<AccountFields> | null = null;
   try {
-    fresh = await freshUserFields(session.email);
+    fresh = await freshUserFields(session);
   } catch (err) {
     // Firestore unavailable: keep the session as signed rather than log out.
     console.error("verify: could not read user doc:", err);

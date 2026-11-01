@@ -1,9 +1,12 @@
 import { getSession, getSessionToken } from "@/server/session";
-import { setSportCaptain } from "@/server/data/users";
+import { actorOf } from "@/server/data/auditLog";
+import { getCurrentSeasonId } from "@/server/data/seasons";
+import { setCaptain } from "@/server/services/roles";
 
 /**
- * { email, sport, assign | remove }: makes a user captain of a sport, or not.
- * Any signed-in user may call it today (see NEXT-STEPS backlog).
+ * { email, sport, assign | remove }: makes a player captain of their
+ * college's team in a sport this season, or not (audit-logged). Any
+ * signed-in user may call it today (see NEXT-STEPS backlog).
  */
 export async function POST(req: Request) {
   try {
@@ -11,7 +14,8 @@ export async function POST(req: Request) {
     if (!(await getSessionToken())) {
       return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-    if (!(await getSession())) {
+    const session = await getSession();
+    if (!session) {
       return Response.json({ error: "Invalid token" }, { status: 401 });
     }
     if (!email || !sport) {
@@ -23,9 +27,20 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    const seasonId = await getCurrentSeasonId();
+    if (!seasonId) {
+      return Response.json({ error: "Current season not found." }, { status: 500 });
+    }
 
-    if (!(await setSportCaptain(String(email), sport, { assign, remove }))) {
-      return Response.json({ error: "User not found" }, { status: 404 });
+    const result = await setCaptain(seasonId, String(email), String(sport), !remove, actorOf(session));
+    if (result === "not-in-season") {
+      return Response.json({ error: "User not found in this season" }, { status: 404 });
+    }
+    if (result === "no-college") {
+      return Response.json({ error: "User has no college this season" }, { status: 400 });
+    }
+    if (result === "unknown-sport") {
+      return Response.json({ error: `Unknown sport: ${sport}` }, { status: 400 });
     }
     return Response.json({ success: true });
   } catch (err: any) {

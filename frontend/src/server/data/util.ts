@@ -1,7 +1,7 @@
 import "server-only";
 import type { DocumentData, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import type { WithId } from "@/types/firestore";
+import type { WithId } from "@/types/legacy";
 
 /**
  * Runs `fn` in a Firestore transaction (retried on contention). For services
@@ -25,10 +25,4 @@ export function pickFields<T>(data: DocumentData, fields: Record<keyof T, true>)
 
 export function withId<T>(snap: DocumentSnapshot): WithId<T> {
   return { id: snap.id, ...(snap.data() as T) };
-}
-
-/** The Admin SDK reports a missing document on update() as gRPC code 5. */
-export function isNotFound(err: unknown): boolean {
-  const code = (err as { code?: unknown } | null)?.code;
-  return code === 5 || code === "not-found";
 }

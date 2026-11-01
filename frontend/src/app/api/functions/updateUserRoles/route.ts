@@ -1,9 +1,12 @@
-import { updateUserRoles } from "@/server/data/users";
+import { actorOf } from "@/server/data/auditLog";
+import { getCurrentSeasonId } from "@/server/data/seasons";
+import { setUserRoles } from "@/server/services/roles";
 import { getSession, hasAnyRole } from "@/server/session";
 
 export async function PUT(req: Request) {
   try {
-    if (!hasAnyRole(await getSession(), ["dev"])) {
+    const session = await getSession();
+    if (!session || !hasAnyRole(session, ["dev"])) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 403,
       });
@@ -24,15 +27,28 @@ export async function PUT(req: Request) {
       );
     }
 
-    const updated = await updateUserRoles(
+    const seasonId = await getCurrentSeasonId();
+    if (!seasonId) {
+      return new Response(JSON.stringify({ error: "current season not found" }), {
+        status: 500,
+      });
+    }
+    const result = await setUserRoles(
+      seasonId,
       userId,
       roles,
-      roles.includes("captain") ? sportsCaptainOf : []
+      Array.isArray(sportsCaptainOf) ? sportsCaptainOf : [],
+      actorOf(session)
     );
-    if (!updated) {
-      return new Response(JSON.stringify({ error: "User not found" }), {
-        status: 404,
-      });
+    const refusals = {
+      "no-user": [404, "User not found"],
+      "not-in-season": [409, "User hasn't joined this season yet (they join at their next login)"],
+      "no-college": [409, "User has no college this season"],
+      "unknown-sport": [400, "Unknown sport in sportsCaptainOf"],
+    } as const;
+    if (result !== "ok") {
+      const [status, error] = refusals[result];
+      return new Response(JSON.stringify({ error }), { status });
     }
 
     return new Response(

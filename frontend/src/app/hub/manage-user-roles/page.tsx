@@ -4,7 +4,7 @@ import PageHeading from "@src/components/PageHeading";
 import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
 import React, { useState, useEffect, useMemo } from "react";
 import { colleges, sports } from "@src/utils/helpers";
-import type { UserDoc, WithId } from "@src/types/firestore";
+import type { UserDoc, WithId } from "@src/types/legacy";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "captain", "college_rep", "user"];

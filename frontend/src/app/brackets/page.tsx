@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { currentYear, sports } from "@src/utils/helpers";
 import GlassDropdown from "@src/components/ui/GlassDropdown";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
+import { bracketIdOf, playoffsName } from "@/lib/brackets";
+import { useLegacyBracket } from "@src/utils/useLegacyBracket";
 import { useRef } from "react";
 import BracketCell from "@src/components/Brackets/BracketCell";
 import { useSeason } from "@src/context/SeasonContext";
@@ -18,7 +17,6 @@ import BracketConnectorSvg, {
   useBracketConnectors,
   buildTeamConnections,
 } from "@src/components/Brackets/bracketConnectors";
-import type { BracketEntry, MatchDoc } from "@src/types/firestore";
 
 // mapping index in bracket array to the type of location of the match in the bracket
 const leftPlayoffIndices = [0, 1, 2, 3];
@@ -35,12 +33,8 @@ const BracketsPage: React.FC = () => {
   const { currentSeason, pastSeasons, seasonLoading } = useSeason();
   const pastYears = pastSeasons?.years || [];
   const [sport, setSport] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [bracket, setBracket] = useState<BracketEntry[] | null>(null);
   const [season, setSeason] = useState<string>(currentSeason?.year || currentYear);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
-  const [matchDetails, setMatchDetails] = useState<Record<string, MatchDoc | null>>({});
   // console.log("Hovered Team:", hoveredTeam);
 
   useEffect(() => {
@@ -66,60 +60,13 @@ const BracketsPage: React.FC = () => {
     setSport(sport);
   };
 
-  useEffect(() => {
-    if (!sport || !season) {
-      setBracket(null);
-      return;
-    }
-
-    const fetchBracket = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const bracketDocRef = doc(db, paths.bracket(season, sport));
-        const bracketDoc = await getDoc(bracketDocRef);
-
-        if (!bracketDoc.exists() || !bracketDoc.data()?.matches) {
-          setError(`Bracket for ${sport} (${season}) not found`);
-          setBracket(null);
-        } else {
-          const matches = bracketDoc.data()?.matches as BracketEntry[];
-          matches.sort((a, b) => a.bracket_placement - b.bracket_placement);
-          setBracket(matches);
-          // console.log("Fetched Bracket:", matches);
-        
-          const matchDocs = await Promise.all(
-            matches.map(async (m) => {
-              const docRef = doc(db, paths.match(season, m.match_id));
-              const snapshot = await getDoc(docRef);
-              return { id: m.match_id, data: snapshot.exists() ? snapshot.data() : null };
-            })
-          );
-
-          const matchDataMap: Record<string, any> = {};
-          matchDocs.forEach(({ id, data }) => {
-            matchDataMap[id] = data;
-          });
-          // matchDataMap["1039"].winner = "SY"
-          // matchDataMap["1042"].away_college = "SY"
-          // matchDataMap["1042"].winner = "SY"
-          // matchDataMap["1043"].away_college = "SY"
-          setMatchDetails(matchDataMap);
-          console.log("Fetched Match Details:", matchDataMap);
-        }
-      } catch (err) {
-        console.error(`Error fetching bracket for ${sport} (${season}):`, err);
-        setError(`Bracket doesn't yet exist!`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (sport && season) {
-      fetchBracket();
-    }
-  }, [sport, season]);
+  // The sport's playoffs that season (pre-v3 shapes, built from v3 docs).
+  const playoffs = useLegacyBracket(sport ? season : undefined, sport ? bracketIdOf(playoffsName(sport)) : null);
+  const { slots: bracket, matchDetails, loading } = playoffs;
+  const error =
+    playoffs.error === "not-found"
+      ? `Bracket for ${sport} (${season}) not found`
+      : playoffs.error && "Bracket doesn't yet exist!";
 
   // Connector geometry is measured from the rendered cells, so the lines stay
   // aligned without the hand-tuned coordinates this page used to carry.

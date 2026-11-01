@@ -1,8 +1,9 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { getCurrentSeason } from "@/server/data/seasons";
-import { deleteTournament } from "@/server/services/tournaments";
+import { actorOf } from "@/server/data/auditLog";
+import { getCurrentSeasonId } from "@/server/data/seasons";
+import { deleteBracket } from "@/server/services/brackets";
 
-/** { tournamentId, force? }: deletes a current-season tournament (admin/dev). */
+/** { tournamentId, force? }: deletes a current-season tournament (admin/dev; audit-logged). */
 export async function POST(req: Request) {
   try {
     const { tournamentId, force } = await req.json();
@@ -22,12 +23,12 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const seasonId = (await getCurrentSeason())?.year;
+    const seasonId = await getCurrentSeasonId();
     if (!seasonId) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
 
-    const result = await deleteTournament(seasonId, tournamentId, force === true);
+    const result = await deleteBracket(seasonId, tournamentId, "tournament", force === true, actorOf(session));
     if (result.status === "not-found") {
       return Response.json(
         { error: `Tournament '${tournamentId}' not found.` },

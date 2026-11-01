@@ -1,8 +1,10 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { getCurrentSeason } from "@/server/data/seasons";
+import { actorOf } from "@/server/data/auditLog";
+import { bracketIdOf, playoffsName } from "@/lib/brackets";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { createBracket } from "@/server/services/brackets";
 
-/** { bracketData: { sport, matches } }: creates this season's bracket for a sport (admin/dev). */
+/** { bracketData: { sport, matches } }: creates this season's playoffs for a sport (admin/dev; audit-logged). */
 export async function POST(req: Request) {
   try {
     const { bracketData } = await req.json();
@@ -23,23 +25,25 @@ export async function POST(req: Request) {
       );
     }
     const sport = String(bracketData.sport);
-    const seasonId = (await getCurrentSeason())?.year;
+    const seasonId = await getCurrentSeasonId();
     if (!seasonId) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
 
-    const result = await createBracket(seasonId, sport, bracketData.matches);
-    if (result === "exists") {
+    const name = playoffsName(sport);
+    const result = await createBracket(
+      seasonId,
+      { id: bracketIdOf(name), kind: "playoffs", name, sportName: sport, input: bracketData.matches, placementPoints: null },
+      actorOf(session)
+    );
+    if (result.status === "exists") {
       return Response.json({ error: `Bracket for '${sport}' already exists.` }, { status: 409 });
     }
-    if (result === "no-counter") {
-      return Response.json({ error: "Cannot find next match ID" }, { status: 500 });
+    if (result.status === "unknown-sport") {
+      return Response.json({ error: `Unknown sport: ${sport}` }, { status: 400 });
     }
-    if (result === "id-taken") {
-      return Response.json(
-        { error: "A new match id is already in use (check counters/matches); nothing was created." },
-        { status: 409 }
-      );
+    if (result.status === "bad-input") {
+      return Response.json({ error: result.error }, { status: 400 });
     }
     return Response.json({ message: `Bracket for '${sport}' created successfully.` });
   } catch (err) {

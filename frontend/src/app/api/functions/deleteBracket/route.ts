@@ -1,11 +1,13 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
-import { getCurrentSeason } from "@/server/data/seasons";
+import { actorOf } from "@/server/data/auditLog";
+import { bracketIdOf, playoffsName } from "@/lib/brackets";
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { deleteBracket } from "@/server/services/brackets";
 
 /**
- * { sport, force? }: deletes this season's bracket for a sport and takes back
- * the points its games earned (admin/dev). With scored games it answers 409
- * until resent with force.
+ * { sport, force? }: deletes this season's playoffs for a sport and takes back
+ * the points its games earned (admin/dev; audit-logged). With scored games it
+ * answers 409 until resent with force.
  */
 export async function POST(req: Request) {
   try {
@@ -26,12 +28,18 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const seasonId = (await getCurrentSeason())?.year;
+    const seasonId = await getCurrentSeasonId();
     if (!seasonId) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
 
-    const result = await deleteBracket(seasonId, sport, force === true);
+    const result = await deleteBracket(
+      seasonId,
+      bracketIdOf(playoffsName(sport)),
+      "playoffs",
+      force === true,
+      actorOf(session)
+    );
     if (result.status === "not-found") {
       return Response.json({ error: `Bracket for sport '${sport}' not found.` }, { status: 404 });
     }

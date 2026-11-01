@@ -19,7 +19,7 @@ interface MatchListItemProps {
   onStatusChange: (id: MatchJson["id"], signed: boolean) => void;
 }
 
-import type { MatchParticipant } from "@src/types/firestore";
+import type { MatchParticipant } from "@src/types/legacy";
 import { useSeason } from "@src/context/SeasonContext";
 import { EditMatchButton } from "../Dashboard/Admin/EditMatchModal";
 

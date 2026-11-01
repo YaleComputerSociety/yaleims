@@ -1,12 +1,20 @@
-// Playoff brackets: brackets/seasons/{seasonId}/{sport}, one per sport. The
-// games themselves are match docs; the bracket lists them by slot.
+// Brackets: seasons/{seasonId}/brackets/{bracketId}, a sport's playoffs or a
+// tournament (D28, P6). The games are ordinary matches (stage "playoff",
+// bracketId); a bye is a slot with a college and no game. Ids: lib/brackets.ts.
 import "server-only";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import type { BracketDoc } from "@/types/firestore";
+import type { BracketDoc, BracketKind, WithId } from "@/types/firestore";
+import { withId } from "./util";
 
-/** The bracket doc, for services that change it in a transaction. */
-export function bracketRef(seasonId: string, sport: string): DocumentReference<BracketDoc> {
-  return adminDb.doc(paths.bracket(seasonId, sport)) as DocumentReference<BracketDoc>;
+export function bracketRef(seasonId: string, id: string): DocumentReference<BracketDoc> {
+  return adminDb.doc(paths.bracket(seasonId, id)) as DocumentReference<BracketDoc>;
+}
+
+/** A season's brackets, optionally of one kind. */
+export async function listBrackets(seasonId: string, kind?: BracketKind): Promise<WithId<BracketDoc>[]> {
+  let query: FirebaseFirestore.Query = adminDb.collection(paths.brackets(seasonId));
+  if (kind) query = query.where("kind", "==", kind);
+  return (await query.get()).docs.map((d) => withId<BracketDoc>(d));
 }

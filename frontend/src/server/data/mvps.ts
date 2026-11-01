@@ -1,27 +1,31 @@
-// Weekly MVPs: mvps/{seasonId}/{college}/{weekId}, each doc keyed by the MVP's email.
+// Weekly MVPs: seasons/{seasonId}/colleges/{collegeId}/mvps/{awardId}, one
+// doc per award (a college may name several MVPs in a week).
 import "server-only";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import type { MvpWeekDoc } from "@/types/firestore";
+import type { MvpDoc, WithId } from "@/types/firestore";
+import { withId } from "./util";
 
-/** A college's MVPs for a season, keyed by week id (e.g. "week_4"). */
-export async function listCollegeMvps(
-  seasonId: string,
-  college: string
-): Promise<Record<string, MvpWeekDoc>> {
-  const snap = await adminDb.collection(paths.collegeMvps(seasonId, college)).get();
-  return Object.fromEntries(snap.docs.map((d) => [d.id, d.data() as MvpWeekDoc]));
+/** A college's MVP awards this season. */
+export async function listCollegeMvps(seasonId: string, collegeId: string): Promise<WithId<MvpDoc>[]> {
+  const snap = await adminDb.collection(paths.mvps(seasonId, collegeId)).get();
+  return snap.docs.map((d) => withId<MvpDoc>(d));
 }
 
-/** Adds (or replaces) one MVP in a college's week doc, keeping the others. */
-export async function setCollegeMvp(
+/** Names a week's MVP of a college; naming the same player again for that week updates the award. */
+export async function setMvp(
   seasonId: string,
-  college: string,
-  weekId: string,
-  email: string,
-  name: { fname: string; lname: string }
+  collegeId: string,
+  award: Pick<MvpDoc, "week" | "playerId" | "name" | "awardedBy">
 ): Promise<void> {
-  await adminDb
-    .doc(paths.collegeMvp(seasonId, college, weekId))
-    .set({ [email]: name }, { merge: true });
+  const awards = adminDb.collection(paths.mvps(seasonId, collegeId));
+  await adminDb.runTransaction(async (tx) => {
+    const existing = await tx.get(
+      awards.where("week", "==", award.week).where("playerId", "==", award.playerId).limit(1)
+    );
+    const fields = { ...award, awardedAt: FieldValue.serverTimestamp() };
+    if (existing.empty) tx.create(awards.doc(), { seasonId, collegeId, ...fields });
+    else tx.update(existing.docs[0].ref, fields);
+  });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMatch } from "@/server/data/matches";
+import { listRoster } from "@/server/data/roster";
 import type { MatchParticipantsResponse } from "@/types/api";
 
 export async function GET(req: Request): Promise<NextResponse> {
@@ -21,10 +22,14 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
 
     // An unknown match answers with no participants, not a 404 (as always).
-    const match = await getMatch(seasonId, matchId);
+    const [match, roster] = await Promise.all([getMatch(seasonId, matchId), listRoster(seasonId, matchId)]);
+    const side = (collegeId: string | null | undefined) =>
+      roster
+        .filter((e) => collegeId && e.collegeId === collegeId && e.captainStatus !== "removed")
+        .map((e) => ({ email: e.playerId, name: e.name }));
     return NextResponse.json({
-      home_college_participants: match?.home_college_participants || [],
-      away_college_participants: match?.away_college_participants || [],
+      home_college_participants: side(match?.homeCollegeId),
+      away_college_participants: side(match?.awayCollegeId),
     } satisfies MatchParticipantsResponse);
   } catch (err) {
     console.error("Error in getMatchParticipants:", err);

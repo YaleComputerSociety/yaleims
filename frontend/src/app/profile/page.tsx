@@ -5,7 +5,7 @@ import { useUser } from "@src/context/UserContext";
 import Image from "next/image";
 import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
 import type { CollegeMatchJson } from "@src/types/api";
-import type { MatchParticipant } from "@src/types/firestore";
+import type { MatchParticipant } from "@src/types/legacy";
 import LoadingScreen from "@src/components/LoadingScreen";
 import ListView from "@src/components/Profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";

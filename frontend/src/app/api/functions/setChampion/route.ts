@@ -1,4 +1,5 @@
-import { setChampionship } from "@/server/data/seasons";
+import { actorOf } from "@/server/data/auditLog";
+import { getCurrentSeasonId, setChampionship } from "@/server/data/seasons";
 import { getSession, hasAnyRole } from "@/server/session";
 import { isValidCollegeAbbrev } from "@src/utils/helpers";
 
@@ -36,7 +37,19 @@ export async function POST(req: Request) {
       );
     }
 
-    await setChampionship(winningCollegeId, celebrationActive);
+    const seasonId = await getCurrentSeasonId();
+    const saved =
+      !!seasonId &&
+      (await setChampionship(
+        seasonId,
+        { championCollegeId: winningCollegeId, celebrationActive },
+        actorOf(session)
+      ));
+    if (!saved) {
+      return new Response(JSON.stringify({ error: "current season not found" }), {
+        status: 500,
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

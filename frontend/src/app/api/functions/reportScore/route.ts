@@ -21,16 +21,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
 
     const body: ScoreReportPayload = await req.json();
-    const {
-      matchId,
-      season,
-      reason,
-      matchHomeCollege,
-      matchAwayCollege,
-      homeScore,
-      awayScore,
-      sport,
-    } = body;
+    const { matchId, season, reason, homeScore, awayScore } = body;
 
     if (!matchId || !season || !reason?.trim()) {
       return NextResponse.json(
@@ -39,15 +30,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
+    // The score the reporter saw; the game's other fields are on the game.
     const reportId = await addScoreReport(String(season), String(matchId), {
       reason: reason.trim(),
-      reportedBy: user.name || user.username || "Unknown",
-      reportedByEmail: user.email,
-      matchHomeCollege: matchHomeCollege ?? null,
-      matchAwayCollege: matchAwayCollege ?? null,
-      homeScore: homeScore ?? null,
-      awayScore: awayScore ?? null,
-      sport: sport ?? null,
+      reportedBy: user.email,
+      reporterName: user.name || user.username || "Unknown",
+      scoreAtReport: { home: homeScore ?? null, away: awayScore ?? null },
     });
 
     return NextResponse.json(

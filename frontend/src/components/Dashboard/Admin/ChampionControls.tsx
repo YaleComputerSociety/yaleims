@@ -1,30 +1,25 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
 import { colleges } from "@src/utils/helpers";
+import { useChampionship } from "@src/utils/useChampionship";
 import { getCollegeFlag } from "@src/utils/versionedImages";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
-import type { CurrentSeasonDoc } from "@src/types/firestore";
 
 const ChampionControls: React.FC = () => {
   const [winningCollegeId, setWinningCollegeId] = useState<string>("");
   const [celebrationActive, setCelebrationActive] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
-  const [loaded, setLoaded] = useState<boolean>(false);
+  const stored = useChampionship();
+  const loaded = stored.loaded;
 
+  // Follow the stored banner (live), including saves from elsewhere.
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, paths.currentSeason), (snap) => {
-      const data = snap.data() as CurrentSeasonDoc | undefined;
-      setWinningCollegeId(data?.winningCollegeId ?? "");
-      setCelebrationActive(!!data?.celebrationActive);
-      setLoaded(true);
-    });
-    return () => unsub();
-  }, []);
+    if (!stored.loaded) return;
+    setWinningCollegeId(stored.winningCollegeId ?? "");
+    setCelebrationActive(stored.celebrationActive);
+  }, [stored.loaded, stored.winningCollegeId, stored.celebrationActive]);
 
   const save = async (next: { winningCollegeId: string; celebrationActive: boolean }) => {
     if (next.celebrationActive && !next.winningCollegeId) {

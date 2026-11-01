@@ -4,9 +4,10 @@
 // roles, so a developer can use the admin pages after signing in locally.
 //
 // The sanitized seed has no real emails, so your own account only exists in
-// the emulator after your first local sign-in (Yale CAS creates it with the
-// plain "user" role). Run this once after that. The next page load picks the
-// roles up (/api/auth/verify reads them from Firestore); no new sign-in needed.
+// the emulator after your first local sign-in (Yale CAS creates it with no
+// roles). Run this once after that. The next page load picks the roles up
+// (/api/auth/verify reads them from Firestore); no new sign-in needed. Global
+// roles live in users/{email}.roles (schema v3).
 //
 // SAFETY: refuses to run unless FIRESTORE_EMULATOR_HOST is set, so it can never
 // change roles in production.
@@ -17,7 +18,7 @@
 import admin from "firebase-admin";
 
 const PROJECT_ID = "yims-125a2";
-const ROLES = ["user", "admin", "dev"];
+const ROLES = ["admin", "dev"];
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error(
@@ -47,8 +48,8 @@ if (!snap.exists) {
   process.exit(1);
 }
 
-const current = Array.isArray(snap.data().mRoles) ? snap.data().mRoles : [];
-const mRoles = [...new Set([...current, ...ROLES])];
-await ref.update({ mRoles });
-console.log(`${email}: mRoles ${JSON.stringify(current)} → ${JSON.stringify(mRoles)}`);
+const current = Array.isArray(snap.data().roles) ? snap.data().roles : [];
+const roles = [...new Set([...current, ...ROLES])];
+await ref.update({ roles });
+console.log(`${email}: roles ${JSON.stringify(current)} → ${JSON.stringify(roles)}`);
 console.log("Reload the page; the Hub now shows the admin actions.");

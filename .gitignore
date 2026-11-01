@@ -8,3 +8,6 @@ database/misc/**/*.csv
 .env*.local
 **/.env.local
 **/.env*.local
+
+# v3 migration reports (anomaly refs may hold emails)
+migration-report*.json

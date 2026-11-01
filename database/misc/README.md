@@ -9,9 +9,10 @@ The Node scripts use `./firebaseAdmin.js`, which targets the emulator when
 
 | Script | Use |
 |---|---|
-| `start_new_season.js <YYYY-YYYY> [--update-season-metadata] [--prod]` | Season rollover: creates `colleges/seasons/{season}/{abbr}` (only missing docs; never resets points), optionally updates `seasons/current` and `seasons/past`, then prints the remaining step (indexes). |
-| `create_season_indexes.sh <YYYY-YYYY>` | Season rollover: per-season composite indexes (gcloud). |
+| `start_new_season.js <YYYY-YYYY> [--make-current] [--prod]` | Season rollover (schema v3): creates `seasons/{season}` with the previous season's colleges (standings at 0) and sports lineup; only missing docs, never overwrites; `--make-current` points `config/app` at it; audit-logged. Indexes are global (`../firestore.indexes.json`), so nothing else to do. |
 | `format_schedule.py <schedule.xlsx> [-o out.csv] [--sport S]` | Turns a schedule workbook into the CSV the hub's **Upload Schedule** page accepts. Python standard library only. |
+
+The one-time schema v3 migration lives in `../migrate` (its own README).
 
 Schedules, brackets and tournaments are loaded through the hub's upload
 pages (they go through the API), not by scripts. Keep schedule

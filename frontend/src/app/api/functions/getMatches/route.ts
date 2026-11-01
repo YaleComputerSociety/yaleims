@@ -5,8 +5,9 @@ import {
   countSeasonMatches,
   listPlayedMatchesAllSeasons,
   listSeasonMatches,
-  seasonMatchJson,
 } from "@/server/data/matches";
+import { findSportByName } from "@/server/data/sports";
+import { matchListJson } from "@/server/legacy";
 import type { MatchPageResponse } from "@/types/api";
 
 /** Past-results windows: start = local midnight this many days ago. */
@@ -21,7 +22,7 @@ const text = (status: number, message: string) => new Response(message, { status
  * (index|next|prev), pageIndex, lastVisible/firstVisible (cursor ids),
  * sortOrder (default desc), college, sport ("All" = any), date:
  * - "AllPast" or a window (today, yesterday, last7days, …): scored matches
- *   that already started, from **every** season (seasonId is ignored);
+ *   that already started, from **every** season (seasonId only names the sport);
  * - otherwise an ISO date: the season's unscored matches from that date on.
  *
  * Signed-in users only, on purpose for now: the pages show a "Sign in" prompt
@@ -56,16 +57,19 @@ export async function GET(req: Request) {
     const firstVisible = params.get("firstVisible");
     const college = params.get("college");
     const sport = params.get("sport");
+    // Sports are named in the request, by id in the games (the same id every season).
+    const sportId = sport && sport !== "All" ? (await findSportByName(seasonId, sport))?.id : undefined;
+    if (sport && sport !== "All" && !sportId) return pageResponse([], 0);
     const filter = {
-      college: college && college !== "All" ? college : undefined,
-      sport: sport && sport !== "All" ? sport : undefined,
+      collegeId: college && college !== "All" ? college : undefined,
+      sportId,
     };
     const date = params.get("date") ?? "";
     const now = new Date();
 
     if (date !== "AllPast" && !Object.hasOwn(PAST_WINDOWS, date)) {
       // Upcoming: one season, cursor paging in Firestore.
-      const seasonFilter = { ...filter, scored: false, from: new Date(date) };
+      const seasonFilter = { ...filter, status: "scheduled" as const, from: new Date(date) };
       const totalPages = Math.ceil(
         (await countSeasonMatches(seasonId, seasonFilter, sortOrder)) / pageSizeNum
       );
@@ -102,10 +106,10 @@ export async function GET(req: Request) {
 
     let rows: SeasonMatch[] = [];
     if (type === "next" && lastVisible) {
-      const start = played.findIndex((m) => m.docId === lastVisible) + 1;
+      const start = played.findIndex((m) => m.id === lastVisible) + 1;
       rows = start < played.length ? played.slice(start, start + pageSizeNum) : [];
     } else if (type === "prev" && firstVisible) {
-      const end = played.findIndex((m) => m.docId === firstVisible);
+      const end = played.findIndex((m) => m.id === firstVisible);
       rows = end > 0 ? played.slice(Math.max(0, end - pageSizeNum), end) : [];
     } else if (type === "index") {
       const start = (pageIndexNum - 1) * pageSizeNum;
@@ -118,8 +122,8 @@ export async function GET(req: Request) {
   }
 }
 
-function pageResponse(rows: SeasonMatch[], totalPages: number) {
-  const matches = rows.map(seasonMatchJson);
+async function pageResponse(rows: SeasonMatch[], totalPages: number) {
+  const matches = await matchListJson(rows);
   return Response.json({
     matches,
     firstVisible: matches[0]?.id || null,

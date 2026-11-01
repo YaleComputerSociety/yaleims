@@ -1,7 +1,8 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
+import { actorOf } from "@/server/data/auditLog";
 import { undoScore } from "@/server/services/scoring";
 
-/** { matchId, year }: clears a match result and takes its points back (admin/dev). */
+/** { matchId, year }: clears a match result and takes its points back (admin/dev; audit-logged). */
 export async function POST(req: Request) {
   try {
     const { matchId, year } = await req.json();
@@ -22,15 +23,12 @@ export async function POST(req: Request) {
       return Response.json({ error: "Season (year) is required." }, { status: 400 });
     }
 
-    const result = await undoScore(year, String(matchId));
+    const result = await undoScore(year, String(matchId), actorOf(session));
     if (result === "not-found") {
       return Response.json(
         { error: `Match with ID ${matchId} does not exist.` },
         { status: 404 }
       );
-    }
-    if (result === "bye") {
-      return Response.json({ error: "A bye has no score to undo." }, { status: 400 });
     }
     if (result === "incomplete") {
       return Response.json({ error: "Match data is incomplete or invalid." }, { status: 400 });

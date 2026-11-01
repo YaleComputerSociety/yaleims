@@ -15,8 +15,9 @@ const Title: React.FC<TitleProps> = ({ selected, lastUpdated, onFilterChange }) 
     onFilterChange(event.target.value);
   };
 
-  const [ day, month, year ] = lastUpdated.split('-');
-  const convertedDate = `${month}/${day}/${year}`
+  // lastUpdated: the standings' rank day, "yyyy-mm-dd" (Eastern).
+  const [year, month, day] = lastUpdated.split("-");
+  const convertedDate = `${Number(month)}/${Number(day)}/${year}`;
 
   const { currentSeason, pastSeasons } = useSeason();
 
