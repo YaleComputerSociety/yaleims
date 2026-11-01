@@ -12,7 +12,8 @@ import type * as Old from "../../../frontend/src/types/legacy";
 import { easternDate, seasonStart } from "../../../frontend/src/lib/dates";
 import { paths } from "../../../frontend/src/lib/paths";
 import { standingDeltas, teamDeltas, type TeamRecord } from "../../../frontend/src/lib/results";
-import { slugify } from "../../../frontend/src/lib/slug";
+import { bracketIdOf, playoffsName } from "../../../frontend/src/lib/brackets";
+import { collegeIdOfName } from "../../../frontend/src/lib/colleges";
 import type { OldData, OldDoc } from "./old";
 
 /**
@@ -119,15 +120,15 @@ class Context {
   readonly info: Record<string, number> = {};
   /** College ids (abbreviations) and names, from the stored standings. */
   readonly collegeIds = new Set<string>();
-  private readonly collegeIdByName = new Map<string, string>();
+  private readonly colleges: { id: string; name: string }[] = [];
   readonly sportByName = new Map<string, OldDoc<Old.SportDoc>>();
   readonly userByEmail: Map<string, OldDoc<Old.UserDoc>>;
 
   constructor(readonly old: OldData) {
     for (const standings of old.standings.values()) {
       for (const s of standings) {
+        if (!this.collegeIds.has(s.id)) this.colleges.push({ id: s.id, name: s.data.name });
         this.collegeIds.add(s.id);
-        if (s.data.name) this.collegeIdByName.set(s.data.name, s.id);
       }
     }
     for (const s of old.sports) {
@@ -155,13 +156,7 @@ class Context {
 
   /** A college as users and old MVP paths name it ("Morse", "Morse College") → its id. */
   collegeIdOfName(name: unknown): string | null {
-    if (typeof name !== "string") return null;
-    const trimmed = name.trim();
-    return (
-      this.collegeIdByName.get(trimmed) ??
-      this.collegeIdByName.get(trimmed.replace(/ College$/, "")) ??
-      (this.collegeIds.has(trimmed) ? trimmed : null)
-    );
+    return collegeIdOfName(this.colleges, name);
   }
 
   /** "First Last" of a user, or null. */
@@ -332,8 +327,8 @@ interface Brackets {
 }
 
 /**
- * Playoffs (one per sport; id = slug of "<Sport> Playoffs") and tournaments
- * (id kept). A bye slot keeps its college, not a match (D28).
+ * Playoffs (one per sport; id from its name, lib/brackets.ts) and
+ * tournaments (id kept). A bye slot keeps its college, not a match (D28).
  */
 function mapBrackets(ctx: Context, season: Season): Brackets {
   const result: Brackets = { docs: new Map(), bracketOfMatch: new Map(), byes: new Set() };
@@ -384,9 +379,9 @@ function mapBrackets(ctx: Context, season: Season): Brackets {
       ctx.note({ kind: "bracket-sport-unknown", seasonId: season.id, ref: b.path, detail: sportName });
       continue;
     }
-    const name = `${sportName} Playoffs`;
+    const name = playoffsName(sportName);
     const slots = slotsOf(b.data.matches, b.path);
-    add(slugify(name), {
+    add(bracketIdOf(name), {
       seasonId: season.id,
       sportId: sport.id,
       kind: "playoffs",
