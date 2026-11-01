@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSeason } from "@src/context/SeasonContext";
 import LoadingSpinner from "@src/components/LoadingSpinner";
-import { seasonStart, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
+import { mvpWeekOne, getCurrentWeekId, buildWeekOptions } from "@src/utils/helpers";
 import { useUser } from "@src/context/UserContext";
 import type { MvpsResponse, UsersInCollegeResponse } from "@src/types/api";
 import type { UserDoc } from "@src/types/legacy";
@@ -19,11 +19,17 @@ export default function SelectMVP() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const [weekId, setWeekId] = useState(getCurrentWeekId(seasonStart));
+  const [weekId, setWeekId] = useState("");
   const [mvps, setMvps]  = useState<MvpsResponse | null>(null);
   const { user } = useUser();
 
-  const weeks = buildWeekOptions(seasonStart);
+  const weekOne = mvpWeekOne(currentSeason?.mvpWeekOne);
+  const weeks = weekOne ? buildWeekOptions(weekOne) : [];
+  // Start on the current week once the season (and its week 1) has loaded.
+  useEffect(() => {
+    const one = mvpWeekOne(currentSeason?.mvpWeekOne);
+    if (one) setWeekId(getCurrentWeekId(one));
+  }, [currentSeason?.mvpWeekOne]);
 
   const nameOf = (u: UserDoc) =>
     `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
@@ -85,7 +91,7 @@ export default function SelectMVP() {
 
     try {
       setSettingMVP(true);
-      await fetch("/api/functions/setMVP", {
+      const res = await fetch("/api/functions/setMVP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -97,6 +103,10 @@ export default function SelectMVP() {
           mvpLName: selectUser.lastname
         }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        return setError(body.error ?? "Something went wrong. Please try again.");
+      }
       setNotice(`MVP set for ${weekId}.`);
       setSelectUser(null);
       setSearchTerm("");
@@ -108,7 +118,6 @@ export default function SelectMVP() {
     }
   };
 
-  console.log(weeks)
   return (
     <div className="space-y-5 py-4">
       {/* Status banner */}

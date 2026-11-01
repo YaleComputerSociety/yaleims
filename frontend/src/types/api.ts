@@ -70,7 +70,10 @@ export type VerifyResponse =
 
 /** GET getSeasons */
 export interface SeasonsResponse {
-  current: Serialized<CurrentSeasonDoc>;
+  current: Serialized<CurrentSeasonDoc> & {
+    /** MVP week 1: the Monday of the first game's week, "yyyy-mm-dd" (null: no games yet). */
+    mvpWeekOne: string | null;
+  };
   past: { years: string[] };
 }
 

@@ -92,6 +92,12 @@ export async function listSeasonMatches(
   return snap.docs.map((d) => withId<MatchDoc>(d));
 }
 
+/** When the season's first game starts (null: no games yet). */
+export async function firstMatchStart(seasonId: string): Promise<Date | null> {
+  const snap = await adminDb.collection(paths.matches(seasonId)).orderBy("startsAt", "asc").limit(1).get();
+  return snap.empty ? null : withId<MatchDoc>(snap.docs[0]).startsAt.toDate();
+}
+
 /** Games that have started but have no result yet, oldest first. */
 export async function listUnscoredPastMatches(seasonId: string, now: Date): Promise<WithId<MatchDoc>[]> {
   const snap = await adminDb

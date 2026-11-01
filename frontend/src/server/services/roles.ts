@@ -121,20 +121,31 @@ export async function setUserRoles(
   });
 }
 
-/** Makes a player captain of a sport's team in their college, or not. */
+/**
+ * Makes a player captain of a sport's team in their college, or not. Only
+ * an admin or a rep of the player's college may (D42); the rep is checked
+ * on their player doc, not the session.
+ */
 export async function setCaptain(
   seasonId: string,
   email: string,
   sportName: string,
   assign: boolean,
   actor: Actor
-): Promise<"ok" | Exclude<Refusal, "no-user">> {
+): Promise<"ok" | "forbidden" | Exclude<Refusal, "no-user">> {
+  const isAdmin = actor.roles.some((r) => r === "admin" || r === "dev");
   const sport = (await listSports(seasonId)).find((s) => s.name === sportName);
   if (!sport) return "unknown-sport";
   return runTransaction(async (tx) => {
-    const player = (await tx.get(playerRef(seasonId, email))).data();
+    const [player, actorPlayer] = await Promise.all([
+      tx.get(playerRef(seasonId, email)).then((s) => s.data()),
+      tx.get(playerRef(seasonId, actor.userId)).then((s) => s.data()),
+    ]);
+    const repCollegeId = actorPlayer?.roles.includes("college_rep") ? actorPlayer.collegeId : null;
+    if (!isAdmin && !repCollegeId) return "forbidden";
     if (!player) return "not-in-season";
     if (!player.collegeId) return "no-college";
+    if (!isAdmin && player.collegeId !== repCollegeId) return "forbidden";
     const ref = teamRef(seasonId, player.collegeId, sport.id);
     const team = await tx.get(ref);
 

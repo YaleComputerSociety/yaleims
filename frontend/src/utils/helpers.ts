@@ -179,7 +179,14 @@ export const collegeNamesList = [
   "Trumbull",
 ];
 
-export const seasonStart = new Date("2025-09-08T00:00:00Z");
+/**
+ * The season's MVP week 1 (the Monday of its first game's week, from
+ * GET getSeasons, D42) as a local midnight; null before the first game.
+ */
+export function mvpWeekOne(day: string | null | undefined): Date | null {
+  const [y, m, d] = (day ?? "").split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
 
 export function getCurrentWeekId(seasonStart: Date): string {
   const now = new Date();

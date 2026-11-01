@@ -11,10 +11,13 @@ export const SESSION_COOKIE = "token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 /**
- * Production (https) sets the cookie Secure with SameSite=None, as it always
- * has. `next dev` runs on http://localhost, where Safari drops Secure cookies
- * (Chrome and Firefox make an exception for localhost), so local sign-in
- * looped back logged out; there the cookie is plain SameSite=Lax.
+ * The cookie is SameSite=Lax: sent when someone opens a page of the site
+ * (also when CAS sends them back after login), but not with the background
+ * requests (form posts, fetches) another site could make in their browser:
+ * a guard against cross-site request forgery, next to the Origin check in
+ * proxy.ts (which also covers cookies issued before this setting).
+ * Production (https) also sets it Secure; `next dev` runs on
+ * http://localhost, where Safari drops Secure cookies.
  */
 export const secureCookies = process.env.NODE_ENV === "production";
 
@@ -89,7 +92,7 @@ export function setSessionCookie(res: NextResponse, session: Session): void {
   res.cookies.set(SESSION_COOKIE, token, {
     secure: secureCookies,
     httpOnly: true,
-    sameSite: secureCookies ? "none" : "lax",
+    sameSite: "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
   });
