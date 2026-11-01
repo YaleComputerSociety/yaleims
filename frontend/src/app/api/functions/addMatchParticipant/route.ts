@@ -1,4 +1,6 @@
+import { getCurrentSeasonId } from "@/server/data/seasons";
 import { getSession, getSessionToken } from "@/server/session";
+import { joinSeason } from "@/server/services/accounts";
 import { signUp, type SignUpResult } from "@/server/services/signups";
 
 const ROSTER_SIDES = ["home_college_participants", "away_college_participants"];
@@ -42,7 +44,13 @@ export async function POST(req: Request) {
       return Response.json({ error: "Invalid participantType" }, { status: 400 });
     }
 
-    const result = await signUp(String(seasonId), String(matchId), session.email);
+    let result = await signUp(String(seasonId), String(matchId), session.email);
+    // A session from before the season (or the v3 cutover) whose page hasn't
+    // re-verified: join the season as /api/auth/verify would (D30), then retry.
+    if (result === "not-in-season" && String(seasonId) === (await getCurrentSeasonId())) {
+      await joinSeason(String(seasonId), session.email, session.name, session.college);
+      result = await signUp(String(seasonId), String(matchId), session.email);
+    }
     if (result !== "ok") {
       return refusal(result, session.email);
     }
