@@ -1,22 +1,22 @@
 "use client";
 
 import React, { useEffect, useState, useContext } from "react";
-import LoadingScreen from "@src/components/LoadingScreen";
-import CollegeSummaryCard from "@src/components/Scores/CollegeSummaryCard";
-import CollegeSummaryCardMobile from "@src/components/Scores/CollegeSummaryCardMobile";
-import { FiltersContext } from "@src/context/FiltersContext";
-import TableHeader from "@src/components/Scores/TableHeader";
-import MatchesTable from "@src/components/Scores/MatchTable";
-import type { MatchJson, MatchPageResponse } from "@src/types/api";
-import type { CollegeDoc } from "@src/types/firestore";
-import Pagination from "@src/components/Scores/Pagination";
-import PageHeading from "@src/components/PageHeading";
-import { useSeason } from "@src/context/SeasonContext";
-import { useUser } from "@src/context/UserContext";
-import SignInPrompt from "@src/components/SignInPrompt";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import CollegeSummaryCard from "@/components/scores/CollegeSummaryCard";
+import CollegeSummaryCardMobile from "@/components/scores/CollegeSummaryCardMobile";
+import { FiltersContext } from "@/context/FiltersContext";
+import TableHeader from "@/components/scores/TableHeader";
+import MatchesTable from "@/components/scores/MatchTable";
+import type { MatchJson, MatchPageResponse } from "@/types/api";
+import type { CollegeDoc } from "@/types/firestore";
+import Pagination from "@/components/ui/Pagination";
+import PageHeading from "@/components/layout/PageHeading";
+import { useSeason } from "@/context/SeasonContext";
+import { useUser } from "@/context/UserContext";
+import SignInPrompt from "@/components/layout/SignInPrompt";
 
 import "react-loading-skeleton/dist/skeleton.css";
-import { currentYear } from "@src/utils/helpers";
+import { currentYear } from "@/utils/helpers";
 import {
   collection,
   doc,

@@ -11,7 +11,7 @@ import {
 } from "react";
 import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
-import type { SessionUser, VerifyResponse } from "@src/types/api";
+import type { SessionUser, VerifyResponse } from "@/types/api";
 
 interface AuthContextType {
   isLoggedIn: boolean;

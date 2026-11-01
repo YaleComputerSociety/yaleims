@@ -7,7 +7,7 @@ import { defineConfig } from "vitest/config";
 const src = fileURLToPath(new URL("./src", import.meta.url));
 
 export default defineConfig({
-  resolve: { alias: { "@src": src, "@": src } },
+  resolve: { alias: { "@": src } },
   test: {
     // The integration tests share one server and one emulator: files run one
     // after another (the unit tests are fast either way).

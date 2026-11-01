@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import SportCard from "@src/app/About/SportCard";
-import SportModal from "@src/app/About/SportModal";
-import PageHeading from "@src/components/PageHeading";
+import SportCard from "@/components/about/SportCard";
+import SportModal from "@/components/about/SportModal";
+import PageHeading from "@/components/layout/PageHeading";
 
 const fallSports = [
   "Cornhole",

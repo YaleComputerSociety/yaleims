@@ -1,8 +1,8 @@
 "use client";
 
-import BracketAdminPanel from "@src/components/Dashboard/Admin/BracketAdminPanel";
-import PageHeading from "@src/components/PageHeading";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import BracketAdminPanel from "@/components/hub/admin/BracketAdminPanel";
+import PageHeading from "@/components/layout/PageHeading";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import React from "react";
 
 const UploadBracketsPage = () => {

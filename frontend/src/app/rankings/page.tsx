@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import PageHeading from "@src/components/PageHeading";
-import RankingsTable, { RankingEntry } from "@src/components/Rankings/RankingsTable";
-import { useSeason } from "@src/context/SeasonContext";
-import { currentYear, emojiMap } from "@src/utils/helpers";
-import { sports } from "@src/utils/helpers";
-import GlassDropdown from "@src/components/ui/GlassDropdown";
+import PageHeading from "@/components/layout/PageHeading";
+import RankingsTable, { RankingEntry } from "@/components/rankings/RankingsTable";
+import { useSeason } from "@/context/SeasonContext";
+import { currentYear, emojiMap } from "@/utils/helpers";
+import { sports } from "@/utils/helpers";
+import GlassDropdown from "@/components/ui/GlassDropdown";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type MainTab = "overall" | "per-sport";

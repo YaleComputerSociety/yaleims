@@ -1,12 +1,12 @@
 "use client";
 
-import PageHeading from "@src/components/PageHeading";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import PageHeading from "@/components/layout/PageHeading";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import React, { useEffect, useRef, useState, ChangeEvent } from "react";
-import { colleges, currentYear, sports, toTimestamp } from "@src/utils/helpers";
+import { colleges, currentYear, sports, toTimestamp } from "@/utils/helpers";
 import { toast } from "react-toastify";
-import { useSeason } from "@src/context/SeasonContext";
-import LoadingScreen from "@src/components/LoadingScreen";
+import { useSeason } from "@/context/SeasonContext";
+import LoadingScreen from "@/components/layout/LoadingScreen";
 import { FaSpinner } from "react-icons/fa";
 
 interface Schedule {

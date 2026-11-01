@@ -2,19 +2,19 @@
 
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NavBar from "@src/components/NavBar";
+import NavBar from "@/components/layout/NavBar";
 import { useEffect } from "react";
-import { UserProvider } from "@src/context/UserContext";
-import FiltersProvider from "@src/context/FiltersContext";
+import { UserProvider } from "@/context/UserContext";
+import FiltersProvider from "@/context/FiltersContext";
 import { ThemeProvider } from "next-themes";
-import Footer from "@src/components/Footer";
+import Footer from "@/components/layout/Footer";
 import { initAnalytics } from "@/lib/firebase";
 import React from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { SeasonProvider } from "@src/context/SeasonContext";
-import { NavbarProvider, useNavbar } from "@src/context/NavbarContext";
-import AnalyticsListener from "./AnalyticsListener";
+import { SeasonProvider } from "@/context/SeasonContext";
+import { NavbarProvider, useNavbar } from "@/context/NavbarContext";
+import AnalyticsListener from "@/components/layout/AnalyticsListener";
 
 const inter = Inter({ subsets: ["latin"] });
 

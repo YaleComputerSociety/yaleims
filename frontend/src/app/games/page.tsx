@@ -2,24 +2,24 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import PageHeading from "@src/components/PageHeading";
+import PageHeading from "@/components/layout/PageHeading";
 import Link from "next/link";
 import type {
   LeaderboardEntry,
   MatchJson,
   MatchPageV2Response,
   UserSignupsResponse,
-} from "@src/types/api";
-import { useSeason } from "@src/context/SeasonContext";
-import { useUser } from "@src/context/UserContext";
-import { toCollegeName, toCollegeAbbreviation, currentYear, getPlace, matchDate } from "@src/utils/helpers";
-import GameCard, { getMatchStatus } from "@src/components/Games/GameCard";
-import DateScroller from "@src/components/Games/DateScroller";
-import GamesFilterBar from "@src/components/Games/GamesFilterBar";
+} from "@/types/api";
+import { useSeason } from "@/context/SeasonContext";
+import { useUser } from "@/context/UserContext";
+import { toCollegeName, toCollegeAbbreviation, currentYear, getPlace, matchDate } from "@/utils/helpers";
+import GameCard, { getMatchStatus } from "@/components/games/GameCard";
+import DateScroller from "@/components/games/DateScroller";
+import GamesFilterBar from "@/components/games/GamesFilterBar";
 import { FaCalendarAlt, FaCalendarDay } from "react-icons/fa";
 import { MdSportsScore, MdSchedule, MdErrorOutline } from "react-icons/md";
 import { BsCollection } from "react-icons/bs";
-import GlassDropdown from "@src/components/ui/GlassDropdown";
+import GlassDropdown from "@/components/ui/GlassDropdown";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type Tab = "all" | "upcoming" | "scored" | "unscored";

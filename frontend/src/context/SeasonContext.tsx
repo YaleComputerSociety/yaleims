@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import type { SeasonsResponse } from "@src/types/api";
+import type { SeasonsResponse } from "@/types/api";
 
 interface SeasonContextType {
   currentSeason: SeasonsResponse["current"] | null;

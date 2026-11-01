@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import LoadingScreen from "@src/components/LoadingScreen";
-import Filters from "@src/components/Schedule/Filter";
-import ListView from "@src/components/Schedule/ListView";
-import Calendar from "@src/components/Schedule/Calendar";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import Filters from "@/components/schedules/Filter";
+import ListView from "@/components/schedules/ListView";
+import Calendar from "@/components/schedules/Calendar";
 import { FaSpinner } from "react-icons/fa";
-import { toCollegeAbbreviation, toCollegeName } from "@src/utils/helpers";
-import PageHeading from "@src/components/PageHeading";
-import { useSeason } from "@src/context/SeasonContext";
-import { useUser } from "@src/context/UserContext";
-import SignInPrompt from "@src/components/SignInPrompt";
-import type { MatchJson, MatchPageResponse } from "@src/types/api";
-import Pagination from "@src/components/Scores/Pagination";
+import { toCollegeAbbreviation, toCollegeName } from "@/utils/helpers";
+import PageHeading from "@/components/layout/PageHeading";
+import { useSeason } from "@/context/SeasonContext";
+import { useUser } from "@/context/UserContext";
+import SignInPrompt from "@/components/layout/SignInPrompt";
+import type { MatchJson, MatchPageResponse } from "@/types/api";
+import Pagination from "@/components/ui/Pagination";
 import { toast } from "react-toastify";
 
 const PAGE_SIZE = "10";

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { paths } from "@/lib/paths";
-import { useSeason } from "@src/context/SeasonContext";
-import type { SeasonDoc } from "@src/types/firestore";
+import { useSeason } from "@/context/SeasonContext";
+import type { SeasonDoc } from "@/types/firestore";
 
 export interface ChampionshipState {
   winningCollegeId: string | null;

@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@src/context/UserContext";
+import { useUser } from "@/context/UserContext";
 import Image from "next/image";
-import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
-import type { CollegeMatchJson } from "@src/types/api";
-import type { MatchParticipant } from "@src/types/legacy";
-import LoadingScreen from "@src/components/LoadingScreen";
-import ListView from "@src/components/Profile/ListView";
+import { toCollegeAbbreviation } from "@/utils/helpers"; // Ensure this import is correct
+import type { CollegeMatchJson } from "@/types/api";
+import type { MatchParticipant } from "@/types/legacy";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import ListView from "@/components/profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/utils/versionedImages";
-import SignInPrompt from "@src/components/SignInPrompt";
+import SignInPrompt from "@/components/layout/SignInPrompt";
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();

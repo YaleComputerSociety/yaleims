@@ -1,7 +1,7 @@
 import { actorOf } from "@/server/data/auditLog";
 import { getCurrentSeasonId, setChampionship } from "@/server/data/seasons";
 import { getSession, hasAnyRole } from "@/server/session";
-import { isValidCollegeAbbrev } from "@src/utils/helpers";
+import { isValidCollegeAbbrev } from "@/utils/helpers";
 
 export async function POST(req: Request) {
   try {

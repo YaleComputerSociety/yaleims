@@ -1,10 +1,10 @@
 "use client";
 
-import PageHeading from "@src/components/PageHeading";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import PageHeading from "@/components/layout/PageHeading";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import React, { useState, useEffect, useMemo } from "react";
-import { colleges, sports } from "@src/utils/helpers";
-import type { UserDoc, WithId } from "@src/types/legacy";
+import { colleges, sports } from "@/utils/helpers";
+import type { UserDoc, WithId } from "@/types/legacy";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "captain", "college_rep", "user"];

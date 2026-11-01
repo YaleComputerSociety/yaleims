@@ -1,4 +1,4 @@
-import { getYearFromTimestamp } from "@src/utils/helpers";
+import { getYearFromTimestamp } from "@/utils/helpers";
 import { actorOf } from "@/server/data/auditLog";
 import { editMatch, type EditResult, type MatchEdit } from "@/server/services/schedule";
 import { getSession, hasAnyRole } from "@/server/session";

@@ -1,8 +1,8 @@
 "use client";
 
-import AAHomeComponent from "@src/components/Home/AAHomeComponent";
-// import LoadingScreen from "@src/components/LoadingScreen";
-// import { useUser } from "@src/context/UserContext";
+import AAHomeComponent from "@/components/home/AAHomeComponent";
+// import LoadingScreen from "@/components/layout/LoadingScreen";
+// import { useUser } from "@/context/UserContext";
 
 const HomePage: React.FC = () => {
   // const { user, loading } = useUser();

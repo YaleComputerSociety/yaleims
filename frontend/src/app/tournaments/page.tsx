@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useLegacyBracket } from "@src/utils/useLegacyBracket";
-import { currentYear } from "@src/utils/helpers";
-import GlassDropdown from "@src/components/ui/GlassDropdown";
-import BracketCell from "@src/components/Brackets/BracketCell";
-import PlacementPanel from "@src/components/Tournaments/PlacementPanel";
-import { useSeason } from "@src/context/SeasonContext";
-import LoadingScreen from "@src/components/LoadingScreen";
-import { useNavbar } from "@src/context/NavbarContext";
-import PageHeading from "@src/components/PageHeading";
+import { useLegacyBracket } from "@/utils/useLegacyBracket";
+import { currentYear } from "@/utils/helpers";
+import GlassDropdown from "@/components/ui/GlassDropdown";
+import BracketCell from "@/components/brackets/BracketCell";
+import PlacementPanel from "@/components/brackets/PlacementPanel";
+import { useSeason } from "@/context/SeasonContext";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import { useNavbar } from "@/context/NavbarContext";
+import PageHeading from "@/components/layout/PageHeading";
 import { getVersionedImage } from "@/utils/versionedImages";
-import useElementHeight from "@src/hooks/useElementHeight";
-import type { TournamentJson, TournamentSlotJson, TournamentsResponse } from "@src/types/api";
+import useElementHeight from "@/hooks/useElementHeight";
+import type { TournamentJson, TournamentSlotJson, TournamentsResponse } from "@/types/api";
 import BracketConnectorSvg, {
   TOURNAMENT_EDGES,
   useBracketConnectors,
   buildTeamConnections,
-} from "@src/components/Brackets/bracketConnectors";
+} from "@/components/brackets/bracketConnectors";
 
 // Tournaments reuse the 14-team playoff shape, so slot n lives at index n - 1.
 const LEFT_PLAYOFF_INDICES = [0, 1, 2, 3];

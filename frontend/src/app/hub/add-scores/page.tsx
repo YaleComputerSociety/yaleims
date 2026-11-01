@@ -1,17 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { UnscoredMatch, UnscoredMatchesResponse } from "@src/types/api";
-import MatchCard from "@src/components/AddScores/MatchCard";
-import LoadingScreen from "@src/components/LoadingScreen";
-import { useSeason } from "@src/context/SeasonContext";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
-import { currentYear, emojiMap, toCollegeName } from "@src/utils/helpers";
-import UndoScoreMatchModal from "@src/components/AddScores/UndoScoreMatchModal";
-import PageHeading from "@src/components/PageHeading";
+import type { UnscoredMatch, UnscoredMatchesResponse } from "@/types/api";
+import MatchCard from "@/components/hub/admin/MatchCard";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import { useSeason } from "@/context/SeasonContext";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
+import { currentYear, emojiMap, toCollegeName } from "@/utils/helpers";
+import UndoScoreMatchModal from "@/components/hub/admin/UndoScoreMatchModal";
+import PageHeading from "@/components/layout/PageHeading";
 import AddScoresFilterBar, {
   AddScoresSortOrder,
-} from "@src/components/AddScores/AddScoresFilterBar";
+} from "@/components/hub/admin/AddScoresFilterBar";
 
 const matchTime = (match: UnscoredMatch) =>
   match.timestamp._seconds * 1000 + match.timestamp._nanoseconds / 1000000;

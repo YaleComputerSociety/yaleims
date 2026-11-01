@@ -1,6 +1,6 @@
 // Helper to parse and validate bracket CSV for BracketCreateModal
-import { ParsedMatch } from "@src/types/components";
-import type { SessionUser } from "@src/types/api";
+import { ParsedMatch } from "@/types/components";
+import type { SessionUser } from "@/types/api";
 
 /**
  * Parses and validates a bracket CSV file for the bracket creation modal.
@@ -137,8 +137,8 @@ type SportMap = Record<string, number>;
 type EmojiMap = Record<string, string>;
 type SeasonSportsMap = { [x: string]: string[] };
 
-import type { MatchJson } from "@src/types/api";
-import { BracketForm, Sport } from "@src/types/components";
+import type { MatchJson } from "@/types/api";
+import { BracketForm, Sport } from "@/types/components";
 import { toast } from "react-toastify";
 
 export const colleges = [

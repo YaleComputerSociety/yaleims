@@ -1,8 +1,8 @@
 "use client";
 
-import Dropdown from "@src/components/Faq/Dropdown";
+import Dropdown from "@/components/faq/Dropdown";
 import Link from "next/link";
-import PageHeading from "@src/components/PageHeading";
+import PageHeading from "@/components/layout/PageHeading";
 
 
 export default function Faq() {

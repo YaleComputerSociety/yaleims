@@ -10,8 +10,8 @@ import {
   toLegacySlots,
 } from "@/lib/legacyMatch";
 import { paths } from "@/lib/paths";
-import type { BracketDoc, MatchDoc, SportDoc } from "@src/types/firestore";
-import type { BracketEntry, MatchDoc as LegacyMatch } from "@src/types/legacy";
+import type { BracketDoc, MatchDoc, SportDoc } from "@/types/firestore";
+import type { BracketEntry, MatchDoc as LegacyMatch } from "@/types/legacy";
 
 export interface LegacyBracket {
   /** The slots by slot number, or null while loading / when there is none. */

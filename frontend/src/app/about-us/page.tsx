@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useEffect } from "react";
-import PersonCard from "@src/app/About/PersonCard";
+import PersonCard from "@/components/about/PersonCard";
 import Link from "next/link";
-import PageHeading from "@src/components/PageHeading";
+import PageHeading from "@/components/layout/PageHeading";
 import { getDevImage } from "@/utils/versionedImages";
 
 const AboutUsPage: React.FC = () => {

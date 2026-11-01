@@ -1,22 +1,22 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { currentYear, sports } from "@src/utils/helpers";
-import GlassDropdown from "@src/components/ui/GlassDropdown";
+import { currentYear, sports } from "@/utils/helpers";
+import GlassDropdown from "@/components/ui/GlassDropdown";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
-import { useLegacyBracket } from "@src/utils/useLegacyBracket";
+import { useLegacyBracket } from "@/utils/useLegacyBracket";
 import { useRef } from "react";
-import BracketCell from "@src/components/Brackets/BracketCell";
-import { useSeason } from "@src/context/SeasonContext";
-import LoadingScreen from "@src/components/LoadingScreen";
-import { useNavbar } from "@src/context/NavbarContext";
-import PageHeading from "@src/components/PageHeading";
+import BracketCell from "@/components/brackets/BracketCell";
+import { useSeason } from "@/context/SeasonContext";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import { useNavbar } from "@/context/NavbarContext";
+import PageHeading from "@/components/layout/PageHeading";
 import { getVersionedImage } from "@/utils/versionedImages";
-import useElementHeight from "@src/hooks/useElementHeight";
+import useElementHeight from "@/hooks/useElementHeight";
 import BracketConnectorSvg, {
   WINNER_EDGES,
   useBracketConnectors,
   buildTeamConnections,
-} from "@src/components/Brackets/bracketConnectors";
+} from "@/components/brackets/bracketConnectors";
 
 // mapping index in bracket array to the type of location of the match in the bracket
 const leftPlayoffIndices = [0, 1, 2, 3];
