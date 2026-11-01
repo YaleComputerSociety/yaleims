@@ -1,105 +1,89 @@
-// Season rollover, step 0: create colleges/seasons/{seasonId}/{abbr} docs.
+// Season rollover (schema v3): creates a season and copies over what carries
+// from the previous one.
 //
 // Usage:
-//   node start_new_season.js 2027-2028 [--update-season-metadata] [--prod]
+//   node start_new_season.js 2027-2028 [--make-current] [--prod]
 //
-// Only creates docs that don't exist yet: re-running never resets a college's
-// points. --update-season-metadata also points seasons/current at the new
-// season and adds the previous one to seasons/past.years.
-import { db } from "./firebaseAdmin.js";
-
-const colleges = [
-  { abbreviation: "BF", name: "Benjamin Franklin" },
-  { abbreviation: "BK", name: "Berkeley" },
-  { abbreviation: "BR", name: "Branford" },
-  { abbreviation: "DC", name: "Davenport" },
-  { abbreviation: "ES", name: "Ezra Stiles" },
-  { abbreviation: "GH", name: "Grace Hopper" },
-  { abbreviation: "JE", name: "Jonathan Edwards" },
-  { abbreviation: "MC", name: "Morse" },
-  { abbreviation: "MY", name: "Pauli Murray" },
-  { abbreviation: "PC", name: "Pierson" },
-  { abbreviation: "SM", name: "Silliman" },
-  { abbreviation: "SY", name: "Saybrook" },
-  { abbreviation: "TC", name: "Trumbull" },
-  { abbreviation: "TD", name: "Timothy Dwight" },
-];
+// Creates, and never overwrites (a re-run skips what exists):
+//   seasons/{seasonId}                 term "fall", no champion
+//   seasons/{seasonId}/colleges/{id}   the previous season's colleges, standings at 0
+//   seasons/{seasonId}/sports/{id}     the previous season's lineup, as it was
+// --make-current also points config/app.currentSeasonId at the new season.
+// The rollover is recorded in the new season's audit log (D32). Players join
+// the season on their first login; captains and roles are set again in the
+// app. Firestore indexes are global (firestore.indexes.json): nothing to add.
+import { db, FieldValue } from "./firebaseAdmin.js";
 
 const seasonId = process.argv[2];
 if (!/^\d{4}-\d{4}$/.test(seasonId || "")) {
-  console.error("Usage: node start_new_season.js <YYYY-YYYY> [--update-season-metadata] [--prod]");
+  console.error("Usage: node start_new_season.js <YYYY-YYYY> [--make-current] [--prod]");
   process.exit(1);
 }
-const updateSeasonMetadata = process.argv.includes("--update-season-metadata");
+const makeCurrent = process.argv.includes("--make-current");
 const startYear = Number(seasonId.slice(0, 4));
-const previousSeason = `${startYear - 1}-${startYear}`;
 
-function formatToday() {
-  const d = new Date();
-  return `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
-}
+/** Today in Eastern time, "yyyy-mm-dd" (as frontend/src/lib/dates.ts). */
+const easternToday = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+}).format(new Date());
 
-async function createSeasonDocs() {
-  const today = formatToday();
-  const seasonCol = db.collection("colleges").doc("seasons").collection(seasonId);
+async function main() {
+  // The previous season: the latest one that started before this one.
+  const seasons = await db.collection("seasons").orderBy("startYear").get();
+  const previous = seasons.docs.filter((d) => d.data().startYear < startYear).pop();
+  if (!previous) throw new Error(`No season before ${seasonId} to copy colleges and sports from`);
+  console.log(`Copying colleges and sports from ${previous.id}`);
 
-  for (const c of colleges) {
-    const ref = seasonCol.doc(c.abbreviation);
-    try {
-      await ref.create({
-        abbreviation: c.abbreviation,
-        name: c.name,
-        today,
-        points: 0,
-        games: 0,
-        wins: 0,
-        losses: 0,
-        ties: 0,
-        forfeits: 0,
-        rank: 0,
-        prevRank: 0,
-      });
-      console.log(`Created ${seasonId} season doc for ${c.abbreviation}`);
-    } catch (err) {
-      if (err.code !== 6) throw err; // 6 = ALREADY_EXISTS
-      console.log(`Skip (already exists): ${c.abbreviation}`);
+  const [colleges, sports] = await Promise.all([
+    db.collection(`seasons/${previous.id}/colleges`).get(),
+    db.collection(`seasons/${previous.id}/sports`).get(),
+  ]);
+  const docs = [
+    [`seasons/${seasonId}`, {
+      label: seasonId,
+      startYear,
+      currentTerm: "fall",
+      championCollegeId: null,
+      celebrationActive: false,
+      championshipUpdatedAt: null,
+    }],
+    ...colleges.docs.map((c) => [`seasons/${seasonId}/colleges/${c.id}`, {
+      name: c.data().name,
+      abbreviation: c.data().abbreviation,
+      points: 0, games: 0, wins: 0, losses: 0, ties: 0, forfeits: 0,
+      rank: 0, prevRank: 0, rankDate: easternToday,
+    }]),
+    ...sports.docs.map((s) => [`seasons/${seasonId}/sports/${s.id}`, s.data()]),
+  ];
+
+  const created = await db.runTransaction(async (tx) => {
+    const existing = await tx.getAll(...docs.map(([path]) => db.doc(path)));
+    const missing = docs.filter((_, i) => !existing[i].exists);
+    for (const [path, data] of missing) tx.create(db.doc(path), data);
+    if (makeCurrent) {
+      tx.set(db.doc("config/app"), { currentSeasonId: seasonId }, { merge: true });
     }
-  }
+    if (missing.length > 0 || makeCurrent) {
+      tx.create(db.collection(`seasons/${seasonId}/auditLog`).doc(), {
+        at: FieldValue.serverTimestamp(),
+        actor: { userId: "script:start_new_season", roles: [] },
+        action: "startNewSeason",
+        params: { seasonId, from: previous.id, makeCurrent },
+        targets: [...missing.map(([path]) => path), ...(makeCurrent ? ["config/app"] : [])],
+        before: Object.fromEntries(missing.map(([path]) => [path, null])),
+      });
+    }
+    return missing.map(([path]) => path);
+  });
 
-  if (updateSeasonMetadata) {
-    await db.collection("seasons").doc("current").set(
-      {
-        year: seasonId,
-        season: "fall",
-        winningCollegeId: null,
-        celebrationActive: false,
-      },
-      { merge: true },
-    );
-    console.log(`Updated seasons/current -> ${seasonId}`);
-
-    const pastRef = db.collection("seasons").doc("past");
-    const pastSnap = await pastRef.get();
-    const existingYears = pastSnap.exists
-      ? (pastSnap.data().years || []).filter((y) => typeof y === "string")
-      : [];
-    const years = Array.from(new Set([...existingYears, previousSeason]));
-    await pastRef.set({ years }, { merge: true });
-    console.log(`Updated seasons/past.years -> ${years.join(", ")}`);
-  }
-
-  console.log(`Done seeding colleges/seasons/${seasonId}.`);
-  console.log(
-    `\nRemaining rollover step for ${seasonId}:\n` +
-      `  ./create_season_indexes.sh ${seasonId}\n` +
-      `     Firestore composite indexes are per collection id, so the new season has none.\n` +
-      `     Without them the upcoming-matches queries fail and the schedules and signup pages break.\n` +
-      `  (Users' seasons/${seasonId} docs are created on their first game sign-up.)\n` +
-      `  (Elo is sidelined, so there is no Elo step; see sidelined/elo/README.md.)`,
-  );
+  console.log(`Created ${created.length} of ${docs.length} docs (the rest existed).`);
+  if (makeCurrent) console.log(`config/app.currentSeasonId -> ${seasonId}`);
 }
 
-createSeasonDocs().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().then(
+  () => process.exit(0),
+  (err) => {
+    console.error(err);
+    process.exit(1);
+  },
+);
