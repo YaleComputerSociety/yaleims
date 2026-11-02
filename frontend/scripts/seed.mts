@@ -15,7 +15,9 @@
 //   npm run dev:token -- dev@example.edu   (a session cookie to sign in as someone)
 //
 // Refuses to run unless FIRESTORE_EMULATOR_HOST is set: it can never write to
-// production. Deterministic apart from the dates (seeded random numbers).
+// production. Deterministic apart from the dates and the auto ids (seeded
+// random numbers, handed out to games in a fixed order).
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import type { BracketSlotInput } from "@/lib/api/brackets";
 import type { Actor } from "@/server/data/auditLog";
 import type { MatchDoc, PlayerDoc, RosterEntryDoc, SeasonRole, SportDoc, Term, UserDoc } from "@/types/firestore";
@@ -210,12 +212,32 @@ function randomResult(sportName: string) {
   return { homeScore: Math.max(a, b) + 1, awayScore: Math.min(a, b), homeForfeit: false, awayForfeit: false };
 }
 
+/**
+ * Games in a fixed order: by start, then sport, home college, bracket and
+ * slot. A query's own order isn't fixed: games at the same time are ordered
+ * by their auto ids, which are new on every load (and the random results are
+ * handed out in this order).
+ */
+function inFixedOrder(docs: QueryDocumentSnapshot[]): QueryDocumentSnapshot[] {
+  const game = (doc: QueryDocumentSnapshot) => doc.data() as MatchDoc;
+  return [...docs].sort((a, b) => {
+    const [x, y] = [game(a), game(b)];
+    return (
+      x.startsAt.toMillis() - y.startsAt.toMillis() ||
+      x.sportId.localeCompare(y.sportId) ||
+      (x.homeCollegeId ?? "").localeCompare(y.homeCollegeId ?? "") ||
+      (x.bracketId ?? "").localeCompare(y.bracketId ?? "") ||
+      (x.bracketSlot ?? 0) - (y.bracketSlot ?? 0)
+    );
+  });
+}
+
 /** Scores the season's regular games that have been played, through the scoring service (standings, ranks). */
 async function scorePlayed(seasonId: string, sportNames: Map<string, string>): Promise<number> {
-  const games = await adminDb.collection(paths.matches(seasonId))
-    .where("status", "==", "scheduled").where("startsAt", "<", new Date()).orderBy("startsAt", "asc").get();
+  const games = inFixedOrder((await adminDb.collection(paths.matches(seasonId))
+    .where("status", "==", "scheduled").where("startsAt", "<", new Date()).orderBy("startsAt", "asc").get()).docs);
   // This season's four most recent games wait for their scores (the "add scores" page).
-  const toScore = seasonId === CURRENT ? games.docs.slice(0, -4) : games.docs;
+  const toScore = seasonId === CURRENT ? games.slice(0, -4) : games;
   let scored = 0;
   for (const g of toScore) {
     const game = g.data() as MatchDoc;
@@ -266,7 +288,7 @@ async function bracket(seasonId: string, kind: "playoffs" | "tournament", name: 
   // a semifinal's loser) on, so later rounds fill in as earlier ones finish.
   for (let round = 0; round < 4; round++) {
     const games = await adminDb.collection(paths.matches(seasonId)).where("bracketId", "==", bracketIdOf(name)).get();
-    for (const g of games.docs) {
+    for (const g of inFixedOrder(games.docs)) {
       const game = g.data() as MatchDoc;
       if (game.status !== "scheduled" || !game.homeCollegeId || !game.awayCollegeId) continue;
       const home = 5 + Math.floor(random() * 10);
@@ -285,7 +307,7 @@ async function activity(seasonSports: (SportDoc & { id: string })[]): Promise<vo
       if (r !== "ok") throw new Error(`captain: ${r}`);
     }
   }
-  const games = (await adminDb.collection(paths.matches(CURRENT)).where("stage", "==", "regular").orderBy("startsAt").get()).docs;
+  const games = inFixedOrder((await adminDb.collection(paths.matches(CURRENT)).where("stage", "==", "regular").orderBy("startsAt").get()).docs);
   const upcoming = games.filter((g) => (g.data() as MatchDoc).startsAt.toMillis() > Date.now()).slice(0, 12);
   const played = games.filter((g) => (g.data() as MatchDoc).status === "final").slice(-12);
   // Upcoming games: a few players of each side signed up (through the sign-up service).
