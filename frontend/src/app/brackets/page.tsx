@@ -30,10 +30,9 @@ const finalIndex = 14;
 const BracketsPage: React.FC = () => {
   const { collapsed } = useNavbar();
   const [isMobile, setIsMobile] = useState(false);
-  const { currentSeason, pastSeasons, seasonLoading } = useSeason();
-  const pastYears = pastSeasons?.years || [];
+  const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
   const [sport, setSport] = useState<string>("");
-  const [season, setSeason] = useState<string>(currentSeason?.year || currentYear);
+  const [season, setSeason] = useState<string>(currentSeason?.id || currentYear);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
   // console.log("Hovered Team:", hoveredTeam);
 
@@ -146,12 +145,12 @@ const BracketsPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-blue-400 dark:text-gray-500 uppercase tracking-wide">Year</span>
             <GlassDropdown
-              placeholder={currentSeason?.year || currentYear}
+              placeholder={currentSeason?.id || currentYear}
               value={season}
               options={[
-                { value: currentSeason?.year || currentYear, label: `${currentSeason?.year || currentYear} (Current)` },
-                ...pastYears
-                  .filter((y: string) => y !== (currentSeason?.year || currentYear))
+                { value: currentSeason?.id || currentYear, label: `${currentSeason?.id || currentYear} (Current)` },
+                ...pastSeasonIds
+                  .filter((y: string) => y !== (currentSeason?.id || currentYear))
                   .map((y: string) => ({ value: y, label: y })),
               ]}
               onChange={handleSeasonChange}

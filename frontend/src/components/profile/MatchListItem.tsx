@@ -22,7 +22,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
   const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
   const { currentSeason } = useSeason();
-  const seasonId = currentSeason ? currentSeason.year : currentYear;
+  const seasonId = currentSeason ? currentSeason.id : currentYear;
   const participantType =
     user && toCollegeName[user.college] === toCollegeName[match.home_college]
       ? "home_college_participants"

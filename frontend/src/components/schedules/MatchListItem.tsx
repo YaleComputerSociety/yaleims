@@ -47,7 +47,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
   const isAdmin = userIsAdminOrDev(user);
 
-  const currentSeasonId = currentSeason ? currentSeason.year : currentYear;
+  const currentSeasonId = currentSeason ? currentSeason.id : currentYear;
 
   // Check if match is in the past
   const isPastMatch = match.timestamp

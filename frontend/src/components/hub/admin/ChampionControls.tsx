@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { colleges } from "@/utils/helpers";
-import { useChampionship } from "@/utils/useChampionship";
+import { useChampionship } from "@/hooks/useChampionship";
 import { getCollegeFlag } from "@/utils/versionedImages";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
@@ -17,9 +17,9 @@ const ChampionControls: React.FC = () => {
   // Follow the stored banner (live), including saves from elsewhere.
   useEffect(() => {
     if (!stored.loaded) return;
-    setWinningCollegeId(stored.winningCollegeId ?? "");
+    setWinningCollegeId(stored.championCollegeId ?? "");
     setCelebrationActive(stored.celebrationActive);
-  }, [stored.loaded, stored.winningCollegeId, stored.celebrationActive]);
+  }, [stored.loaded, stored.championCollegeId, stored.celebrationActive]);
 
   const save = async (next: { winningCollegeId: string; celebrationActive: boolean }) => {
     if (next.celebrationActive && !next.winningCollegeId) {

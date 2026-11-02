@@ -92,9 +92,8 @@ function seasonEndDate(seasonYear: string, isCurrent: boolean): Date {
 // ─── page ─────────────────────────────────────────────────────────────────────
 const GamesPage: React.FC = () => {
   const searchParams = useSearchParams();
-  const { currentSeason, pastSeasons } = useSeason();
-  const defaultSeasonYear = currentSeason?.year ?? currentYear;
-  const pastYears: string[] = pastSeasons?.years || [];
+  const { currentSeason, pastSeasonIds } = useSeason();
+  const defaultSeasonYear = currentSeason?.id ?? currentYear;
 
   // ── season selector ──────────────────────────────────────────────────────────
   const [selectedSeason, setSelectedSeason] = useState<string>(defaultSeasonYear);
@@ -544,7 +543,7 @@ const GamesPage: React.FC = () => {
               value={selectedSeason}
               options={[
                 { value: defaultSeasonYear, label: `${defaultSeasonYear} (Current)` },
-                ...pastYears
+                ...pastSeasonIds
                   .filter((y) => y !== defaultSeasonYear)
                   .map((y) => ({ value: y, label: y })),
               ]}

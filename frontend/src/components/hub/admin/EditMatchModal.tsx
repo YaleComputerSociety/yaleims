@@ -71,7 +71,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({
   const { currentSeason, seasonLoading } = useSeason();
   const year =
     (match && getYearFromTimestamp(match?.timestamp)) ||
-    currentSeason?.year ||
+    currentSeason?.id ||
     currentYear;
 
   const matchId = match?.id || null;

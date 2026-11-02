@@ -3,9 +3,7 @@
 import React, { useState, useMemo } from "react";
 import PageHeading from "@/components/layout/PageHeading";
 import RankingsTable, { RankingEntry } from "@/components/rankings/RankingsTable";
-import { useSeason } from "@/context/SeasonContext";
-import { currentYear, emojiMap } from "@/utils/helpers";
-import { sports } from "@/utils/helpers";
+import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -17,22 +15,10 @@ interface TabConfig {
   label: string;
 }
 
-interface SportTabConfig {
-  id: SportTab;
-  label: string;
-  emoji: string;
-}
-
 const MAIN_TABS: TabConfig[] = [
   { id: "overall", label: "Overall Rankings" },
   { id: "per-sport", label: "Per Sport Rankings" },
 ];
-
-const SPORT_TABS: SportTabConfig[] = sports.map((sport) => ({
-  id: sport.name,
-  label: sport.name,
-  emoji: emojiMap[sport.name] || sport.emoji,
-}));
 
 // ─── test data ────────────────────────────────────────────────────────────────
 const COLLEGES = [
@@ -94,14 +80,16 @@ const generateSportRankings = (sport: SportTab): RankingEntry[] => {
 
 // ─── component ─────────────────────────────────────────────────────────────────
 const RankingsPage: React.FC = () => {
-  const { currentSeason, pastSeasons } = useSeason();
-  const defaultSeasonYear = currentSeason?.year ?? currentYear;
-  const pastYears: string[] = pastSeasons?.years || [];
-  const allSeasons = [defaultSeasonYear, ...pastYears];
-
-  const [selectedSeason, setSelectedSeason] = useState<string>(defaultSeasonYear);
+  const { currentSeason, pastSeasonIds } = useSeason();
+  const defaultSeasonYear = currentSeason?.id ?? "";
+  // The current season until one is picked.
+  const [pickedSeason, setSelectedSeason] = useState<string | null>(null);
+  const selectedSeason = pickedSeason ?? defaultSeasonYear;
   const [mainTab, setMainTab] = useState<MainTab>("overall");
-  const [sportTab, setSportTab] = useState<SportTab>(sports[0]?.name || "Flag Football");
+  // The selected season's sports; the first until one is picked.
+  const sports = useSeasonDetail(selectedSeason || null)?.sports ?? [];
+  const [pickedSport, setSportTab] = useState<SportTab | null>(null);
+  const sportTab = pickedSport ?? sports[0]?.name ?? "";
 
   const overallRankings = useMemo(() => generateOverallRankings(), []);
   const sportRankings = useMemo(
@@ -111,7 +99,7 @@ const RankingsPage: React.FC = () => {
 
   const seasonOptions = [
     { value: defaultSeasonYear, label: `${defaultSeasonYear} (Current)` },
-    ...pastYears
+    ...pastSeasonIds
       .filter((y) => y !== defaultSeasonYear)
       .map((y) => ({ value: y, label: y })),
   ];
@@ -172,9 +160,9 @@ const RankingsPage: React.FC = () => {
               <GlassDropdown
                 placeholder="Select a sport"
                 value={sportTab}
-                options={SPORT_TABS.map((tab) => ({ 
-                  value: tab.id, 
-                  label: `${tab.emoji} ${tab.label}` 
+                options={sports.map((sport) => ({
+                  value: sport.name,
+                  label: `${sport.emoji} ${sport.name}`,
                 }))}
                 onChange={setSportTab}
                 allowReset={false}

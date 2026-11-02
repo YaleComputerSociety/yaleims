@@ -16,7 +16,7 @@ function formatReportDate(raw: { _seconds: number } | string): string {
 
 const ScoreReportsAdmin: React.FC = () => {
   const { currentSeason } = useSeason();
-  const season = currentSeason?.year ?? "";
+  const season = currentSeason?.id ?? "";
   const [reports, setReports] = useState<ScoreReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);

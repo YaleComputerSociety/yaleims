@@ -45,7 +45,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
         setLoading(true);
         const res = await fetch(
           `/api/functions/getUserMatches?seasonId=${
-            currentSeason?.year || currentYear
+            currentSeason?.id || currentYear
           }`,
           { signal: controller.signal }
         );
@@ -64,7 +64,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
 
     fetchMatches();
     return () => controller.abort();
-  }, [user, currentSeason?.year]);
+  }, [user, currentSeason?.id]);
 
   const uniqueMatches = useMemo<ScheduleMatch[]>(() => {
     const byId = new Map<MatchJson["id"], ScheduleMatch>();

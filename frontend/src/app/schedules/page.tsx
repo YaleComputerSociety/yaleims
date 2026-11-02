@@ -94,8 +94,8 @@ const SchedulePage: React.FC = () => {
         toast.error("Cannot signUp for past matches.");
         return;
       }
-        if (!currentSeason?.year) return;
-        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason.year}`);
+        if (!currentSeason?.id) return;
+        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason.id}`);
         if (response.status === 401) {
           setNeedsSignIn(true);
           return;

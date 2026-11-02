@@ -61,7 +61,7 @@ export default function AssignCaptain() {
     return map;
   }, [currentCaptains]);
 
-  const currentSports: string[] = currentSeason ? seasonSports[currentSeason.season] : [];
+  const currentSports: string[] = currentSeason ? seasonSports[currentSeason.currentTerm] : [];
   const totalAssignments = useMemo(
     () => currentCaptains.reduce((sum, c) => sum + (c.sportsCaptainOf?.length ?? 0), 0),
     [currentCaptains]
@@ -117,7 +117,7 @@ export default function AssignCaptain() {
     <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30">
       {currentCaptains.length === 0 ? (
         <div className="text-sm">
-          <span className="font-semibold">No captains set</span> for {currentSeason.season} yet. Assign captains below.
+          <span className="font-semibold">No captains set</span> for {currentSeason.currentTerm} yet. Assign captains below.
         </div>
       ) : (
         <div className="text-sm">

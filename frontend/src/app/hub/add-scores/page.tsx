@@ -29,7 +29,7 @@ const AddScoresPage: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<AddScoresSortOrder>("oldest");
   const [scoredIds, setScoredIds] = useState<Set<UnscoredMatch["id"]>>(new Set());
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.year || currentYear;
+  const year = currentSeason?.id || currentYear;
 
   useEffect(() => {
     const fetchMatches = async () => {

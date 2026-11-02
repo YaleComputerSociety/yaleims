@@ -33,7 +33,7 @@ const UndoScoreMatchModal: React.FC<UndoScoreMatchModalProps> = ({
   const { currentSeason, seasonLoading } = useSeason();
   const year =
     (match && getYearFromTimestamp(match?.timestamp)) ||
-    currentSeason?.year ||
+    currentSeason?.id ||
     currentYear;
 
   const handleUnscoreMatch = async () => {

@@ -13,7 +13,7 @@ type RepRow = { name: string; email: string };
 /** The user's college this season: its captains (from its teams) and its college reps, live. */
 export default function ViewCaptainsCollegeRep() {
   const { user } = useUser();
-  const seasonId = useSeason().currentSeason?.year;
+  const seasonId = useSeason().currentSeason?.id;
   const collegeId = user ? toCollegeAbbreviation[user.college] : undefined;
   const [view, setView] = useState<"captains" | "college_rep">("captains");
   const [captainRows, setCaptainRows] = useState<CaptainRow[] | null>(null);

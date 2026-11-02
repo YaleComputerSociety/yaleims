@@ -19,7 +19,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [scored, setScored] = useState<boolean>(false);
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.year || currentYear;
+  const year = currentSeason?.id || currentYear;
 
   const handleAwayCheckboxChange = () => {
     setAwayForfeit(!awayForfeit);

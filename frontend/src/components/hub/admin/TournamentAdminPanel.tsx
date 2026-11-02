@@ -82,7 +82,7 @@ const cellClass = "border border-gray-300 dark:border-gray-700 p-2";
 
 const TournamentAdminPanel: React.FC = () => {
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.year || currentYear;
+  const year = currentSeason?.id || currentYear;
 
   const [name, setName] = useState("");
   const [sport, setSport] = useState("");

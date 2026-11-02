@@ -25,7 +25,7 @@ const BracketInterface: React.FC<BracketInterfaceProps> = ({
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const [confirmingDelete, setConfirmingDelete] = useState<boolean>(false);
   const { currentSeason, seasonLoading } = useSeason();
-  const season = currentSeason?.year || currentYear;
+  const season = currentSeason?.id || currentYear;
 
   const handleCreateChange = (sport: string) => {
     setCreateSport(sport);

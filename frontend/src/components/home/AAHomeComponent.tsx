@@ -1,95 +1,46 @@
 "use client";
 
-import React, { useEffect, useState, useContext } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/LoadingScreen";
-import { FiltersContext } from "@/context/FiltersContext";
-import { currentYear, colleges } from "@/utils/helpers";
+import PageHeading from "@/components/layout/PageHeading";
+import { useSeason } from "@/context/SeasonContext";
+import { useChampionship } from "@/hooks/useChampionship";
+import { useStandings } from "@/hooks/useStandings";
+import { useConfettiEnabled } from "@/utils/preferences";
 import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";
 import AllTimePodiums from "./AllTimePodiums";
 import AllTimeLeaderboardTable from "./AllTimeLeaderboard";
-import { useSeason } from "@/context/SeasonContext";
-import PageHeading from "@/components/layout/PageHeading";
 import ChampionConfetti from "./ChampionConfetti";
-import { useConfettiEnabled } from "@/utils/preferences";
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  Unsubscribe,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
-import { useChampionship } from "@/utils/useChampionship";
-import type { CollegeDoc, WithId } from "@/types/firestore";
 
 // Site-wide announcement banner: set SHOW_BANNER and a message to use it.
 const SHOW_BANNER = false;
 const BANNER_MESSAGE = "";
 
+const ALL_TIME = "All Time";
+
+/** The home page: a season's standings (live), or the all-time table. */
 const AAHomeComponent: React.FC = () => {
   const router = useRouter();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [sortedColleges, setSortedColleges] = useState<WithId<CollegeDoc>[]>([]);
-  const { filter } = useContext(FiltersContext);
-  const { currentSeason } = useSeason();
-  const [selected, setSelected] = useState<string>(
-    filter.selected?.trim() !== ""
-      ? filter.selected
-      : currentSeason?.year || currentYear,
-  );
+  const { currentSeason, seasonLoading } = useSeason();
+  // The season picked in the title; the current one until then.
+  const [picked, setPicked] = useState<string | null>(null);
+  const selected = picked ?? currentSeason?.id ?? null;
+  const standings = useStandings(selected === ALL_TIME ? null : selected);
   const [bannerOpen, setBannerOpen] = useState(true);
   const championship = useChampionship();
   const confettiEnabled = useConfettiEnabled();
 
-  const winningCollege =
-    championship.celebrationActive && championship.winningCollegeId
-      ? colleges.find((c) => c.id === championship.winningCollegeId)
-      : undefined;
-
-  useEffect(() => {
-    let unsub: Unsubscribe | undefined;
-    if (!selected || selected === "All Time") {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    const q = query(
-      collection(db, paths.colleges(selected)),
-      orderBy("rank", "asc"),
-    );
-
-    unsub = onSnapshot(
-      q,
-      (snap) => {
-        const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as CollegeDoc) }));
-        rows.sort((a, b) => Number(a.rank) - Number(b.rank));
-        setSortedColleges(rows);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Leaderboard listener error:", err);
-        setLoading(false);
-      },
-    );
-
-    return () => unsub?.();
-  }, [selected]);
+  const championId =
+    championship.celebrationActive && championship.championCollegeId ? championship.championCollegeId : null;
 
   const handleCollegeClick = (collegeName: string) => {
     router.push(`/games?college=${encodeURIComponent(collegeName)}`);
   };
 
-  const handleSelectedChange = (filter: string) => {
-    setSelected(filter);
-  };
-
-  if (loading) {
+  if (seasonLoading || standings.loading || !selected) {
     return <LoadingScreen />;
   }
 
@@ -108,13 +59,9 @@ const AAHomeComponent: React.FC = () => {
           </button>
         </div>
       )}
-      {winningCollege && confettiEnabled && <ChampionConfetti />}
-      <Title
-        selected={selected}
-        lastUpdated={sortedColleges[0]?.rankDate ?? ""}
-        onFilterChange={handleSelectedChange}
-      />
-      {selected === "All Time" ? (
+      {championId && confettiEnabled && <ChampionConfetti />}
+      <Title selected={selected} onFilterChange={setPicked} />
+      {selected === ALL_TIME ? (
         <div>
           <AllTimePodiums />
           <AllTimeLeaderboardTable />
@@ -122,14 +69,11 @@ const AAHomeComponent: React.FC = () => {
       ) : (
         <div>
           <YearlyPodiums
-            colleges={sortedColleges.slice(0, 3)}
+            colleges={standings.colleges.slice(0, 3)}
             onCollegeClick={handleCollegeClick}
-            highlightCollegeId={winningCollege?.id ?? null}
+            highlightCollegeId={championId}
           />
-          <YearlyLeaderboardTable
-            colleges={sortedColleges}
-            onCollegeClick={handleCollegeClick}
-          />
+          <YearlyLeaderboardTable colleges={standings.colleges} onCollegeClick={handleCollegeClick} />
         </div>
       )}
     </div>

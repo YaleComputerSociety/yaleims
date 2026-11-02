@@ -1,10 +1,12 @@
 import React from "react";
 import CPodium from "./YearlyPodium";
 import { getVersionedImage, getCollegeFlag } from "@/utils/versionedImages";
+import type { CollegeDoc, WithId } from "@/types/firestore";
 
 interface YearlyPodiumsProps {
-  colleges: any;
-  onCollegeClick: any;
+  /** The top three, best first. */
+  colleges: WithId<CollegeDoc>[];
+  onCollegeClick: (collegeName: string) => void;
   highlightCollegeId?: string | null;
 }
 

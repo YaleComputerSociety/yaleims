@@ -120,7 +120,7 @@ const ScoresPage: React.FC = () => {
         const params = new URLSearchParams(getParams());
         const response = await fetch(
           `/api/functions/getMatches?${params}&seasonId=${
-            currentSeason?.year || currentYear
+            currentSeason?.id || currentYear
           }`
         );
         if (response.status === 401) {
@@ -154,7 +154,7 @@ const ScoresPage: React.FC = () => {
     if (filter.college && filter.college !== "All") {
       setCollegeIsLoading(true);
 
-      const q = doc(db, paths.college(currentSeason.year, filter.college));
+      const q = doc(db, paths.college(currentSeason.id, filter.college));
 
       unsub = onSnapshot(
         q,

@@ -32,7 +32,7 @@ const ViewTeamSignups = () => {
   const label = (p: any) =>
     typeof p === "string" ? p : p?.name ?? p?.email ?? p?.uid ?? JSON.stringify(p);
 
-  const seasonId = currentSeason?.year ?? ""; // gate on this being truthy
+  const seasonId = currentSeason?.id ?? ""; // gate on this being truthy
 
   const fetchSports = async () => {
     // Need a user email to look up captain sports

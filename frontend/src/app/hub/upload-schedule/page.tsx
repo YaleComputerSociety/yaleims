@@ -70,8 +70,7 @@ const splitCsvLine = (line: string): string[] => {
 };
 
 const UploadSchedulePage = () => {
-  const { currentSeason, pastSeasons, seasonLoading } = useSeason();
-  const pastYears = pastSeasons?.years || [];
+  const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
 
   const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState<string>("");
@@ -81,7 +80,7 @@ const UploadSchedulePage = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [season, setSeason] = useState<string>(
-    currentSeason?.year || currentYear
+    currentSeason?.id || currentYear
   );
   const [loading, setLoading] = useState(false);
 
@@ -372,11 +371,11 @@ const UploadSchedulePage = () => {
             value={season}
             onChange={(e) => handleSeasonChange(e.target.value)}
           >
-            <option value={currentSeason?.year || currentYear}>
-              {currentSeason?.year || currentYear}
+            <option value={currentSeason?.id || currentYear}>
+              {currentSeason?.id || currentYear}
             </option>
-            {pastYears
-              .filter((y: string) => y !== (currentSeason?.year || currentYear))
+            {pastSeasonIds
+              .filter((y: string) => y !== (currentSeason?.id || currentYear))
               .map((y: string) => (
                 <option key={y} value={y}>
                   {y}

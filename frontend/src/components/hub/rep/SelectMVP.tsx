@@ -55,7 +55,7 @@ export default function SelectMVP() {
     const fetchMvps = async () => {
       try {
         const res = await fetch(
-          `/api/functions/getMVPs?seasonId=${currentSeason.year}&collegeId=${user?.college}`,
+          `/api/functions/getMVPs?seasonId=${currentSeason.id}&collegeId=${user?.college}`,
         );
         if (!res.ok) throw new Error(res.statusText);
         setMvps(await res.json());
@@ -95,7 +95,7 @@ export default function SelectMVP() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          season: currentSeason.year,
+          season: currentSeason.id,
           residentialCollege: selectUser.college,
           weekId: weekId,
           mvpEmail: selectUser.email,

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { FaCaretDown } from "react-icons/fa";
 import { FaCaretUp } from "react-icons/fa";
 import { Crown } from "lucide-react";
+import type { CollegeDoc, WithId } from "@/types/firestore";
 
 type props = {
   imgSrc: string;
@@ -11,23 +12,10 @@ type props = {
   overlayHeight: number;
   overlayWidth: number;
   overlayConfig: string;
-  onSelect: Function;
+  onSelect: (collegeName: string) => void;
   posHeight: string;
   highlight?: boolean;
-  college: {
-    abbreviation: string;
-    forfeits: number;
-    games: number;
-    id: string;
-    losses: number;
-    name: string;
-    points: number;
-    prevRank: number;
-    rank: number;
-    ties: number;
-    today: string;
-    wins: number;
-  };
+  college: WithId<CollegeDoc>;
 };
 
 const CPodium: React.FC<props> = ({

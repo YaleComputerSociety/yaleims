@@ -269,7 +269,7 @@ const UserMatches = () => {
   const [matches, setMatches] = useState<UserMatchObjectsResponse>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { currentSeason } = useSeason();
-  const currentSeasonId = currentSeason ? currentSeason.year : currentYear;
+  const currentSeasonId = currentSeason ? currentSeason.id : currentYear;
 
   useEffect(() => {
     // Fetch user matches

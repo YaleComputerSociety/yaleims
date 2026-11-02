@@ -7,7 +7,7 @@ import { FaSignOutAlt } from "react-icons/fa";
 import { PiConfetti } from "react-icons/pi";
 import { useEffect, useRef, useState } from "react";
 import { useConfettiEnabled, setConfettiEnabled } from "@/utils/preferences";
-import { useChampionship } from "@/utils/useChampionship";
+import { useChampionship } from "@/hooks/useChampionship";
 
 
 const UserMenu: React.FC<{ name: string }> = ({ name }) => {
@@ -16,8 +16,8 @@ const UserMenu: React.FC<{ name: string }> = ({ name }) => {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const confettiEnabled = useConfettiEnabled();
-  const { winningCollegeId, celebrationActive } = useChampionship();
-  const celebrationLive = celebrationActive && !!winningCollegeId;
+  const { championCollegeId, celebrationActive } = useChampionship();
+  const celebrationLive = celebrationActive && !!championCollegeId;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

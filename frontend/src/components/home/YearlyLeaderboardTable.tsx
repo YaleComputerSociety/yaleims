@@ -2,21 +2,10 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaCaretDown, FaCaretUp } from "react-icons/fa";
 import { getCollegeFlag } from "@/utils/versionedImages";
-
-type College = {
-  id: string;
-  name: string;
-  points: number;
-  wins: number;
-  ties: number;
-  losses: number;
-  forfeits: number;
-  rank: number;
-  prevRank: number;
-};
+import type { CollegeDoc, WithId } from "@/types/firestore";
 
 type YearlyLeaderboardTableProps = {
-  colleges: College[];
+  colleges: WithId<CollegeDoc>[];
   onCollegeClick: (collegeName: string) => void;
 };
 

@@ -38,7 +38,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
     useState<ParsedMatch[]>(matchesInit);
   const [overrideValidation, setOverrideValidation] = useState(false);
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.year || currentYear;
+  const year = currentSeason?.id || currentYear;
 
   // Reset form when modal opens
   useEffect(() => {

@@ -18,7 +18,7 @@ export default function HeroStats() {
       try {
         setLoading(true);
         const response = await fetch(
-          `/api/functions/getUserStats?seasonId=${currentSeason?.year}&email=${user.email}`
+          `/api/functions/getUserStats?seasonId=${currentSeason?.id}&email=${user.email}`
         );
         if (!response.ok) throw new Error("Error fetching user stats");
         const data: UserStatsResponse = await response.json();
@@ -63,7 +63,7 @@ export default function HeroStats() {
             Welcome back, {user.name?.split(" ")[0] || "there"}! 👋
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
-            {user.college} • {currentSeason?.year} {currentSeason?.season ? currentSeason.season.charAt(0).toUpperCase() + currentSeason.season.slice(1) : ""} Season
+            {user.college} • {currentSeason?.id} {currentSeason?.currentTerm ? currentSeason.currentTerm.charAt(0).toUpperCase() + currentSeason.currentTerm.slice(1) : ""} Season
           </p>
         </div>
       </div>

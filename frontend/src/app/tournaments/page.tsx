@@ -44,11 +44,10 @@ const formatDate = (millis: number | null): string => {
 const TournamentsPage: React.FC = () => {
   const { collapsed } = useNavbar();
   const [isMobile, setIsMobile] = useState(false);
-  const { currentSeason, pastSeasons, seasonLoading } = useSeason();
-  const pastYears = pastSeasons?.years || [];
+  const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
 
   const [season, setSeason] = useState<string>(
-    currentSeason?.year || currentYear
+    currentSeason?.id || currentYear
   );
   const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -218,15 +217,15 @@ const TournamentsPage: React.FC = () => {
               Year
             </span>
             <GlassDropdown
-              placeholder={currentSeason?.year || currentYear}
+              placeholder={currentSeason?.id || currentYear}
               value={season}
               options={[
                 {
-                  value: currentSeason?.year || currentYear,
-                  label: `${currentSeason?.year || currentYear} (Current)`,
+                  value: currentSeason?.id || currentYear,
+                  label: `${currentSeason?.id || currentYear} (Current)`,
                 },
-                ...pastYears
-                  .filter((y: string) => y !== (currentSeason?.year || currentYear))
+                ...pastSeasonIds
+                  .filter((y: string) => y !== (currentSeason?.id || currentYear))
                   .map((y: string) => ({ value: y, label: y })),
               ]}
               onChange={setSeason}
