@@ -13,7 +13,8 @@
     "test:integration": "tsx scripts/test-integration.mts",
     "emulator": "npx -y firebase-tools@14 emulators:start --only firestore --config ../database/firebase.json --project yims-125a2",
     "seed": "tsx --conditions=react-server scripts/seed.mts",
-    "dev:token": "tsx scripts/dev-token.mts"
+    "dev:token": "tsx scripts/dev-token.mts",
+    "make-admin": "tsx scripts/make-admin.mts"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

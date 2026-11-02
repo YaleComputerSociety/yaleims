@@ -1,7 +1,7 @@
 import "server-only";
 import type { DocumentData, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
-import type { WithId } from "@/types/legacy";
+import type { WithId } from "@/types/firestore";
 
 /**
  * Runs `fn` in a Firestore transaction (retried on contention). For services

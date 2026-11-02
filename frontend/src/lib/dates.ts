@@ -1,6 +1,5 @@
 // The league's calendar: days are Eastern-time days (D34), whatever time zone
-// the code runs in (the server runs on UTC). No dependencies, so the
-// migration (database/migrate) uses it too.
+// the code runs in (the server runs on UTC).
 import type { EasternDate } from "../types/firestore";
 
 const easternDay = new Intl.DateTimeFormat("en-CA", {

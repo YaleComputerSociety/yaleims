@@ -1,7 +1,6 @@
 // The 14 residential colleges, and college names → ids. Yalies, old user docs
 // and old MVP paths name a college with or without " College" ("Morse",
-// "Morse College"); v3 refers to it by id (its abbreviation, "MC"). No
-// dependencies, so the migration (database/migrate) uses it too.
+// "Morse College"); v3 refers to it by id (its abbreviation, "MC").
 
 /** The residential colleges: id (abbreviation) and name, as every season stores them. */
 export const COLLEGES = [
