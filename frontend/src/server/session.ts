@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-export const SESSION_COOKIE = "token";
+const SESSION_COOKIE = "token";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 /**
@@ -20,7 +20,7 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
  * Production (https) also sets it Secure; `next dev` runs on
  * http://localhost, where Safari drops Secure cookies.
  */
-export const secureCookies = process.env.NODE_ENV === "production";
+const secureCookies = process.env.NODE_ENV === "production";
 
 function jwtSecret(): string {
   const secret = process.env.JWT_SECRET;

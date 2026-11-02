@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 import { fetchMyMatches } from "@/lib/api/me";
 import { collegeName } from "@/lib/colleges";
 

@@ -9,7 +9,7 @@ import { useSeason } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
-import { getVersionedImage } from "@/utils/versionedImages";
+import { getVersionedImage } from "@/lib/images";
 import useElementHeight from "@/hooks/useElementHeight";
 import { fetchBrackets, type Bracket } from "@/lib/api/brackets";
 import BracketConnectorSvg, {

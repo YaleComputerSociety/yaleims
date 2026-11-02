@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { allTimeStandings } from "@/utils/helpers";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { allTimeStandings } from "./allTimeStandings";
+import { getCollegeFlag } from "@/lib/images";
 
 const AllTimeLeaderboard: React.FC = () => {
   const [isSmallScreen, setIsSmallScreen] = useState(false);

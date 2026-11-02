@@ -9,7 +9,7 @@ import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
-import { getVersionedImage } from "@/utils/versionedImages";
+import { getVersionedImage } from "@/lib/images";
 import useElementHeight from "@/hooks/useElementHeight";
 import BracketConnectorSvg, {
   WINNER_EDGES,

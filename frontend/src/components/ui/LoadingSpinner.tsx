@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { getLoaderAnimation } from "@/utils/versionedImages";
+import { getLoaderAnimation } from "@/lib/images";
 
 const LoadingSpinner = () => {
   return (

@@ -6,7 +6,7 @@ import type { Match } from "@/lib/api/matches";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { matchTypeLabel, pointsEarned } from "@/lib/format";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 
 interface TableRowProps {
   match: Match;

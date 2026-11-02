@@ -1,18 +1,20 @@
-import { BracketForm, BracketModalProps, ParsedMatch } from "@/types/components";
 import React, { useState, useEffect, ChangeEvent } from "react";
-import {
-  collegeNamesList,
-  toCollegeAbbreviation,
-  toCollegeName,
-  validateBracketData,
-  parseBracketCSV,
-  toTimestamp,
-} from "@/utils/helpers";
+import { COLLEGES } from "@/lib/colleges";
+import { bracketErrors, parseBracketCSV, withTimestamps, type SlotRow } from "@/lib/csv/brackets";
 import { toast } from "react-toastify";
 import { useSeason } from "@/context/SeasonContext";
 import { FaSpinner } from "react-icons/fa";
 
-const matchesInit: ParsedMatch[] = Array.from({ length: 15 }, (_, i) => ({
+interface BracketModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** The sport's name and the form's rows (checked, unless the admin overrode the checks). */
+  onSave: (data: { sport: string; matches: SlotRow[] }) => void;
+  sport: string;
+  loading: boolean;
+}
+
+const matchesInit: SlotRow[] = Array.from({ length: 15 }, (_, i) => ({
   match_slot: i + 1,
   away_college: "",
   away_seed: 0,
@@ -34,7 +36,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
   loading,
 }) => {
   const [parsedMatches, setParsedMatches] =
-    useState<ParsedMatch[]>(matchesInit);
+    useState<SlotRow[]>(matchesInit);
   const [overrideValidation, setOverrideValidation] = useState(false);
   const { currentSeason, seasonLoading } = useSeason();
   const year = currentSeason?.id ?? "";
@@ -48,11 +50,11 @@ const BracketModal: React.FC<BracketModalProps> = ({
 
   const handleChange = (
     index: number,
-    field: keyof ParsedMatch,
+    field: keyof SlotRow,
     value: string
   ) => {
     // Fields that should be numbers
-    const numberFields: (keyof ParsedMatch)[] = [
+    const numberFields: (keyof SlotRow)[] = [
       "match_slot",
       "away_seed",
       "home_seed",
@@ -65,33 +67,17 @@ const BracketModal: React.FC<BracketModalProps> = ({
     setParsedMatches(updatedMatches);
   };
 
-  const updateTimestamps = () => {
-    const updatedMatches = parsedMatches.map((match) => {
-      if (match.date && match.time) {
-        const timestamp = toTimestamp(match.date, match.time, year);
-        if (timestamp !== null) {
-          return { ...match, timestamp: timestamp };
-        }
-      }
-      return match;
-    });
-
-    setParsedMatches(updatedMatches);
-  };
-
+  // The date and time columns are what admins edit; each row's timestamp is
+  // derived from them at submit time.
   const handleSubmit = () => {
-    updateTimestamps();
-
-    const bracketData: BracketForm = {
-      sport,
-      matches: parsedMatches,
-    };
-
-    if (!overrideValidation && !validateBracketData(bracketData)) {
-      return;
+    const matches = withTimestamps(parsedMatches, year);
+    setParsedMatches(matches);
+    if (!overrideValidation) {
+      const errors = bracketErrors(matches);
+      errors.forEach((error) => toast.error(error, { autoClose: 7000 }));
+      if (errors.length > 0) return;
     }
-
-    onSave(bracketData);
+    onSave({ sport, matches });
   };
 
   const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -104,7 +90,6 @@ const BracketModal: React.FC<BracketModalProps> = ({
         const csvText = e.target?.result as string;
         if (!csvText) return;
         const matches = parseBracketCSV(csvText, year);
-        console.log("Parsed matches from CSV:", matches);
         setParsedMatches(matches);
         toast.success("CSV file uploaded!");
       } catch (err: any) {
@@ -212,19 +197,13 @@ const BracketModal: React.FC<BracketModalProps> = ({
                   <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <select
                       className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      value={toCollegeName[match.away_college]}
-                      onChange={(e) =>
-                        handleChange(
-                          index,
-                          "away_college",
-                          toCollegeAbbreviation[e.target.value]
-                        )
-                      }
+                      value={match.away_college}
+                      onChange={(e) => handleChange(index, "away_college", e.target.value)}
                     >
                       <option value="">Select College</option>
-                      {collegeNamesList.map((college) => (
-                        <option key={college} value={college}>
-                          {college}
+                      {COLLEGES.map((college) => (
+                        <option key={college.id} value={college.id}>
+                          {college.name}
                         </option>
                       ))}
                     </select>
@@ -245,19 +224,13 @@ const BracketModal: React.FC<BracketModalProps> = ({
                   <td className="border border-gray-300 dark:border-gray-700 p-2">
                     <select
                       className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      value={toCollegeName[match.home_college]}
-                      onChange={(e) =>
-                        handleChange(
-                          index,
-                          "home_college",
-                          toCollegeAbbreviation[e.target.value] // see if this causes any problems
-                        )
-                      }
+                      value={match.home_college}
+                      onChange={(e) => handleChange(index, "home_college", e.target.value)}
                     >
                       <option value="">Select College</option>
-                      {collegeNamesList.map((college) => (
-                        <option key={college} value={college}>
-                          {college}
+                      {COLLEGES.map((college) => (
+                        <option key={college.id} value={college.id}>
+                          {college.name}
                         </option>
                       ))}
                     </select>

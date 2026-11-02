@@ -1,7 +1,7 @@
 import React from "react";
 import { useSeason } from "@/context/SeasonContext";
 import { COLLEGES } from "@/lib/colleges";
-import type { Filters } from "@/types/components";
+import type { Filters } from "@/context/FiltersContext";
 
 interface TableHeaderProps {
   handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;

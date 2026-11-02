@@ -8,7 +8,7 @@ import LoadingScreen from "@/components/layout/LoadingScreen";
 import ListView from "@/components/profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
 import { changeMe, fetchMyMatches } from "@/lib/api/me";

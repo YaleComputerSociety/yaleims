@@ -1,8 +1,13 @@
 "use client";
 
 import React from "react";
-import { emojiMap } from "@/utils/helpers";
-import { SportModalProps, SportInfo } from "@/types/components";
+import { sportEmoji } from "./SportCard";
+
+interface SportInfo {
+  points: number;
+  description: string;
+  players: number;
+}
 
 const sportInfoMap: Record<string, SportInfo> = {
   Soccer: {
@@ -91,6 +96,11 @@ const sportInfoMap: Record<string, SportInfo> = {
   },
 };
 
+interface SportModalProps {
+  sport: string | null;
+  setSport: (sport: string | null) => void;
+}
+
 const SportModal: React.FC<SportModalProps> = ({ sport, setSport }) => {
   if (!sport) {
     return null;
@@ -111,7 +121,7 @@ const SportModal: React.FC<SportModalProps> = ({ sport, setSport }) => {
       >
         <div className="flex flex-row bg-blue-400 dark:bg-blue-600 w-full rounded-t-3xl p-8 py-4 justify-between items-center">
           <h2 className="text-2xl font-bold">{sport}</h2>
-          <h2 className="text-3xl">{emojiMap[sport]}</h2>
+          <h2 className="text-3xl">{sportEmoji[sport]}</h2>
         </div>
         <div className="px-8 py-4">
           <div>

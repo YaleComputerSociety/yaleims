@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import PersonCard from "@/components/about/PersonCard";
 import Link from "next/link";
 import PageHeading from "@/components/layout/PageHeading";
-import { getDevImage } from "@/utils/versionedImages";
+import { getDevImage } from "@/lib/images";
 
 const AboutUsPage: React.FC = () => {
   // add college and grad year to display

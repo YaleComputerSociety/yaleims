@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaCaretDown, FaCaretUp } from "react-icons/fa";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 import type { CollegeDoc, WithId } from "@/types/firestore";
 
 type YearlyLeaderboardTableProps = {

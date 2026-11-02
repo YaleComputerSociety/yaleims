@@ -3,23 +3,21 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from "react";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
+import { COLLEGES } from "@/lib/colleges";
 import {
-  collegeNamesList,
-  toCollegeName,
-  toCollegeAbbreviation,
-  toTimestamp,
   parseTournamentCSV,
-  validateTournamentData,
+  slotsFromForm,
+  tournamentErrors,
+  withTimestamps,
   TOURNAMENT_SLOT_COUNT,
-} from "@/utils/helpers";
-import { ParsedMatch } from "@/types/components";
+  type SlotRow,
+} from "@/lib/csv/brackets";
 import type { PlacementPoints } from "@/types/firestore";
 import { useSeason } from "@/context/SeasonContext";
 import {
   createBracket,
   deleteBracket,
   fetchBrackets,
-  slotsFromForm,
   DEFAULT_PLACEMENT_POINTS,
   type Bracket,
 } from "@/lib/api/brackets";
@@ -46,7 +44,7 @@ const SLOT_ROUNDS: Record<number, string> = {
   16: "Third Place",
 };
 
-const buildEmptyMatches = (): ParsedMatch[] =>
+const buildEmptyMatches = (): SlotRow[] =>
   Array.from({ length: TOURNAMENT_SLOT_COUNT }, (_, i) => ({
     match_slot: i + 1,
     away_college: "",
@@ -77,7 +75,7 @@ const TournamentAdminPanel: React.FC = () => {
   const [sport, setSport] = useState("");
   const [placementPoints, setPlacementPoints] =
     useState<PlacementPoints>(DEFAULT_PLACEMENT_POINTS);
-  const [matches, setMatches] = useState<ParsedMatch[]>(buildEmptyMatches);
+  const [matches, setMatches] = useState<SlotRow[]>(buildEmptyMatches);
   const [creating, setCreating] = useState(false);
   const [tournaments, setTournaments] = useState<Bracket[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -103,10 +101,10 @@ const TournamentAdminPanel: React.FC = () => {
 
   const handleChange = (
     index: number,
-    field: keyof ParsedMatch,
+    field: keyof SlotRow,
     value: string
   ) => {
-    const numberFields: (keyof ParsedMatch)[] = [
+    const numberFields: (keyof SlotRow)[] = [
       "match_slot",
       "away_seed",
       "home_seed",
@@ -155,15 +153,10 @@ const TournamentAdminPanel: React.FC = () => {
 
     // The date and time columns are what admins actually edit; the timestamp
     // the backend stores is derived from them at submit time.
-    const withTimestamps = matches.map((match) => {
-      if (match.date && match.time) {
-        const timestamp = toTimestamp(match.date, match.time, year);
-        if (timestamp !== null) return { ...match, timestamp };
-      }
-      return match;
-    });
-
-    if (!validateTournamentData(withTimestamps)) return;
+    const rows = withTimestamps(matches, year);
+    const errors = tournamentErrors(rows);
+    errors.forEach((error) => toast.error(error, { autoClose: 7000 }));
+    if (errors.length > 0) return;
 
     try {
       setCreating(true);
@@ -171,7 +164,7 @@ const TournamentAdminPanel: React.FC = () => {
         kind: "tournament",
         name: name.trim(),
         sportId: sport,
-        slots: slotsFromForm(withTimestamps),
+        slots: slotsFromForm(rows),
         placementPoints,
       });
       toast.success(`Tournament '${name.trim()}' created!`);
@@ -369,19 +362,13 @@ const TournamentAdminPanel: React.FC = () => {
                   <td className={cellClass}>
                     <select
                       className={inputClass}
-                      value={toCollegeName[match.away_college] || ""}
-                      onChange={(e) =>
-                        handleChange(
-                          index,
-                          "away_college",
-                          toCollegeAbbreviation[e.target.value] || ""
-                        )
-                      }
+                      value={match.away_college}
+                      onChange={(e) => handleChange(index, "away_college", e.target.value)}
                     >
                       <option value="">Select College</option>
-                      {collegeNamesList.map((college) => (
-                        <option key={college} value={college}>
-                          {college}
+                      {COLLEGES.map((college) => (
+                        <option key={college.id} value={college.id}>
+                          {college.name}
                         </option>
                       ))}
                     </select>
@@ -400,19 +387,13 @@ const TournamentAdminPanel: React.FC = () => {
                   <td className={cellClass}>
                     <select
                       className={inputClass}
-                      value={toCollegeName[match.home_college] || ""}
-                      onChange={(e) =>
-                        handleChange(
-                          index,
-                          "home_college",
-                          toCollegeAbbreviation[e.target.value] || ""
-                        )
-                      }
+                      value={match.home_college}
+                      onChange={(e) => handleChange(index, "home_college", e.target.value)}
                     >
                       <option value="">Select College</option>
-                      {collegeNamesList.map((college) => (
-                        <option key={college} value={college}>
-                          {college}
+                      {COLLEGES.map((college) => (
+                        <option key={college.id} value={college.id}>
+                          {college.name}
                         </option>
                       ))}
                     </select>

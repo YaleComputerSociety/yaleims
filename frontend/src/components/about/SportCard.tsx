@@ -1,10 +1,27 @@
 "use client";
 
 import React from "react";
-import { emojiMap } from "@/utils/helpers";
-import { SportCardProps } from "@/types/components";
 
 type ColorMap = Record<string, string>;
+
+/** Each sport's emoji on the about page and the captain's sports (static, by sport name). */
+export const sportEmoji: Record<string, string> = {
+  "Flag Football": "🏈",
+  Spikeball: "💥",
+  Cornhole: "🌽",
+  Pickleball: "🥒",
+  "Table Tennis": "🏓",
+  Soccer: "⚽",
+  Broomball: "🧹",
+  MHoops: "🏀",
+  CHoops: "🏀",
+  WHoops: "🏀",
+  Dodgeball: "🤾‍♂️",
+  "Indoor Soccer": "⚽",
+  Volleyball: "🏐",
+  Netball: "🥅",
+  Kanjam: "🥏",
+};
 
 const sportColors: ColorMap = {
   Cornhole: "border-[#EBC119]",
@@ -43,7 +60,7 @@ const sportHex: Record<string, string> = {
 };
 
 
-export const sportDisplayName: ColorMap = {
+const sportDisplayName: ColorMap = {
   Cornhole: "Cornhole",
   Soccer: "Soccer",
   Spikeball: "Spikeball",
@@ -59,6 +76,13 @@ export const sportDisplayName: ColorMap = {
   Volleyball: "Volleyball",
   Netball: "Netball",
 };
+
+interface SportCardProps {
+  sport: string;
+  displayName?: boolean;
+  handleClick?: (sport: string) => void;
+  active?: boolean;
+}
 
 const SportCard: React.FC<SportCardProps> = ({ sport, handleClick, displayName, active }) => {
   return (
@@ -82,7 +106,7 @@ const SportCard: React.FC<SportCardProps> = ({ sport, handleClick, displayName, 
             ring-offset-2 ring-[color:var(--sport-col)]` : '')
         }
       >
-        {emojiMap[sport]}
+        {sportEmoji[sport]}
         <div className="absolute text-xs transition-opacity bg-blue-100 border border-blue-600 dark:bg-black dark:text-white dark:border-black rounded opacity-0 group-hover:opacity-100">
           {sport}
         </div>

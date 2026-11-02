@@ -1,3 +1,5 @@
+// Whether the champion celebration's confetti is on, per browser (the
+// viewer can switch it off); every open page hears a change.
 import { useEffect, useState } from "react";
 
 const CONFETTI_DISABLED_KEY = "champion-confetti-disabled";

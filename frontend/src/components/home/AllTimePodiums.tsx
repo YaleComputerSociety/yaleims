@@ -1,7 +1,7 @@
 import React from "react";
 import AllTimePodium from "./AllTimePodium";
-import { allTimeStandings } from "@/utils/helpers";
-import { getCollegeFlag, getVersionedImage } from "@/utils/versionedImages";
+import { allTimeStandings } from "./allTimeStandings";
+import { getCollegeFlag, getVersionedImage } from "@/lib/images";
 
 const overlaySources = [
   getVersionedImage("/college_flags/bronze_overlay.png"), // 3rd place

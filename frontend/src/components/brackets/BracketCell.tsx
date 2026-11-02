@@ -5,7 +5,7 @@ import type { BracketDetail } from "@/lib/api/brackets";
 import type { Match } from "@/lib/api/matches";
 import { collegeName } from "@/lib/colleges";
 import "react-loading-skeleton/dist/skeleton.css";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 
 // ── The cells of a bracket ─────────────────────────────────────────────────
 

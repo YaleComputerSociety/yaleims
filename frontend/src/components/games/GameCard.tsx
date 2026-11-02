@@ -11,7 +11,7 @@ import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
 import type { SessionViewer } from "@/lib/api/auth";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
 

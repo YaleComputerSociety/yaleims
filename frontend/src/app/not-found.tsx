@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { getVersionedImage } from "@/utils/versionedImages";
+import { getVersionedImage } from "@/lib/images";
 
 export default function NotFound() {
   return (

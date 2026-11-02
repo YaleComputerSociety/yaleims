@@ -1,6 +1,6 @@
 import React from "react";
 import CPodium from "./YearlyPodium";
-import { getVersionedImage, getCollegeFlag } from "@/utils/versionedImages";
+import { getVersionedImage, getCollegeFlag } from "@/lib/images";
 import type { CollegeDoc, WithId } from "@/types/firestore";
 
 interface YearlyPodiumsProps {

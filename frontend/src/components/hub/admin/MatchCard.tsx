@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import { scoreMatch, type Match } from "@/lib/api/matches";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 
 interface MatchCardProps {
   match: Match;

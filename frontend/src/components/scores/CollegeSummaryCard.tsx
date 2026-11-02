@@ -1,7 +1,7 @@
 import Skeleton from "react-loading-skeleton";
 import Image from "next/image";
 import type { CollegeDoc } from "@/types/firestore";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 
 import { getPlace, getRatioAsString } from "@/lib/format";
 

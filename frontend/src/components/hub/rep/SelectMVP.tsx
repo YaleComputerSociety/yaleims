@@ -1,12 +1,45 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { mvpWeekOne, getCurrentWeekId, buildWeekOptions } from "@/utils/helpers";
 import { useSession } from "@/context/SessionContext";
 import { fetchCollegePlayers, fetchMvps, nameMvp, type CollegePlayer, type Mvp } from "@/lib/api/colleges";
 
+// ── MVP weeks: week 1 starts on the Monday of the season's first game ─────
+
+const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+/** The season's MVP week 1 (its mvpWeekOne, "yyyy-mm-dd") as a local midnight; null before the first game. */
+function mvpWeekOne(day: string | null | undefined): Date | null {
+  const [y, m, d] = (day ?? "").split("-").map(Number);
+  return y && m && d ? new Date(y, m - 1, d) : null;
+}
+
+/** This week's option value ("week_4"). */
+function currentWeekId(weekOne: Date): string {
+  return `week_${Math.floor((Date.now() - weekOne.getTime()) / MS_PER_WEEK) + 1}`;
+}
+
+/** Every week from week 1 to this one, newest first, labelled with its dates. */
+function weekOptions(start: Date): { value: string; label: string }[] {
+  const firstWeekStart = new Date(start);
+  const day = firstWeekStart.getDay(); // 0 = Sun … 6 = Sat
+  if (day !== 1) firstWeekStart.setDate(firstWeekStart.getDate() + ((8 - day) % 7));
+
+  const weekCount = Math.floor((Date.now() - firstWeekStart.getTime()) / MS_PER_WEEK) + 1;
+  const format = (d: Date) => d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+  const options = [];
+  for (let i = 0; i < weekCount; i++) {
+    const weekStart = new Date(firstWeekStart.getTime() + i * MS_PER_WEEK);
+    const weekEnd = new Date(weekStart.getTime() + MS_PER_WEEK);
+    options.push({ value: `week_${i + 1}`, label: `Week ${i + 1}: ${format(weekStart)} – ${format(weekEnd)}` });
+  }
+  return options.reverse();
+}
+
 /** The week number of a week option's value ("week_4" → 4). */
 const weekNumber = (weekId: string) => Number(weekId.replace("week_", ""));
+
+// ── The picker ─────────────────────────────────────────────────────────────
 
 /** The rep's college: name one of its players an MVP of a week. */
 export default function SelectMVP() {
@@ -28,11 +61,11 @@ export default function SelectMVP() {
   const [mvps, setMvps] = useState<Mvp[]>([]);
 
   const weekOne = mvpWeekOne(currentSeason?.mvpWeekOne);
-  const weeks = weekOne ? buildWeekOptions(weekOne) : [];
+  const weeks = weekOne ? weekOptions(weekOne) : [];
   // Start on the current week once the season (and its week 1) has loaded.
   useEffect(() => {
     const one = mvpWeekOne(currentSeason?.mvpWeekOne);
-    if (one) setWeekId(getCurrentWeekId(one));
+    if (one) setWeekId(currentWeekId(one));
   }, [currentSeason?.mvpWeekOne]);
 
   useEffect(() => {

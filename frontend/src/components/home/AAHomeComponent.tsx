@@ -7,7 +7,7 @@ import PageHeading from "@/components/layout/PageHeading";
 import { useSeason } from "@/context/SeasonContext";
 import { useChampionship } from "@/hooks/useChampionship";
 import { useStandings } from "@/hooks/useStandings";
-import { useConfettiEnabled } from "@/utils/preferences";
+import { useConfettiEnabled } from "@/hooks/useConfettiEnabled";
 import Title from "./Title";
 import YearlyLeaderboardTable from "./YearlyLeaderboardTable";
 import { YearlyPodiums } from "./YearlyPodiums";

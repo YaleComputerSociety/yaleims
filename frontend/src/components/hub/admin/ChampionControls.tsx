@@ -5,7 +5,7 @@ import { useSeason } from "@/context/SeasonContext";
 import { useChampionship } from "@/hooks/useChampionship";
 import { setChampion } from "@/lib/api/seasons";
 import { COLLEGES } from "@/lib/colleges";
-import { getCollegeFlag } from "@/utils/versionedImages";
+import { getCollegeFlag } from "@/lib/images";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
 

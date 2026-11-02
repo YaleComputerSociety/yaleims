@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import BracketCreateModal from "@/components/hub/admin/BracketCreateModal";
 import BracketInterface from "@/components/hub/admin/BracketInterface";
 import { useSeason } from "@/context/SeasonContext";
-import { createBracket, deleteBracket, slotsFromForm } from "@/lib/api/brackets";
+import { createBracket, deleteBracket } from "@/lib/api/brackets";
 import { ApiError } from "@/lib/api/core";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
-import type { BracketUpload } from "@/types/api";
+import { slotsFromForm, type SlotRow } from "@/lib/csv/brackets";
 import { toast } from "react-toastify";
 
 /** Create and delete the current season's playoff brackets (admins and devs). */
@@ -24,7 +24,7 @@ const BracketAdminPanel: React.FC = () => {
   };
 
   // The form names the sport; the API takes its id.
-  const handleSave = async (bracketData: BracketUpload): Promise<void> => {
+  const handleSave = async (bracketData: { sport: string; matches: SlotRow[] }): Promise<void> => {
     const sport = currentSeason?.sports.find((s) => s.name === bracketData.sport);
     if (!currentSeason || !sport) return;
     try {

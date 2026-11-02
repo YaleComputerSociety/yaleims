@@ -17,7 +17,7 @@ import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
 import { MdOutlineKeyboardArrowRight } from "react-icons/md";
 import { MdOutlineLeaderboard } from "react-icons/md";
 import { FaQuestionCircle } from "react-icons/fa";
-import { getVersionedImage } from "@/utils/versionedImages";
+import { getVersionedImage } from "@/lib/images";
 import { MdOutlineSportsScore, MdSports } from "react-icons/md";
 import { TbBrackets, TbTournament } from "react-icons/tb";
 

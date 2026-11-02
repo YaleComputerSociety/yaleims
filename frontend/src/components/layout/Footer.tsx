@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getVersionedImage } from "@/utils/versionedImages";
+import { getVersionedImage } from "@/lib/images";
 
 export default function Footer() {
   return (

@@ -6,7 +6,7 @@ import { useNavbar } from '@/context/NavbarContext';
 import { FaSignOutAlt } from "react-icons/fa";
 import { PiConfetti } from "react-icons/pi";
 import { useEffect, useRef, useState } from "react";
-import { useConfettiEnabled, setConfettiEnabled } from "@/utils/preferences";
+import { useConfettiEnabled, setConfettiEnabled } from "@/hooks/useConfettiEnabled";
 import { useChampionship } from "@/hooks/useChampionship";
 
 
