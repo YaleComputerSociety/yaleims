@@ -7,7 +7,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
-  console.error("Start the Firestore emulator first (repo/database: npm run emulator) and set FIRESTORE_EMULATOR_HOST.");
+  console.error("Start the Firestore emulator first (npm run emulator) and set FIRESTORE_EMULATOR_HOST=127.0.0.1:8080.");
   process.exit(1);
 }
 const port = Number(process.env.TEST_PORT ?? 3210);
