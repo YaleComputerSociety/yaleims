@@ -4,8 +4,6 @@ import React, { useState, useEffect, ChangeEvent, useCallback } from "react";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
 import {
-  sports,
-  currentYear,
   collegeNamesList,
   toCollegeName,
   toCollegeAbbreviation,
@@ -15,9 +13,17 @@ import {
   TOURNAMENT_SLOT_COUNT,
 } from "@/utils/helpers";
 import { ParsedMatch } from "@/types/components";
-import type { CreateTournamentRequest, TournamentJson, TournamentUpload } from "@/types/api";
-import type { PlacementPoints } from "@/types/legacy";
+import type { PlacementPoints } from "@/types/firestore";
 import { useSeason } from "@/context/SeasonContext";
+import {
+  createBracket,
+  deleteBracket,
+  fetchBrackets,
+  slotsFromForm,
+  DEFAULT_PLACEMENT_POINTS,
+  type Bracket,
+} from "@/lib/api/brackets";
+import { ApiError } from "@/lib/api/core";
 
 // Slot labels mirror the bracket the backend builds, so an admin filling the
 // table can see which row is which round without cross-referencing the docs.
@@ -55,24 +61,6 @@ const buildEmptyMatches = (): ParsedMatch[] =>
     division: "none",
   }));
 
-const DEFAULT_PLACEMENT: PlacementPoints = { first: 20, second: 15, third: 10 };
-
-/**
- * The API proxy forwards upstream failures as raw text, so an error response is
- * often HTML rather than JSON. Reading it with response.json() throws a parse
- * error that masks the real status, so decode it defensively instead.
- */
-const readResponse = async (
-  response: Response
-): Promise<Record<string, any>> => {
-  const text = await response.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { error: text.slice(0, 200) };
-  }
-};
 
 const inputClass =
   "w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100";
@@ -82,38 +70,28 @@ const cellClass = "border border-gray-300 dark:border-gray-700 p-2";
 
 const TournamentAdminPanel: React.FC = () => {
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.id || currentYear;
+  const year = currentSeason?.id ?? "";
+  const sports = currentSeason?.sports ?? [];
 
   const [name, setName] = useState("");
   const [sport, setSport] = useState("");
   const [placementPoints, setPlacementPoints] =
-    useState<PlacementPoints>(DEFAULT_PLACEMENT);
+    useState<PlacementPoints>(DEFAULT_PLACEMENT_POINTS);
   const [matches, setMatches] = useState<ParsedMatch[]>(buildEmptyMatches);
   const [creating, setCreating] = useState(false);
-  const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
+  const [tournaments, setTournaments] = useState<Bracket[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string>("");
   const [listError, setListError] = useState<string>("");
 
   const loadTournaments = useCallback(async () => {
+    if (!year) return;
     try {
       setListLoading(true);
       setListError("");
-      const response = await fetch(
-        `/api/functions/getTournaments?year=${encodeURIComponent(year)}`
-      );
-      const data = await readResponse(response);
-
-      if (!response.ok) {
-        setListError(data.error || "Could not load tournaments.");
-        return;
-      }
-
-      setTournaments(data.tournaments || []);
+      setTournaments((await fetchBrackets(year, { kind: "tournament" })).items);
     } catch (error) {
-      setListError(
-        error instanceof Error ? error.message : "Could not load tournaments."
-      );
+      setListError((error as Error).message);
     } finally {
       setListLoading(false);
     }
@@ -187,41 +165,32 @@ const TournamentAdminPanel: React.FC = () => {
 
     if (!validateTournamentData(withTimestamps)) return;
 
-    const tournamentData: TournamentUpload = {
-      name: name.trim(),
-      sport,
-      matches: withTimestamps,
-      placement_points: placementPoints,
-    };
-
     try {
       setCreating(true);
-      const response = await fetch("/api/functions/createTournament", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tournamentData } satisfies CreateTournamentRequest),
+      await createBracket(year, {
+        kind: "tournament",
+        name: name.trim(),
+        sportId: sport,
+        slots: slotsFromForm(withTimestamps),
+        placementPoints,
       });
-      const data = await readResponse(response);
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create tournament");
-      }
       toast.success(`Tournament '${name.trim()}' created!`);
       setName("");
       setMatches(buildEmptyMatches());
-      setPlacementPoints(DEFAULT_PLACEMENT);
+      setPlacementPoints(DEFAULT_PLACEMENT_POINTS);
       loadTournaments();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
+      toast.error((error as Error).message);
     } finally {
       setCreating(false);
     }
   };
 
-  const handleDelete = async (tournament: TournamentJson, force = false) => {
+  const handleDelete = async (tournament: Bracket, force = false) => {
     if (
       !force &&
       !window.confirm(
-        `Delete '${tournament.name}' and its ${tournament.matches.length} matches?`
+        `Delete '${tournament.name}' and its ${tournament.slots.length} matches?`
       )
     ) {
       return;
@@ -229,28 +198,18 @@ const TournamentAdminPanel: React.FC = () => {
 
     try {
       setDeletingId(tournament.id);
-      const response = await fetch("/api/functions/deleteTournament", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tournamentId: tournament.id, force }),
-      });
-      const data = await readResponse(response);
-
+      await deleteBracket(year, tournament.id, force);
+      toast.success(`Deleted '${tournament.name}'`);
+      loadTournaments();
+    } catch (error) {
       // Deleting takes back the points of scored games; the admin confirms that.
-      if (response.status === 409 && !force) {
-        if (window.confirm(`${data.error}\n\nDelete anyway?`)) {
+      if (error instanceof ApiError && error.code === "conflict" && !force) {
+        if (window.confirm(`${error.message}\n\nDelete anyway?`)) {
           await handleDelete(tournament, true);
         }
         return;
       }
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete tournament");
-      }
-      toast.success(`Deleted '${tournament.name}'`);
-      loadTournaments();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
+      toast.error((error as Error).message);
     } finally {
       setDeletingId("");
     }
@@ -285,9 +244,9 @@ const TournamentAdminPanel: React.FC = () => {
                 <div>
                   <div className="font-medium">{tournament.name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {tournament.sport} · {tournament.placement_points?.first}/
-                    {tournament.placement_points?.second}/
-                    {tournament.placement_points?.third} pts for top 3
+                    {sports.find((s) => s.id === tournament.sportId)?.name ?? tournament.sportId} ·{" "}
+                    {tournament.placementPoints?.first}/{tournament.placementPoints?.second}/
+                    {tournament.placementPoints?.third} pts for top 3
                   </div>
                 </div>
                 <button
@@ -332,7 +291,7 @@ const TournamentAdminPanel: React.FC = () => {
             >
               <option value="">Select Sport</option>
               {sports.map((s) => (
-                <option key={s.id} value={s.name}>
+                <option key={s.id} value={s.id}>
                   {s.emoji} {s.name}
                 </option>
               ))}

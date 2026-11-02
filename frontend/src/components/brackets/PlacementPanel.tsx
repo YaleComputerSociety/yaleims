@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import type { TournamentJson } from "@/types/api";
-import { toCollegeName } from "@/utils/helpers";
+import type { Bracket } from "@/lib/api/brackets";
+import { collegeName } from "@/lib/colleges";
 
 interface PlacementPanelProps {
-  tournament: TournamentJson;
+  tournament: Bracket;
 }
 
 const PODIUM: {
@@ -68,10 +68,10 @@ const PlacementPanel: React.FC<PlacementPanelProps> = ({ tournament }) => {
                   {label}
                 </div>
                 <div className="text-lg font-extrabold text-gray-900 dark:text-white">
-                  {tournament.placement_points?.[key] ?? 0} pts
+                  {tournament.placementPoints?.[key] ?? 0} pts
                 </div>
                 <div className="text-[11px] mt-1 font-medium text-gray-600 dark:text-gray-400 truncate">
-                  {college ? toCollegeName[college] || college : "TBD"}
+                  {college ? collegeName(college) || college : "TBD"}
                 </div>
               </div>
             );

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useLegacyBracket } from "@/utils/useLegacyBracket";
-import { currentYear } from "@/utils/helpers";
+import { useBracket } from "@/hooks/useBracket";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import BracketCell from "@/components/brackets/BracketCell";
 import PlacementPanel from "@/components/brackets/PlacementPanel";
@@ -12,7 +11,7 @@ import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
 import { getVersionedImage } from "@/utils/versionedImages";
 import useElementHeight from "@/hooks/useElementHeight";
-import type { TournamentJson, TournamentSlotJson, TournamentsResponse } from "@/types/api";
+import { fetchBrackets, type Bracket } from "@/lib/api/brackets";
 import BracketConnectorSvg, {
   TOURNAMENT_EDGES,
   useBracketConnectors,
@@ -35,9 +34,9 @@ const columnBadge =
 const cellWrapper =
   "scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl";
 
-const formatDate = (millis: number | null): string => {
-  if (!millis) return "";
-  const date = new Date(millis);
+const formatDate = (iso: string): string => {
+  if (!iso) return "";
+  const date = new Date(iso);
   return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
 };
 
@@ -46,10 +45,12 @@ const TournamentsPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
 
-  const [season, setSeason] = useState<string>(
-    currentSeason?.id || currentYear
-  );
-  const [tournaments, setTournaments] = useState<TournamentJson[]>([]);
+  // The current season until one is picked.
+  const [pickedSeason, setSeason] = useState<string | null>(null);
+  const season = pickedSeason ?? currentSeason?.id ?? "";
+  // The season's tournaments, with the season they are of.
+  const [list, setList] = useState<{ season: string; items: Bracket[] }>({ season: "", items: [] });
+  const tournaments = list.season === season ? list.items : [];
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,21 +71,15 @@ const TournamentsPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(
-          `/api/functions/getTournaments?year=${encodeURIComponent(season)}`
-        );
-        if (!response.ok) throw new Error("Failed to load tournaments");
-
-        const data: TournamentsResponse = await response.json();
-        const list: TournamentJson[] = data.tournaments || [];
-        setTournaments(list);
-        setSelectedId(list.length > 0 ? list[0].id : "");
-        if (list.length === 0) {
+        const items = (await fetchBrackets(season, { kind: "tournament" })).items;
+        setList({ season, items });
+        setSelectedId(items.length > 0 ? items[0].id : "");
+        if (items.length === 0) {
           setError(`No tournaments have been created for ${season} yet.`);
         }
       } catch (err) {
         console.error("Error fetching tournaments:", err);
-        setTournaments([]);
+        setList({ season, items: [] });
         setSelectedId("");
         setError("Could not load tournaments.");
       } finally {
@@ -100,30 +95,14 @@ const TournamentsPage: React.FC = () => {
     [tournaments, selectedId]
   );
 
-  const bracket: TournamentSlotJson[] | null = useMemo(() => {
-    if (!selected) return null;
-    return [...selected.matches].sort(
-      (a, b) => a.bracket_placement - b.bracket_placement
-    );
-  }, [selected]);
-
-  // The games carry the scores and advancing teams; the tournament list only
-  // the bracket skeleton (pre-v3 shapes, built from v3 docs).
-  const games = useLegacyBracket(season, selected ? selected.id : null);
-  const matchDetails = games.matchDetails;
+  // The selected tournament's cells by slot, with its games.
+  const games = useBracket(season, selected ? selected.id : null);
+  const bracket = games.cells;
   useEffect(() => {
     if (games.error) setError("Could not load this tournament's matches.");
   }, [games.error]);
 
-  // Match docs load in a second pass, and effects run after render, so a
-  // loading flag would still leave one render with no data. Derive readiness
-  // from the fetched map instead: a missing doc is stored as null, so only
-  // `undefined` means "not fetched yet".
-  const matchesReady = Boolean(
-    bracket &&
-      bracket.length > 0 &&
-      bracket.every((m) => matchDetails[m.match_id] !== undefined)
-  );
+  const matchesReady = Boolean(bracket && bracket.length > 0);
 
   const { ref: headerRef, height: headerHeight } = useElementHeight();
 
@@ -133,8 +112,8 @@ const TournamentsPage: React.FC = () => {
   );
 
   const teamConnections = useMemo(
-    () => buildTeamConnections(TOURNAMENT_EDGES, bracket, matchDetails),
-    [bracket, matchDetails]
+    () => buildTeamConnections(TOURNAMENT_EDGES, bracket),
+    [bracket]
   );
 
   const activeEdges = useMemo(
@@ -144,18 +123,10 @@ const TournamentsPage: React.FC = () => {
 
   const renderCell = (index: number) => {
     if (!bracket || !bracket[index]) return null;
-    const match = bracket[index];
+    const cell = bracket[index];
     return (
-      <div
-        className={cellWrapper}
-        key={match.match_id}
-        ref={setCellRef(match.bracket_placement)}
-      >
-        <BracketCell
-          match={matchDetails[match.match_id]}
-          time={match.timestamp ? new Date(match.timestamp).toString() : ""}
-          setHoveredTeam={setHoveredTeam}
-        />
+      <div className={cellWrapper} key={cell.slot} ref={setCellRef(cell.slot)}>
+        <BracketCell cell={cell} setHoveredTeam={setHoveredTeam} />
       </div>
     );
   };
@@ -217,16 +188,16 @@ const TournamentsPage: React.FC = () => {
               Year
             </span>
             <GlassDropdown
-              placeholder={currentSeason?.id || currentYear}
+              placeholder={currentSeason?.id ?? ""}
               value={season}
               options={[
                 {
-                  value: currentSeason?.id || currentYear,
-                  label: `${currentSeason?.id || currentYear} (Current)`,
+                  value: currentSeason?.id ?? "",
+                  label: `${currentSeason?.id ?? ""} (Current)`,
                 },
                 ...pastSeasonIds
-                  .filter((y: string) => y !== (currentSeason?.id || currentYear))
-                  .map((y: string) => ({ value: y, label: y })),
+                  .filter((y) => y !== currentSeason?.id)
+                  .map((y) => ({ value: y, label: y })),
               ]}
               onChange={setSeason}
               allowReset={false}
@@ -252,7 +223,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Left first round */}
                 <div className="flex flex-col items-center">
                   <span className={columnBadge}>
-                    Round 1 {formatDate(bracket[0].timestamp)}
+                    Round 1 {formatDate(bracket[0].time)}
                   </span>
                   <div className="flex flex-col items-end space-y-5">
                     {LEFT_PLAYOFF_INDICES.map(renderCell)}
@@ -262,7 +233,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Left quarters */}
                 <div className="flex flex-col items-center justify-center">
                   <span className={`${columnBadge} mb-[70px]`}>
-                    Quarter-Finals {formatDate(bracket[4].timestamp)}
+                    Quarter-Finals {formatDate(bracket[4].time)}
                   </span>
                   <div className="flex flex-col items-center justify-center space-y-40">
                     {LEFT_QUARTER_INDICES.map(renderCell)}
@@ -272,7 +243,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Left semi */}
                 <div className="flex flex-col items-center space-y-52">
                   <span className={columnBadge}>
-                    Semi-Finals {formatDate(bracket[LEFT_SEMI_INDEX].timestamp)}
+                    Semi-Finals {formatDate(bracket[LEFT_SEMI_INDEX].time)}
                   </span>
                   {renderCell(LEFT_SEMI_INDEX)}
                 </div>
@@ -280,7 +251,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Final and third place game */}
                 <div className="flex flex-col items-center space-y-14">
                   <span className="bg-yellow-100 dark:bg-yellow-600/40 backdrop-blur-md text-yellow-700 dark:text-yellow-200 text-[10px] font-bold px-3 py-1 rounded-full border border-yellow-300 dark:border-yellow-400/20 shadow-sm shadow-yellow-100/30 dark:shadow-yellow-500/15">
-                    Final {formatDate(bracket[FINAL_INDEX].timestamp)}
+                    Final {formatDate(bracket[FINAL_INDEX].time)}
                   </span>
 
                   <div className="relative flex items-center justify-center">
@@ -290,25 +261,17 @@ const TournamentsPage: React.FC = () => {
                       className="w-48 h-48 opacity-100 drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
                     />
                     <div
-                      ref={setCellRef(bracket[FINAL_INDEX].bracket_placement)}
+                      ref={setCellRef(bracket[FINAL_INDEX].slot)}
                       className="absolute scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
                     >
-                      <BracketCell
-                        match={matchDetails[bracket[FINAL_INDEX].match_id]}
-                        time={
-                          bracket[FINAL_INDEX].timestamp
-                            ? new Date(bracket[FINAL_INDEX].timestamp!).toString()
-                            : ""
-                        }
-                        setHoveredTeam={setHoveredTeam}
-                      />
+                      <BracketCell cell={bracket[FINAL_INDEX]} setHoveredTeam={setHoveredTeam} />
                     </div>
                   </div>
 
                   {bracket[THIRD_PLACE_INDEX] && (
                     <div className="flex flex-col items-center gap-2">
                       <span className="bg-orange-100 dark:bg-orange-700/40 backdrop-blur-md text-orange-700 dark:text-orange-200 text-[10px] font-bold px-3 py-1 rounded-full border border-orange-300 dark:border-orange-400/20 shadow-sm shadow-orange-100/30 dark:shadow-orange-500/15">
-                        3rd Place {formatDate(bracket[THIRD_PLACE_INDEX].timestamp)}
+                        3rd Place {formatDate(bracket[THIRD_PLACE_INDEX].time)}
                       </span>
                       {renderCell(THIRD_PLACE_INDEX)}
                     </div>
@@ -318,7 +281,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Right semi */}
                 <div className="flex flex-col items-center space-y-52">
                   <span className={columnBadge}>
-                    Semi-Finals {formatDate(bracket[RIGHT_SEMI_INDEX].timestamp)}
+                    Semi-Finals {formatDate(bracket[RIGHT_SEMI_INDEX].time)}
                   </span>
                   {renderCell(RIGHT_SEMI_INDEX)}
                 </div>
@@ -326,7 +289,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Right quarters */}
                 <div className="flex flex-col items-center">
                   <span className={`${columnBadge} mb-[70px]`}>
-                    Quarter-Finals {formatDate(bracket[10].timestamp)}
+                    Quarter-Finals {formatDate(bracket[10].time)}
                   </span>
                   <div className="flex flex-col items-start justify-center space-y-40">
                     {RIGHT_QUARTER_INDICES.map(renderCell)}
@@ -336,7 +299,7 @@ const TournamentsPage: React.FC = () => {
                 {/* Right first round */}
                 <div className="flex flex-col items-center">
                   <span className={columnBadge}>
-                    Round 1 {formatDate(bracket[6].timestamp)}
+                    Round 1 {formatDate(bracket[6].time)}
                   </span>
                   <div className="flex flex-col items-start space-y-5">
                     {RIGHT_PLAYOFF_INDICES.map(renderCell)}

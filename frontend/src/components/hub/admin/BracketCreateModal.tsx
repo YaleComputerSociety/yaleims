@@ -5,7 +5,6 @@ import {
   toCollegeAbbreviation,
   toCollegeName,
   validateBracketData,
-  currentYear,
   parseBracketCSV,
   toTimestamp,
 } from "@/utils/helpers";
@@ -38,7 +37,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
     useState<ParsedMatch[]>(matchesInit);
   const [overrideValidation, setOverrideValidation] = useState(false);
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.id || currentYear;
+  const year = currentSeason?.id ?? "";
 
   // Reset form when modal opens
   useEffect(() => {
@@ -104,8 +103,7 @@ const BracketModal: React.FC<BracketModalProps> = ({
       try {
         const csvText = e.target?.result as string;
         if (!csvText) return;
-        const season = currentYear; // Replace with correct season if needed
-        const matches = parseBracketCSV(csvText, season);
+        const matches = parseBracketCSV(csvText, year);
         console.log("Parsed matches from CSV:", matches);
         setParsedMatches(matches);
         toast.success("CSV file uploaded!");

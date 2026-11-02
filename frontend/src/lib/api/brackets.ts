@@ -2,6 +2,7 @@
 // (/api/seasons/{seasonId}/brackets) and one bracket with its games. Their
 // games are ordinary matches; a bye is a slot with a college and no game.
 import { z } from "zod";
+import type { SlotInput } from "@/types/api";
 import type { BracketDoc, WithId } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
 import { request, url, type Json } from "./core";
@@ -44,6 +45,31 @@ export const bracketSlotSchema = z.strictObject({
   venueDetail: text,
 });
 export type BracketSlotInput = z.infer<typeof bracketSlotSchema>;
+
+/**
+ * The bracket and tournament forms' rows (and their CSVs) as v3 slots: "" and
+ * "TBD" are empty sides, a seed of -1 is none, divisions are lowercased
+ * ("none" is none). Unknown colleges pass through; the server refuses them.
+ */
+export function slotsFromForm(rows: SlotInput[]): BracketSlotInput[] {
+  const college = (value: unknown) => (typeof value === "string" && value !== "" && value !== "TBD" ? value : null);
+  const division = (value: unknown) => {
+    const v = typeof value === "string" ? value.toLowerCase() : "";
+    return v === "blue" || v === "green" || v === "final" ? v : null;
+  };
+  const seed = (value: number | undefined) => (typeof value === "number" && value >= 0 ? value : null);
+  return rows.map((s) => ({
+    slot: s.match_slot,
+    homeCollegeId: college(s.home_college),
+    awayCollegeId: college(s.away_college),
+    homeSeed: seed(s.home_seed),
+    awaySeed: seed(s.away_seed),
+    division: division(s.division),
+    startsAt: s.timestamp || null,
+    venue: s.location || null,
+    venueDetail: s.location_extra || null,
+  }));
+}
 
 const placementPoint = z.number().min(0);
 

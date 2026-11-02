@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { winnerId } from "@/lib/results";
+import type { BracketCellData } from "./BracketCell";
 
 /**
  * Connector lines between bracket cells, measured from the rendered DOM rather
@@ -42,11 +44,6 @@ export interface Connector {
   key: string;
   d: string;
   kind: "winner" | "loser";
-}
-
-interface SlotMatch {
-  bracket_placement: number;
-  match_id: string | number;
 }
 
 export function useBracketConnectors(edges: BracketEdge[], enabled: boolean) {
@@ -137,37 +134,31 @@ export function useBracketConnectors(edges: BracketEdge[], enabled: boolean) {
  */
 export function buildTeamConnections(
   edges: BracketEdge[],
-  slots: SlotMatch[] | null,
-  matchDetails: Record<string, any>
+  cells: BracketCellData[] | null
 ): Record<string, string[]> {
   const map: Record<string, string[]> = {};
-  if (!slots) return map;
+  if (!cells) return map;
 
-  const bySlot = new Map(slots.map((m) => [m.bracket_placement, m]));
+  const bySlot = new Map(cells.map((cell) => [cell.slot, cell]));
+  // The colleges a cell holds, and the one it sends on (a bye's college; a game's winner, or loser).
+  const sides = (cell: BracketCellData) =>
+    cell.kind === "bye" ? [cell.collegeId] : [cell.match?.homeCollegeId ?? null, cell.match?.awayCollegeId ?? null];
+  const advancing = (cell: BracketCellData, kind: BracketEdge["kind"]) => {
+    if (cell.kind === "bye") return kind === "winner" ? cell.collegeId : null;
+    const match = cell.match;
+    if (!match?.result) return null;
+    const winner = winnerId(match.homeCollegeId, match.awayCollegeId, match.result);
+    if (kind === "winner" || !winner) return winner;
+    return winner === match.homeCollegeId ? match.awayCollegeId : match.homeCollegeId;
+  };
 
   for (const edge of edges) {
-    const fromSlot = bySlot.get(edge.from);
-    const toSlot = bySlot.get(edge.to);
-    if (!fromSlot || !toSlot) continue;
-
-    const fromData = matchDetails[fromSlot.match_id as any];
-    const toData = matchDetails[toSlot.match_id as any];
-    if (!fromData || !toData || !fromData.winner) continue;
-
-    const team =
-      edge.kind === "winner"
-        ? fromData.winner
-        : fromData.winner === fromData.home_college
-        ? fromData.away_college
-        : fromData.home_college;
-
-    if (!team || team === "TBD" || team === "Draw" || team === "Default") {
-      continue;
-    }
-    if (toData.home_college !== team && toData.away_college !== team) continue;
-
-    if (!map[team]) map[team] = [];
-    map[team].push(edgeKey(edge));
+    const from = bySlot.get(edge.from);
+    const to = bySlot.get(edge.to);
+    if (!from || !to) continue;
+    const team = advancing(from, edge.kind);
+    if (!team || !sides(to).includes(team)) continue;
+    (map[team] ??= []).push(edgeKey(edge));
   }
 
   return map;

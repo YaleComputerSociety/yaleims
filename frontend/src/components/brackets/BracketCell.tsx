@@ -1,14 +1,38 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { toCollegeName } from "@/utils/helpers";
-import SkeletonBracketCell from "./SkeletonBracketCell";
+import React from "react";
+import type { BracketDetail } from "@/lib/api/brackets";
+import type { Match } from "@/lib/api/matches";
+import { collegeName } from "@/lib/colleges";
 import "react-loading-skeleton/dist/skeleton.css";
 import { getCollegeFlag } from "@/utils/versionedImages";
 
+// ── The cells of a bracket ─────────────────────────────────────────────────
+
+/** One slot as the bracket draws it: a game, or a bye (its college moves on without one). */
+export type BracketCellData =
+  | { kind: "game"; slot: number; round: string; time: string; match: Match | null /* null: its game is gone */ }
+  | { kind: "bye"; slot: number; round: string; time: string; collegeId: string | null; seed: number | null };
+
+/** The bracket's cells by slot. A bye without a time of its own shows the bracket's first start. */
+export function bracketCells(bracket: BracketDetail): BracketCellData[] {
+  const games = new Map(bracket.matches.map((m) => [m.id, m]));
+  const firstStart = bracket.matches.map((m) => m.startsAt).sort()[0] ?? "";
+  return [...bracket.slots]
+    .sort((a, b) => a.slot - b.slot)
+    .map((s): BracketCellData => {
+      if (s.matchId) {
+        const match = games.get(s.matchId) ?? null;
+        return { kind: "game", slot: s.slot, round: s.round, time: match?.startsAt ?? firstStart, match };
+      }
+      return { kind: "bye", slot: s.slot, round: s.round, time: s.byeStartsAt ?? firstStart, collegeId: s.byeCollegeId, seed: s.byeSeed };
+    });
+}
+
+// ── The cell ───────────────────────────────────────────────────────────────
+
 interface BracketCellProps {
-  match: any;
-  time: string;
+  cell: BracketCellData | undefined;
   setHoveredTeam: (team: string | null) => void;
 }
 
@@ -75,26 +99,8 @@ const ErrorBracketCell = ({
   </div>
 );
 
-const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }) => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  // console.log(time)
-  const displayTime = getTimeString(time)
-
-  // UPDATED: styled Loading state
-  // if (loading) {
-  //   return <SkeletonBracketCell />;
-  // }
-
-  // // UPDATED: styled error && !message states that use the ErrorBracketCell
-  // if (error) {
-  //   return (
-  //     <ErrorBracketCell title="🚫 Error" message="Failed to load match." />
-  //   );
-  // }
-
-  if (!match) {
-    // `match` is undefined here, so it cannot be read for an id.
+const BracketCell: React.FC<BracketCellProps> = ({ cell, setHoveredTeam }) => {
+  if (!cell || (cell.kind === "game" && !cell.match)) {
     return (
       <ErrorBracketCell
         title="🔎 Match not Found"
@@ -102,27 +108,26 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
       />
     );
   }
+  const displayTime = getTimeString(cell.time);
 
-  // variables from match data
-  const awayCollegeName =
-    match.away_college !== "TBD" ? toCollegeName[match.away_college] : "TBD";
-  const homeCollegeName =
-    match.home_college !== "TBD" ? toCollegeName[match.home_college] : "TBD";
-  const matchScored = match.winner !== "" ? true : false;
-  const isBye = match.type === "Bye" ? true : false;
+  // A bye has its college on top; a game, the away side on top and home below.
+  const game = cell.kind === "game" ? cell.match! : null;
+  const isBye = !game;
+  const topCollege = game ? game.awayCollegeId : cell.kind === "bye" ? cell.collegeId : null;
+  const bottomCollege = game?.homeCollegeId ?? null;
+  const topSeed = game ? game.awaySeed : cell.kind === "bye" ? cell.seed : null;
+  const awayCollegeName = collegeName(topCollege) ?? "TBD";
+  const homeCollegeName = collegeName(bottomCollege) ?? "TBD";
+  const result = game?.result ?? null;
 
   // will be 'away', 'home' or null
-  const winningTeam = matchScored
-    ? match.winner === match.away_college
-      ? "away"
-      : "home"
-    : null;
+  const winningTeam = result?.outcome === "away" ? "away" : result?.outcome === "home" ? "home" : null;
 
   // UPDATED: for medal rendering :)
   let topMedal: "gold" | "silver" | null = null;
   let bottomMedal: "gold" | "silver" | null = null;
 
-  if (match.type === "Final" && matchScored) {
+  if (cell.round === "Final" && result) {
     if (winningTeam === "away") {
       topMedal = "gold";
       bottomMedal = "silver";
@@ -141,7 +146,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
       <div className="flex items-center justify-between z-10">
         <div 
           className="flex items-center space-x-1"
-          onMouseEnter={() => setHoveredTeam(match.away_college)}
+          onMouseEnter={() => setHoveredTeam(topCollege)}
           onMouseLeave={() => setHoveredTeam(null)} 
         >
           {/* only show image if college not TBD */}
@@ -167,7 +172,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
               className={`bg-gray-100 dark:bg-gray-800 text-sm rounded-full px-1 py-[6px] w-[24px] h-[28px] flex items-center justify-center font-bold self-start`}
               style={{ position: "relative", top: "-8px" }}
             >
-              {match.away_seed == -1 ? "" : match.away_seed}
+              {topSeed ?? ""}
             </div>
           </div>
         </div>
@@ -191,14 +196,14 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
                   winningTeam === "away" ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-600"
                 }
               >
-                {matchScored ? match.away_college_score : "?"}
+                {result ? result.awayScore : "?"}
               </span>
               <span
                 className={
                   winningTeam === "home" ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-600"
                 }
               >
-                {matchScored ? match.home_college_score : "?"}
+                {result ? result.homeScore : "?"}
               </span>
             </div>
           </div>
@@ -207,7 +212,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
           <div className="flex items-center justify-between z-10">
             <div 
               className="flex items-center space-x-1"
-              onMouseEnter={() => setHoveredTeam(match.home_college)}
+              onMouseEnter={() => setHoveredTeam(bottomCollege)}
               onMouseLeave={() => setHoveredTeam(null)}
             >
               {/* only show image if college not TBD */}
@@ -233,7 +238,7 @@ const BracketCell: React.FC<BracketCellProps> = ({ match, time, setHoveredTeam }
                   className={`bg-gray-100 dark:bg-gray-800 text-sm rounded-full px-1 py-[6px] w-[24px] h-[28px] flex items-center justify-center font-bold self-start`}
                   style={{ position: "relative", top: "-8px" }}
                 >
-                  {match.home_seed == -1 ? "" : match.home_seed}
+                  {game?.homeSeed ?? ""}
                 </span>
               </div>
             </div>

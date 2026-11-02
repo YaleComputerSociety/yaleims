@@ -1,12 +1,11 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { currentYear, sports } from "@/utils/helpers";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
-import { useLegacyBracket } from "@/utils/useLegacyBracket";
+import { useBracket } from "@/hooks/useBracket";
 import { useRef } from "react";
 import BracketCell from "@/components/brackets/BracketCell";
-import { useSeason } from "@/context/SeasonContext";
+import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
@@ -31,8 +30,12 @@ const BracketsPage: React.FC = () => {
   const { collapsed } = useNavbar();
   const [isMobile, setIsMobile] = useState(false);
   const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
+  // The sport (id) and the season (the current one until one is picked).
   const [sport, setSport] = useState<string>("");
-  const [season, setSeason] = useState<string>(currentSeason?.id || currentYear);
+  const [pickedSeason, setSeason] = useState<string | null>(null);
+  const season = pickedSeason ?? currentSeason?.id ?? "";
+  const sports = useSeasonDetail(season || null)?.sports ?? [];
+  const sportName = sports.find((s) => s.id === sport)?.name ?? "";
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
   // console.log("Hovered Team:", hoveredTeam);
 
@@ -59,21 +62,24 @@ const BracketsPage: React.FC = () => {
     setSport(sport);
   };
 
-  // The sport's playoffs that season (pre-v3 shapes, built from v3 docs).
-  const playoffs = useLegacyBracket(sport ? season : undefined, sport ? bracketIdOf(playoffsName(sport)) : null);
-  const { slots: bracket, matchDetails, loading } = playoffs;
+  // The sport's playoffs that season, a cell per slot.
+  const playoffs = useBracket(
+    sportName ? season : undefined,
+    sportName ? bracketIdOf(playoffsName(sportName)) : null
+  );
+  const { cells: bracket, loading } = playoffs;
   const error =
     playoffs.error === "not-found"
-      ? `Bracket for ${sport} (${season}) not found`
+      ? `Bracket for ${sportName} (${season}) not found`
       : playoffs.error && "Bracket doesn't yet exist!";
 
   // Connector geometry is measured from the rendered cells, so the lines stay
   // aligned without the hand-tuned coordinates this page used to carry.
-  const matchesReady = Boolean(
-    bracket &&
-      bracket.length > 0 &&
-      bracket.every((m) => matchDetails[m.match_id] !== undefined)
-  );
+  const matchesReady = Boolean(bracket && bracket.length > 0);
+  const dayOf = (index: number) => {
+    const date = new Date(bracket![index].time);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
 
   const { ref: headerRef, height: headerHeight } = useElementHeight();
 
@@ -83,8 +89,8 @@ const BracketsPage: React.FC = () => {
   );
 
   const teamConnections = useMemo(
-    () => buildTeamConnections(WINNER_EDGES, bracket, matchDetails),
-    [bracket, matchDetails]
+    () => buildTeamConnections(WINNER_EDGES, bracket),
+    [bracket]
   );
 
   const activeEdges = useMemo(
@@ -135,7 +141,7 @@ const BracketsPage: React.FC = () => {
             <GlassDropdown
               placeholder="Select Sport"
               value={sport}
-              options={sports.map((s) => ({ value: s.name, label: s.name, icon: <span>{s.emoji}</span> }))}
+              options={sports.map((s) => ({ value: s.id, label: s.name, icon: <span>{s.emoji}</span> }))}
               onChange={handleSportChange}
               allowReset={false}
             />
@@ -145,13 +151,13 @@ const BracketsPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-blue-400 dark:text-gray-500 uppercase tracking-wide">Year</span>
             <GlassDropdown
-              placeholder={currentSeason?.id || currentYear}
+              placeholder={currentSeason?.id ?? ""}
               value={season}
               options={[
-                { value: currentSeason?.id || currentYear, label: `${currentSeason?.id || currentYear} (Current)` },
+                { value: currentSeason?.id ?? "", label: `${currentSeason?.id ?? ""} (Current)` },
                 ...pastSeasonIds
-                  .filter((y: string) => y !== (currentSeason?.id || currentYear))
-                  .map((y: string) => ({ value: y, label: y })),
+                  .filter((y) => y !== currentSeason?.id)
+                  .map((y) => ({ value: y, label: y })),
               ]}
               onChange={handleSeasonChange}
               allowReset={false}
@@ -180,24 +186,20 @@ const BracketsPage: React.FC = () => {
 
                 <div className="flex flex-col items-center">
                   <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
-                    Playoffs {bracket[0].timestamp.toDate().getDate()}/{bracket[0].timestamp.toDate().getMonth() + 1}/{bracket[0].timestamp.toDate().getFullYear()}
+                    Playoffs {dayOf(0)}
                   </span>
 
                   {/* Left Playoffs */}
                   <div className="flex flex-col items-end space-y-5">
                     {leftPlayoffIndices.map((index) => {
-                      const match = bracket[index];
+                      const cell = bracket[index];
                       return (
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                          key={match.match_id}
-                          ref={setCellRef(match.bracket_placement)}
+                          key={cell.slot}
+                          ref={setCellRef(cell.slot)}
                         >
-                          <BracketCell
-                            match={matchDetails[match.match_id]}
-                            time={match.timestamp.toDate().toString()}
-                            setHoveredTeam={setHoveredTeam}
-                          />
+                          <BracketCell cell={cell} setHoveredTeam={setHoveredTeam} />
                         </div>
                       );
                     })}
@@ -207,22 +209,18 @@ const BracketsPage: React.FC = () => {
                 {/* Left Quarters */}
                 <div className="flex flex-col items-center justify-center">
                   <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 mb-[70px] text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
-                    Quarter-Finals {bracket[5].timestamp.toDate().getDate()}/{bracket[5].timestamp.toDate().getMonth() + 1}/{bracket[5].timestamp.toDate().getFullYear()}
+                    Quarter-Finals {dayOf(5)}
                   </span>
                   <div className="flex flex-col items-center justify-center space-y-40">
                     {leftQuarterIndices.map((index) => {
-                      const match = bracket[index];
+                      const cell = bracket[index];
                       return (
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                          key={match.match_id}
-                          ref={setCellRef(match.bracket_placement)}
+                          key={cell.slot}
+                          ref={setCellRef(cell.slot)}
                         >
-                          <BracketCell
-                            match={matchDetails[match.match_id]}
-                            time={match.timestamp.toDate().toString()}
-                            setHoveredTeam={setHoveredTeam}
-                          />
+                          <BracketCell cell={cell} setHoveredTeam={setHoveredTeam} />
                         </div>
                       );
                     })}
@@ -232,25 +230,21 @@ const BracketsPage: React.FC = () => {
                 {/* Left Semis */}
                 <div className="flex flex-col items-center space-y-52">
                   <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
-                    Semi-Finals {bracket[12].timestamp.toDate().getDate()}/{bracket[12].timestamp.toDate().getMonth() + 1}/{bracket[12].timestamp.toDate().getFullYear()}
+                    Semi-Finals {dayOf(12)}
                   </span>
                     <div
                       className="scale-75 space-y-22 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                      key={bracket[leftSemiIndex].match_id}
-                      ref={setCellRef(bracket[leftSemiIndex].bracket_placement)}
+                      key={bracket[leftSemiIndex].slot}
+                      ref={setCellRef(bracket[leftSemiIndex].slot)}
                     >
-                      <BracketCell
-                        match={matchDetails[bracket[leftSemiIndex].match_id]}
-                        time={bracket[leftSemiIndex].timestamp.toDate().toString()}
-                        setHoveredTeam={setHoveredTeam}
-                      />
+                      <BracketCell cell={bracket[leftSemiIndex]} setHoveredTeam={setHoveredTeam} />
                     </div>
                 </div>
 
                 {/* Final */}
                 <div className="flex flex-col items-center space-y-14">
                   <span className="bg-yellow-100 dark:bg-yellow-600/40 backdrop-blur-md text-yellow-700 dark:text-yellow-200 text-[10px] font-bold px-3 py-1 rounded-full border border-yellow-300 dark:border-yellow-400/20 shadow-sm shadow-yellow-100/30 dark:shadow-yellow-500/15">
-                    Final {bracket[14].timestamp.toDate().getDate()}/{bracket[14].timestamp.toDate().getMonth() + 1}/{bracket[14].timestamp.toDate().getFullYear()}
+                    Final {dayOf(14)}
                   </span>
 
                   {/* Trophy container */}
@@ -264,13 +258,9 @@ const BracketsPage: React.FC = () => {
                     {/* Overlayed final match cell */}
                     <div
                       className="absolute scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                      ref={setCellRef(bracket[finalIndex].bracket_placement)}
+                      ref={setCellRef(bracket[finalIndex].slot)}
                     >
-                      <BracketCell
-                        match={matchDetails[bracket[finalIndex].match_id]}
-                        time={bracket[finalIndex].timestamp.toDate().toString()}
-                        setHoveredTeam={setHoveredTeam}
-                      />
+                      <BracketCell cell={bracket[finalIndex]} setHoveredTeam={setHoveredTeam} />
                     </div>
                   </div>
                 </div>
@@ -278,40 +268,32 @@ const BracketsPage: React.FC = () => {
                 {/* Right Semis */}
                 <div className="flex flex-col items-center space-y-52">
                   <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
-                    Semi-Finals {bracket[13].timestamp.toDate().getDate()}/{bracket[13].timestamp.toDate().getMonth() + 1}/{bracket[13].timestamp.toDate().getFullYear()}
+                    Semi-Finals {dayOf(13)}
                   </span>
                   <div
                     className="scale-75 space-y-22 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                    key={bracket[rightSemiIndex].match_id}
-                    ref={setCellRef(bracket[rightSemiIndex].bracket_placement)}
+                    key={bracket[rightSemiIndex].slot}
+                    ref={setCellRef(bracket[rightSemiIndex].slot)}
                   >
-                    <BracketCell
-                      match={matchDetails[bracket[rightSemiIndex].match_id]}
-                      time={bracket[rightSemiIndex].timestamp.toDate().toString()}
-                      setHoveredTeam={setHoveredTeam}
-                    />
+                    <BracketCell cell={bracket[rightSemiIndex]} setHoveredTeam={setHoveredTeam} />
                   </div>
                 </div>
 
                 {/* Right Quarters */}
                 <div className="flex flex-col items-center">
                   <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 mb-[70px] text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
-                    Quarter-Finals {bracket[10].timestamp.toDate().getDate()}/{bracket[10].timestamp.toDate().getMonth() + 1}/{bracket[10].timestamp.toDate().getFullYear()}
+                    Quarter-Finals {dayOf(10)}
                   </span>
                   <div className=" flex flex-col items-start justify-center space-y-40">
                     {rightQuarterIndices.map((index) => {
-                      const match = bracket[index];
+                      const cell = bracket[index];
                       return (
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                          key={match.match_id}
-                          ref={setCellRef(match.bracket_placement)}
+                          key={cell.slot}
+                          ref={setCellRef(cell.slot)}
                         >
-                          <BracketCell
-                            match={matchDetails[match.match_id]}
-                            time={match.timestamp.toDate().toString()}
-                            setHoveredTeam={setHoveredTeam}
-                          />
+                          <BracketCell cell={cell} setHoveredTeam={setHoveredTeam} />
                         </div>);
                       })}
                   </div>
@@ -320,22 +302,18 @@ const BracketsPage: React.FC = () => {
                 {/* Right Playoffs */}
                 <div className="flex flex-col items-center">
                   <span className="bg-blue-100 dark:bg-blue-900/50 backdrop-blur-md text-blue-700 dark:text-blue-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-400/20 shadow-sm shadow-blue-100/30 dark:shadow-blue-500/10">
-                    Playoffs {bracket[6].timestamp.toDate().getDate()}/{bracket[6].timestamp.toDate().getMonth() + 1}/{bracket[6].timestamp.toDate().getFullYear()}
+                    Playoffs {dayOf(6)}
                   </span>
                   <div className="flex flex-col items-start space-y-5">
                     {rightPlayoffIndices.map((index) => {
-                      const match = bracket[index];
+                      const cell = bracket[index];
                       return (
                         <div
                           className="scale-75 transition-shadow duration-200 hover:shadow-lg hover:shadow-blue-400/50 rounded-3xl"
-                          key={match.match_id}
-                          ref={setCellRef(match.bracket_placement)}
+                          key={cell.slot}
+                          ref={setCellRef(cell.slot)}
                         >
-                          <BracketCell
-                            match={matchDetails[match.match_id]}
-                            time={match.timestamp.toDate().toString()}
-                            setHoveredTeam={setHoveredTeam}
-                          />
+                          <BracketCell cell={cell} setHoveredTeam={setHoveredTeam} />
                         </div>
                       );
                     })}

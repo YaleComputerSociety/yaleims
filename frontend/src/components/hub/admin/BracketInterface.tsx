@@ -1,5 +1,4 @@
 import React from "react";
-import { currentYear, sports } from "@/utils/helpers";
 import { useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import { useSeason } from "@/context/SeasonContext";
@@ -25,7 +24,8 @@ const BracketInterface: React.FC<BracketInterfaceProps> = ({
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const [confirmingDelete, setConfirmingDelete] = useState<boolean>(false);
   const { currentSeason, seasonLoading } = useSeason();
-  const season = currentSeason?.id || currentYear;
+  const season = currentSeason?.id ?? "";
+  const sports = currentSeason?.sports ?? [];
 
   const handleCreateChange = (sport: string) => {
     setCreateSport(sport);

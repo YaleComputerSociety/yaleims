@@ -2,7 +2,7 @@ import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
 import { actorOf } from "@/server/data/auditLog";
 import { getCurrentSeasonId } from "@/server/data/seasons";
 import { findSportByName } from "@/server/data/sports";
-import { slotsFromLegacy } from "@/server/legacy";
+import { slotsFromForm } from "@/lib/api/brackets";
 import { createBracket } from "@/server/services/brackets";
 
 /** { bracketData: { sport, matches } }: creates this season's playoffs for a sport (admin/dev; audit-logged). */
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const result = sportDoc
       ? await createBracket(
           seasonId,
-          { kind: "playoffs", sportId: sportDoc.id, slots: slotsFromLegacy(bracketData.matches) },
+          { kind: "playoffs", sportId: sportDoc.id, slots: slotsFromForm(bracketData.matches) },
           actorOf(session)
         )
       : ({ status: "unknown-sport" } as const);

@@ -3,7 +3,7 @@ import { actorOf } from "@/server/data/auditLog";
 import { bracketIdOf } from "@/lib/brackets";
 import { getCurrentSeasonId } from "@/server/data/seasons";
 import { findSportByName } from "@/server/data/sports";
-import { slotsFromLegacy } from "@/server/legacy";
+import { slotsFromForm } from "@/lib/api/brackets";
 import { createBracket, normalizePlacementPoints } from "@/server/services/brackets";
 
 /**
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
             kind: "tournament",
             name,
             sportId: sport.id,
-            slots: slotsFromLegacy(tournamentData.matches),
+            slots: slotsFromForm(tournamentData.matches),
             placementPoints: normalizePlacementPoints(tournamentData.placement_points),
           },
           actorOf(session)
