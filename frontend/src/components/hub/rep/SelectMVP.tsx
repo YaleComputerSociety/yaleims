@@ -5,8 +5,8 @@ import { useSession } from "@/context/SessionContext";
 import { fetchCollegePlayers, fetchMvps, nameMvp, type CollegePlayer, type Mvp } from "@/lib/api/colleges";
 
 // ── MVP weeks: week 1 starts on the Monday of the season's first game ─────
-
-const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+// Weeks are counted in calendar days, not as 7 × 24 hours: the week of a
+// daylight saving change is an hour longer or shorter.
 
 /** The season's MVP week 1 (its mvpWeekOne, "yyyy-mm-dd") as a local midnight; null before the first game. */
 function mvpWeekOne(day: string | null | undefined): Date | null {
@@ -14,24 +14,29 @@ function mvpWeekOne(day: string | null | undefined): Date | null {
   return y && m && d ? new Date(y, m - 1, d) : null;
 }
 
-/** This week's option value ("week_4"). */
-function currentWeekId(weekOne: Date): string {
-  return `week_${Math.floor((Date.now() - weekOne.getTime()) / MS_PER_WEEK) + 1}`;
+/** The local midnight (a Monday) that starts week `n`. */
+function weekStart(weekOne: Date, n: number): Date {
+  return new Date(weekOne.getFullYear(), weekOne.getMonth(), weekOne.getDate() + 7 * (n - 1));
 }
 
-/** Every week from week 1 to this one, newest first, labelled with its dates. */
-function weekOptions(start: Date): { value: string; label: string }[] {
-  const firstWeekStart = new Date(start);
-  const day = firstWeekStart.getDay(); // 0 = Sun … 6 = Sat
-  if (day !== 1) firstWeekStart.setDate(firstWeekStart.getDate() + ((8 - day) % 7));
+/** This week's number: the last week that has started (0 before week 1). */
+function currentWeek(weekOne: Date): number {
+  let n = 0;
+  while (weekStart(weekOne, n + 1).getTime() <= Date.now()) n++;
+  return n;
+}
 
-  const weekCount = Math.floor((Date.now() - firstWeekStart.getTime()) / MS_PER_WEEK) + 1;
+/** This week's option value ("week_4"). */
+function currentWeekId(weekOne: Date): string {
+  return `week_${currentWeek(weekOne)}`;
+}
+
+/** Every week from week 1 to this one, newest first, labelled with its dates (Monday to the next Monday). */
+function weekOptions(weekOne: Date): { value: string; label: string }[] {
   const format = (d: Date) => d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
   const options = [];
-  for (let i = 0; i < weekCount; i++) {
-    const weekStart = new Date(firstWeekStart.getTime() + i * MS_PER_WEEK);
-    const weekEnd = new Date(weekStart.getTime() + MS_PER_WEEK);
-    options.push({ value: `week_${i + 1}`, label: `Week ${i + 1}: ${format(weekStart)} – ${format(weekEnd)}` });
+  for (let n = 1; n <= currentWeek(weekOne); n++) {
+    options.push({ value: `week_${n}`, label: `Week ${n}: ${format(weekStart(weekOne, n))} – ${format(weekStart(weekOne, n + 1))}` });
   }
   return options.reverse();
 }
