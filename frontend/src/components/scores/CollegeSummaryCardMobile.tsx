@@ -1,9 +1,15 @@
 import Skeleton from "react-loading-skeleton";
 import Image from "next/image";
-import { CollegeSummaryCardProps } from "@/types/components";
+import type { CollegeDoc } from "@/types/firestore";
 import { getCollegeFlag } from "@/utils/versionedImages";
 
-import { getPlace, getRatioAsString } from "@/utils/helpers";
+import { getPlace, getRatioAsString } from "@/lib/format";
+
+interface CollegeSummaryCardProps {
+  /** The college's standing this season (null: not found). */
+  stats: CollegeDoc | null;
+  isLoading: boolean;
+}
 
 const CollegeSummaryCardMobile: React.FC<CollegeSummaryCardProps> = ({
   stats,

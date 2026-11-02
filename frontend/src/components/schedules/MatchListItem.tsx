@@ -1,188 +1,97 @@
-import { useEffect, useState } from "react";
-import TournamentBadge from "@/components/ui/TournamentBadge";
-import { getMatchTypeLabel } from "@/utils/helpers";
+import { useState } from "react";
+import { toast } from "react-toastify";
 import { FaCalendar, FaSpinner } from "react-icons/fa";
-import {
-  toCollegeName,
-  emojiMap,
-  generateGoogleCalendarLink,
-  userIsAdminOrDev,
-  currentYear,
-} from "@/utils/helpers";
-import type { MatchJson, MatchParticipantsResponse } from "@/types/api";
-import type { ScheduleMatch } from "@/types/components";
+import TournamentBadge from "@/components/ui/TournamentBadge";
+import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
+import type { Match } from "@/lib/api/matches";
+import { fetchRoster, signUp, withdraw, type PublicRosterEntry } from "@/lib/api/roster";
+import type { Sport } from "@/lib/api/seasons";
+import { collegeName } from "@/lib/colleges";
+import { calendarLink, matchTypeLabel } from "@/lib/format";
+import type { SessionUser } from "@/types/api";
 
 interface MatchListItemProps {
-  match: ScheduleMatch;
-  user: any;
-  isSignedUp: boolean; // Pass initial state from parent
-  onStatusChange: (id: MatchJson["id"], signed: boolean) => void;
+  match: Match;
+  sport: Sport | undefined;
+  tournament: string | undefined;
+  user: SessionUser | null;
+  isSignedUp: boolean;
+  onStatusChange: (id: string, signed: boolean) => void;
 }
 
-import type { MatchParticipant } from "@/types/legacy";
-import { useSeason } from "@/context/SeasonContext";
-import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
-
-const MatchListItem: React.FC<MatchListItemProps> = ({
-  match,
-  user,
-  isSignedUp,
-  onStatusChange,
-}) => {
+const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, user, isSignedUp, onStatusChange }) => {
   const [isLoading, setIsLoading] = useState(false);
-  // const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
   const [participantsShow, setParticipantsShow] = useState(false);
-  // Undefined after a failed refresh (getMatchParticipants returns nothing).
-  const [participantionData, setParticipantionData] = useState<
-    Partial<MatchParticipantsResponse> | undefined
-  >({
-    home_college_participants: match.home_college_participants,
-    away_college_participants: match.away_college_participants,
-  });
-  const homeParticipants = participantionData?.home_college_participants ?? [];
-  const awayParticipants = participantionData?.away_college_participants ?? [];
+  // The game's roster, read when the participants are first shown.
+  const [roster, setRoster] = useState<PublicRosterEntry[]>([]);
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
-  const { currentSeason } = useSeason();
+  const homeParticipants = roster.filter((entry) => entry.collegeId === match.homeCollegeId);
+  const awayParticipants = roster.filter((entry) => entry.collegeId === match.awayCollegeId);
 
-  const isAdmin = userIsAdminOrDev(user);
+  const startsAt = new Date(match.startsAt);
+  const isPastMatch = startsAt < new Date();
+  const sportName = sport?.name ?? "";
 
-  const currentSeasonId = currentSeason ? currentSeason.id : currentYear;
-
-  // Check if match is in the past
-  const isPastMatch = match.timestamp
-    ? new Date(match.timestamp) < new Date()
-    : false;
-
-  const handleSignUp = async () => {
-    setIsLoading(true);
+  const loadRoster = async () => {
+    setIsLoadingParticipants(true);
     try {
-      const response = await fetch("/api/functions/addMatchParticipant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          seasonId: currentSeasonId,
-          matchId: match.id,
-          matchTimestamp: match.timestamp,
-          participantType:
-            toCollegeName[user.college] == toCollegeName[match.home_college]
-              ? "home_college_participants"
-              : "away_college_participants",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to sign up for the match");
-      }
-      onStatusChange(match.id, true);
-      // if (participantsShow) {
-      //   const participant_data = await getMatchParticipants(
-      //     match.id.toString()
-      //   );
-      //   setParticipantionData(participant_data);
-      // }
-    } catch (error) {
-      console.error("Error signing up:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getMatchParticipants = async (matchId: string) => {
-    try {
-      setIsLoadingParticipants(true);
-      const response = await fetch(
-        `/api/functions/getMatchParticipants?matchId=${matchId}&seasonId=${currentSeasonId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: MatchParticipantsResponse = await response.json();
-      return data;
+      setRoster((await fetchRoster(match.seasonId, match.id)).items);
     } catch (error) {
       console.error("Error fetching match participants:", error);
+      setRoster([]);
     } finally {
       setIsLoadingParticipants(false);
     }
   };
 
-  const handleUnregister = async () => {
+  const changeSignUp = async (signed: boolean) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/functions/removeMatchParticipant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          matchId: match.id as string,
-          participantType:
-            toCollegeName[user.college] === toCollegeName[match.home_college]
-              ? "home_college_participants"
-              : "away_college_participants",
-          seasonId: currentSeasonId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to unregister from the match"
-        );
-      }
-      onStatusChange(match.id, false);
-      if (participantsShow) {
-        const participant_data = await getMatchParticipants(
-          match.id.toString()
-        );
-        setParticipantionData(participant_data);
-      }
+      await (signed ? signUp : withdraw)(match.seasonId, match.id);
+      onStatusChange(match.id, signed);
+      if (participantsShow) await loadRoster();
     } catch (error) {
-      console.error("Error unregistering:", error);
+      toast.error((error as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleAddToGCal = () => {
-    const link = generateGoogleCalendarLink(match);
-    window.open(link, "_blank");
+    window.open(calendarLink(match, sportName), "_blank");
   };
 
-  const matchDate = match.timestamp
-    ? new Date(match.timestamp).toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "Date TBD";
+  const matchDate = startsAt.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
-  const matchTime = match.timestamp
-    ? new Date(match.timestamp)
-        .toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-        .replace(/^0/, "") // Remove leading zero if present
-    : "Time TBD";
+  const matchTime = startsAt
+    .toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    .replace(/^0/, ""); // Remove leading zero if present
 
-  const location = match.location || "Location TBD";
+  const location = match.venue || "Location TBD";
 
+  // The session names the user's college.
   const isUserTeam =
-    user &&
-    (toCollegeName[match.home_college] === user.college ||
-      toCollegeName[match.away_college] === user.college);
+    !!user &&
+    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
+
+  const homeName = collegeName(match.homeCollegeId) ?? "";
+  const awayName = collegeName(match.awayCollegeId) ?? "";
+  const names = (entries: PublicRosterEntry[]) =>
+    entries.map((entry, index) => (
+      <span key={index}>
+        {entry.name}
+        {index < entries.length - 1 ? ", " : ""}
+      </span>
+    ));
 
   return (
     <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out max-w-4xl mx-auto">
@@ -190,29 +99,17 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         <div>
           {/* Match Teams */}
           <div className="text-sm sm:text-lg font-bold">
-            {toCollegeName[match.home_college || "TBD"]}{" "}
-            {match.away_college != "Bye" ? (
-              <>
-                vs {toCollegeName[match.away_college]} {emojiMap[match.sport]}
-              </>
-            ) : (
-              <>(BYE)</>
-            )}
+            {homeName} vs {awayName} {sport?.emoji}
             <EditMatchButton match={match} />
           </div>
 
           {/* Match Sport */}
           <div className="text-sm sm:text-md text-gray-600 dark:text-gray-400 font-semibold flex flex-wrap items-center gap-2">
             <span>
-              {match.sport}{" "}
-              {match.type === "Regular"
-                ? "Regular Season Match"
-                : getMatchTypeLabel(match.type, match.tournament_id)}
+              {sportName}{" "}
+              {match.stage === "regular" ? "Regular Season Match" : matchTypeLabel(match, tournament !== undefined)}
             </span>
-            <TournamentBadge
-              tournamentId={match.tournament_id}
-              tournamentName={match.tournament_name}
-            />
+            <TournamentBadge name={tournament} />
           </div>
 
           {/* Match Date and Time */}
@@ -222,7 +119,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
 
           {/* Match Location */}
           <div className="text-gray-500 text-xs sm:text-sm">
-            {location} {match.location_extra ? match.location_extra : null}
+            {location} {match.venueDetail}
           </div>
         </div>
 
@@ -230,10 +127,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           {isPastMatch ? (
             // Show score for past matches
             <div className="text-sm sm:text-2xl font-bold ml-5">
-              {match.home_college_score !== undefined &&
-              match.away_college_score !== undefined ? (
+              {match.result ? (
                 <span>
-                  {match.home_college_score} - {match.away_college_score}
+                  {match.result.homeScore} - {match.result.awayScore}
                 </span>
               ) : (
                 <span className="text-gray-500 text-sm sm:text-md">
@@ -245,9 +141,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
             // Show signup and calendar buttons for future matches
             <>
               <button
-                onClick={() =>
-                  isSignedUp ? handleUnregister() : handleSignUp()
-                }
+                onClick={() => changeSignUp(!isSignedUp)}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 className={`ml-5 w-20 sm:w-36 text-xs sm:text-sm h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
@@ -284,13 +178,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         <button
           className="underline"
           onClick={async () => {
-            // console.log(match.id);
-            if (!participantsShow) {
-              const participant_data = await getMatchParticipants(
-                match.id.toString()
-              );
-              setParticipantionData(participant_data);
-            }
+            if (!participantsShow) await loadRoster();
             setParticipantsShow(!participantsShow);
           }}
         >
@@ -310,42 +198,20 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
         >
           <div>
             <span className="text-black dark:text-gray-400 font-semibold text-animate h-20">
-              {toCollegeName[match.home_college]}:
+              {homeName}:
             </span>{" "}
             {homeParticipants.length > 0 ? (
-              homeParticipants.map(
-                (p: MatchParticipant, index: number) => (
-                  <span key={index}>
-                    {p.firstname && p.firstname.trim() !== ""
-                      ? `${p.firstname} ${p.lastname}`.trim()
-                      : p.name || ""}
-                    {index < homeParticipants.length - 1
-                      ? ", "
-                      : ""}
-                  </span>
-                )
-              )
+              names(homeParticipants)
             ) : (
               <span className="text-gray-500">None</span>
             )}
           </div>
           <div>
             <span className="text-black dark:text-gray-400 font-semibold">
-              {toCollegeName[match.away_college]}:
+              {awayName}:
             </span>{" "}
             {awayParticipants.length > 0 ? (
-              awayParticipants.map(
-                (p: MatchParticipant, index: number) => (
-                  <span key={index}>
-                    {p.firstname && p.firstname.trim() !== ""
-                      ? `${p.firstname} ${p.lastname}`.trim()
-                      : p.name || ""}
-                    {index < awayParticipants.length - 1
-                      ? ", "
-                      : ""}
-                  </span>
-                )
-              )
+              names(awayParticipants)
             ) : (
               <span className="text-gray-500">None</span>
             )}

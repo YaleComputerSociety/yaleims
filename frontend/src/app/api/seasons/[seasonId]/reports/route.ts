@@ -4,7 +4,7 @@ import { seasonReportsQuerySchema, type ScoreReportList, type SeasonScoreReport 
 import { authorize, can } from "@/server/auth";
 import { getMatches } from "@/server/data/matches";
 import { listSeasonScoreReports } from "@/server/data/scoreReports";
-import { getUsers } from "@/server/data/users";
+import { getUserNames } from "@/server/data/users";
 import { ok, readQuery, route } from "@/server/http";
 
 type Params = { seasonId: string };
@@ -17,15 +17,14 @@ export const GET = route<Params>(async (req, { params }) => {
   const reports = (await listSeasonScoreReports(seasonId)).filter((r) => !status || r.status === status);
   const [matches, resolvers] = await Promise.all([
     getMatches(seasonId, [...new Set(reports.map((r) => r.matchId))]),
-    getUsers([...new Set(reports.flatMap((r) => (r.resolvedBy ? [r.resolvedBy] : [])))]),
+    getUserNames(reports.flatMap((r) => (r.resolvedBy ? [r.resolvedBy] : []))),
   ]);
   const items = reports.map((report): SeasonScoreReport => {
     const match = matches.get(report.matchId);
-    const resolver = report.resolvedBy ? resolvers.get(report.resolvedBy) : undefined;
     return {
       ...toJson(report),
       match: match ? toMatch({ id: report.matchId, ...match }) : null,
-      resolverName: resolver ? `${resolver.firstname} ${resolver.lastname}` : null,
+      resolverName: (report.resolvedBy && resolvers.get(report.resolvedBy)) || null,
     };
   });
   return ok({ items, total: items.length } satisfies ScoreReportList<SeasonScoreReport>);

@@ -271,7 +271,6 @@ const ViewTeamSignups = () => {
             currentPageNumber={page}
             totalPages={totalPages}
             setPageNumber={setPage}
-            setQueryType={setQueryType}
           />
         )}
       </div>

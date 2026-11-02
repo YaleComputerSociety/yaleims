@@ -1,10 +1,13 @@
 "use client";
 
 import React from "react";
-import { colleges, sports } from "@/utils/helpers";
 import GlassDropdown from "@/components/ui/GlassDropdown";
+import type { Sport } from "@/lib/api/seasons";
+import { COLLEGES } from "@/lib/colleges";
 
 interface GamesFilterBarProps {
+  /** The season's sports, in display order. */
+  sports: Sport[];
   sportFilter: string;
   collegeFilter: string;
   onSportChange: (sport: string) => void;
@@ -12,13 +15,14 @@ interface GamesFilterBarProps {
 }
 
 const GamesFilterBar: React.FC<GamesFilterBarProps> = ({
+  sports,
   sportFilter,
   collegeFilter,
   onSportChange,
   onCollegeChange,
 }) => {
   const sportOptions = sports.map((s) => ({ value: s.name, label: s.name }));
-  const collegeOptions = colleges.map((c) => ({ value: c.name, label: c.name }));
+  const collegeOptions = COLLEGES.map((c) => ({ value: c.name, label: c.name }));
 
   return (
     <div className="flex flex-wrap gap-2 items-center">

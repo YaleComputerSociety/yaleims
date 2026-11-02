@@ -8,17 +8,30 @@ import type { Match } from "./matches";
 
 export type ScoreReport = Json<WithId<ScoreReportDoc>>;
 
-/** GET …/matches/{m}/reports: everyone signed in sees reports without the emails; admins whole. */
-export type MatchScoreReport = Json<WithId<Omit<ScoreReportDoc, "reportedBy" | "resolvedBy">>> &
-  Partial<Pick<ScoreReport, "reportedBy" | "resolvedBy">>;
+/** Who resolved a report, by name (null: not resolved, or not a known user). */
+interface Resolver {
+  resolverName: string | null;
+}
 
-export function toMatchScoreReport(report: WithId<ScoreReportDoc>, withEmails: boolean): MatchScoreReport {
+/**
+ * GET …/matches/{m}/reports: everyone signed in sees reports without the
+ * emails; admins whole.
+ */
+export type MatchScoreReport = Json<WithId<Omit<ScoreReportDoc, "reportedBy" | "resolvedBy">>> &
+  Partial<Pick<ScoreReport, "reportedBy" | "resolvedBy">> &
+  Resolver;
+
+export function toMatchScoreReport(
+  report: WithId<ScoreReportDoc>,
+  withEmails: boolean,
+  resolverName: string | null
+): MatchScoreReport {
   const { reportedBy, resolvedBy, ...rest } = report;
-  return toJson(withEmails ? { ...rest, reportedBy, resolvedBy } : rest);
+  return { ...toJson(withEmails ? { ...rest, reportedBy, resolvedBy } : rest), resolverName };
 }
 
 /** GET /api/seasons/{s}/reports (admins): each report with its game and the resolver's name. */
-export type SeasonScoreReport = ScoreReport & { match: Match | null; resolverName: string | null };
+export type SeasonScoreReport = ScoreReport & { match: Match | null } & Resolver;
 
 export interface ScoreReportList<T> {
   items: T[];

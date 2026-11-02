@@ -21,7 +21,8 @@ export const myMatchesQuerySchema = z.strictObject({
   /** Only games that haven't started. */
   upcoming: z.stringbool().default(false),
 });
-export type MyMatchesQuery = z.input<typeof myMatchesQuerySchema>;
+/** The query as a page passes it (request() writes the boolean as "true"/"false"). */
+export type MyMatchesQuery = { seasonId: string; upcoming?: boolean };
 
 export const changeMe = (change: MeChange) => request<void>("PATCH", "/api/me", { body: change });
 

@@ -1,31 +1,24 @@
-import { TableHeaderProps } from "@/types/components";
 import React from "react";
-import { colleges } from "@/utils/helpers";
+import { useSeason } from "@/context/SeasonContext";
+import { COLLEGES } from "@/lib/colleges";
+import type { Filters } from "@/types/components";
 
-// list of options for college filter
-const collegeOptions: Array<any> = [];
+interface TableHeaderProps {
+  handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  filter: Filters;
+  sortOrder: string;
+  handleSortOrderChange: (newSortOrder: string) => void;
+}
 
-collegeOptions.push(
-  <option key={"All"} value={"All"}>
-    {"All Colleges"}
-  </option>
-);
-
-colleges.map((college) =>
-  collegeOptions.push(
-    <option key={college.id} value={college.id}>
-      {college.name}
-    </option>
-  )
-);
-
-// Updated TableHeader Component
+/** The scores page's filters: the time window, a college, a sport (the current season's) and the order. */
 const TableHeader: React.FC<TableHeaderProps> = ({
   handleFilterChange,
   filter,
   sortOrder,
   handleSortOrderChange,
-}) => (
+}) => {
+  const sports = useSeason().currentSeason?.sports ?? [];
+  return (
   <div className="flex flex-wrap px-2 py-2 rounded-md justify-center justify-self-center">
     {/* Date/Time Column with Dropdown Filter */}
     <div className="py-1 px-1 text-sm font-medium rounded-md uppercase md:tracking-wider hover:bg-yellow-400">
@@ -55,7 +48,12 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           className="text-sm  rounded-md py-1 px-1 bg-white dark:bg-black"
           value={filter.college}
         >
-          {collegeOptions}
+          <option value="All">All Colleges</option>
+          {COLLEGES.map((college) => (
+            <option key={college.id} value={college.id}>
+              {college.name}
+            </option>
+          ))}
         </select>
       </div>
     </div>
@@ -70,20 +68,11 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           value={filter.sport}
         >
           <option value="">All Sports</option>
-          <option value="Indoor Soccer">Indoor Soccer</option>
-          <option value="Volleyball">Volleyball</option>
-          <option value="Kanjam">Kanjam</option>
-          <option value="Soccer">Soccer</option>
-          <option value="Flag Football">Flag Football</option>
-          <option value="Spikeball">Spikeball</option>
-          <option value="Cornhole">Cornhole</option>
-          <option value="Pickleball">Pickleball</option>
-          <option value="Table Tennis">Table Tennis</option>
-          <option value="Broomball">Broomball</option>
-          <option value="CHoops">CHoops</option>
-          <option value="WHoops">WHoops</option>
-          <option value="MHoops">MHoops</option>
-          <option value="Dodgeball">Dodgeball</option>
+          {sports.map((sport) => (
+            <option key={sport.id} value={sport.name}>
+              {sport.name}
+            </option>
+          ))}
         </select>
       </div>
     </div>
@@ -118,6 +107,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
       </fieldset>
     </div>
   </div>
-);
+  );
+};
 
 export default TableHeader;

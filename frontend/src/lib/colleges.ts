@@ -34,3 +34,8 @@ export function collegeIdOfName(
   const college = colleges.find((c) => c.name === wanted || c.id === wanted);
   return college?.id ?? null;
 }
+
+/** The college's name ("Morse" for "MC"); null for none or an unknown id. */
+export function collegeName(collegeId: string | null | undefined): string | null {
+  return COLLEGES.find((c) => c.id === collegeId)?.name ?? null;
+}

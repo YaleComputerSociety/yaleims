@@ -3,25 +3,22 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFlag, FaSpinner, FaCheck } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
-import type { MatchJson, ScoreReport, ScoreReportsResponse } from "@/types/api";
 import { useUser } from "@/context/UserContext";
+import type { Match } from "@/lib/api/matches";
+import { fetchMatchReports, reportScore, resolveReport, type MatchScoreReport } from "@/lib/api/reports";
 import { userIsAdminOrDev } from "@/utils/helpers";
 import { toast } from "react-toastify";
 
 interface ReportScoreButtonProps {
-  match: MatchJson;
-  seasonId?: string;
+  match: Match;
+  sportName: string;
 }
 
-export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({
-  match,
-  seasonId,
-}) => {
+export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({ match, sportName }) => {
   const { user } = useUser();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const isScored = match.winner !== null;
-  if (!isScored) return null;
+  if (!match.result) return null;
 
   const handleClick = () => {
     if (!user) {
@@ -43,62 +40,37 @@ export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({
       </button>
 
       {modalOpen && (
-        <ReportScoreModal
-          match={match}
-          seasonId={seasonId}
-          setModalOpen={setModalOpen}
-        />
+        <ReportScoreModal match={match} sportName={sportName} setModalOpen={setModalOpen} />
       )}
     </>
   );
 };
 
 interface ReportScoreModalProps {
-  match: MatchJson;
-  seasonId?: string;
+  match: Match;
+  sportName: string;
   setModalOpen: (open: boolean) => void;
 }
 
-function formatReportDate(raw: { _seconds: number } | string): string {
-  if (typeof raw === "string") return raw;
-  if (raw && typeof raw._seconds === "number") {
-    return new Date(raw._seconds * 1000).toLocaleString();
-  }
-  return "—";
-}
-
-const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
-  match,
-  seasonId,
-  setModalOpen,
-}) => {
+const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, setModalOpen }) => {
   const { user } = useUser();
   const isAdminOrDev = userIsAdminOrDev(user);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [reports, setReports] = useState<ScoreReport[]>([]);
+  const [reports, setReports] = useState<MatchScoreReport[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-  const season = seasonId ?? "";
-
   const fetchReports = useCallback(async () => {
-    if (!season || !match.id) return;
     setLoadingReports(true);
     try {
-      const res = await fetch(
-        `/api/functions/getScoreReports?season=${encodeURIComponent(season)}&matchId=${encodeURIComponent(String(match.id))}`
-      );
-      if (res.ok) {
-        const data: ScoreReportsResponse = await res.json();
-        setReports(data.reports ?? []);
-      }
+      setReports((await fetchMatchReports(match.seasonId, match.id)).items);
     } catch {
       setReports([]);
     } finally {
       setLoadingReports(false);
     }
-  }, [season, match.id]);
+  }, [match.seasonId, match.id]);
 
   useEffect(() => {
     fetchReports();
@@ -120,53 +92,26 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/functions/reportScore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matchId: String(match.id),
-          season,
-          reason: reason.trim(),
-          matchHomeCollege: match.home_college,
-          matchAwayCollege: match.away_college,
-          homeScore: match.home_college_score,
-          awayScore: match.away_college_score,
-          sport: match.sport,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Failed to submit");
-      }
+      await reportScore(match.seasonId, match.id, { reason: reason.trim() });
       toast.success("Score report submitted. An admin will review it.");
       setReason("");
       fetchReports();
-    } catch {
-      toast.error("Failed to submit report. Please try again.");
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleResolve = async (report: ScoreReport) => {
+  const handleResolve = async (report: MatchScoreReport) => {
     if (!isAdminOrDev) return;
     setResolvingId(report.id);
     try {
-      const res = await fetch("/api/functions/resolveScoreReport", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reportId: report.id,
-          matchId: String(match.id),
-          season,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to resolve");
+      await resolveReport(match.seasonId, match.id, report.id);
       toast.success("Report marked as resolved.");
       fetchReports();
-    } catch {
-      toast.error("Failed to mark as resolved.");
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setResolvingId(null);
     }
@@ -194,10 +139,10 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
         <div className="flex flex-col h-full overflow-hidden">
           <div className="pl-4 pr-4 pt-4 overflow-y-auto custom-scrollbar flex-1 min-h-0">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {match.sport ? `${match.sport} • ` : ""}
-              {match.home_college} {match.home_college_score} &ndash;{" "}
-              {match.away_college_score} {match.away_college}
-              {match.forfeit ? " (Forfeit)" : ""}
+              {sportName ? `${sportName} • ` : ""}
+              {match.homeCollegeId ?? "TBD"} {match.result?.homeScore} &ndash;{" "}
+              {match.result?.awayScore} {match.awayCollegeId ?? "TBD"}
+              {match.result?.forfeit ? " (Forfeit)" : ""}
             </p>
 
             {/* Existing reports */}
@@ -215,21 +160,21 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({
                     <div
                       key={r.id}
                       className={`p-2 rounded border text-xs ${
-                        r.resolved
+                        r.status === "resolved"
                           ? "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
                           : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
                       }`}
                     >
                       <p className="text-gray-800 dark:text-gray-200">{r.reason}</p>
                       <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        — {r.reportedBy} ({formatReportDate(r.reportedAt)})
-                        {r.resolved && (
+                        — {r.reporterName} ({new Date(r.reportedAt).toLocaleString()})
+                        {r.status === "resolved" && (
                           <span className="ml-2 text-green-600 dark:text-green-400">
-                            ✓ Resolved{r.resolvedBy ? ` by ${r.resolvedBy}` : ""}
+                            ✓ Resolved{r.resolverName ? ` by ${r.resolverName}` : ""}
                           </span>
                         )}
                       </p>
-                      {isAdminOrDev && !r.resolved && (
+                      {isAdminOrDev && r.status !== "resolved" && (
                         <button
                           type="button"
                           className="mt-2 text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"

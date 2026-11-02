@@ -113,6 +113,8 @@ describe("score reports", () => {
     expect((await api("PATCH", `${path}x`, { status: "resolved" }, { session: admin() })).status).toBe(404);
     expect((await api("PATCH", path, { status: "resolved" }, { session: admin() })).status).toBe(204);
     expect((await report.ref.get()).data()).toMatchObject({ status: "resolved", resolvedBy: people.admin });
+    const forPlayers = await api("GET", `/api/seasons/${current}/matches/${game.id}/reports`, undefined, { session: sessionFor(people.student(4, 6)) });
+    expect(forPlayers.body.items.find((r: { id: string }) => r.id === report.id)).toMatchObject({ resolverName: "Devon Admin" });
 
     expect((await api("GET", `/api/seasons/${current}/reports`, undefined, { session: sessionFor(people.student(4, 6)) })).status).toBe(403);
     const all = await api("GET", `/api/seasons/${current}/reports`, undefined, { session: admin() });

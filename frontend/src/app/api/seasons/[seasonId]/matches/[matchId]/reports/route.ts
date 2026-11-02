@@ -3,17 +3,22 @@ import { newReportSchema, toMatchScoreReport, type MatchScoreReport, type ScoreR
 import { can, requireViewer } from "@/server/auth";
 import { getMatch } from "@/server/data/matches";
 import { addScoreReport, listMatchScoreReports } from "@/server/data/scoreReports";
+import { getUserNames } from "@/server/data/users";
 import { created, ok, readBody, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string };
 
-/** The game's score reports, newest first (signed in; reporters' emails for admins and devs only). */
+/**
+ * The game's score reports, newest first, with the resolver's name (signed
+ * in; the emails for admins and devs only).
+ */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();
   const [reports, withEmails] = await Promise.all([listMatchScoreReports(seasonId, matchId), can.score(viewer)]);
+  const resolvers = await getUserNames(reports.flatMap((r) => (r.resolvedBy ? [r.resolvedBy] : [])));
   return ok({
-    items: reports.map((r) => toMatchScoreReport(r, withEmails)),
+    items: reports.map((r) => toMatchScoreReport(r, withEmails, (r.resolvedBy && resolvers.get(r.resolvedBy)) || null)),
     total: reports.length,
   } satisfies ScoreReportList<MatchScoreReport>);
 });

@@ -5,18 +5,18 @@ import LoadingScreen from "@/components/layout/LoadingScreen";
 import Filters from "@/components/schedules/Filter";
 import ListView from "@/components/schedules/ListView";
 import Calendar from "@/components/schedules/Calendar";
-import { FaSpinner } from "react-icons/fa";
-import { toCollegeAbbreviation, toCollegeName } from "@/utils/helpers";
 import PageHeading from "@/components/layout/PageHeading";
 import { useSeason } from "@/context/SeasonContext";
 import { useUser } from "@/context/UserContext";
 import SignInPrompt from "@/components/layout/SignInPrompt";
-import type { MatchJson, MatchPageResponse } from "@/types/api";
 import Pagination from "@/components/ui/Pagination";
+import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { COLLEGES } from "@/lib/colleges";
 import { toast } from "react-toastify";
 
-const PAGE_SIZE = "10";
+const PAGE_SIZE = 10;
 
+/** The current season's games still to be played, from a day on, a page at a time. */
 const SchedulePage: React.FC = () => {
   const [filter, setFilter] = useState({
     college: "",
@@ -25,121 +25,63 @@ const SchedulePage: React.FC = () => {
   });
 
   const [page, setPage] = useState<number>(1);
-  const [firstVisible, setFirstVisible] = useState<string>("");
-  const [lastVisible, setLastVisible] = useState<string>("");
-  const [queryType, setQueryType] = useState<string>("index");
   const [totalPages, setTotalPages] = useState<number>(10);
-  const [sortOrder] = useState<string>("asc");
-  const [filteredMatches, setFilteredMatches] = useState<MatchJson[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
 
-  const {currentSeason} = useSeason()
-  // The schedule is for signed-in users for now (interim; see the product
-  // decision on what logged-out visitors can see).
+  const { currentSeason } = useSeason();
+  // The schedule is for signed-in users (D42 Q6: as today).
   const { user, loading: userLoading } = useUser();
   const signedIn = !!user;
-  const [needsSignIn, setNeedsSignIn] = useState(false);
 
-  const resetPaginationState = () => {
-    setPage(1); // Reset page number when filter is changed
-    setQueryType("index");
-    setFirstVisible("");
-    setLastVisible("");
-  };
-
-  const getQueryParams = (type: string) => {
-    const baseParams = {
-      type: "index",
-      pageSize: PAGE_SIZE,
-      sortOrder: sortOrder,
-      college: filter.college ? toCollegeAbbreviation[filter.college] : "All",
-      date: filter.date.toISOString(),
-      sport: filter.sport ? filter.sport : "All",
-    };
-
-    if (type === "next" && lastVisible) {
-      return { ...baseParams, type, lastVisible };
-    }
-    if (type === "prev" && firstVisible) {
-      return { ...baseParams, type, firstVisible };
-    }
-    if (type === "index") {
-      return { ...baseParams, pageIndex: page.toString() };
-    }
-
-    return baseParams;
-  };
-
-  // Fetch matches with pagination
   useEffect(() => {
-    const fetchMatches = async () => {
-    if (userLoading) return;
-    if (!signedIn) {
-      setNeedsSignIn(true);
-      setIsLoading(false);
+    if (userLoading || !signedIn || !currentSeason) return;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    if (filter.date <= yesterday) {
+      toast.error("Cannot signUp for past matches.");
       return;
     }
-    setNeedsSignIn(false);
-    setIsLoading(true);
-    try {
-      const currentDate = new Date();
-      const params = new URLSearchParams(getQueryParams(queryType));
-      const dateParam = params.get("date");
-      const yesterday = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth(),
-          currentDate.getDate() - 1
-        );
-      if (dateParam && new Date(dateParam) <= yesterday) {
-        toast.error("Cannot signUp for past matches.");
-        return;
-      }
-        if (!currentSeason?.id) return;
-        const response = await fetch(`/api/functions/getMatches?${params}&seasonId=${currentSeason.id}`);
-        if (response.status === 401) {
-          setNeedsSignIn(true);
-          return;
-        }
-        if (!response.ok) throw new Error(`Error fetching matches: ${response.statusText}`);
-
-        const data: MatchPageResponse = await response.json();
-        // console.log(data.matches)
-        setFilteredMatches(data.matches);
-        
-        // Cursors are match ids; the URL carries them as text.
-        if (data.firstVisible) setFirstVisible(String(data.firstVisible));
-        if (data.lastVisible) setLastVisible(String(data.lastVisible));
-        if (data.totalPages) setTotalPages(data.totalPages);
-        
-      } catch (error) {
-        console.error("Failed to fetch matches:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     window.scrollTo(0, 0);
-    fetchMatches();
-  }, [page, queryType, filter, currentSeason, userLoading, signedIn]);
+    let live = true;
+    fetchSeasonMatches(currentSeason.id, {
+      status: "scheduled",
+      from: filter.date.toISOString(),
+      collegeId: COLLEGES.find((c) => c.name === filter.college)?.id,
+      sportId: currentSeason.sports.find((sport) => sport.name === filter.sport)?.id,
+      page,
+      pageSize: PAGE_SIZE,
+    }).then(
+      ({ items, total }) => {
+        if (!live) return;
+        setFilteredMatches(items);
+        if (total) setTotalPages(Math.ceil(total / PAGE_SIZE));
+      },
+      (error) => console.error("Failed to fetch matches:", error)
+    );
+    return () => {
+      live = false;
+    };
+  }, [page, filter, currentSeason, userLoading, signedIn]);
 
   // state for calendar focus circle
   const [topDate, setTopDate] = useState(new Date());
 
   const updateFilter = (key: keyof typeof filter, value: string) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
-    resetPaginationState();
+    setPage(1);
   };
 
-  const handleDateClick = (value: any) => {
+  const handleDateClick = (value: Date) => {
     setFilter((prev) => ({ ...prev, date: value }));
-    resetPaginationState();
+    setPage(1);
   };
 
   if (userLoading) {
     return <LoadingScreen />;
   }
 
-  if (needsSignIn) {
+  if (!signedIn) {
     return (
       <div className="pt-20">
         <div className="p-4 min-h-screen flex flex-col items-center">
@@ -175,12 +117,7 @@ const SchedulePage: React.FC = () => {
                     setTopDate={setTopDate}
                     />
                   </div>
-                  <Pagination
-                    currentPageNumber={page}
-                    totalPages={totalPages}
-                    setPageNumber={setPage}
-                    setQueryType={setQueryType}
-                  />
+                  <Pagination currentPageNumber={page} totalPages={totalPages} setPageNumber={setPage} />
                 </div>
               ) : (
                 <div className="text-center text-gray-600">

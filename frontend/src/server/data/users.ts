@@ -48,6 +48,12 @@ export async function getUsers(emails: string[]): Promise<Map<string, UserDoc>> 
   return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
 }
 
+/** "First Last" of the users with these emails (missing ones left out), by email. */
+export async function getUserNames(emails: string[]): Promise<Map<string, string>> {
+  const users = await getUsers([...new Set(emails)]);
+  return new Map([...users].map(([email, user]) => [email, `${user.firstname} ${user.lastname}`]));
+}
+
 /** Users holding a global role. */
 export async function listUsersWithRole(role: GlobalRole): Promise<WithId<UserDoc>[]> {
   const snap = await adminDb.collection(paths.users).where("roles", "array-contains", role).get();

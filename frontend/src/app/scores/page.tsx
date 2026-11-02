@@ -7,172 +7,75 @@ import CollegeSummaryCardMobile from "@/components/scores/CollegeSummaryCardMobi
 import { FiltersContext } from "@/context/FiltersContext";
 import TableHeader from "@/components/scores/TableHeader";
 import MatchesTable from "@/components/scores/MatchTable";
-import type { MatchJson, MatchPageResponse } from "@/types/api";
-import type { CollegeDoc } from "@/types/firestore";
 import Pagination from "@/components/ui/Pagination";
 import PageHeading from "@/components/layout/PageHeading";
 import { useSeason } from "@/context/SeasonContext";
 import { useUser } from "@/context/UserContext";
+import { useStandings } from "@/hooks/useStandings";
 import SignInPrompt from "@/components/layout/SignInPrompt";
+import { fetchPlayedMatches, type Match } from "@/lib/api/matches";
+import { addDays, easternDate, easternMidnight } from "@/lib/dates";
 
 import "react-loading-skeleton/dist/skeleton.css";
-import { currentYear } from "@/utils/helpers";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  Unsubscribe,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { paths } from "@/lib/paths";
 
+const PAGE_SIZE = 20;
+
+/** The past-results windows: games from Eastern midnight this many days ago. */
+const PAST_WINDOWS: Record<string, number> = { today: 0, yesterday: 1, last7days: 7, last30days: 30, last60days: 60 };
+
+/** Played games of every season, newest first, a page at a time (signed in, as today). */
 const ScoresPage: React.FC = () => {
-  const filtersContext = useContext(FiltersContext);
-  const { filter, setFilter } = filtersContext;
+  const { filter, setFilter } = useContext(FiltersContext);
 
-  // State for matches
-  const [filteredMatches, setFilteredMatches] = useState<MatchJson[]>([]);
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // State for college stats
-  const [collegeStats, setCollegeStats] = useState<CollegeDoc | null>(null);
-  const [collegeIsLoading, setCollegeIsLoading] = useState(false);
-
-  // State for pagination
   const [page, setPage] = useState<number>(1); // 1-indexed
-  const [firstVisible, setFirstVisible] = useState<string>("");
-  const [lastVisible, setLastVisible] = useState<string>("");
-  const [queryType, setQueryType] = useState<string>("index");
   const [totalPages, setTotalPages] = useState<number>(10);
-  const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { currentSeason } = useSeason();
-  // Scores are for signed-in users for now (interim; see the product decision
-  // on what logged-out visitors can see).
   const { user, loading: userLoading } = useUser();
   const signedIn = !!user;
-  const [needsSignIn, setNeedsSignIn] = useState(false);
 
-  const resetPaginationState = () => {
-    setPage(1); // Reset page number when filter is changed
-    setQueryType("index");
-    setFirstVisible("");
-    setLastVisible("");
-  };
+  // The selected college's standing this season (live).
+  const collegeId = filter.college && filter.college !== "All" ? filter.college : null;
+  const standings = useStandings(collegeId && currentSeason ? currentSeason.id : null);
+  const collegeStats = standings.colleges.find((c) => c.id === collegeId) ?? null;
+  // Sport ids are the same every season; the filter names the sport.
+  const sportId = currentSeason?.sports.find((sport) => sport.name === filter.sport)?.id;
 
-  // param types for fetching matches
-  const paramsIndex = new URLSearchParams({
-    type: "index",
-    pageIndex: page.toString(),
-    pageSize: "20",
-    college: filter.college ? filter.college : "All",
-    sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "AllPast",
-    sortOrder: sortOrder ? sortOrder : "desc",
-  }).toString();
-
-  const paramsNext = new URLSearchParams({
-    type: "next",
-    lastVisible: lastVisible,
-    pageSize: "20",
-    college: filter.college ? filter.college : "All",
-    sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "AllPast",
-    sortOrder: sortOrder ? sortOrder : "desc",
-  }).toString();
-
-  const paramsPrev = new URLSearchParams({
-    type: "prev",
-    firstVisible: firstVisible,
-    pageSize: "20",
-    college: filter.college ? filter.college : "All",
-    sport: filter.sport ? filter.sport : "All",
-    date: filter.date ? filter.date : "AllPast",
-    sortOrder: sortOrder ? sortOrder : "desc",
-  }).toString();
-
-  // fetch matches with pagination
   useEffect(() => {
-    const getParams = () => {
-      if (queryType === "index") {
-        return paramsIndex;
-      } else if (queryType === "next") {
-        return paramsNext;
-      } else if (queryType === "prev") {
-        return paramsPrev;
-      } else {
-        console.error("Invalid query type");
-        return "";
-      }
-    };
-
-    const fetchMatches = async () => {
-      if (userLoading) return;
-      if (!signedIn) {
-        setNeedsSignIn(true);
-        setIsLoading(false);
-        return;
-      }
-      setNeedsSignIn(false);
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams(getParams());
-        const response = await fetch(
-          `/api/functions/getMatches?${params}&seasonId=${
-            currentSeason?.id || currentYear
-          }`
-        );
-        if (response.status === 401) {
-          setNeedsSignIn(true);
-          return;
-        }
-        if (!response.ok)
-          throw new Error(`Error fetching matches: ${response.statusText}`);
-        const data: MatchPageResponse = await response.json();
-
-        setFilteredMatches(data.matches);
-        // Cursors are match ids (or null); the URL carries them as text, "null" included.
-        setFirstVisible(String(data.firstVisible));
-        setLastVisible(String(data.lastVisible));
-        setTotalPages(data.totalPages);
-      } catch (error) {
-        console.error("Failed to fetch scores:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    window.scrollTo(0, 0);
-    fetchMatches();
-  }, [page, queryType, filter.college, filter.sport, filter.date, sortOrder, userLoading, signedIn]);
-
-  // Fetch college stats when the college filter changes
-  useEffect(() => {
-    let unsub: Unsubscribe | undefined;
-    if (!currentSeason) return;
-    if (filter.college && filter.college !== "All") {
-      setCollegeIsLoading(true);
-
-      const q = doc(db, paths.college(currentSeason.id, filter.college));
-
-      unsub = onSnapshot(
-        q,
-        (snap) => {
-          setCollegeStats(snap.exists() ? (snap.data() as CollegeDoc) : null);
-          setCollegeIsLoading(false);
-        },
-        (err) => {
-          console.error("Leaderboard listener error:", err);
-          setCollegeIsLoading(false);
-        }
-      );
-    } else {
-      setCollegeStats(null);
+    if (userLoading) return;
+    if (!signedIn) {
+      setIsLoading(false);
+      return;
     }
-
-    return () => unsub?.();
-  }, [filter.college]);
+    const days = PAST_WINDOWS[filter.date];
+    const now = new Date();
+    setIsLoading(true);
+    window.scrollTo(0, 0);
+    let live = true;
+    fetchPlayedMatches({
+      collegeId: collegeId ?? undefined,
+      sportId,
+      from: days === undefined ? undefined : easternMidnight(addDays(easternDate(now), -days)).toISOString(),
+      to: now.toISOString(),
+      order: sortOrder,
+      page,
+      pageSize: PAGE_SIZE,
+    })
+      .then(
+        ({ items, total }) => {
+          if (!live) return;
+          setFilteredMatches(items);
+          setTotalPages(Math.ceil(total / PAGE_SIZE));
+        },
+        (error) => console.error("Failed to fetch scores:", error)
+      )
+      .finally(() => live && setIsLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [page, collegeId, sportId, filter.date, sortOrder, userLoading, signedIn]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -180,30 +83,30 @@ const ScoresPage: React.FC = () => {
       ...prev,
       [name]: value,
     }));
-    resetPaginationState();
+    setPage(1);
   };
 
   // Handle college click
   const handleCollegeClick = (collegeName: string) => {
     setFilter((prev) => ({ ...prev, college: collegeName }));
-    resetPaginationState();
+    setPage(1);
   };
 
   const handleSportClick = (sportName: string) => {
     setFilter((prev) => ({ ...prev, sport: sportName }));
-    resetPaginationState();
+    setPage(1);
   };
 
   const handleSortOrderChange = (newSortOrder: string) => {
-    setSortOrder(newSortOrder);
-    resetPaginationState();
+    setSortOrder(newSortOrder === "asc" ? "asc" : "desc");
+    setPage(1);
   };
 
   if (isLoading || userLoading) {
     return <LoadingScreen />;
   }
 
-  if (needsSignIn) {
+  if (!signedIn) {
     return (
       <main className="flex flex-col mt-20 min-h-screen max-w-full mx-auto px-4">
         <PageHeading heading="Scores and Rankings" />
@@ -220,13 +123,13 @@ const ScoresPage: React.FC = () => {
           <div className="hidden xs:block">
             <CollegeSummaryCard
               stats={collegeStats}
-              isLoading={collegeIsLoading}
+              isLoading={standings.loading}
             />
           </div>
           <div className="block xs:hidden">
             <CollegeSummaryCardMobile
               stats={collegeStats}
-              isLoading={collegeIsLoading}
+              isLoading={standings.loading}
             />
           </div>
         </>
@@ -251,12 +154,7 @@ const ScoresPage: React.FC = () => {
               handleCollegeClick={handleCollegeClick}
               handleSportClick={handleSportClick}
             />
-            <Pagination
-              currentPageNumber={page}
-              totalPages={totalPages}
-              setPageNumber={setPage}
-              setQueryType={setQueryType}
-            />
+            <Pagination currentPageNumber={page} totalPages={totalPages} setPageNumber={setPage} />
           </>
         )}
       </div>

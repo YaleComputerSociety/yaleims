@@ -3,15 +3,14 @@
 import Image from "next/image";
 import TournamentBadge from "@/components/ui/TournamentBadge";
 import { useState } from "react";
+import { toast } from "react-toastify";
 import { FaCircle, FaMapMarkerAlt } from "react-icons/fa";
-import type { MatchJson } from "@/types/api";
-import {
-  toCollegeName,
-  emojiMap,
-  sportsMap,
-  getMatchTypeLabel,
-  matchDate,
-} from "@/utils/helpers";
+import { signUp, withdraw } from "@/lib/api/roster";
+import type { Match } from "@/lib/api/matches";
+import type { Sport } from "@/lib/api/seasons";
+import { collegeName } from "@/lib/colleges";
+import { matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
+import type { SessionUser } from "@/types/api";
 import { getCollegeFlag } from "@/utils/versionedImages";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
@@ -20,163 +19,87 @@ const LIVE_WINDOW_MS = 1 * 60 * 60 * 1000; // 1 hour
 
 export type MatchStatus = "live" | "upcoming" | "completed";
 
-export function getMatchStatus(match: MatchJson): MatchStatus {
-  const matchTime = matchDate(match.timestamp).getTime();
+/** Completed once scored; live in its first hour; a past game without a score counts as completed too. */
+export function getMatchStatus(match: Match): MatchStatus {
+  const matchTime = new Date(match.startsAt).getTime();
   const now = Date.now();
-  const hasResult =
-    match.winner !== null ||
-    (match.home_college_score ?? 0) > 0 ||
-    (match.away_college_score ?? 0) > 0;
-
-  if (hasResult) return "completed";
+  if (match.result) return "completed";
   if (matchTime <= now && now - matchTime < LIVE_WINDOW_MS) return "live";
   if (matchTime > now) return "upcoming";
-  return "completed"; // past with no score → treat as completed
+  return "completed";
 }
 
 interface GameCardProps {
-  match: MatchJson;
+  match: Match;
+  /** The game's sport (from its season). */
+  sport: Sport | undefined;
+  /** The game's tournament (hooks/useTournamentNames). */
+  tournament: string | undefined;
   onCollegeClick?: (college: string) => void;
   onSportClick?: (sport: string) => void;
-  user?: any;
+  user: SessionUser | null;
   isSignedUp?: boolean;
   signUpStatusLoading?: boolean;
-  onStatusChange?: (matchId: MatchJson["id"], signed: boolean) => void;
-  seasonId?: string;
+  onStatusChange?: (matchId: string, signed: boolean) => void;
 }
 
 const GameCard: React.FC<GameCardProps> = ({
   match,
+  sport,
+  tournament,
   onCollegeClick,
   onSportClick,
   user,
   isSignedUp = false,
   signUpStatusLoading = false,
   onStatusChange,
-  seasonId,
 }) => {
   const [signUpLoading, setSignUpLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const status = getMatchStatus(match);
+  const { result } = match;
+  // A past game the admins haven't scored yet.
+  const isUnscored = status === "completed" && !result;
 
-  // Detect unscored past games (past the live window, but no winner/scores recorded)
-  const isUnscored =
-    status === "completed" &&
-    match.winner === null &&
-    (match.home_college_score ?? 0) === 0 &&
-    (match.away_college_score ?? 0) === 0 &&
-    !match.forfeit;
-
+  // The session names the user's college.
   const isUserTeam =
-    user &&
-    (toCollegeName[match.home_college] === user.college ||
-      toCollegeName[match.away_college] === user.college);
+    !!user &&
+    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
 
-  const isPastMatch = matchDate(match.timestamp) < new Date();
+  const isPastMatch = new Date(match.startsAt) < new Date();
 
-  const handleSignUp = async () => {
-    if (!user || !seasonId) return;
+  const changeSignUp = async (signed: boolean) => {
     setSignUpLoading(true);
     try {
-      const res = await fetch("/api/functions/addMatchParticipant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          seasonId,
-          matchId: match.id,
-          matchTimestamp: match.timestamp,
-          participantType:
-            toCollegeName[user.college] === toCollegeName[match.home_college]
-              ? "home_college_participants"
-              : "away_college_participants",
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to sign up");
-      onStatusChange?.(match.id, true);
+      await (signed ? signUp : withdraw)(match.seasonId, match.id);
+      onStatusChange?.(match.id, signed);
     } catch (err) {
-      console.error("Error signing up:", err);
+      toast.error((err as Error).message);
     } finally {
       setSignUpLoading(false);
     }
   };
 
-  const handleUnregister = async () => {
-    if (!user || !seasonId) return;
-    setSignUpLoading(true);
-    try {
-      const res = await fetch("/api/functions/removeMatchParticipant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matchId: match.id,
-          participantType:
-            toCollegeName[user.college] === toCollegeName[match.home_college]
-              ? "home_college_participants"
-              : "away_college_participants",
-          seasonId,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to unregister");
-      onStatusChange?.(match.id, false);
-    } catch (err) {
-      console.error("Error unregistering:", err);
-    } finally {
-      setSignUpLoading(false);
-    }
-  };
+  const homeName = sideName(match.homeCollegeId);
+  const awayName = sideName(match.awayCollegeId);
+  const isHomeTBD = !match.homeCollegeId;
+  const isAwayTBD = !match.awayCollegeId;
 
-  const {
-    home_college,
-    away_college,
-    home_college_score,
-    away_college_score,
-    sport,
-    timestamp,
-    location,
-    location_extra,
-    winner,
-    forfeit,
-    type,
-    tournament_id,
-    tournament_name,
-  } = match;
+  const homeWins = result?.outcome === "home";
+  const awayWins = result?.outcome === "away";
+  const isDraw = result?.outcome === "draw" || result?.outcome === "double_forfeit";
+  const homePoints = pointsEarned(match, "home");
+  const awayPoints = pointsEarned(match, "away");
 
-  const homeName = toCollegeName[home_college] ?? home_college ?? "TBD";
-  const awayName = toCollegeName[away_college] ?? away_college ?? "TBD";
-  const isBye = away_college === "Bye";
-  const isHomeTBD = !home_college || home_college === "TBD";
-  const isAwayTBD = !away_college || away_college === "TBD";
-
-  const homeWins = winner === home_college;
-  const awayWins = winner === away_college;
-  const isDraw =
-    (!forfeit && home_college_score === away_college_score) ||
-    winner === "Default" ||
-    winner === "Tie";
-
-  const points = isDraw ? (sportsMap[sport] ?? 6) / 2 : (sportsMap[sport] ?? 6);
-
-  const startTime = matchDate(timestamp);
-  const timeStr = startTime.toLocaleTimeString("en-US", {
+  const timeStr = new Date(match.startsAt).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
   });
 
-  // Relative day label
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-
-  const isSameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
-  const typeLabel = getMatchTypeLabel(type, tournament_id);
+  const typeLabel = matchTypeLabel(match, tournament !== undefined);
+  const sportName = sport?.name ?? "";
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 rounded-xl shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-800 overflow-hidden transition-shadow duration-200">
@@ -184,17 +107,14 @@ const GameCard: React.FC<GameCardProps> = ({
       <div className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <button
           className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          onClick={() => onSportClick?.(sport)}
+          onClick={() => onSportClick?.(sportName)}
         >
-          <span>{emojiMap[sport] ?? "🏆"}</span>
-          <span>{sport}</span>
+          <span>{sport?.emoji ?? "🏆"}</span>
+          <span>{sportName}</span>
         </button>
 
         <div className="flex items-center gap-2">
-          <TournamentBadge
-            tournamentId={tournament_id}
-            tournamentName={tournament_name}
-          />
+          <TournamentBadge name={tournament} />
 
           {/* Match type badge */}
           <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -213,12 +133,12 @@ const GameCard: React.FC<GameCardProps> = ({
               NOT YET SCORED
             </span>
           )}
-          {status === "completed" && !isUnscored && winner === "Default" && (
+          {status === "completed" && result?.outcome === "double_forfeit" && (
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
               DEFAULT
             </span>
           )}
-          {status === "completed" && !isUnscored && forfeit && winner !== "Default" && (
+          {status === "completed" && result?.forfeit && result.outcome !== "double_forfeit" && (
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400">
               FORFEIT
             </span>
@@ -260,9 +180,9 @@ const GameCard: React.FC<GameCardProps> = ({
                 }`}
               >
                 {homeName}
-                {!isUnscored && (homeWins || (isDraw && status === "completed")) && (
+                {homePoints !== null && (
                   <span className="ml-1.5 text-yellow-500 text-xs font-bold">
-                    +{points}pts
+                    +{homePoints}pts
                   </span>
                 )}
               </span>
@@ -280,7 +200,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       : "text-gray-900 dark:text-white"
                   }`}
                 >
-                  {home_college_score ?? 0}
+                  {result?.homeScore ?? 0}
                 </span>
               ) : (
                 <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
@@ -289,88 +209,73 @@ const GameCard: React.FC<GameCardProps> = ({
           </div>
 
           {/* Away College */}
-          {!isBye ? (
-            <div className="flex items-center justify-between">
-              <button
-                className="flex items-center gap-3 min-w-0 flex-1 text-left"
-                onClick={() => onCollegeClick?.(awayName)}
+          <div className="flex items-center justify-between">
+            <button
+              className="flex items-center gap-3 min-w-0 flex-1 text-left"
+              onClick={() => onCollegeClick?.(awayName)}
+            >
+              {isAwayTBD ? (
+                <div className="w-7 h-7 flex-none rounded-sm bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M4 3a1 1 0 0 0-1 1v1H2a1 1 0 0 0 0 2h1v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-1V4a1 1 0 0 0-1-1H4Zm1 4h10v8H5V7Z" />
+                  </svg>
+                </div>
+              ) : (
+                <Image
+                  src={getCollegeFlag(awayName)}
+                  alt={awayName}
+                  width={28}
+                  height={28}
+                  className="object-contain flex-none rounded-sm"
+                  unoptimized
+                />
+              )}
+              <span
+                className={`text-sm font-semibold truncate ${
+                  status === "completed" && homeWins && !isDraw && !isUnscored
+                    ? "text-gray-400 dark:text-gray-500"
+                    : "text-gray-900 dark:text-white"
+                }`}
               >
-                {isAwayTBD ? (
-                  <div className="w-7 h-7 flex-none rounded-sm bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M4 3a1 1 0 0 0-1 1v1H2a1 1 0 0 0 0 2h1v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-1V4a1 1 0 0 0-1-1H4Zm1 4h10v8H5V7Z" />
-                    </svg>
-                  </div>
-                ) : (
-                  <Image
-                    src={getCollegeFlag(awayName)}
-                    alt={awayName}
-                    width={28}
-                    height={28}
-                    className="object-contain flex-none rounded-sm"
-                    unoptimized
-                  />
+                {awayName}
+                {awayPoints !== null && (
+                  <span className="ml-1.5 text-yellow-500 text-xs font-bold">
+                    +{awayPoints}pts
+                  </span>
                 )}
+              </span>
+            </button>
+
+            {/* Away Score */}
+            <div className="ml-3 text-right min-w-[2rem]">
+              {isUnscored ? (
+                <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
+              ) : status === "completed" || status === "live" ? (
                 <span
-                  className={`text-sm font-semibold truncate ${
-                    status === "completed" && homeWins && !isDraw && !isUnscored
+                  className={`text-xl font-bold tabular-nums ${
+                    status === "completed" && homeWins && !isDraw
                       ? "text-gray-400 dark:text-gray-500"
                       : "text-gray-900 dark:text-white"
                   }`}
                 >
-                  {awayName}
-                  {!isUnscored && (!homeWins || (isDraw && status === "completed")) &&
-                    status === "completed" && !isDraw && awayWins && (
-                      <span className="ml-1.5 text-yellow-500 text-xs font-bold">
-                        +{points}pts
-                      </span>
-                    )}
-                  {!isUnscored && isDraw && status === "completed" && (
-                    <span className="ml-1.5 text-yellow-500 text-xs font-bold">
-                      +{points}pts
-                    </span>
-                  )}
+                  {result?.awayScore ?? 0}
                 </span>
-              </button>
-
-              {/* Away Score */}
-              <div className="ml-3 text-right min-w-[2rem]">
-                {isUnscored ? (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
-                ) : status === "completed" || status === "live" ? (
-                  <span
-                    className={`text-xl font-bold tabular-nums ${
-                      status === "completed" && homeWins && !isDraw
-                        ? "text-gray-400 dark:text-gray-500"
-                        : "text-gray-900 dark:text-white"
-                    }`}
-                  >
-                    {away_college_score ?? 0}
-                  </span>
-                ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
-                )}
-              </div>
+              ) : (
+                <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center gap-3 py-1">
-              <div className="w-7 h-7 flex-none rounded-sm bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">
-                BYE
-              </div>
-              <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">Bye</span>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Footer info */}
         <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 min-w-0">
-            {location && (
+            {match.venue && (
               <span className="flex items-center gap-1 truncate">
                 <FaMapMarkerAlt className="flex-none" />
                 <span className="truncate">
-                  {location}
-                  {location_extra ? ` · ${location_extra}` : ""}
+                  {match.venue}
+                  {match.venueDetail ? ` · ${match.venueDetail}` : ""}
                 </span>
               </span>
             )}
@@ -402,7 +307,7 @@ const GameCard: React.FC<GameCardProps> = ({
                 />
               ) : (
                 <button
-                  onClick={() => (isSignedUp ? handleUnregister() : handleSignUp())}
+                  onClick={() => changeSignUp(!isSignedUp)}
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
                   disabled={signUpLoading}
@@ -426,7 +331,7 @@ const GameCard: React.FC<GameCardProps> = ({
             )}
 
             <EditMatchButton match={match} />
-            <ReportScoreButton match={match} seasonId={seasonId} />
+            <ReportScoreButton match={match} sportName={sportName} />
           </div>
         </div>
       </div>

@@ -1,36 +1,9 @@
 import type { BracketUpload, MatchJson, SlotInput, UnscoredMatch } from "./api";
 import type { CollegeDoc } from "./firestore";
 
-export interface CollegeSummaryCardProps {
-  stats: CollegeDoc | null;
-  isLoading: boolean;
-}
-
 export interface MatchCardProps {
   match: UnscoredMatch;
   onScored?: (matchId: UnscoredMatch["id"]) => void;
-}
-
-export interface MatchesTableProps {
-  filteredMatches: MatchJson[];
-  handleCollegeClick?: (college: string) => void;
-  handleSportClick?: (sport: string) => void;
-}
-
-export interface TableHeaderProps {
-  handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-  filter: Filters;
-  sortOrder: string;
-  handleSortOrderChange: (newSortOrder: string) => void;
-}
-
-export interface TableRowProps {
-  key?: number;
-  match: MatchJson;
-  handleCollegeClick: any; // Function to handle college clicks
-  isFirst?: boolean; // Optional prop to indicate if this is the first row
-  isLast?: boolean; // Optional prop to indicate if this is the last row
-  handleSportClick: any; // Function to handle sport clicks
 }
 
 export type Sport = {
@@ -53,29 +26,6 @@ export interface FiltersContextType {
   filter: Filters;
   setFilter: React.Dispatch<React.SetStateAction<Filters>>;
   resetFilters: () => void;
-}
-
-export interface PaginationProps {
-  currentPageNumber: number;
-  totalPages: number;
-  setPageNumber: React.Dispatch<React.SetStateAction<number>>;
-  setQueryType: React.Dispatch<React.SetStateAction<string>>;
-}
-/** A match whose start time the schedule list has parsed into a Date. */
-export type ScheduleMatch = Omit<MatchJson, "timestamp"> & { timestamp: Date };
-
-export interface CalendarMatchListProps {
-  matches: MatchJson[];
-  topDate: Date;
-  setTopDate: React.Dispatch<React.SetStateAction<Date>>;
-}
-
-export interface CalendarFiltersProps {
-  filter: { college: string; sport: string; date: Date };
-  updateFilter: (
-    key: keyof CalendarFiltersProps["filter"],
-    value: string
-  ) => void;
 }
 
 export interface SportModalProps {

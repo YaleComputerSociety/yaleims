@@ -1,115 +1,69 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
 import MatchListItem from "./MatchListItem";
-import type { MatchJson, UserSignupsResponse } from "@/types/api";
-import { CalendarMatchListProps, ScheduleMatch } from "@/types/components";
-import {
-  format,
-  addDays,
-  isSameDay,
-  startOfDay,
-  eachDayOfInterval,
-} from "date-fns";
+import { format, isSameDay, startOfDay, eachDayOfInterval } from "date-fns";
 import { useSeason } from "@/context/SeasonContext";
+import { useTournamentNames } from "@/hooks/useTournamentNames";
+import type { Match } from "@/lib/api/matches";
+import { fetchMyMatches } from "@/lib/api/me";
 import Link from "next/link";
-import { currentYear, matchDate } from "@/utils/helpers";
+
+interface ListViewProps {
+  /** The current season's games, by start. */
+  matches: Match[];
+  topDate: Date;
+  setTopDate: React.Dispatch<React.SetStateAction<Date>>;
+}
 
 // ⏰ Builds a scrollable list of matches grouped by calendar day.
 //    Fixes the "missing last day" bug by normalising start & end to midnight.
 
-const ListView: React.FC<CalendarMatchListProps> = ({
-  matches,
-  topDate,
-  setTopDate,
-}) => {
+const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => {
   const { user } = useUser();
-  // The user's signups ({ id, timestamp }); signing up adds the whole match.
-  const [userMatches, setUserMatches] = useState<Pick<MatchJson, "id" | "timestamp">[]>([]);
+  // The games the user signed up for that haven't started (ids).
+  const [signedUpIds, setSignedUpIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const dateRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { currentSeason } = useSeason();
+  const sportOf = useMemo(() => new Map((currentSeason?.sports ?? []).map((s) => [s.id, s])), [currentSeason]);
+  const tournamentOf = useTournamentNames(matches);
 
   const lastReportedDate = useRef<string | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !currentSeason) {
       setLoading(false);
       return;
     }
-
-    const controller = new AbortController();
-
-    const fetchMatches = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(
-          `/api/functions/getUserMatches?seasonId=${
-            currentSeason?.id || currentYear
-          }`,
-          { signal: controller.signal }
-        );
-
-        if (!res.ok) throw new Error("Failed to fetch user matches");
-        const data: UserSignupsResponse = await res.json();
-        setUserMatches(data);
-      } catch (err: unknown) {
-        if ((err as { name?: string }).name !== "AbortError") {
-          console.error("Error fetching user matches:", err);
-        }
-      } finally {
-        setLoading(false);
-      }
+    let live = true;
+    setLoading(true);
+    fetchMyMatches({ seasonId: currentSeason.id, upcoming: true })
+      .then(
+        ({ items }) => live && setSignedUpIds(new Set(items.map((m) => m.id))),
+        (err) => console.error("Error fetching user matches:", err)
+      )
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
     };
-
-    fetchMatches();
-    return () => controller.abort();
-  }, [user, currentSeason?.id]);
-
-  const uniqueMatches = useMemo<ScheduleMatch[]>(() => {
-    const byId = new Map<MatchJson["id"], ScheduleMatch>();
-
-    matches.forEach((m) => {
-      const dateVal = matchDate(m.timestamp);
-
-      if (!isNaN(dateVal.getTime())) {
-        byId.set(m.id, { ...m, timestamp: dateVal });
-      }
-    });
-
-    return [...byId.values()].sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-  }, [matches]);
+  }, [user, currentSeason]);
 
   const allDates = useMemo<Date[]>(() => {
-    if (!uniqueMatches.length) return [];
-
-    const start = startOfDay(new Date(uniqueMatches[0].timestamp));
-    const end = startOfDay(
-      new Date(uniqueMatches[uniqueMatches.length - 1].timestamp)
-    );
-
+    if (!matches.length) return [];
+    const start = startOfDay(new Date(matches[0].startsAt));
+    const end = startOfDay(new Date(matches[matches.length - 1].startsAt));
     return eachDayOfInterval({ start, end });
-  }, [uniqueMatches]);
+  }, [matches]);
 
-  const signedUpIds = useMemo(() => {
-    return new Set(
-      userMatches.map((m) => `${m.id}::${matchDate(m.timestamp).getTime()}`)
-    );
-  }, [userMatches]);
-
-  const handleStatusChange = useCallback(
-    (matchId: MatchJson["id"], signed: boolean) => {
-      setUserMatches((prev) => {
-        return signed
-          ? [...prev, matches.find((m) => m.id === matchId)!]
-          : prev.filter((m) => m.id !== matchId);
-      });
-    },
-    [matches]
-  );
+  const handleStatusChange = useCallback((matchId: string, signed: boolean) => {
+    setSignedUpIds((prev) => {
+      const next = new Set(prev);
+      if (signed) next.add(matchId);
+      else next.delete(matchId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!allDates.length) return;
@@ -168,9 +122,7 @@ const ListView: React.FC<CalendarMatchListProps> = ({
       )}
 
       {allDates.map((date) => {
-        const dayMatches = uniqueMatches.filter((m) =>
-          isSameDay(m.timestamp, date)
-        );
+        const dayMatches = matches.filter((m) => isSameDay(new Date(m.startsAt), date));
 
         if (!dayMatches.length) return null;
 
@@ -189,11 +141,11 @@ const ListView: React.FC<CalendarMatchListProps> = ({
               <MatchListItem
                 key={match.id}
                 match={match}
+                sport={sportOf.get(match.sportId)}
+                tournament={tournamentOf(match)}
                 user={user}
                 onStatusChange={handleStatusChange}
-                isSignedUp={signedUpIds.has(
-                  `${match.id}::${new Date(match.timestamp).getTime()}`
-                )}
+                isSignedUp={signedUpIds.has(match.id)}
               />
             ))}
           </div>
