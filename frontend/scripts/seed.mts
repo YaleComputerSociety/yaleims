@@ -277,11 +277,11 @@ async function bracket(seasonId: string, kind: "playoffs" | "tournament", name: 
 
 // ── Season activity: captains, sign-ups, reports, MVPs ─────────────────────
 
-async function activity(seasonSports: SportDoc[]): Promise<void> {
+async function activity(seasonSports: (SportDoc & { id: string })[]): Promise<void> {
   // Two captains per college, in the first two of the term's sports.
   for (const [ci] of COLLEGES.entries()) {
     for (const [k, sport] of seasonSports.slice(0, 2).entries()) {
-      const r = await setCaptain(CURRENT, students[ci * PER_COLLEGE + 1 + k].email, sport.name, true, SEED_ACTOR);
+      const r = await setCaptain(CURRENT, COLLEGES[ci].id, sport.id, students[ci * PER_COLLEGE + 1 + k].email, true, SEED_ACTOR);
       if (r !== "ok") throw new Error(`captain: ${r}`);
     }
   }

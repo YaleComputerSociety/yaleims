@@ -28,3 +28,20 @@ export async function listCollegePlayers(
     .get();
   return snap.docs.map((d) => withId<PlayerDoc>(d));
 }
+
+/** A college's reps this season. */
+export async function listCollegeReps(seasonId: string, collegeId: string): Promise<WithId<PlayerDoc>[]> {
+  const snap = await adminDb
+    .collection(paths.players(seasonId))
+    .where("collegeId", "==", collegeId)
+    .where("roles", "array-contains", "college_rep")
+    .get();
+  return snap.docs.map((d) => withId<PlayerDoc>(d));
+}
+
+/** These people's player docs this season (missing ones left out), by id; one batched read. */
+export async function getPlayers(seasonId: string, playerIds: string[]): Promise<Map<string, PlayerDoc>> {
+  if (playerIds.length === 0) return new Map();
+  const snaps = await adminDb.getAll(...playerIds.map((id) => playerRef(seasonId, id)));
+  return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, s.data() as PlayerDoc]));
+}

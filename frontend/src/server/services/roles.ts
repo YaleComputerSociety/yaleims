@@ -1,14 +1,14 @@
 // Roles. In v3 they live in three places: users/{email}.roles (admin, dev:
 // global), the season player doc's roles (college_rep, supervisor) and the
-// teams a player captains this season (captain). The session still carries
-// them merged into one list, mRoles, which every route checks. Changing
-// roles is audit-logged (D32).
+// teams a player captains this season (captain). The old routes check them
+// merged into one list, mRoles (mergedRoles, carried in the session); the new
+// API checks them through server/auth.ts. Changing roles is audit-logged (D32).
 import "server-only";
 import { FieldValue, type DocumentReference, type DocumentSnapshot } from "firebase-admin/firestore";
 import type { GlobalRole, PlayerDoc, SeasonRole, UserDoc } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
 import { playerRef } from "../data/players";
-import { listSports } from "../data/sports";
+import { getSport, listSports } from "../data/sports";
 import { collegeTeamsRef, listCaptainTeams, listCollegeTeams, newTeam, teamRef } from "../data/teams";
 import { userRef } from "../data/users";
 import { runTransaction } from "../data/util";
@@ -58,9 +58,10 @@ export async function captainSportsInCollege(
 export type Refusal = "no-user" | "not-in-season" | "no-college" | "unknown-sport";
 
 /**
- * Sets a user's roles from the dev page's merged list: global roles on the
- * user, season roles on their player doc, and with "captain" exactly the
- * teams of `captainOf` (sport names) in their college.
+ * Sets a user's roles (the dev page): the global roles on the user, the
+ * season roles on their player doc, and captain of exactly the teams of
+ * `captainOf` (sport ids) in their college. Other values in `roles` are
+ * ignored.
  */
 export async function setUserRoles(
   seasonId: string,
@@ -70,12 +71,8 @@ export async function setUserRoles(
   actor: Actor
 ): Promise<"ok" | Refusal> {
   const sports = await listSports(seasonId);
-  const captainSportIds: string[] = [];
-  for (const name of roles.includes("captain") ? captainOf : []) {
-    const sport = sports.find((s) => s.name === name);
-    if (!sport) return "unknown-sport";
-    captainSportIds.push(sport.id);
-  }
+  if (captainOf.some((id) => !sports.some((s) => s.id === id))) return "unknown-sport";
+  const captainSportIds = [...new Set(captainOf)];
   const seasonRoles = SEASON_ROLES.filter((r) => roles.includes(r));
 
   return runTransaction(async (tx) => {
@@ -113,7 +110,7 @@ export async function setUserRoles(
     logAction(tx, seasonId, {
       actor,
       action: "updateUserRoles",
-      params: { userId: email, roles, sportsCaptainOf: captainOf },
+      params: { userId: email, roles, captainOf },
       changed,
       created,
     });
@@ -122,31 +119,24 @@ export async function setUserRoles(
 }
 
 /**
- * Makes a player captain of a sport's team in their college, or not. Only
- * an admin or a rep of the player's college may (D42); the rep is checked
- * on their player doc, not the session.
+ * Makes a player of `collegeId` captain of its team in a sport, or not
+ * (audit-logged). Who may is the route's check (server/auth.ts
+ * can.manageCaptains: the college's rep or an admin, D42).
  */
 export async function setCaptain(
   seasonId: string,
+  collegeId: string,
+  sportId: string,
   email: string,
-  sportName: string,
   assign: boolean,
   actor: Actor
-): Promise<"ok" | "forbidden" | Exclude<Refusal, "no-user">> {
-  const isAdmin = actor.roles.some((r) => r === "admin" || r === "dev");
-  const sport = (await listSports(seasonId)).find((s) => s.name === sportName);
-  if (!sport) return "unknown-sport";
+): Promise<"ok" | "not-in-season" | "other-college" | "unknown-sport"> {
+  if (!(await getSport(seasonId, sportId))) return "unknown-sport";
   return runTransaction(async (tx) => {
-    const [player, actorPlayer] = await Promise.all([
-      tx.get(playerRef(seasonId, email)).then((s) => s.data()),
-      tx.get(playerRef(seasonId, actor.userId)).then((s) => s.data()),
-    ]);
-    const repCollegeId = actorPlayer?.roles.includes("college_rep") ? actorPlayer.collegeId : null;
-    if (!isAdmin && !repCollegeId) return "forbidden";
+    const player = (await tx.get(playerRef(seasonId, email))).data();
     if (!player) return "not-in-season";
-    if (!player.collegeId) return "no-college";
-    if (!isAdmin && player.collegeId !== repCollegeId) return "forbidden";
-    const ref = teamRef(seasonId, player.collegeId, sport.id);
+    if (player.collegeId !== collegeId) return "other-college";
+    const ref = teamRef(seasonId, collegeId, sportId);
     const team = await tx.get(ref);
 
     if (team.exists) {
@@ -154,12 +144,12 @@ export async function setCaptain(
         captainIds: assign ? FieldValue.arrayUnion(email) : FieldValue.arrayRemove(email),
       });
     } else if (assign) {
-      tx.create(ref, { ...newTeam(seasonId, player.collegeId, sport.id), captainIds: [email] });
+      tx.create(ref, { ...newTeam(seasonId, collegeId, sportId), captainIds: [email] });
     }
     logAction(tx, seasonId, {
       actor,
       action: assign ? "assignCaptain" : "removeCaptain",
-      params: { email, sport: sportName },
+      params: { email, collegeId, sportId },
       changed: team.exists ? [team] : [],
       created: !team.exists && assign ? [ref] : [],
     });

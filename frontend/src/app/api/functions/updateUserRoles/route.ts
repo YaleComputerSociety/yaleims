@@ -1,5 +1,6 @@
 import { actorOf } from "@/server/data/auditLog";
 import { getCurrentSeasonId } from "@/server/data/seasons";
+import { listSports } from "@/server/data/sports";
 import { setUserRoles } from "@/server/services/roles";
 import { getSession, hasAnyRole } from "@/server/session";
 
@@ -33,13 +34,14 @@ export async function PUT(req: Request) {
         status: 500,
       });
     }
-    const result = await setUserRoles(
-      seasonId,
-      userId,
-      roles,
-      Array.isArray(sportsCaptainOf) ? sportsCaptainOf : [],
-      actorOf(session)
-    );
+    // The old page names the sports a captain leads; "captain" in roles turns them on.
+    const sports = await listSports(seasonId);
+    const names = roles.includes("captain") && Array.isArray(sportsCaptainOf) ? sportsCaptainOf : [];
+    const captainOf = names.flatMap((name) => sports.filter((s) => s.name === name).map((s) => s.id));
+    const result =
+      captainOf.length < names.length
+        ? "unknown-sport"
+        : await setUserRoles(seasonId, userId, roles, captainOf, actorOf(session));
     const refusals = {
       "no-user": [404, "User not found"],
       "not-in-season": [409, "User hasn't joined this season yet (they join at their next login)"],

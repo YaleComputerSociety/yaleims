@@ -1,6 +1,8 @@
-import { getSession, getSessionToken } from "@/server/session";
-import { actorOf } from "@/server/data/auditLog";
+import { can, getViewer } from "@/server/auth";
+import { getPlayer } from "@/server/data/players";
 import { getCurrentSeasonId } from "@/server/data/seasons";
+import { findSportByName } from "@/server/data/sports";
+import { getSessionToken } from "@/server/session";
 import { setCaptain } from "@/server/services/roles";
 
 /**
@@ -14,8 +16,8 @@ export async function POST(req: Request) {
     if (!(await getSessionToken())) {
       return Response.json({ error: "unauthenticated" }, { status: 401 });
     }
-    const session = await getSession();
-    if (!session) {
+    const viewer = await getViewer();
+    if (!viewer) {
       return Response.json({ error: "Invalid token" }, { status: 401 });
     }
     if (!email || !sport) {
@@ -32,19 +34,21 @@ export async function POST(req: Request) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
 
-    const result = await setCaptain(seasonId, String(email), String(sport), !remove, actorOf(session));
-    if (result === "forbidden") {
-      return Response.json({ error: "Only the player's college rep or an admin can change captains" }, { status: 403 });
-    }
-    if (result === "not-in-season") {
+    const player = await getPlayer(seasonId, String(email));
+    if (!player) {
       return Response.json({ error: "User not found in this season" }, { status: 404 });
     }
-    if (result === "no-college") {
+    if (!player.collegeId) {
       return Response.json({ error: "User has no college this season" }, { status: 400 });
     }
-    if (result === "unknown-sport") {
+    if (!(await can.manageCaptains(viewer, player.collegeId))) {
+      return Response.json({ error: "Only the player's college rep or an admin can change captains" }, { status: 403 });
+    }
+    const sportDoc = await findSportByName(seasonId, String(sport));
+    if (!sportDoc) {
       return Response.json({ error: `Unknown sport: ${sport}` }, { status: 400 });
     }
+    await setCaptain(seasonId, player.collegeId, sportDoc.id, String(email), !remove, await viewer.actor());
     return Response.json({ success: true });
   } catch (err: any) {
     console.error("Error assigning/removing captain:", err);
