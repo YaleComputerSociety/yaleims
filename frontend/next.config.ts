@@ -41,6 +41,20 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Security headers on every response. No script Content-Security-Policy:
+        // Next's inline scripts would need per-request nonces, which make every
+        // page dynamic. HSTS leaves out includeSubDomains/preload, which would
+        // bind every yaleims.com subdomain.
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
+        ],
+      },
+      {
         // Cache static images with version query parameter
         // e.g., /image.png?v=1.0.0
         source: "/(.*)\\.(png|jpg|jpeg|gif|svg|webp|avif|ico)",

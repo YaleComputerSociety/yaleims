@@ -59,16 +59,16 @@ env:
       - BUILD
       - RUNTIME
 
+  # Server-only secrets: read at request time, never needed by the build
+  # (CI builds without them), so they stay out of the build environment.
   - variable: JWT_SECRET
     secret: JWT_SECRET
     availability:
-      - BUILD
       - RUNTIME
-  
+
   - variable: YALIES_API_KEY
     secret: YALIES_API_KEY
     availability:
-      - BUILD
       - RUNTIME
 
   # Grant access to secrets in Cloud Secret Manager.
