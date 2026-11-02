@@ -50,8 +50,8 @@ export async function POST(req: Request) {
         awayScore,
         homeForfeit,
         awayForfeit,
-        homeTeam,
-        awayTeam,
+        homeCollegeId: homeTeam,
+        awayCollegeId: awayTeam,
       },
       actorOf(session)
     );

@@ -1,6 +1,8 @@
 import { getYearFromTimestamp } from "@/utils/helpers";
 import { actorOf } from "@/server/data/auditLog";
-import { editMatch, type EditResult, type MatchEdit } from "@/server/services/schedule";
+import type { MatchEdit } from "@/lib/api/matches";
+import { findSportByName } from "@/server/data/sports";
+import { editMatch, type EditResult } from "@/server/services/schedule";
 import { getSession, hasAnyRole } from "@/server/session";
 
 const json = (status: number, body: object) => new Response(JSON.stringify(body), { status });
@@ -43,8 +45,18 @@ export async function PATCH(req: Request) {
       return json(400, { error: "Error calculating year" });
     }
 
-    const edit: MatchEdit = { home_college, away_college, location, location_extra, timestamp, sport };
-    const result = await editMatch(year, matchId, edit, actorOf(session));
+    // The old form names the sport and the fields the pre-v3 way.
+    const sportId = sport ? (await findSportByName(year, String(sport)))?.id : undefined;
+    const edit = {
+      homeCollegeId: home_college,
+      awayCollegeId: away_college,
+      venue: location,
+      venueDetail: location_extra,
+      startsAt: timestamp,
+      sportId,
+    } as MatchEdit;
+    const result =
+      sport && !sportId ? "unknown-sport" : await editMatch(year, matchId, edit, actorOf(session));
     if (result !== "ok") {
       const [status, error] = REFUSALS[result];
       return json(status, { error });

@@ -1,5 +1,7 @@
 import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
 import { actorOf } from "@/server/data/auditLog";
+import type { NewMatch } from "@/lib/api/matches";
+import { findSportByName } from "@/server/data/sports";
 import { addSchedule } from "@/server/services/schedule";
 
 const MAX_MATCHES = 499;
@@ -28,12 +30,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await addSchedule(
-      String(schedule.season),
-      String(schedule.sport),
-      schedule.matches,
-      actorOf(session)
-    );
+    // The old upload names the sport and the fields the pre-v3 way.
+    const sport = await findSportByName(String(schedule.season), String(schedule.sport));
+    const games = schedule.matches.map((g: Record<string, string | undefined>) => ({
+      startsAt: g.timestamp,
+      homeCollegeId: g.homeCollege,
+      awayCollegeId: g.awayCollege,
+      venue: g.location ?? null,
+      venueDetail: g.locationExtra ?? null,
+    })) as NewMatch[];
+    const result = sport
+      ? await addSchedule(String(schedule.season), sport.id, games, actorOf(session))
+      : ({ status: "unknown-sport" } as const);
     if (result.status === "unknown-sport") {
       return Response.json({ error: `Unknown sport: ${schedule.sport}` }, { status: 400 });
     }

@@ -3,5 +3,7 @@
 import { z } from "zod";
 import { COLLEGES } from "@/lib/colleges";
 
-/** A college id ("MC"); the 14 are the same every season. */
-export const collegeIdSchema = z.enum(COLLEGES.map((c) => c.id));
+const COLLEGE_IDS: string[] = COLLEGES.map((c) => c.id);
+
+/** A college id ("MC"); the 14 are the same every season. A string, as the docs store it. */
+export const collegeIdSchema = z.string().refine((id) => COLLEGE_IDS.includes(id), "Unknown college");

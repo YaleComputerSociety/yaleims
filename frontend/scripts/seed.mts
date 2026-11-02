@@ -184,16 +184,16 @@ function pairings(r: number): [string, string][] {
 }
 
 /** Adds a sport's regular season (3 games a week) between two dates, through the schedule service. */
-async function schedule(seasonId: string, sport: SportDoc, from: Date, to: Date): Promise<void> {
+async function schedule(seasonId: string, sport: SportDoc & { id: string }, from: Date, to: Date): Promise<void> {
   const games = [];
   for (let week = 0, start = from.getTime(); start <= to.getTime(); week++, start += 7 * DAY) {
     for (const [i, [home, away]] of pairings(week).slice(0, 3).entries()) {
       const when = new Date(start + i * DAY);
       when.setHours(18 + i, 0, 0, 0);
-      games.push({ timestamp: when.toISOString(), homeCollege: home, awayCollege: away, location: pick(VENUES), locationExtra: `Field ${i + 1}` });
+      games.push({ startsAt: when.toISOString(), homeCollegeId: home, awayCollegeId: away, venue: pick(VENUES), venueDetail: `Field ${i + 1}` });
     }
   }
-  const result = await addSchedule(seasonId, sport.name, games, SEED_ACTOR);
+  const result = await addSchedule(seasonId, sport.id, games, SEED_ACTOR);
   if (result.status !== "added") throw new Error(`${seasonId} ${sport.name}: ${JSON.stringify(result)}`);
 }
 

@@ -138,6 +138,44 @@ export async function listUpcomingCollegeMatches(
   );
 }
 
+/**
+ * One page of the played games (status final) of every season, sorted by
+ * start, and how many there are in all. Each season runs the same filtered
+ * query, limited to the games up to the page's end; the results are merged.
+ * So a page reads about seasons × (offset + limit) games. Not a
+ * collection-group query: the id "matches" is shared with Elo and the old
+ * tree (lib/paths.ts).
+ */
+export async function listPlayedMatches(
+  filter: Omit<SeasonMatchFilter, "status">,
+  order: SortOrder,
+  offset: number,
+  limit: number
+): Promise<{ items: WithId<MatchDoc>[]; total: number }> {
+  const seasons = await listSeasons();
+  const perSeason = await Promise.all(
+    seasons.map(async ({ id }) => {
+      const query = seasonMatchQuery(id, { ...filter, status: "final" }, order);
+      const [games, count] = await Promise.all([query.limit(offset + limit).get(), query.count().get()]);
+      return { games: games.docs.map((d) => withId<MatchDoc>(d)), total: count.data().count };
+    })
+  );
+  // Equal start times: by season, then by id, the way each season's query breaks ties.
+  const sign = order === "asc" ? 1 : -1;
+  const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  const games = perSeason
+    .flatMap((s) => s.games)
+    .sort(
+      (a, b) =>
+        sign *
+        (a.startsAt.toMillis() - b.startsAt.toMillis() || compare(a.seasonId, b.seasonId) || compare(a.id, b.id))
+    );
+  return {
+    items: games.slice(offset, offset + limit),
+    total: perSeason.reduce((sum, s) => sum + s.total, 0),
+  };
+}
+
 /** A game and the season it was read from. */
 export type SeasonMatch = WithId<MatchDoc>;
 
