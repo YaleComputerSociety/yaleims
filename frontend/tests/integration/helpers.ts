@@ -18,7 +18,10 @@ export const sessionFor = (email: string, mRoles: string[] = ["user"]) =>
 
 /** People of the seed (scripts/seed.mts): 8 students per college; the first is the rep, the next two captains. */
 export const people = {
+  /** Holds admin and dev. */
   admin: "dev@example.edu",
+  /** This season's supervisor (a season role; no admin rights in 2D). */
+  supervisor: "supervisor@example.edu",
   /** College index (0 = BF … in COLLEGES order) and position → the student's email. */
   student: (college: number, position: number) => `player${String(college * 8 + position + 1).padStart(3, "0")}@example.edu`,
 };
@@ -49,4 +52,16 @@ export async function api(method: string, path: string, body?: unknown, { sessio
     // plain text
   }
   return { status: res.status, body: parsed };
+}
+
+/** The seed's two seasons: the current one and the one before. */
+export async function seasons(): Promise<{ current: string; previous: string }> {
+  const current = (await db.doc("config/app").get()).data()!.currentSeasonId as string;
+  const startYear = Number(current.slice(0, 4));
+  return { current, previous: `${startYear - 1}-${startYear}` };
+}
+
+/** Gives a seeded user exactly these global roles (for the dev-only and admin-only checks). */
+export async function setGlobalRoles(email: string, roles: string[]): Promise<void> {
+  await db.doc(`users/${email}`).update({ roles });
 }

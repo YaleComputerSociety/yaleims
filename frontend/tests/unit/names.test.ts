@@ -37,3 +37,27 @@ describe("paths", () => {
     expect(() => paths.user("")).toThrow();
   });
 });
+
+describe("sports order", () => {
+  it("is by term, then name", async () => {
+    const { sortSports } = await import("@/lib/sports");
+    const sports = [
+      { name: "Volleyball", term: "spring" as const },
+      { name: "Soccer", term: "fall" as const },
+      { name: "Broomball", term: "winter" as const },
+      { name: "Cornhole", term: "fall" as const },
+    ];
+    expect(sortSports(sports).map((s) => s.name)).toEqual(["Cornhole", "Soccer", "Broomball", "Volleyball"]);
+    expect(sports[0].name).toBe("Volleyball"); // a new array
+  });
+});
+
+describe("API urls", () => {
+  it("encodes each id", async () => {
+    const { url } = await import("@/lib/api/core");
+    expect(url`/api/seasons/${"2026-2027"}/colleges/${"MC"}/teams/${1}/captains/${"a+b@yale.edu"}`).toBe(
+      "/api/seasons/2026-2027/colleges/MC/teams/1/captains/a%2Bb%40yale.edu"
+    );
+    expect(url`/api/seasons`).toBe("/api/seasons");
+  });
+});

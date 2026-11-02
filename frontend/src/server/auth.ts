@@ -95,6 +95,16 @@ export async function authorize<Args extends unknown[]>(
   return viewer;
 }
 
+/**
+ * Some actions work on the current season only, as they always have
+ * (PHASE-2D-PLAN §3.3): 409 for any other season.
+ */
+export async function requireCurrentSeason(seasonId: string): Promise<void> {
+  if (seasonId !== (await getCurrentSeasonId())) {
+    throw new ApiError("conflict", "This can only be done in the current season.");
+  }
+}
+
 // ── The permissions ────────────────────────────────────────────────────────
 // As today (PHASE-2D-PLAN §3.4): most admin work is open to admin or dev,
 // the champion to admin only, roles to dev only (D43 later makes all of it

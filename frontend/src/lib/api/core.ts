@@ -92,6 +92,11 @@ function isTimestamp(value: unknown): value is StoredTimestamp {
 
 // ── Calling the API ────────────────────────────────────────────────────────
 
+/** An API path with each interpolated id encoded: url`/api/seasons/${seasonId}/matches`. */
+export function url(parts: TemplateStringsArray, ...ids: (string | number)[]): string {
+  return parts.reduce((path, part, i) => path + encodeURIComponent(String(ids[i - 1])) + part);
+}
+
 /** Query parameters; null and undefined ones are left out. */
 export type Query = Record<string, string | number | boolean | null | undefined>;
 
