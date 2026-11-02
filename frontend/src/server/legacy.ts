@@ -5,8 +5,9 @@
 // shared with the browser (lib/legacyMatch.ts). Goes away when the pages
 // read v3 shapes.
 import "server-only";
+import type { BracketSlotInput } from "@/lib/api/brackets";
 import { toLegacyMatch } from "@/lib/legacyMatch";
-import type { MatchJson } from "@/types/api";
+import type { MatchJson, SlotInput } from "@/types/api";
 import type { MatchDoc, PlayerDoc, UserDoc, WithId } from "@/types/firestore";
 import type { MatchDoc as LegacyMatch, UserDoc as LegacyUserDoc } from "@/types/legacy";
 import { listBrackets } from "./data/brackets";
@@ -78,4 +79,29 @@ export function legacyUser(
     mRoles: mergedRoles(user ?? null, player ?? null, captainOf.length > 0),
     sportsCaptainOf: captainOf,
   };
+}
+
+/**
+ * The old bracket and tournament uploads' slots in the v3 input
+ * (lib/api/brackets.ts): "" and "TBD" are empty sides, divisions are
+ * lowercased ("none" is none). Unknown colleges pass through; the service
+ * refuses them.
+ */
+export function slotsFromLegacy(input: SlotInput[]): BracketSlotInput[] {
+  const college = (value: unknown) => (typeof value === "string" && value !== "" && value !== "TBD" ? value : null);
+  const division = (value: unknown) => {
+    const v = typeof value === "string" ? value.toLowerCase() : "";
+    return v === "blue" || v === "green" || v === "final" ? v : null;
+  };
+  return input.map((s) => ({
+    slot: s.match_slot,
+    homeCollegeId: college(s.home_college),
+    awayCollegeId: college(s.away_college),
+    homeSeed: s.home_seed ?? null,
+    awaySeed: s.away_seed ?? null,
+    division: division(s.division),
+    startsAt: s.timestamp || null,
+    venue: s.location || null,
+    venueDetail: s.location_extra || null,
+  }));
 }

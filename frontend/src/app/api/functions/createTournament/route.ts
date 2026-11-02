@@ -2,6 +2,8 @@ import { getSession, getSessionToken, hasAnyRole } from "@/server/session";
 import { actorOf } from "@/server/data/auditLog";
 import { bracketIdOf } from "@/lib/brackets";
 import { getCurrentSeasonId } from "@/server/data/seasons";
+import { findSportByName } from "@/server/data/sports";
+import { slotsFromLegacy } from "@/server/legacy";
 import { createBracket, normalizePlacementPoints } from "@/server/services/brackets";
 
 /**
@@ -45,18 +47,21 @@ export async function POST(req: Request) {
       return Response.json({ error: "Current season not found." }, { status: 500 });
     }
 
-    const result = await createBracket(
-      seasonId,
-      {
-        id: tournamentId,
-        kind: "tournament",
-        name,
-        sportName: String(tournamentData.sport),
-        input: tournamentData.matches,
-        placementPoints: normalizePlacementPoints(tournamentData.placement_points),
-      },
-      actorOf(session)
-    );
+    // The old upload names the sport and the slot fields the pre-v3 way.
+    const sport = await findSportByName(seasonId, String(tournamentData.sport));
+    const result = sport
+      ? await createBracket(
+          seasonId,
+          {
+            kind: "tournament",
+            name,
+            sportId: sport.id,
+            slots: slotsFromLegacy(tournamentData.matches),
+            placementPoints: normalizePlacementPoints(tournamentData.placement_points),
+          },
+          actorOf(session)
+        )
+      : ({ status: "unknown-sport" } as const);
     if (result.status === "exists") {
       return Response.json(
         { error: `Tournament '${name}' already exists this season.` },

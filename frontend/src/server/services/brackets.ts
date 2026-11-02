@@ -12,9 +12,10 @@ import {
   type DocumentSnapshot,
   type Transaction,
 } from "firebase-admin/firestore";
+import { DEFAULT_PLACEMENT_POINTS, type BracketSlotInput } from "@/lib/api/brackets";
+import { bracketIdOf, playoffsName } from "@/lib/brackets";
 import { easternDate } from "@/lib/dates";
 import { winnerId } from "@/lib/results";
-import type { SlotInput } from "@/types/api";
 import type {
   BracketDoc,
   BracketKind,
@@ -30,7 +31,7 @@ import { collegeRef, listColleges, recalculateRanks } from "../data/colleges";
 import { matchRef, newMatchRef } from "../data/matches";
 import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
-import { findSportByName } from "../data/sports";
+import { getSport } from "../data/sports";
 import { runTransaction } from "../data/util";
 import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
@@ -65,9 +66,7 @@ const FEEDER_SLOTS: Record<number, [number, number]> = {
 /** Tournaments: semifinal losers drop into the third place game. */
 const LOSER_SLOT: Record<number, number> = { 13: THIRD_PLACE_SLOT, 14: THIRD_PLACE_SLOT };
 
-export const DEFAULT_PLACEMENT_POINTS: PlacementPoints = { first: 20, second: 15, third: 10 };
-
-/** Placement points as uploaded, with the default for any missing or invalid value. */
+/** Placement points as the old upload sends them, with the default for any missing or invalid value. */
 export function normalizePlacementPoints(raw: unknown): PlacementPoints {
   const stored = (raw ?? {}) as Partial<Record<keyof PlacementPoints, unknown>>;
   const points = (key: keyof PlacementPoints) => {
@@ -80,39 +79,41 @@ export function normalizePlacementPoints(raw: unknown): PlacementPoints {
 // ── Create ─────────────────────────────────────────────────────────────────
 
 export type CreateResult =
-  | { status: "created" }
+  | { status: "created"; id: string }
   | { status: "exists" | "unknown-sport" }
   | { status: "bad-input"; error: string };
 
 /**
- * Creates a bracket and its games in one transaction. Empty slots get no
- * colleges ("TBD"). A bye's college moves straight into the quarterfinal it
- * feeds (it earns nothing, D23).
+ * Creates a bracket and its games in one transaction: a sport's playoffs
+ * (named "<sport> Playoffs") or a named tournament; the id is a slug of the
+ * name. Empty sides get no college ("TBD"). A bye's college moves straight
+ * into the quarterfinal it feeds (it earns nothing, D23).
  */
 export async function createBracket(
   seasonId: string,
   bracket: {
-    id: string;
     kind: BracketKind;
-    name: string;
-    sportName: string;
-    input: SlotInput[];
-    placementPoints: PlacementPoints | null;
+    /** Tournaments only. */
+    name?: string;
+    sportId: string;
+    slots: BracketSlotInput[];
+    /** Tournaments only. */
+    placementPoints?: PlacementPoints;
   },
   actor: Actor
 ): Promise<CreateResult> {
-  const [sport, colleges] = await Promise.all([
-    findSportByName(seasonId, bracket.sportName),
-    listColleges(seasonId),
-  ]);
+  const [sport, colleges] = await Promise.all([getSport(seasonId, bracket.sportId), listColleges(seasonId)]);
   if (!sport) return { status: "unknown-sport" };
   const tournament = bracket.kind === "tournament";
+  const name = tournament ? (bracket.name ?? "").trim() : playoffsName(sport.name);
+  const id = bracketIdOf(name);
+  if (!id) return { status: "bad-input", error: "The name must contain letters or numbers" };
   const slotCount = tournament ? THIRD_PLACE_SLOT : BRACKET_SLOTS;
-  const bySlot = new Map(bracket.input.map((s) => [s.match_slot, s]));
+  const bySlot = new Map(bracket.slots.map((s) => [s.slot, s]));
 
   // A college id, or null for an empty side; undefined for an unknown one.
-  const college = (value: unknown): string | null | undefined => {
-    if (typeof value !== "string" || value === "" || value === "TBD") return null;
+  const college = (value: string | null | undefined): string | null | undefined => {
+    if (!value) return null;
     return colleges.some((c) => c.id === value) ? value : undefined;
   };
   const refs = new Map<number, DocumentReference<MatchDoc>>();
@@ -127,8 +128,8 @@ export async function createBracket(
   for (let slot = 1; slot <= slotCount; slot++) {
     const input = bySlot.get(slot);
     const round = SLOT_ROUNDS[slot];
-    const home = college(input?.home_college);
-    const away = college(input?.away_college);
+    const home = college(input?.homeCollegeId);
+    const away = college(input?.awayCollegeId);
     if (home === undefined || away === undefined) {
       return { status: "bad-input", error: `Slot ${slot}: unknown college` };
     }
@@ -136,12 +137,12 @@ export async function createBracket(
     // bye's included), so the semifinals inherit the quarterfinals'.
     let division: Division | null = null;
     if (!tournament) {
-      division = toDivision(input?.division);
+      division = input?.division ?? null;
       const feeders = FEEDER_SLOTS[slot]?.map((s) => divisions.get(s));
       if (!division && feeders && feeders[0] && feeders[0] === feeders[1]) division = feeders[0];
       if (input) divisions.set(slot, division);
     }
-    const startsAt = input?.timestamp ? new Date(input.timestamp) : now.toDate();
+    const startsAt = input?.startsAt ? new Date(input.startsAt) : now.toDate();
     if (isNaN(startsAt.getTime())) {
       return { status: "bad-input", error: `Slot ${slot}: invalid date` };
     }
@@ -151,7 +152,7 @@ export async function createBracket(
         round,
         matchId: null,
         byeCollegeId: home,
-        byeSeed: input?.home_seed || null,
+        byeSeed: input?.homeSeed || null,
         byeStartsAt: input ? Timestamp.fromDate(startsAt) : null,
       });
       continue;
@@ -162,7 +163,7 @@ export async function createBracket(
       ? bySlot.get(FEEDER_SLOTS[slot][0])
       : undefined;
     const homeCollegeId = home;
-    const awayCollegeId = bye ? (college(bye.home_college) ?? null) : away;
+    const awayCollegeId = bye ? (college(bye.homeCollegeId) ?? null) : away;
 
     const ref = refs.get(slot)!;
     slots.push({ slot, round, matchId: ref.id, byeCollegeId: null, byeSeed: null, byeStartsAt: null });
@@ -173,15 +174,15 @@ export async function createBracket(
       awayCollegeId,
       collegeIds: [...new Set([homeCollegeId, awayCollegeId].filter((c) => c !== null))],
       startsAt: Timestamp.fromDate(startsAt),
-      venue: input?.location || null,
-      venueDetail: input?.location_extra || null,
+      venue: input?.venue || null,
+      venueDetail: input?.venueDetail || null,
       division,
       stage: "playoff",
-      bracketId: bracket.id,
+      bracketId: id,
       bracketSlot: slot,
       round,
-      homeSeed: input?.home_seed ?? null,
-      awaySeed: (bye ? bye.home_seed : input?.away_seed) ?? null,
+      homeSeed: input?.homeSeed ?? null,
+      awaySeed: (bye ? bye.homeSeed : input?.awaySeed) ?? null,
       nextMatchId: NEXT_SLOT[slot] ? (refs.get(NEXT_SLOT[slot])?.id ?? null) : null,
       nextLoserMatchId: tournament && LOSER_SLOT[slot] ? refs.get(LOSER_SLOT[slot])!.id : null,
       pointsForWin: sport.pointsForWin,
@@ -198,15 +199,15 @@ export async function createBracket(
     seasonId,
     sportId: sport.id,
     kind: bracket.kind,
-    name: bracket.name,
+    name,
     date: days.size === 1 ? [...days][0] : null,
     slots,
     thirdPlaceSlot: tournament ? THIRD_PLACE_SLOT : null,
-    placementPoints: tournament ? bracket.placementPoints : null,
+    placementPoints: tournament ? (bracket.placementPoints ?? DEFAULT_PLACEMENT_POINTS) : null,
     placements: tournament ? { first: null, second: null, third: null } : null,
     createdAt: now,
   };
-  const ref = bracketRef(seasonId, bracket.id);
+  const ref = bracketRef(seasonId, id);
   return runTransaction(async (tx) => {
     if ((await tx.get(ref)).exists) return { status: "exists" } as const;
     for (const [gameRef, game] of games) tx.create(gameRef, game);
@@ -214,18 +215,12 @@ export async function createBracket(
     logAction(tx, seasonId, {
       actor,
       action: tournament ? "createTournament" : "createBracket",
-      params: { name: bracket.name, sport: bracket.sportName, matches: bracket.input, placementPoints: bracket.placementPoints },
+      params: { name, sportId: bracket.sportId, slots: bracket.slots, placementPoints: doc.placementPoints },
       changed: [],
       created: [ref, ...games.map(([gameRef]) => gameRef)],
     });
-    return { status: "created" } as const;
+    return { status: "created", id } as const;
   });
-}
-
-/** An uploaded division ("Blue", "none", …) → a v3 division or null. */
-function toDivision(value: unknown): Division | null {
-  const v = typeof value === "string" ? value.toLowerCase() : "";
-  return v === "blue" || v === "green" || v === "final" ? v : null;
 }
 
 // ── Delete ─────────────────────────────────────────────────────────────────
@@ -239,12 +234,13 @@ export type DeleteResult =
  * Deletes a bracket with its games (and their rosters and score reports),
  * taking back every point they earned: each result and the placement
  * bonuses (D24). While games are scored it refuses unless `force`, so the
- * admin confirms first. Then re-ranks the season.
+ * admin confirms first. Then re-ranks the season. `kind`: only a bracket of
+ * that kind (else "not-found").
  */
 export async function deleteBracket(
   seasonId: string,
   bracketId: string,
-  kind: BracketKind,
+  kind: BracketKind | null,
   force: boolean,
   actor: Actor
 ): Promise<DeleteResult> {
@@ -252,7 +248,7 @@ export async function deleteBracket(
   const result = await runTransaction(async (tx): Promise<DeleteResult> => {
     const bracketSnap = await tx.get(ref);
     const bracket = bracketSnap.data();
-    if (!bracket || bracket.kind !== kind) return { status: "not-found" };
+    if (!bracket || (kind && bracket.kind !== kind)) return { status: "not-found" };
 
     const gameRefs = bracket.slots.filter((s) => s.matchId).map((s) => matchRef(seasonId, s.matchId!));
     const gameSnaps = gameRefs.length > 0 ? await tx.getAll(...gameRefs) : [];

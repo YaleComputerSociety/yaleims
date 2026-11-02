@@ -16,6 +16,7 @@
 //
 // Refuses to run unless FIRESTORE_EMULATOR_HOST is set: it can never write to
 // production. Deterministic apart from the dates (seeded random numbers).
+import type { BracketSlotInput } from "@/lib/api/brackets";
 import type { Actor } from "@/server/data/auditLog";
 import type { MatchDoc, PlayerDoc, RosterEntryDoc, SeasonRole, SportDoc, Term, UserDoc } from "@/types/firestore";
 
@@ -233,14 +234,14 @@ async function scorePlayed(seasonId: string, sportNames: Map<string, string>): P
  * later rounds' slots with times only (their colleges come from results).
  * Everything on `day`, so a tournament is a one-day event.
  */
-function bracketInput(order: string[], day: Date, kind: "playoffs" | "tournament") {
+function bracketInput(order: string[], day: Date, kind: "playoffs" | "tournament"): BracketSlotInput[] {
   const seeds = new Map(order.map((c, i) => [c, i + 1]));
   const division = (slot: number) =>
-    kind === "tournament" ? {} : { division: slot === 15 ? "final" : slot <= 6 || slot === 13 ? "blue" : "green" };
-  const slot = (match_slot: number, hour: number, home = "", away = "") => ({
-    match_slot, home_college: home, home_seed: seeds.get(home) ?? 0, away_college: away, away_seed: seeds.get(away) ?? 0,
-    location: pick(VENUES), location_extra: `Court ${match_slot}`,
-    timestamp: new Date(day.getTime() + hour * 60 * 60 * 1000).toISOString(), ...division(match_slot),
+    kind === "tournament" ? null : slot === 15 ? "final" : slot <= 6 || slot === 13 ? "blue" : "green";
+  const slot = (n: number, hour: number, home: string | null = null, away: string | null = null): BracketSlotInput => ({
+    slot: n, homeCollegeId: home, homeSeed: (home && seeds.get(home)) || null, awayCollegeId: away, awaySeed: (away && seeds.get(away)) || null,
+    venue: pick(VENUES), venueDetail: `Court ${n}`,
+    startsAt: new Date(day.getTime() + hour * 60 * 60 * 1000).toISOString(), division: division(n),
   });
   const [s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14] = order;
   return [
@@ -251,15 +252,15 @@ function bracketInput(order: string[], day: Date, kind: "playoffs" | "tournament
   ];
 }
 
-/** Creates a playoff bracket or tournament through the bracket service; optionally plays it out. */
+/** Creates a playoff bracket or tournament (named `name`) through the bracket service; optionally plays it out. */
 async function bracket(seasonId: string, kind: "playoffs" | "tournament", name: string, sport: string, day: Date, play: boolean) {
   const shuffled = [...ids].sort(() => random() - 0.5);
   const result = await createBracket(seasonId, {
-    id: bracketIdOf(name), kind, name, sportName: sport,
-    input: bracketInput(shuffled, day, kind),
-    placementPoints: kind === "tournament" ? { first: 20, second: 15, third: 10 } : null,
+    kind, name, sportId: SPORTS.find((s) => s.name === sport)!.id,
+    slots: bracketInput(shuffled, day, kind),
+    placementPoints: kind === "tournament" ? { first: 20, second: 15, third: 10 } : undefined,
   }, SEED_ACTOR);
-  if (result.status !== "created") throw new Error(`${name}: ${JSON.stringify(result)}`);
+  if (result.status !== "created" || result.id !== bracketIdOf(name)) throw new Error(`${name}: ${JSON.stringify(result)}`);
   if (!play) return;
   // Score round by round; each result moves its winner (and in a tournament,
   // a semifinal's loser) on, so later rounds fill in as earlier ones finish.
