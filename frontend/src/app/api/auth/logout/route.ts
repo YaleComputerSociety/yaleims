@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE, secureCookies } from "@/server/session";
+import { route } from "@/server/http";
+import { SESSION_COOKIE, clearSessionCookie, secureCookies } from "@/server/session";
 
+/** Ends the session: clears the cookie, 204 (the page then goes home). Signed out already: the same. */
+export const POST = route(async () => {
+  const res = new NextResponse(null, { status: 204 });
+  clearSessionCookie(res);
+  return res;
+});
+
+/** The old pages' logout (a GET that redirects to the Hub); goes with them in Phase 2D step 6. */
 export async function GET(): Promise<NextResponse> {
   const BASE_URL = process.env.BASE_URL;
   if (!BASE_URL) {
