@@ -1,27 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { mvpWeekOne, getCurrentWeekId, buildWeekOptions } from "@/utils/helpers";
 import { useUser } from "@/context/UserContext";
-import type { MvpsResponse, UsersInCollegeResponse } from "@/types/api";
-import type { UserDoc } from "@/types/legacy";
+import { fetchCollegePlayers, fetchMvps, nameMvp, type CollegePlayer, type Mvp } from "@/lib/api/colleges";
+import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
 
+/** The week number of a week option's value ("week_4" → 4). */
+const weekNumber = (weekId: string) => Number(weekId.replace("week_", ""));
+
+/** The rep's college: name one of its players an MVP of a week. */
 export default function SelectMVP() {
-  const [usersInCollege, setUsersInCollege] = useState<UserDoc[]>([]);
+  const [players, setPlayers] = useState<CollegePlayer[]>([]);
   const [loading, setLoading] = useState(false);
   const [settingMVP, setSettingMVP] = useState(false);
   const { currentSeason } = useSeason();
+  const { user } = useUser();
+  // The session names the rep's college.
+  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
 
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectUser, setSelectUser] = useState<UserDoc | null>(null);
+  const [selectUser, setSelectUser] = useState<CollegePlayer | null>(null);
 
   // UI-only states (validation/feedback)
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const [weekId, setWeekId] = useState("");
-  const [mvps, setMvps]  = useState<MvpsResponse | null>(null);
-  const { user } = useUser();
+  const [mvps, setMvps] = useState<Mvp[]>([]);
 
   const weekOne = mvpWeekOne(currentSeason?.mvpWeekOne);
   const weeks = weekOne ? buildWeekOptions(weekOne) : [];
@@ -31,56 +37,45 @@ export default function SelectMVP() {
     if (one) setWeekId(getCurrentWeekId(one));
   }, [currentSeason?.mvpWeekOne]);
 
-  const nameOf = (u: UserDoc) =>
-    `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
-
-  const fetchData = async () => {
+  useEffect(() => {
+    if (!currentSeason || !collegeId) return;
+    let live = true;
     setLoading(true);
+    fetchCollegePlayers(currentSeason.id, collegeId)
+      .then(
+        ({ items }) => live && setPlayers(items),
+        (err) => {
+          console.error(err);
+          if (live) setError("Couldn’t load roster. Try again.");
+        }
+      )
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [currentSeason, collegeId]);
+
+  const loadMvps = useCallback(async () => {
+    if (!currentSeason || !collegeId) return;
     try {
-      const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=false");
-      if (!res.ok) throw new Error(res.statusText);
-      const data: UsersInCollegeResponse = await res.json();
-      setUsersInCollege(Array.isArray(data?.users) ? data.users : []);
+      setMvps((await fetchMvps(currentSeason.id, collegeId)).items);
     } catch (err) {
       console.error(err);
-      setError("Couldn’t load roster. Try again.");
-    } finally {
-      setLoading(false);
+      setMvps([]);
     }
-  };
+  }, [currentSeason, collegeId]);
 
   useEffect(() => {
-    if (!currentSeason) return;
-
-    const fetchMvps = async () => {
-      try {
-        const res = await fetch(
-          `/api/functions/getMVPs?seasonId=${currentSeason.id}&collegeId=${user?.college}`,
-        );
-        if (!res.ok) throw new Error(res.statusText);
-        setMvps(await res.json());
-      } catch (err) {
-        console.error(err);
-        setMvps(null);
-      }
-    };
-
-    fetchMvps();
-  }, [selectUser?.college, weekId]);
-
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+    loadMvps();
+  }, [loadMvps]);
 
   const filteredUsers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
-    return usersInCollege.filter((u) => {
-      const full = nameOf(u).toLowerCase();
-      return full.includes(term) || (u.email ?? "").toLowerCase().includes(term);
-    });
-  }, [searchTerm, usersInCollege]);
+    return players.filter((p) => p.name.toLowerCase().includes(term) || p.id.toLowerCase().includes(term));
+  }, [searchTerm, players]);
+
+  const weekMvps = mvps.filter((mvp) => mvp.week === weekNumber(weekId));
 
   if (loading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
 
@@ -91,28 +86,13 @@ export default function SelectMVP() {
 
     try {
       setSettingMVP(true);
-      const res = await fetch("/api/functions/setMVP", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          season: currentSeason.id,
-          residentialCollege: selectUser.college,
-          weekId: weekId,
-          mvpEmail: selectUser.email,
-          mvpFName: selectUser.firstname,
-          mvpLName: selectUser.lastname
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        return setError(body.error ?? "Something went wrong. Please try again.");
-      }
+      await nameMvp(currentSeason.id, collegeId!, weekNumber(weekId), selectUser.id);
       setNotice(`MVP set for ${weekId}.`);
       setSelectUser(null);
       setSearchTerm("");
+      await loadMvps();
     } catch (error) {
-      console.log(error);
-      setError("Something went wrong. Please try again.");
+      setError((error as Error).message);
     } finally {
       setSettingMVP(false);
     }
@@ -137,7 +117,7 @@ export default function SelectMVP() {
         </div>
 
         {selectUser ? (
-          <>Ready to set MVP for <strong>{nameOf(selectUser) || selectUser.email}</strong>.</>
+          <>Ready to set MVP for <strong>{selectUser.name || selectUser.id}</strong>.</>
         ) : (
           <>Pick a student to enable actions.</>
         )}
@@ -158,12 +138,12 @@ export default function SelectMVP() {
       {/* Main panel */}
       <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40 space-y-4">
         {/* Existing MVPs for the chosen week */}
-        {mvps && mvps[weekId] && (
+        {weekMvps.length > 0 && (
           <div className="rounded-md bg-blue-50 dark:bg-blue-950/40 p-3 text-sm">
             <p className="mb-2 font-semibold">Already selected for this week:</p>
-            {Object.entries(mvps[weekId]).map(([email, p]: any) => (
-              <p key={email}>
-                • {p.fname} {p.lname} <span className="text-xs text-gray-500">({email})</span>
+            {weekMvps.map((mvp) => (
+              <p key={mvp.id}>
+                • {mvp.name} <span className="text-xs text-gray-500">({mvp.playerId})</span>
               </p>
             ))}
           </div>
@@ -195,15 +175,15 @@ export default function SelectMVP() {
               ) : (
                 filteredUsers.slice(0, 10).map((u) => (
                   <li
-                    key={u.email}
+                    key={u.id}
                     className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => {
                       setSelectUser(u);
                       setSearchTerm("");
                     }}
                   >
-                    {nameOf(u) || u.email}{" "}
-                    <span className="text-xs text-gray-500">({u.email})</span>
+                    {u.name || u.id}{" "}
+                    <span className="text-xs text-gray-500">({u.id})</span>
                   </li>
                 ))
               )}
@@ -214,7 +194,7 @@ export default function SelectMVP() {
         {/* Selected user */}
         {selectUser && (
           <div className="rounded-md px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 shadow-sm dark:shadow-black/20">
-            Selected: <strong>{nameOf(selectUser) || selectUser.email}</strong>
+            Selected: <strong>{selectUser.name || selectUser.id}</strong>
           </div>
         )}
 

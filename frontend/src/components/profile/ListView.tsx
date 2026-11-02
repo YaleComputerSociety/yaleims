@@ -1,9 +1,9 @@
 import React from "react";
 import MatchListItem from "./MatchListItem";
-import type { CollegeMatchJson } from "@/types/api";
+import type { Match } from "@/lib/api/matches";
 
 interface ListViewProps {
-  matches: CollegeMatchJson[];
+  matches: Match[];
   isSignedUp: boolean; // Determines initial state for MatchListItems
 }
 
@@ -18,12 +18,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, isSignedUp }) => {
         <ul>
           {matches.map((match) => {
             return (
-              <MatchListItem
-                key={match.id}
-                match={match}
-                user={null} // Replace with actual user if needed
-                isSignedUp={isSignedUp}
-              />
+              <MatchListItem key={match.id} match={match} isSignedUp={isSignedUp} />
             );
           })}
         </ul>

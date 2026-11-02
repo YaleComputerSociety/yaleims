@@ -3,34 +3,28 @@ import { useUser } from "@/context/UserContext";
 import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
 import { getCollegeFlag } from "@/utils/versionedImages";
-import type { UserStatsResponse } from "@/types/api";
+import { fetchMyMatches } from "@/lib/api/me";
 
 export default function HeroStats() {
   const { user } = useUser();
   const { currentSeason } = useSeason();
-  const [userStats, setUserStats] = useState<UserStatsResponse | null>(null);
+  // How many games the user signed up for this season.
+  const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-
-    const fetchUserStats = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `/api/functions/getUserStats?seasonId=${currentSeason?.id}&email=${user.email}`
-        );
-        if (!response.ok) throw new Error("Error fetching user stats");
-        const data: UserStatsResponse = await response.json();
-        setUserStats(data);
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
-      } finally {
-        setLoading(false);
-      }
+    if (!user || !currentSeason) return;
+    let live = true;
+    setLoading(true);
+    fetchMyMatches({ seasonId: currentSeason.id })
+      .then(
+        ({ total }) => live && setGamesPlayed(total),
+        (error) => console.error("Failed to fetch stats:", error)
+      )
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
     };
-
-    fetchUserStats();
   }, [user, currentSeason]);
 
   if (!user) return null;
@@ -38,7 +32,7 @@ export default function HeroStats() {
   const stats = [
     {
       label: "Games Played",
-      value: loading ? "..." : userStats?.matches?.length || "0",
+      value: loading ? "..." : gamesPlayed || "0",
       icon: "🎮",
       gradient: "from-blue-500/20 to-cyan-500/20",
       border: "border-blue-500/30",

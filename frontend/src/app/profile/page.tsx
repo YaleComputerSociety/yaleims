@@ -2,126 +2,79 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
+import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
-import { toCollegeAbbreviation } from "@/utils/helpers"; // Ensure this import is correct
-import type { CollegeMatchJson } from "@/types/api";
-import type { MatchParticipant } from "@/types/legacy";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import ListView from "@/components/profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/utils/versionedImages";
 import SignInPrompt from "@/components/layout/SignInPrompt";
+import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { changeMe, fetchMyMatches } from "@/lib/api/me";
+import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
+
+/** How many of the college's next games the profile lists. */
+const UPCOMING_LIMIT = 6;
 
 const Profile = () => {
   const { user, loading, casSignOut, setUser } = useUser();
-  const [matches, setMatches] = useState<CollegeMatchJson[]>([]);
+  const { currentSeason } = useSeason();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [myMatchIds, setMyMatchIds] = useState<Set<string>>(new Set());
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
-  const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
-
+  // The college's next games this season, and which of them the user plays.
+  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
   useEffect(() => {
-    const fetchUserMatches = async () => {
-      if (!user || !user.email || matches.length > 0) return;
-
-      setFetching(true);
-      try {
-        const userCollegeAbbreviation =
-          toCollegeAbbreviation[user.college] || user.college;
-
-        const response = await fetch(
-          `/api/functions/getCollegeMatches?college=${userCollegeAbbreviation}&limit=${matchesLimit}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error fetching matches: ${response.statusText}`);
-        }
-
-        const fetchedMatches: CollegeMatchJson[] = await response.json();
-
-        setMatches(fetchedMatches);
-      } catch (error) {
-        console.error("Error fetching user matches:", error);
-      } finally {
-        setFetching(false);
-      }
+    if (!collegeId || !currentSeason) return;
+    let live = true;
+    setFetching(true);
+    Promise.all([
+      fetchSeasonMatches(currentSeason.id, {
+        collegeId,
+        status: "scheduled",
+        from: new Date().toISOString(),
+        page: 1,
+        pageSize: UPCOMING_LIMIT,
+      }),
+      fetchMyMatches({ seasonId: currentSeason.id, upcoming: true }),
+    ])
+      .then(
+        ([college, mine]) => {
+          if (!live) return;
+          setMatches(college.items);
+          setMyMatchIds(new Set(mine.items.map((m) => m.id)));
+        },
+        (err) => console.error("Error fetching user matches:", err)
+      )
+      .finally(() => live && setFetching(false));
+    return () => {
+      live = false;
     };
-
-    fetchUserMatches();
-  }, [user, matches.length]);
+  }, [collegeId, currentSeason]);
 
   useEffect(() => {
     if (user?.username) setNewUsername(user.username);
   }, [user?.username]);
 
-  const signedUpMatches = matches.filter((match) => {
-    const homeParticipants = match.home_college_participants || [];
-    const awayParticipants = match.away_college_participants || [];
-
-    return (
-      homeParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      ) ||
-      awayParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      )
-    );
-  });
-
-  const availableMatches = matches.filter((match) => {
-    const homeParticipants = match.home_college_participants || [];
-    const awayParticipants = match.away_college_participants || [];
-
-    return (
-      !homeParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      ) &&
-      !awayParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      )
-    );
-  });
+  const signedUpMatches = matches.filter((match) => myMatchIds.has(match.id));
+  const availableMatches = matches.filter((match) => !myMatchIds.has(match.id));
 
   const handleEditUsername = async () => {
     setEditLoading(true);
     setError("");
-
     try {
-      const response = await fetch("/api/functions/updateUsername", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newUsername: newUsername.trim() }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Update the user context
-          if (setUser && user) {
-            setUser({
-              ...user,
-              username: data.username, // Update the username only
-            });
-          }
-          setIsEditing(false); // Close the popup
-        } else {
-          setError("Failed to update username. Please try again.");
-        }
-      } else {
-        const errorMessage = await response.text();
-        setError(errorMessage || "An unexpected error occurred.");
-      }
-    } catch (error) {
-      console.error("Error updating username:", error);
-      setError("Failed to update username. Please try again.");
+      const username = newUsername.trim();
+      await changeMe({ username });
+      if (setUser && user) setUser({ ...user, username });
+      setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setEditLoading(false);
     }

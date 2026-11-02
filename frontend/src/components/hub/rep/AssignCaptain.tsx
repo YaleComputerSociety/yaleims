@@ -1,78 +1,62 @@
-import { seasonSports } from "@/utils/helpers";
 import { useSeason } from "@/context/SeasonContext";
-import { useEffect, useMemo, useState } from "react";
+import { useUser } from "@/context/UserContext";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import type { CollegeCaptain, UsersInCollegeResponse } from "@/types/api";
-import type { UserDoc } from "@/types/legacy";
+import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
+import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
 
+/** The rep's college: make its players captains of its teams this term, or not. */
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();
-  const [usersInCollege, setUsersInCollege] = useState<UserDoc[]>([]);
-  const [currentCaptains, setCurrentCaptains] = useState<CollegeCaptain[]>([]);
+  const { user } = useUser();
+  // The session names the rep's college.
+  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
+  const [players, setPlayers] = useState<CollegePlayer[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [selectSport, setSelectSport] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectUser, setSelectUser] = useState<UserDoc | null>(null);
+  const [selectUser, setSelectUser] = useState<CollegePlayer | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const nameOf = (u: UserDoc) =>
-    `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim();
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (!currentSeason || !collegeId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/functions/getUsersInCollege?wantCaptains=true");
-      if (!res.ok) throw new Error(res.statusText);
-      const data: UsersInCollegeResponse = await res.json();
-      setUsersInCollege(Array.isArray(data?.users) ? data.users : []);
-      setCurrentCaptains(Array.isArray(data?.captains) ? data.captains : []);
-    } catch (err: any) {
+      setPlayers((await fetchCollegePlayers(currentSeason.id, collegeId)).items);
+    } catch (err) {
       console.error(err);
       setError("Couldn’t load roster/captains. Try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentSeason, collegeId]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredUsers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
-    return usersInCollege.filter((u) => {
-      const full = nameOf(u).toLowerCase();
-      return full.includes(term) || (u.email ?? "").toLowerCase().includes(term);
-    });
-  }, [searchTerm, usersInCollege]);
+    return players.filter((p) => p.name.toLowerCase().includes(term) || p.id.toLowerCase().includes(term));
+  }, [searchTerm, players]);
 
-  // captains grouped by sport
+  const currentCaptains = players.filter((p) => p.captainOf.length > 0);
+  // The sports of this term, in display order; captains by sport id.
+  const currentSports = (currentSeason?.sports ?? []).filter((sport) => sport.term === currentSeason?.currentTerm);
   const captainsBySport = useMemo(() => {
-    const map: Record<string, CollegeCaptain[]> = {};
-    for (const c of currentCaptains) {
-      for (const s of c.sportsCaptainOf ?? []) {
-        (map[s] ||= []).push(c);
-      }
-    }
+    const map: Record<string, CollegePlayer[]> = {};
+    for (const p of players) for (const sportId of p.captainOf) (map[sportId] ||= []).push(p);
     return map;
-  }, [currentCaptains]);
+  }, [players]);
+  const totalAssignments = currentCaptains.reduce((sum, p) => sum + p.captainOf.length, 0);
 
-  const currentSports: string[] = currentSeason ? seasonSports[currentSeason.currentTerm] : [];
-  const totalAssignments = useMemo(
-    () => currentCaptains.reduce((sum, c) => sum + (c.sportsCaptainOf?.length ?? 0), 0),
-    [currentCaptains]
-  );
-
-  const userIsCaptainForSelected =
-    !!selectUser &&
-    !!selectSport &&
-    currentCaptains.some(
-      (c) => c.email === selectUser.email && c.sportsCaptainOf?.includes(selectSport)
-    );
+  const userIsCaptainForSelected = !!selectUser && !!selectSport && selectUser.captainOf.includes(selectSport);
 
   if (loading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
 
@@ -87,24 +71,12 @@ export default function AssignCaptain() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/functions/assignRemoveCaptain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: selectUser.email,
-          sport: selectSport,
-          assign,
-          remove: !assign,
-        }),
-      });
-      const message = await response.json();
-      console.log(message);
+      await (assign ? assignCaptain : removeCaptain)(currentSeason.id, collegeId!, selectSport, selectUser.id);
       setNotice(assign ? "Captain assigned." : "Captain removed.");
       setSelectUser(null);
       setSelectSport("");
     } catch (e) {
-      console.log("error assigning/removing captain");
-      setError("Something went wrong. Please try again.");
+      setError((e as Error).message);
     } finally {
       setIsSubmitting(false);
       await fetchData();
@@ -177,11 +149,11 @@ export default function AssignCaptain() {
             value={selectSport}
           >
             <option value="">— pick a sport —</option>
-            {currentSports.map((s) => {
-              const count = captainsBySport[s]?.length ?? 0;
-              const label = count ? `${s} • ${count} captain${count > 1 ? "s" : ""}` : s;
+            {currentSports.map((sport) => {
+              const count = captainsBySport[sport.id]?.length ?? 0;
+              const label = count ? `${sport.name} • ${count} captain${count > 1 ? "s" : ""}` : sport.name;
               return (
-                <option key={s} value={s}>
+                <option key={sport.id} value={sport.id}>
                   {label}
                 </option>
               );
@@ -208,15 +180,15 @@ export default function AssignCaptain() {
               ) : (
                 filteredUsers.slice(0, 10).map((u) => (
                   <li
-                    key={u.email}
+                    key={u.id}
                     className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => {
                       setSelectUser(u);
                       setSearchTerm("");
                     }}
                   >
-                    {nameOf(u) || u.email}{" "}
-                    <span className="text-xs text-gray-500">({u.email})</span>
+                    {u.name || u.id}{" "}
+                    <span className="text-xs text-gray-500">({u.id})</span>
                   </li>
                 ))
               )}
@@ -228,7 +200,7 @@ export default function AssignCaptain() {
         {selectUser && (
           <div className="flex items-center gap-3">
             <div className="rounded-md px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 shadow-sm dark:shadow-black/20">
-              Selected: <strong>{nameOf(selectUser) || selectUser.email}</strong>
+              Selected: <strong>{selectUser.name || selectUser.id}</strong>
             </div>
             <button
               type="button"
@@ -258,23 +230,23 @@ export default function AssignCaptain() {
           <ul className="space-y-2">
             {currentSports.map((sport) => (
               <li
-                key={sport}
+                key={sport.id}
                 className="rounded-md px-3 py-2 shadow-sm bg-white dark:bg-neutral-900 dark:shadow-black/30"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">{sport}</span>
+                  <span className="font-medium">{sport.name}</span>
                   <div className="flex flex-wrap gap-2">
-                    {(captainsBySport[sport] ?? []).map((c) => (
+                    {(captainsBySport[sport.id] ?? []).map((c) => (
                       <span
-                        key={`${sport}-${c.email}`}
+                        key={`${sport.id}-${c.id}`}
                         className="inline-flex items-center rounded-full px-2 py-0.5 text-xs
                                    bg-neutral-100 shadow-sm dark:bg-neutral-800 dark:shadow-black/20"
-                        title={c.email}
+                        title={c.id}
                       >
-                        {c.email}
+                        {c.id}
                       </span>
                     ))}
-                    {(captainsBySport[sport] ?? []).length === 0 && (
+                    {(captainsBySport[sport.id] ?? []).length === 0 && (
                       <span className="text-xs text-gray-500">No captain</span>
                     )}
                   </div>

@@ -1,137 +1,67 @@
 import React, { useEffect, useState } from "react";
-import type { MatchWithIsoTime, UserMatchObjectsResponse } from "@/types/api";
+import { toast } from "react-toastify";
 import { FaCalendar } from "react-icons/fa";
-import {
-  currentYear,
-  emojiMap,
-  generateGoogleCalendarLink,
-  groupByDate,
-  toCollegeName,
-} from "@/utils/helpers";
 import { useUser } from "@/context/UserContext";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import type { Match } from "@/lib/api/matches";
+import { fetchMyMatches } from "@/lib/api/me";
+import { signUp, withdraw } from "@/lib/api/roster";
+import type { Sport } from "@/lib/api/seasons";
+import { collegeName } from "@/lib/colleges";
+import { calendarLink, groupByDay, matchTypeLabel } from "@/lib/format";
 
 interface MatchListItemProps {
-  match: MatchWithIsoTime;
+  match: Match;
+  sport: Sport | undefined;
+  /** Rounded corners for its place in the day's list. */
   roundedClass?: string;
-  seasonId?: string;
 }
 
-/**
- * MatchListItem
- *
- * Props:
- * - match: Match object to display
- * - roundedClass (optional): gives the appropriate rounded corners class based on position in list; otherwise has no rounding
- * - seasonId (optional): the current season ID; defaults to current year
- */
-const MatchListItem: React.FC<MatchListItemProps> = ({
-  match,
-  roundedClass = "",
-  seasonId = currentYear,
-}) => {
+/** One of the user's games, with withdrawing (and signing up again) and a calendar link. */
+const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, roundedClass = "" }) => {
   const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
-  const userCollege = user ? toCollegeName[user.college] : "None";
-
-  const handleSignUp = async () => {
+  const changeSignUp = async (signed: boolean) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/functions/addMatchParticipant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          seasonId: seasonId,
-          matchId: match.id,
-          matchTimestamp: match.timestamp,
-          participantType:
-            toCollegeName[userCollege] == toCollegeName[match.home_college]
-              ? "home_college_participants"
-              : "away_college_participants",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to sign up for the match");
-      }
-
-      setIsSignedUp(true);
+      await (signed ? signUp : withdraw)(match.seasonId, match.id);
+      setIsSignedUp(signed);
     } catch (error) {
-      console.error("Error signing up:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUnregister = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/functions/removeMatchParticipant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          matchId: match.id,
-          participantType:
-            toCollegeName[userCollege] === toCollegeName[match.home_college]
-              ? "home_college_participants"
-              : "away_college_participants",
-          seasonId: seasonId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to unregister from the match"
-        );
-      }
-
-      setIsSignedUp(false);
-    } catch (error) {
-      console.error("Error unregistering:", error);
+      toast.error((error as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleAddToGCal = () => {
-    const link = generateGoogleCalendarLink(match);
-    window.open(link, "_blank");
+    window.open(calendarLink(match, sport?.name ?? ""), "_blank");
   };
 
-  const matchDate = match.timestamp
-    ? new Date(match.timestamp).toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "Date TBD";
+  const startsAt = new Date(match.startsAt);
+  const matchDate = startsAt.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
-  const matchTime = match.timestamp
-    ? new Date(match.timestamp)
-        .toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-        .replace(/^0/, "") // Remove leading zero if present
-    : "Time TBD";
+  const matchTime = startsAt
+    .toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    .replace(/^0/, ""); // Remove leading zero if present
 
-  const location = match.location || "Location TBD";
+  const location = match.venue || "Location TBD";
 
+  // The session names the user's college.
   const isUserTeam =
-    user &&
-    (toCollegeName[match.home_college] === user.college ||
-      toCollegeName[match.away_college] === user.college);
+    !!user &&
+    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
 
   return (
     <li
@@ -140,22 +70,19 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
       <div className="flex items-center">
         {/* Sport Emoji */}
         <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-3xl mr-1 hidden xs:block">
-          {emojiMap[match.sport]}
+          {sport?.emoji}
         </div>
 
         {/* Match Details */}
         <div className="flex-grow flex flex-col space-y-1">
           <div className="flex text-xs sm:text-lg font-bold">
-            {toCollegeName[match.home_college || "TBD"]} vs{" "}
-            {toCollegeName[match.away_college || "TBD"]}
+            {collegeName(match.homeCollegeId)} vs {collegeName(match.awayCollegeId)}
           </div>
 
           <div className="flex flex-row">
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold">
-              {match.sport}{" "}
-              {match.type == "Regular"
-                ? "Regular Season Match"
-                : `${match.type} Round`}
+              {sport?.name}{" "}
+              {match.stage === "regular" ? "Regular Season Match" : matchTypeLabel(match, false)}
             </div>
           </div>
 
@@ -164,16 +91,14 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
           </div>
           <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {location}
-            {match.location_extra ? ", " + match.location_extra : ""}
+            {match.venueDetail ? ", " + match.venueDetail : ""}
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex-shrink-0 flex flex-col sm:flex-row items-end space-y-2 gap-3 items-center">
           <button
-            onClick={() =>
-              isSignedUpState ? handleUnregister() : handleSignUp()
-            }
+            onClick={() => changeSignUp(!isSignedUpState)}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={`w-24 xs:w-36 h-8 sm:h-10 text-xs sm:text-sm text-white rounded-lg shadow transition duration-200 ease-in-out ${
@@ -205,11 +130,10 @@ const MatchListItem: React.FC<MatchListItemProps> = ({
   );
 };
 
-const MatchList: React.FC<{ matches: UserMatchObjectsResponse; seasonId: string }> = ({
-  matches,
-  seasonId,
-}) => {
-  const matchesByDate = groupByDate(matches);
+/** The games grouped by day. */
+const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
+  const sports = useSeason().currentSeason?.sports ?? [];
+  const matchesByDate = groupByDay(matches);
 
   const getRoundedClass = (matchesLength: number, matchIndex: number) => {
     if (matchesLength === 1) return "rounded-lg";
@@ -235,7 +159,7 @@ const MatchList: React.FC<{ matches: UserMatchObjectsResponse; seasonId: string 
 
   return (
     <div>
-      {Object.entries(matchesByDate).map(([date, matches]) => (
+      {[...matchesByDate].map(([date, matches]) => (
         <div key={date} className="min-w-full rounded-lg mb-4">
           <div>
             <div className="text-left p-2 bg-black-100 border-none">
@@ -251,10 +175,10 @@ const MatchList: React.FC<{ matches: UserMatchObjectsResponse; seasonId: string 
             <ul>
               {matches.map((match, index) => (
                 <MatchListItem
-                  key={index}
+                  key={match.id}
                   match={match}
+                  sport={sports.find((sport) => sport.id === match.sportId)}
                   roundedClass={getRoundedClass(matches.length, index)}
-                  seasonId={seasonId}
                 />
               ))}
             </ul>
@@ -265,33 +189,26 @@ const MatchList: React.FC<{ matches: UserMatchObjectsResponse; seasonId: string 
   );
 };
 
+/** The games the user signed up for that haven't started, this season. */
 const UserMatches = () => {
-  const [matches, setMatches] = useState<UserMatchObjectsResponse>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { currentSeason } = useSeason();
-  const currentSeasonId = currentSeason ? currentSeason.id : currentYear;
 
   useEffect(() => {
-    // Fetch user matches
-    const fetchUserMatches = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `/api/functions/getUserMatchObjects?seasonId=${currentSeasonId}`
-        );
-        if (!response.ok)
-          throw new Error(`Error fetching matches: ${response.statusText}`);
-        const data: UserMatchObjectsResponse = await response.json();
-
-        setMatches(data);
-      } catch (error) {
-        console.error("Failed to fetch user matches:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (!currentSeason) return;
+    let live = true;
+    setIsLoading(true);
+    fetchMyMatches({ seasonId: currentSeason.id, upcoming: true })
+      .then(
+        ({ items }) => live && setMatches(items),
+        (error) => console.error("Failed to fetch user matches:", error)
+      )
+      .finally(() => live && setIsLoading(false));
+    return () => {
+      live = false;
     };
-    fetchUserMatches();
-  }, [currentSeason, currentYear]);
+  }, [currentSeason]);
 
   if (isLoading) {
     return (
@@ -303,7 +220,7 @@ const UserMatches = () => {
 
   return (
     <div className="max-h-64 overflow-y-auto">
-      <MatchList matches={matches} seasonId={currentSeasonId} />
+      <MatchList matches={matches} />
     </div>
   );
 };
