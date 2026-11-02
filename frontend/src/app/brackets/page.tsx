@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
 import { useBracket } from "@/hooks/useBracket";
@@ -249,10 +250,13 @@ const BracketsPage: React.FC = () => {
 
                   {/* Trophy container */}
                   <div className="relative flex items-center justify-center">
-                    <img
+                    <Image
                       src={getVersionedImage("/trophy.png")}
                       alt="Trophy"
+                      width={192}
+                      height={192}
                       className="w-48 h-48 opacity-100 drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
+                      unoptimized
                     />
 
                     {/* Overlayed final match cell */}

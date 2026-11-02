@@ -22,6 +22,8 @@ export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({ match, spo
   const handleClick = () => {
     if (!viewer) {
       const from = encodeURIComponent("/games");
+      // A full page load: the login route redirects to Yale's CAS.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = `/api/auth/login?from=${from}`;
       return;
     }

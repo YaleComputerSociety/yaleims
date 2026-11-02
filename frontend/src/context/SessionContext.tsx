@@ -39,6 +39,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       await logout();
       setViewerState(null);
+      // A full page load, so no page keeps the signed-in state.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/";
     } catch (err) {
       console.error("Logout error:", err);

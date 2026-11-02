@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useBracket } from "@/hooks/useBracket";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import BracketCell from "@/components/brackets/BracketCell";
@@ -50,7 +51,7 @@ const TournamentsPage: React.FC = () => {
   const season = pickedSeason ?? currentSeason?.id ?? "";
   // The season's tournaments, with the season they are of.
   const [list, setList] = useState<{ season: string; items: Bracket[] }>({ season: "", items: [] });
-  const tournaments = list.season === season ? list.items : [];
+  const tournaments = useMemo(() => (list.season === season ? list.items : []), [list, season]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -255,10 +256,13 @@ const TournamentsPage: React.FC = () => {
                   </span>
 
                   <div className="relative flex items-center justify-center">
-                    <img
+                    <Image
                       src={getVersionedImage("/trophy.png")}
                       alt="Trophy"
+                      width={192}
+                      height={192}
                       className="w-48 h-48 opacity-100 drop-shadow-[0_0_25px_rgba(59,130,246,0.8)]"
+                      unoptimized
                     />
                     <div
                       ref={setCellRef(bracket[FINAL_INDEX].slot)}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useSeason } from "@/context/SeasonContext";
 import { useChampionship } from "@/hooks/useChampionship";
 import { setChampion } from "@/lib/api/seasons";
@@ -86,10 +87,13 @@ const ChampionControls: React.FC = () => {
 
       {selected && (
         <div className="flex items-center gap-4 rounded-xl border border-black/10 dark:border-white/10 bg-white/40 dark:bg-white/[0.03] p-4">
-          <img
+          <Image
             src={getCollegeFlag(selected.name)}
             alt={selected.name}
+            width={64}
+            height={64}
             className="w-16 h-16 object-contain"
+            unoptimized
           />
           <div>
             <div className="text-xs text-gray-500 dark:text-gray-400">Current pick</div>

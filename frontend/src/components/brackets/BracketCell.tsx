@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import type { BracketDetail } from "@/lib/api/brackets";
 import type { Match } from "@/lib/api/matches";
 import { collegeName } from "@/lib/colleges";
@@ -151,10 +152,13 @@ const BracketCell: React.FC<BracketCellProps> = ({ cell, setHoveredTeam }) => {
         >
           {/* only show image if college not TBD */}
           {awayCollegeName !== "TBD" && (
-            <img
+            <Image
               src={getCollegeFlag(awayCollegeName)}
               alt={awayCollegeName}
+              width={24}
+              height={24}
               className="w-6 h-6"
+              unoptimized
             />
           )}
           <div className="flex items-center space-x-1">
@@ -217,10 +221,13 @@ const BracketCell: React.FC<BracketCellProps> = ({ cell, setHoveredTeam }) => {
             >
               {/* only show image if college not TBD */}
               {homeCollegeName !== "TBD" && (
-                <img
+                <Image
                   src={getCollegeFlag(homeCollegeName)}
                   alt={homeCollegeName}
+                  width={24}
+                  height={24}
                   className="w-6 h-6"
+                  unoptimized
                 />
               )}
               <div className="flex items-center space-x-1">
