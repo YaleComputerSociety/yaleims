@@ -87,6 +87,11 @@ export function readQuery<Schema extends z.ZodType>(req: Request, schema: Schema
   return parse(schema, Object.fromEntries(new URL(req.url).searchParams));
 }
 
+/** The URL's [segments], parsed with `schema` (for segments that aren't plain ids, e.g. a week number). */
+export async function readParams<Schema extends z.ZodType>(params: Promise<unknown>, schema: Schema): Promise<z.infer<Schema>> {
+  return parse(schema, await params);
+}
+
 function parse<Schema extends z.ZodType>(schema: Schema, value: unknown): z.infer<Schema> {
   const result = schema.safeParse(value);
   if (result.success) return result.data;

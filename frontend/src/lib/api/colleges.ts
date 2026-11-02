@@ -3,7 +3,7 @@
 // captains and weekly MVPs.
 import { z } from "zod";
 import { COLLEGES } from "@/lib/colleges";
-import type { PlayerDoc, WithId } from "@/types/firestore";
+import type { MvpDoc, PlayerDoc, WithId } from "@/types/firestore";
 import { request, url, type Json } from "./core";
 
 const COLLEGE_IDS: string[] = COLLEGES.map((c) => c.id);
@@ -46,3 +46,27 @@ export const assignCaptain = (seasonId: string, collegeId: string, sportId: stri
 /** DELETE: makes them not captain (not one: fine). */
 export const removeCaptain = (seasonId: string, collegeId: string, sportId: string, email: string) =>
   request<void>("DELETE", captainPath(seasonId, collegeId, sportId, email));
+
+// ── Weekly MVPs (the college's rep, admins) ────────────────────────────────
+
+export type Mvp = Json<WithId<MvpDoc>>;
+
+/** GET …/colleges/{c}/mvps: the college's MVPs of the season, by week. */
+export interface MvpList {
+  items: Mvp[];
+  total: number;
+}
+
+/** PUT …/colleges/{c}/mvps/{week}: names one of the college's players an MVP of the week (week 1 = the season's mvpWeekOne). */
+export const mvpParamsSchema = z.object({
+  seasonId: z.string(),
+  collegeId: z.string(),
+  week: z.coerce.number<string>().int().min(1).max(60),
+});
+export const mvpAwardSchema = z.strictObject({ playerId: z.string().min(1) });
+
+export const fetchMvps = (seasonId: string, collegeId: string) =>
+  request<MvpList>("GET", url`/api/seasons/${seasonId}/colleges/${collegeId}/mvps`);
+
+export const nameMvp = (seasonId: string, collegeId: string, week: number, playerId: string) =>
+  request<void>("PUT", url`/api/seasons/${seasonId}/colleges/${collegeId}/mvps/${week}`, { body: { playerId } });
