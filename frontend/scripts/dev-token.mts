@@ -37,7 +37,10 @@ async function nameOf(address: string): Promise<string> {
   const host = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
   const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2";
   try {
-    const res = await fetch(`http://${host}/v1/projects/${project}/databases/(default)/documents/users/${encodeURIComponent(address)}`);
+    // "Bearer owner" is the emulator's admin access: the security rules don't let the browser read users.
+    const res = await fetch(`http://${host}/v1/projects/${project}/databases/(default)/documents/users/${encodeURIComponent(address)}`, {
+      headers: { Authorization: "Bearer owner" },
+    });
     const fields = res.ok ? (await res.json()).fields : null;
     if (fields) return `${fields.firstname.stringValue} ${fields.lastname.stringValue}`;
   } catch {
