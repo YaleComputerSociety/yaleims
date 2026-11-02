@@ -1,71 +1,41 @@
 "use client";
 
-import { useSeason } from "@/context/SeasonContext";
-import { currentYear, getYearFromTimestamp } from "@/utils/helpers";
 import React from "react";
-import LoadingScreen from "@/components/layout/LoadingScreen";
-import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
-import type { MatchJson } from "@/types/api";
+import { useSeason } from "@/context/SeasonContext";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import { undoScore } from "@/lib/api/matches";
 
 interface UndoScoreMatchModalProps {
+  /** The game's id, this season. */
   unscoreId: string;
   setShowConfirmation: (value: React.SetStateAction<boolean>) => void;
-  match?: MatchJson;
-  setUnscored?: (value: React.SetStateAction<boolean>) => void;
-
-  // these will only be used if it's coming from the add scores page
-  setUnscoreMessage?: (value: React.SetStateAction<string | null>) => void;
-  setUnscoreId?: (value: React.SetStateAction<string>) => void;
-  setRefreshKey?: (value: React.SetStateAction<number>) => void;
+  setUnscoreMessage: (value: React.SetStateAction<string | null>) => void;
+  setUnscoreId: (value: React.SetStateAction<string>) => void;
+  setRefreshKey: (value: React.SetStateAction<number>) => void;
 }
 
+/** The add-scores page's confirmation before undoing a game's score by its id. */
 const UndoScoreMatchModal: React.FC<UndoScoreMatchModalProps> = ({
   unscoreId,
   setShowConfirmation,
   setUnscoreMessage,
   setUnscoreId,
   setRefreshKey,
-  match,
-  setUnscored,
 }) => {
   const [loading, setLoading] = React.useState<boolean>(false);
   const { currentSeason, seasonLoading } = useSeason();
-  const year =
-    (match && getYearFromTimestamp(match?.timestamp)) ||
-    currentSeason?.id ||
-    currentYear;
 
   const handleUnscoreMatch = async () => {
+    if (!currentSeason) return;
     setLoading(true);
-
     try {
-      const response = await fetch("/api/functions/undoScoreMatch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matchId: String(unscoreId).trim(),
-          year: String(year),
-        }),
-      });
-
-      if (response.ok) {
-        if (setUnscoreMessage)
-          setUnscoreMessage("Successfully unscored the match.");
-        else toast.success("Successfully unscored the match.");
-        if (setUnscoreId) setUnscoreId(""); // Clear input after success
-        if (setRefreshKey) setRefreshKey((k) => k + 1); // Trigger refetch
-        else if (setUnscored) setUnscored(true); // set unscored to hide table row
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message);
-      }
+      await undoScore(currentSeason.id, unscoreId.trim());
+      setUnscoreMessage("Successfully unscored the match.");
+      setUnscoreId("");
+      setRefreshKey((k) => k + 1);
     } catch (error) {
-      const errorMessage =
-        "Undo score failed: " + (error as Error)?.message ||
-        "An unknown error occurred. Please try again.";
-      if (setUnscoreMessage) setUnscoreMessage(errorMessage);
-      else toast.error(errorMessage);
+      setUnscoreMessage("Undo score failed: " + (error as Error).message);
     } finally {
       setLoading(false);
       setShowConfirmation(false); // Hide modal after processing

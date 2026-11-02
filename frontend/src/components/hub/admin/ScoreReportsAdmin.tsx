@@ -4,35 +4,22 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FaSpinner, FaCheck } from "react-icons/fa";
 import { useSeason } from "@/context/SeasonContext";
 import { toast } from "react-toastify";
-import type { ScoreReport, ScoreReportsResponse } from "@/types/api";
+import { fetchSeasonReports, resolveReport, type SeasonScoreReport } from "@/lib/api/reports";
 
-function formatReportDate(raw: { _seconds: number } | string): string {
-  if (typeof raw === "string") return raw;
-  if (raw && typeof raw._seconds === "number") {
-    return new Date(raw._seconds * 1000).toLocaleString();
-  }
-  return "—";
-}
-
+/** The season's score reports (admins and devs): open ones to resolve, then the resolved. */
 const ScoreReportsAdmin: React.FC = () => {
   const { currentSeason } = useSeason();
   const season = currentSeason?.id ?? "";
-  const [reports, setReports] = useState<ScoreReport[]>([]);
+  const sportName = (sportId: string | undefined) => currentSeason?.sports.find((s) => s.id === sportId)?.name;
+  const [reports, setReports] = useState<SeasonScoreReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const fetchReports = useCallback(async () => {
+    if (!season) return;
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/functions/getScoreReports?season=${encodeURIComponent(season)}&all=true`
-      );
-      if (res.ok) {
-        const data: ScoreReportsResponse = await res.json();
-        setReports(data.reports ?? []);
-      } else {
-        setReports([]);
-      }
+      setReports((await fetchSeasonReports(season)).items);
     } catch {
       setReports([]);
     } finally {
@@ -44,30 +31,21 @@ const ScoreReportsAdmin: React.FC = () => {
     fetchReports();
   }, [fetchReports]);
 
-  const handleResolve = async (report: ScoreReport) => {
+  const handleResolve = async (report: SeasonScoreReport) => {
     setResolvingId(report.id);
     try {
-      const res = await fetch("/api/functions/resolveScoreReport", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reportId: report.id,
-          matchId: report.matchId,
-          season: report.season,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to resolve");
+      await resolveReport(report.seasonId, report.matchId, report.id);
       toast.success("Report marked as resolved.");
       fetchReports();
-    } catch {
-      toast.error("Failed to mark as resolved.");
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setResolvingId(null);
     }
   };
 
-  const unresolved = reports.filter((r) => !r.resolved);
-  const resolved = reports.filter((r) => r.resolved);
+  const unresolved = reports.filter((r) => r.status !== "resolved");
+  const resolved = reports.filter((r) => r.status === "resolved");
 
   return (
     <div className="space-y-4">
@@ -112,14 +90,14 @@ const ScoreReportsAdmin: React.FC = () => {
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                       <span>
-                        Match: {r.matchHomeCollege ?? "?"} vs{" "}
-                        {r.matchAwayCollege ?? "?"}
-                        {r.homeScore != null && r.awayScore != null
-                          ? ` (${r.homeScore}-${r.awayScore})`
+                        Match: {r.match?.homeCollegeId ?? "?"} vs{" "}
+                        {r.match?.awayCollegeId ?? "?"}
+                        {r.scoreAtReport.home != null && r.scoreAtReport.away != null
+                          ? ` (${r.scoreAtReport.home}-${r.scoreAtReport.away})`
                           : ""}
                       </span>
-                      {r.sport && <span>• {r.sport}</span>}
-                      <span>• by {r.reportedBy} ({formatReportDate(r.reportedAt)})</span>
+                      {sportName(r.match?.sportId) && <span>• {sportName(r.match?.sportId)}</span>}
+                      <span>• by {r.reporterName} ({new Date(r.reportedAt).toLocaleString()})</span>
                     </div>
                     <button
                       type="button"
@@ -156,7 +134,7 @@ const ScoreReportsAdmin: React.FC = () => {
                       {r.reason}
                     </p>
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Match {r.matchId} • Resolved by {r.resolvedBy ?? "—"}
+                      Match {r.matchId} • Resolved by {r.resolverName ?? r.resolvedBy ?? "—"}
                     </p>
                   </div>
                 ))}

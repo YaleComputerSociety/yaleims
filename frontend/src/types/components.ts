@@ -1,11 +1,6 @@
 import type { BracketUpload, MatchJson, SlotInput, UnscoredMatch } from "./api";
 import type { CollegeDoc } from "./firestore";
 
-export interface MatchCardProps {
-  match: UnscoredMatch;
-  onScored?: (matchId: UnscoredMatch["id"]) => void;
-}
-
 export type Sport = {
   id: string;
   name: string;

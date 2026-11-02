@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { colleges } from "@/utils/helpers";
+import { useSeason } from "@/context/SeasonContext";
 import { useChampionship } from "@/hooks/useChampionship";
+import { setChampion } from "@/lib/api/seasons";
+import { COLLEGES } from "@/lib/colleges";
 import { getCollegeFlag } from "@/utils/versionedImages";
 import { toast } from "react-toastify";
 import { FaSpinner } from "react-icons/fa";
@@ -12,6 +14,7 @@ const ChampionControls: React.FC = () => {
   const [celebrationActive, setCelebrationActive] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const stored = useChampionship();
+  const seasonId = useSeason().currentSeason?.id;
   const loaded = stored.loaded;
 
   // Follow the stored banner (live), including saves from elsewhere.
@@ -26,20 +29,16 @@ const ChampionControls: React.FC = () => {
       toast.error("Pick a winning college first.");
       return;
     }
+    if (!seasonId) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/functions/setChampion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
+      await setChampion(seasonId, {
+        championCollegeId: next.winningCollegeId || null,
+        celebrationActive: next.celebrationActive,
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to save");
-      }
       toast.success("Championship updated");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to save");
+    } catch (e) {
+      toast.error((e as Error).message);
     } finally {
       setSaving(false);
     }
@@ -56,7 +55,7 @@ const ChampionControls: React.FC = () => {
     save({ winningCollegeId, celebrationActive: next });
   };
 
-  const selected = colleges.find((c) => c.id === winningCollegeId);
+  const selected = COLLEGES.find((c) => c.id === winningCollegeId);
 
   if (!loaded) {
     return (
@@ -77,7 +76,7 @@ const ChampionControls: React.FC = () => {
           className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-black/30 px-3 py-2 text-sm"
         >
           <option value="">— Select a college —</option>
-          {colleges.map((c) => (
+          {COLLEGES.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>

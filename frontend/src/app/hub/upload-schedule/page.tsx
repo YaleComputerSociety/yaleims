@@ -3,30 +3,25 @@
 import PageHeading from "@/components/layout/PageHeading";
 import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import React, { useEffect, useRef, useState, ChangeEvent } from "react";
-import { colleges, currentYear, sports, toTimestamp } from "@/utils/helpers";
+import { toTimestamp } from "@/utils/helpers";
 import { toast } from "react-toastify";
-import { useSeason } from "@/context/SeasonContext";
+import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import { FaSpinner } from "react-icons/fa";
+import { uploadSchedule, type NewMatch } from "@/lib/api/matches";
+import { COLLEGES } from "@/lib/colleges";
 
+/** A parsed file: one sport's games for one season. */
 interface Schedule {
-  matches: ScheduleMatch[];
-  sport: string;
+  matches: NewMatch[];
+  sportId: string;
   season: string;
-}
-
-interface ScheduleMatch {
-  timestamp: string;
-  homeCollege: string;
-  awayCollege: string;
-  location: string;
-  locationExtra?: string;
 }
 
 const TEMPLATE_URL =
   "https://docs.google.com/spreadsheets/d/1rmyTsJwoXkJ0MbGh6MjZXF0wfWnDlc8-bFTkHIRPVmQ/edit?usp=sharing";
 
-const validCollegeAbbrs = colleges.map((c) => c.id);
+const validCollegeAbbrs: string[] = COLLEGES.map((c) => c.id);
 
 const normalizeHeader = (cell: string) =>
   cell.trim().replace(/^"|"$/g, "").toLowerCase().replace(/[\s_]/g, "");
@@ -78,19 +73,21 @@ const UploadSchedulePage = () => {
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState("");
   const [schedule, setSchedule] = useState<Schedule | null>(null);
+  // The sport by id; the season is the current one until one is picked.
   const [selectedSport, setSelectedSport] = useState<string>("");
-  const [season, setSeason] = useState<string>(
-    currentSeason?.id || currentYear
-  );
+  const [pickedSeason, setSeason] = useState<string | null>(null);
+  const season = pickedSeason ?? currentSeason?.id ?? "";
+  const sports = useSeasonDetail(season || null)?.sports ?? [];
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const parseScheduleCSV = (
     csvText: string,
-    sport: string,
+    sportId: string,
     season: string
   ): Schedule | null => {
+    const sport = sports.find((s) => s.id === sportId)?.name ?? "";
     const lines = csvText.trim().split(/\r?\n/).filter(Boolean);
     if (lines.length < 2) {
       setError("The file has no data rows.");
@@ -125,7 +122,7 @@ const UploadSchedulePage = () => {
       return null;
     }
 
-    const matches: ScheduleMatch[] = [];
+    const matches: NewMatch[] = [];
     for (let i = 1; i < lines.length; i++) {
       const row = splitCsvLine(lines[i]);
       const rowNum = i + 1; // 1-based for user (header is row 1)
@@ -219,18 +216,15 @@ const UploadSchedulePage = () => {
         return null;
       }
 
-      const match: ScheduleMatch = {
-        timestamp,
-        homeCollege,
-        awayCollege,
-        location,
-      };
-      if (locationExtra !== "") {
-        match.locationExtra = locationExtra;
-      }
-      matches.push(match);
+      matches.push({
+        startsAt: timestamp,
+        homeCollegeId: homeCollege,
+        awayCollegeId: awayCollege,
+        venue: location,
+        venueDetail: locationExtra || null,
+      });
     }
-    return { matches, sport, season };
+    return { matches, sportId, season };
   };
 
   const applyCsv = (text: string, sport: string, forSeason: string): boolean => {
@@ -299,24 +293,11 @@ const UploadSchedulePage = () => {
 
     try {
       setLoading(true);
-      const response = await fetch("/api/functions/addSchedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          schedule: schedule,
-        }),
-      });
-      const message = await response.json();
-
-      if (!response.ok) {
-        throw new Error(message.error || "Failed to upload schedule");
-      }
+      await uploadSchedule(schedule.season, { sportId: schedule.sportId, matches: schedule.matches });
       resetState();
       toast.success("Schedule uploaded successfully!");
-    } catch (error: any) {
-      toast.error(
-        error.message || "Error uploading schedule. Please try again."
-      );
+    } catch (error) {
+      toast.error((error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -350,7 +331,7 @@ const UploadSchedulePage = () => {
               Select a sport
             </option>
             {sports.map((sport) => (
-              <option key={sport.id} value={sport.name}>
+              <option key={sport.id} value={sport.id}>
                 {sport.emoji} {sport.name}
               </option>
             ))}
@@ -371,12 +352,10 @@ const UploadSchedulePage = () => {
             value={season}
             onChange={(e) => handleSeasonChange(e.target.value)}
           >
-            <option value={currentSeason?.id || currentYear}>
-              {currentSeason?.id || currentYear}
-            </option>
+            <option value={currentSeason?.id}>{currentSeason?.id}</option>
             {pastSeasonIds
-              .filter((y: string) => y !== (currentSeason?.id || currentYear))
-              .map((y: string) => (
+              .filter((y) => y !== currentSeason?.id)
+              .map((y) => (
                 <option key={y} value={y}>
                   {y}
                 </option>

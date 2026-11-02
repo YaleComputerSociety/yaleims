@@ -1,25 +1,30 @@
 "use client";
 
 import React, { useState } from "react";
-import { MatchCardProps } from "@/types/components";
-import { currentYear, emojiMap, toCollegeName } from "@/utils/helpers";
 import Image from "next/image";
-import { useSeason } from "@/context/SeasonContext";
-import LoadingScreen from "@/components/layout/LoadingScreen";
 import { FaSpinner, FaCheck } from "react-icons/fa";
 import { toast } from "react-toastify";
-import { EditMatchButton } from "./EditMatchModal";
+import { scoreMatch, type Match } from "@/lib/api/matches";
+import type { Sport } from "@/lib/api/seasons";
+import { collegeName } from "@/lib/colleges";
 import { getCollegeFlag } from "@/utils/versionedImages";
 
-const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
+interface MatchCardProps {
+  match: Match;
+  sport: Sport | undefined;
+  onScored?: (matchId: string) => void;
+}
+
+/** A started, unscored game with its score and forfeit inputs (admins). */
+const MatchCard: React.FC<MatchCardProps> = ({ match, sport, onScored }) => {
   const [awayScore, setAwayScore] = useState<string>("");
   const [homeScore, setHomeScore] = useState<string>("");
   const [awayForfeit, setAwayForfeit] = useState<boolean>(false);
   const [homeForfeit, setHomeForfeit] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [scored, setScored] = useState<boolean>(false);
-  const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.id || currentYear;
+  const homeName = collegeName(match.homeCollegeId) ?? "";
+  const awayName = collegeName(match.awayCollegeId) ?? "";
 
   const handleAwayCheckboxChange = () => {
     setAwayForfeit(!awayForfeit);
@@ -60,27 +65,12 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/functions/scoreMatch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matchId: match.id.toString(),
-          homeScore: homeScore === "" ? 0 : parseInt(homeScore),
-          awayScore: awayScore === "" ? 0 : parseInt(awayScore),
-          homeForfeit: homeForfeit,
-          awayForfeit: awayForfeit,
-          homeTeam: match.home_college,
-          awayTeam: match.away_college,
-          sport: match.sport,
-          year: year,
-        }),
+      await scoreMatch(match.seasonId, match.id, {
+        homeScore: homeScore === "" ? 0 : parseInt(homeScore),
+        awayScore: awayScore === "" ? 0 : parseInt(awayScore),
+        homeForfeit,
+        awayForfeit,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error: ${response.status} - ${errorText}`);
-      }
-
       setScored(true);
       onScored?.(match.id);
     } catch (error) {
@@ -94,11 +84,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
     }
   };
 
-  const timestamp = match.timestamp;
-
-  const date = new Date(
-    timestamp._seconds * 1000 + timestamp._nanoseconds / 1000000
-  );
+  const date = new Date(match.startsAt);
 
   const formattedTime = date.toLocaleString("en-US", {
     hour: "numeric",
@@ -131,10 +117,6 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
     "Submit"
   );
 
-  if (seasonLoading) {
-    return <LoadingScreen />;
-  }
-
   return (
     <div className="w-full text-xs md:text-sm mb-4">
       {/* Header Row */}
@@ -151,7 +133,7 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
           <div className="flex flex-col items-center w-full">
             <p>{formattedTime}</p>
             <p>
-              {match.sport} {emojiMap[match.sport]}
+              {sport?.name} {sport?.emoji}
             </p>
             <span className="text-gray-400 text-[10px] md:text-xs font-mono mt-1">
               ID: {match.id}
@@ -161,25 +143,25 @@ const MatchCard: React.FC<MatchCardProps> = ({ match, onScored }) => {
         <div className="flex flex-col justify-between items-start gap-4 sm:pl-4 xl:pl-16 lg:pl-10">
           <div className="flex items-center">
             <Image
-              src={getCollegeFlag(toCollegeName[match.away_college])}
-              alt={match.away_college}
+              src={getCollegeFlag(awayName)}
+              alt={match.awayCollegeId ?? ""}
               width={20}
               height={20}
               className="mr-2 object-contain"
               unoptimized
             />
-            <p>{toCollegeName[match.away_college]}</p>
+            <p>{awayName}</p>
           </div>
           <div className="flex items-center">
             <Image
-              src={getCollegeFlag(toCollegeName[match.home_college])}
-              alt={match.home_college}
+              src={getCollegeFlag(homeName)}
+              alt={match.homeCollegeId ?? ""}
               width={20}
               height={20}
               className="mr-2 object-contain"
               unoptimized
             />
-            <p>{toCollegeName[match.home_college]}</p>
+            <p>{homeName}</p>
           </div>
         </div>
         <div className="flex flex-col items-center gap-4 h-full justify-between">
