@@ -10,7 +10,7 @@ import MatchesTable from "@/components/scores/MatchTable";
 import Pagination from "@/components/ui/Pagination";
 import PageHeading from "@/components/layout/PageHeading";
 import { useSeason } from "@/context/SeasonContext";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useStandings } from "@/hooks/useStandings";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import { fetchPlayedMatches, type Match } from "@/lib/api/matches";
@@ -33,8 +33,8 @@ const ScoresPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(10);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const { currentSeason } = useSeason();
-  const { user, loading: userLoading } = useUser();
-  const signedIn = !!user;
+  const { viewer, loading: userLoading } = useSession();
+  const signedIn = !!viewer;
 
   // The selected college's standing this season (live).
   const collegeId = filter.college && filter.college !== "All" ? filter.college : null;

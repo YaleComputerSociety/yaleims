@@ -1,6 +1,5 @@
 // Helper to parse and validate bracket CSV for BracketCreateModal
 import { ParsedMatch } from "@/types/components";
-import type { SessionUser } from "@/types/api";
 
 /**
  * Parses and validates a bracket CSV file for the bracket creation modal.
@@ -858,15 +857,6 @@ export function getYearFromTimestamp(
   // June/July: default to previous season (no games expected)
   return `${year - 1}-${year}`;
 }
-
-export const userIsAdminOrDev = (user: SessionUser | null): boolean => {
-  if (!user) return false;
-
-  const isAdmin =
-    user?.mRoles.includes("admin") || user?.mRoles.includes("dev");
-
-  return isAdmin;
-};
 
 /**
  * Tournament brackets reuse the 14-team playoff shape with a 16th slot for the

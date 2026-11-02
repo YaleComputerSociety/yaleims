@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 import { useSeason } from "@/context/SeasonContext";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { fetchCollegeLeaders } from "@/lib/api/colleges";
-import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
 
 type CaptainRow = { sport: string; name: string };
 type RepRow = { name: string; email: string };
 
 /** The user's college this season: its captains (by sport) and its college reps. */
 export default function ViewCaptainsCollegeRep() {
-  const { user } = useUser();
+  const { viewer } = useSession();
   const { currentSeason } = useSeason();
-  // The session names the user's college.
-  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
+  const collegeId = viewer?.collegeId ?? null;
   const [view, setView] = useState<"captains" | "college_rep">("captains");
   const [captainRows, setCaptainRows] = useState<CaptainRow[] | null>(null);
   const [repRows, setRepRows] = useState<RepRow[] | null>(null);

@@ -2,9 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { mvpWeekOne, getCurrentWeekId, buildWeekOptions } from "@/utils/helpers";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { fetchCollegePlayers, fetchMvps, nameMvp, type CollegePlayer, type Mvp } from "@/lib/api/colleges";
-import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
 
 /** The week number of a week option's value ("week_4" → 4). */
 const weekNumber = (weekId: string) => Number(weekId.replace("week_", ""));
@@ -15,9 +14,8 @@ export default function SelectMVP() {
   const [loading, setLoading] = useState(false);
   const [settingMVP, setSettingMVP] = useState(false);
   const { currentSeason } = useSeason();
-  const { user } = useUser();
-  // The session names the rep's college.
-  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
+  const { viewer } = useSession();
+  const collegeId = viewer?.collegeId ?? null;
 
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectUser, setSelectUser] = useState<CollegePlayer | null>(null);

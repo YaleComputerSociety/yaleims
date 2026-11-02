@@ -1,16 +1,14 @@
 import { useSeason } from "@/context/SeasonContext";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
-import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
 
 /** The rep's college: make its players captains of its teams this term, or not. */
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();
-  const { user } = useUser();
-  // The session names the rep's college.
-  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
+  const { viewer } = useSession();
+  const collegeId = viewer?.collegeId ?? null;
   const [players, setPlayers] = useState<CollegePlayer[]>([]);
   const [loading, setLoading] = useState(false);
 

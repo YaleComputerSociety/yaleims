@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { FaCalendar } from "react-icons/fa";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import type { Match } from "@/lib/api/matches";
 import { signUp, withdraw } from "@/lib/api/roster";
@@ -14,7 +14,7 @@ interface MatchListItemProps {
 }
 
 const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
-  const { user } = useUser();
+  const { viewer } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(isSignedUp);
   const [isHovered, setIsHovered] = useState(false);
@@ -53,10 +53,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, isSignedUp }) => {
 
   const location = match.venue || "Location TBD";
 
-  // The session names the user's college.
   const isUserTeam =
-    !!user &&
-    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
+    !!viewer?.collegeId &&
+    (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
 
   return (
     <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out">

@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
 import { useEffect } from "react";
-import { UserProvider } from "@/context/UserContext";
+import { SessionProvider } from "@/context/SessionContext";
 import FiltersProvider from "@/context/FiltersContext";
 import { ThemeProvider } from "next-themes";
 import Footer from "@/components/layout/Footer";
@@ -50,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <UserProvider>      
+    <SessionProvider>      
       <FiltersProvider>
         <NavbarProvider>
           <html lang="en" suppressHydrationWarning>
@@ -68,6 +68,6 @@ export default function RootLayout({
           </html>
         </NavbarProvider>
       </FiltersProvider>
-    </UserProvider>
+    </SessionProvider>
   );
 }

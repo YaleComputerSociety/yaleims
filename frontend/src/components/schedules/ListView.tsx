@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import MatchListItem from "./MatchListItem";
 import { format, isSameDay, startOfDay, eachDayOfInterval } from "date-fns";
 import { useSeason } from "@/context/SeasonContext";
@@ -19,7 +19,7 @@ interface ListViewProps {
 //    Fixes the "missing last day" bug by normalising start & end to midnight.
 
 const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => {
-  const { user } = useUser();
+  const { viewer } = useSession();
   // The games the user signed up for that haven't started (ids).
   const [signedUpIds, setSignedUpIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
   const observer = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    if (!user || !currentSeason) {
+    if (!viewer || !currentSeason) {
       setLoading(false);
       return;
     }
@@ -47,7 +47,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
     return () => {
       live = false;
     };
-  }, [user, currentSeason]);
+  }, [viewer, currentSeason]);
 
   const allDates = useMemo<Date[]>(() => {
     if (!matches.length) return [];
@@ -109,7 +109,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
 
   return (
     <div className="space-y-4">
-      {!user && (
+      {!viewer && (
         <Link
           href="/api/auth/login"
           prefetch={false}
@@ -143,7 +143,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
                 match={match}
                 sport={sportOf.get(match.sportId)}
                 tournament={tournamentOf(match)}
-                user={user}
+                viewer={viewer}
                 onStatusChange={handleStatusChange}
                 isSignedUp={signedUpIds.has(match.id)}
               />

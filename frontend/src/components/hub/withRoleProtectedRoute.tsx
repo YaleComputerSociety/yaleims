@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, ComponentType } from "react";
-import { useUser } from "@/context/UserContext";
+import { hasRole, useSession } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 
@@ -17,21 +17,19 @@ const withRoleProtectedRoute = <P extends {}>(
   allowedRoles: string[]
 ) => {
   const ProtectedRoute: React.FC<P> = (props) => {
-    const { user, loading } = useUser();
+    const { viewer, loading } = useSession();
     const router = useRouter();
 
-    const setRoles = new Set(user?.mRoles || []);
+    const hasAccess = hasRole(viewer, ...allowedRoles);
     useEffect(() => {
-      const hasAccess = allowedRoles.some((item) => setRoles.has(item));
       if (!loading && !hasAccess) {
         router.push("/"); // push to home page
       }
-    }, [loading, user, router]);
+    }, [loading, hasAccess, router]);
 
     if (loading) {
       return <LoadingScreen />;
     }
-    const hasAccess = allowedRoles.some((item) => setRoles.has(item));
     return hasAccess ? <WrappedComponent {...props} /> : null;
   };
 

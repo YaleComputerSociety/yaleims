@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
 import LoadingScreen from "@/components/layout/LoadingScreen";
@@ -12,24 +12,24 @@ import { getCollegeFlag } from "@/utils/versionedImages";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
 import { changeMe, fetchMyMatches } from "@/lib/api/me";
-import { COLLEGES, collegeIdOfName } from "@/lib/colleges";
+import { collegeName } from "@/lib/colleges";
 
 /** How many of the college's next games the profile lists. */
 const UPCOMING_LIMIT = 6;
 
 const Profile = () => {
-  const { user, loading, casSignOut, setUser } = useUser();
+  const { viewer, loading, signOut, setViewer } = useSession();
   const { currentSeason } = useSeason();
   const [matches, setMatches] = useState<Match[]>([]);
   const [myMatchIds, setMyMatchIds] = useState<Set<string>>(new Set());
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [newUsername, setNewUsername] = useState(user?.username || "");
+  const [newUsername, setNewUsername] = useState(viewer?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
   // The college's next games this season, and which of them the user plays.
-  const collegeId = user ? collegeIdOfName([...COLLEGES], user.college) : null;
+  const collegeId = viewer?.collegeId ?? null;
   useEffect(() => {
     if (!collegeId || !currentSeason) return;
     let live = true;
@@ -59,8 +59,8 @@ const Profile = () => {
   }, [collegeId, currentSeason]);
 
   useEffect(() => {
-    if (user?.username) setNewUsername(user.username);
-  }, [user?.username]);
+    if (viewer?.username) setNewUsername(viewer.username);
+  }, [viewer?.username]);
 
   const signedUpMatches = matches.filter((match) => myMatchIds.has(match.id));
   const availableMatches = matches.filter((match) => !myMatchIds.has(match.id));
@@ -71,7 +71,7 @@ const Profile = () => {
     try {
       const username = newUsername.trim();
       await changeMe({ username });
-      if (setUser && user) setUser({ ...user, username });
+      setViewer((v) => ({ ...v, username }));
       setIsEditing(false);
     } catch (err) {
       setError((err as Error).message);
@@ -82,7 +82,7 @@ const Profile = () => {
 
   const handleLogout = async () => {
     try {
-      await casSignOut();
+      await signOut();
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -92,7 +92,7 @@ const Profile = () => {
     return <LoadingScreen />;
   }
 
-  if (!user) {
+  if (!viewer) {
     return (
       <div className="flex justify-center items-center h-screen px-4">
         <SignInPrompt message="Sign in to see your profile." />
@@ -104,7 +104,7 @@ const Profile = () => {
     <div className="flex min-h-screen flex-col max-w-[1500px] mx-auto">
       <div className="flex-grow m-3 ">
         <h2 className="text-lg sm:text-2xl font-semibold text-center mt-10">
-          Hey {user.name.split(" ")[0]}, play some IMs today!
+          Hey {viewer.name.split(" ")[0]}, play some IMs today!
         </h2>
         <div className="mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:items-start lg:flex-row lg:space-y-0 lg:space-x-6 justify-center lg:ml-10">
           {/* Right Side: Stats */}
@@ -115,8 +115,8 @@ const Profile = () => {
               </h2>
               <div className="flex justify-center items-center space-x-4">
                 <Image
-                  src={getCollegeFlag(user.college)}
-                  alt={user.college}
+                  src={getCollegeFlag(collegeName(viewer.collegeId) ?? "")}
+                  alt={collegeName(viewer.collegeId) ?? ""}
                   width={100}
                   height={100}
                   className="rounded-md object-contain"
@@ -138,7 +138,7 @@ const Profile = () => {
 
             <div className="hidden sm:block">
               <button
-                onClick={casSignOut}
+                onClick={signOut}
                 className="mt-6 py-2 px-4 bg-red-500 text-white rounded-md"
               >
                 Log Out

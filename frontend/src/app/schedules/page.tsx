@@ -7,7 +7,7 @@ import ListView from "@/components/schedules/ListView";
 import Calendar from "@/components/schedules/Calendar";
 import PageHeading from "@/components/layout/PageHeading";
 import { useSeason } from "@/context/SeasonContext";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import Pagination from "@/components/ui/Pagination";
 import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
@@ -30,8 +30,8 @@ const SchedulePage: React.FC = () => {
 
   const { currentSeason } = useSeason();
   // The schedule is for signed-in users (D42 Q6: as today).
-  const { user, loading: userLoading } = useUser();
-  const signedIn = !!user;
+  const { viewer, loading: userLoading } = useSession();
+  const signedIn = !!viewer;
 
   useEffect(() => {
     if (userLoading || !signedIn || !currentSeason) return;

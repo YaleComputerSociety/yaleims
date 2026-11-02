@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
 import { getCollegeFlag } from "@/utils/versionedImages";
 import { fetchMyMatches } from "@/lib/api/me";
+import { collegeName } from "@/lib/colleges";
 
 export default function HeroStats() {
-  const { user } = useUser();
+  const { viewer } = useSession();
   const { currentSeason } = useSeason();
   // How many games the user signed up for this season.
   const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !currentSeason) return;
+    if (!viewer || !currentSeason) return;
     let live = true;
     setLoading(true);
     fetchMyMatches({ seasonId: currentSeason.id })
@@ -25,9 +26,9 @@ export default function HeroStats() {
     return () => {
       live = false;
     };
-  }, [user, currentSeason]);
+  }, [viewer, currentSeason]);
 
-  if (!user) return null;
+  if (!viewer) return null;
 
   const stats = [
     {
@@ -45,8 +46,8 @@ export default function HeroStats() {
       <div className="flex items-center gap-4 mb-6">
         <div className="relative">
           <Image
-            src={getCollegeFlag(user.college)}
-            alt={user.college}
+            src={getCollegeFlag(collegeName(viewer.collegeId) ?? "")}
+            alt={collegeName(viewer.collegeId) ?? ""}
             width={80}
             height={80}
             className="rounded-xl object-contain w-16 h-16 md:w-20 md:h-20"
@@ -54,10 +55,10 @@ export default function HeroStats() {
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">
-            Welcome back, {user.name?.split(" ")[0] || "there"}! 👋
+            Welcome back, {viewer.name?.split(" ")[0] || "there"}! 👋
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
-            {user.college} • {currentSeason?.id} {currentSeason?.currentTerm ? currentSeason.currentTerm.charAt(0).toUpperCase() + currentSeason.currentTerm.slice(1) : ""} Season
+            {collegeName(viewer.collegeId) ?? ""} • {currentSeason?.id} {currentSeason?.currentTerm ? currentSeason.currentTerm.charAt(0).toUpperCase() + currentSeason.currentTerm.slice(1) : ""} Season
           </p>
         </div>
       </div>

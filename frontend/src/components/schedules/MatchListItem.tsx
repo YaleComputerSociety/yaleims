@@ -8,18 +8,18 @@ import { fetchRoster, signUp, withdraw, type PublicRosterEntry } from "@/lib/api
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { calendarLink, matchTypeLabel } from "@/lib/format";
-import type { SessionUser } from "@/types/api";
+import type { SessionViewer } from "@/lib/api/auth";
 
 interface MatchListItemProps {
   match: Match;
   sport: Sport | undefined;
   tournament: string | undefined;
-  user: SessionUser | null;
+  viewer: SessionViewer | null;
   isSignedUp: boolean;
   onStatusChange: (id: string, signed: boolean) => void;
 }
 
-const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, user, isSignedUp, onStatusChange }) => {
+const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, viewer, isSignedUp, onStatusChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [participantsShow, setParticipantsShow] = useState(false);
@@ -78,10 +78,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
 
   const location = match.venue || "Location TBD";
 
-  // The session names the user's college.
   const isUserTeam =
-    !!user &&
-    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
+    !!viewer?.collegeId &&
+    (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
 
   const homeName = collegeName(match.homeCollegeId) ?? "";
   const awayName = collegeName(match.awayCollegeId) ?? "";

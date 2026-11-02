@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import Link from "next/link";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
 import { FiltersContext } from "@/context/FiltersContext";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import Image from "next/image";
 import useLightTheme from "@/hooks/useLightTheme";
@@ -36,7 +36,7 @@ const NavBar: React.FC = () => {
   const filtersContext = useContext(FiltersContext);
   const { resetFilters } = filtersContext;
   const [isClick, setisClick] = useState(false);
-  const { user, loading } = useUser();
+  const { viewer, loading } = useSession();
   const { isLight, toggleTheme } = useLightTheme();
   const { collapsed, onToggleCollapse } = useNavbar()
    
@@ -168,8 +168,8 @@ const NavBar: React.FC = () => {
                 <div className="animate-pulse text-gray-800 dark:text-gray-300 py-1 px-3">
                   Loading...
                 </div>
-              ) : user ? (
-                <UserProfileButton name={user.name} />
+              ) : viewer ? (
+                <UserProfileButton name={viewer.name} />
               ) : (
                 <Link
                   className={`py-1 px-3 rounded border ${
@@ -209,9 +209,9 @@ const NavBar: React.FC = () => {
               <div className="animate-pulse text-gray-300 text-center">
                 Loading...
               </div>
-            ) : user ? (
+            ) : viewer ? (
               <div className="flex justify-center">
-                <UserProfileButton name={user.name} />
+                <UserProfileButton name={viewer.name} />
               </div>
             ) : (
               <Link

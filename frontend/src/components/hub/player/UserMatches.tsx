@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCalendar } from "react-icons/fa";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import type { Match } from "@/lib/api/matches";
@@ -20,7 +20,7 @@ interface MatchListItemProps {
 
 /** One of the user's games, with withdrawing (and signing up again) and a calendar link. */
 const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, roundedClass = "" }) => {
-  const { user } = useUser();
+  const { viewer } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignedUpState, setIsSignedUp] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
@@ -58,10 +58,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, roundedClas
 
   const location = match.venue || "Location TBD";
 
-  // The session names the user's college.
   const isUserTeam =
-    !!user &&
-    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
+    !!viewer?.collegeId &&
+    (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
 
   return (
     <li

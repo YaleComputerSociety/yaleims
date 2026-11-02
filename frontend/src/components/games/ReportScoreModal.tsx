@@ -3,10 +3,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFlag, FaSpinner, FaCheck } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
-import { useUser } from "@/context/UserContext";
+import { hasRole, useSession } from "@/context/SessionContext";
 import type { Match } from "@/lib/api/matches";
 import { fetchMatchReports, reportScore, resolveReport, type MatchScoreReport } from "@/lib/api/reports";
-import { userIsAdminOrDev } from "@/utils/helpers";
 import { toast } from "react-toastify";
 
 interface ReportScoreButtonProps {
@@ -15,13 +14,13 @@ interface ReportScoreButtonProps {
 }
 
 export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({ match, sportName }) => {
-  const { user } = useUser();
+  const { viewer } = useSession();
   const [modalOpen, setModalOpen] = useState(false);
 
   if (!match.result) return null;
 
   const handleClick = () => {
-    if (!user) {
+    if (!viewer) {
       const from = encodeURIComponent("/games");
       window.location.href = `/api/auth/login?from=${from}`;
       return;
@@ -53,8 +52,8 @@ interface ReportScoreModalProps {
 }
 
 const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, setModalOpen }) => {
-  const { user } = useUser();
-  const isAdminOrDev = userIsAdminOrDev(user);
+  const { viewer } = useSession();
+  const isAdminOrDev = hasRole(viewer, "admin", "dev");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reports, setReports] = useState<MatchScoreReport[]>([]);

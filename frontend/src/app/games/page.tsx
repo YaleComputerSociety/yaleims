@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import PageHeading from "@/components/layout/PageHeading";
 import Link from "next/link";
 import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
-import { useUser } from "@/context/UserContext";
+import { useSession } from "@/context/SessionContext";
 import { useStandings } from "@/hooks/useStandings";
 import { useTournamentNames } from "@/hooks/useTournamentNames";
 import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
@@ -162,7 +162,7 @@ const GamesPage: React.FC = () => {
   }, [highlightedDates, isCurrentSeason]);
 
   // ── user sign-up state ────────────────────────────────────────────────────────
-  const { user } = useUser();
+  const { viewer } = useSession();
   // The games the user signed up for (ids). Until these land we can't tell
   // sign-up state apart from not-signed-up, so the cards show a skeleton rather
   // than flashing "Sign Up" at someone already playing.
@@ -170,9 +170,9 @@ const GamesPage: React.FC = () => {
   const [userMatchesLoading, setUserMatchesLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !selectedSeason) {
+    if (!viewer || !selectedSeason) {
       setSignedUpIds(new Set());
-      setUserMatchesLoading(!!user); // signed in: waiting for the season
+      setUserMatchesLoading(!!viewer); // signed in: waiting for the season
       return;
     }
     let live = true;
@@ -186,7 +186,7 @@ const GamesPage: React.FC = () => {
     return () => {
       live = false;
     };
-  }, [user, selectedSeason]);
+  }, [viewer, selectedSeason]);
 
   const handleSignUpStatusChange = useCallback((matchId: string, signed: boolean) => {
     setSignedUpIds((prev) => {
@@ -329,7 +329,7 @@ const GamesPage: React.FC = () => {
     () => allMatches.some((m) => getMatchStatus(m) === "upcoming" || getMatchStatus(m) === "live"),
     [allMatches]
   );
-  const showSignInPrompt = !user && isCurrentSeason && hasUpcomingGames;
+  const showSignInPrompt = !viewer && isCurrentSeason && hasUpcomingGames;
 
   return (
     <div className="min-h-screen">
@@ -497,7 +497,7 @@ const GamesPage: React.FC = () => {
                       tournament={tournamentOf(match)}
                       onCollegeClick={handleCollegeClick}
                       onSportClick={handleSportClick}
-                      user={user}
+                      viewer={viewer}
                       isSignedUp={signedUpIds.has(match.id)}
                       signUpStatusLoading={userMatchesLoading}
                       onStatusChange={handleSignUpStatusChange}

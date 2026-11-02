@@ -10,7 +10,7 @@ import type { Match } from "@/lib/api/matches";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
-import type { SessionUser } from "@/types/api";
+import type { SessionViewer } from "@/lib/api/auth";
 import { getCollegeFlag } from "@/utils/versionedImages";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
@@ -37,7 +37,7 @@ interface GameCardProps {
   tournament: string | undefined;
   onCollegeClick?: (college: string) => void;
   onSportClick?: (sport: string) => void;
-  user: SessionUser | null;
+  viewer: SessionViewer | null;
   isSignedUp?: boolean;
   signUpStatusLoading?: boolean;
   onStatusChange?: (matchId: string, signed: boolean) => void;
@@ -49,7 +49,7 @@ const GameCard: React.FC<GameCardProps> = ({
   tournament,
   onCollegeClick,
   onSportClick,
-  user,
+  viewer,
   isSignedUp = false,
   signUpStatusLoading = false,
   onStatusChange,
@@ -62,10 +62,9 @@ const GameCard: React.FC<GameCardProps> = ({
   // A past game the admins haven't scored yet.
   const isUnscored = status === "completed" && !result;
 
-  // The session names the user's college.
   const isUserTeam =
-    !!user &&
-    (collegeName(match.homeCollegeId) === user.college || collegeName(match.awayCollegeId) === user.college);
+    !!viewer?.collegeId &&
+    (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
 
   const isPastMatch = new Date(match.startsAt) < new Date();
 
@@ -299,7 +298,7 @@ const GameCard: React.FC<GameCardProps> = ({
             )}
 
             {/* Sign-up button */}
-            {user && status === "upcoming" && !isPastMatch && isUserTeam && (
+            {viewer && status === "upcoming" && !isPastMatch && isUserTeam && (
               signUpStatusLoading ? (
                 <div
                   className="h-6 w-[74px] rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"

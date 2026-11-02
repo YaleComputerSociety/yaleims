@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useUser } from '@/context/UserContext'
+import { useSession } from '@/context/SessionContext'
 import useLightTheme from "@/hooks/useLightTheme";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import { useNavbar } from '@/context/NavbarContext';
@@ -12,7 +12,7 @@ import { useChampionship } from "@/hooks/useChampionship";
 
 const UserMenu: React.FC<{ name: string }> = ({ name }) => {
   const first = (name ?? "").split(" ")[0] || "Friend";
-  const { casSignOut } = useUser()
+  const { signOut } = useSession()
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const confettiEnabled = useConfettiEnabled();
@@ -77,7 +77,7 @@ const UserMenu: React.FC<{ name: string }> = ({ name }) => {
         <button
             className="flex text-left py-2 px-3 gap-x-2 items-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-sm w-full text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
             role="menuitem"
-            onClick={() => { setOpen(false); casSignOut(); }}
+            onClick={() => { setOpen(false); signOut(); }}
         >
             <FaSignOutAlt className="text-xs" />
             Sign out
@@ -115,7 +115,7 @@ interface PageHeadingProps {
 }
 
 export default function PageHeading({ heading }: PageHeadingProps) {
-  const { user, loading } = useUser();
+  const { viewer, loading } = useSession();
   const { isLight, toggleTheme } = useLightTheme();
   const { collapsed } = useNavbar();
   const isMobile = useIsMobile();
@@ -146,8 +146,8 @@ export default function PageHeading({ heading }: PageHeadingProps) {
                 <div className="animate-pulse text-sm text-gray-500 dark:text-gray-400">
                     Loading...
                 </div>
-                ) : user ? (
-                <UserMenu name={user.name} />
+                ) : viewer ? (
+                <UserMenu name={viewer.name} />
                 ) : (
                 <Link
                     className="py-1.5 px-4 rounded-xl border text-sm font-medium cursor-pointer transition-all duration-200 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 hover:bg-blue-500/5"

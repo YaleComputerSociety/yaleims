@@ -1,153 +1,94 @@
-import { useUser } from "@/context/UserContext";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSeason } from "@/context/SeasonContext";
+import { useSession } from "@/context/SessionContext";
 import Pagination from "@/components/ui/Pagination";
-import { toCollegeAbbreviation, toCollegeName } from "@/utils/helpers";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import type { CaptainSportsResponse, MatchPageResponse } from "@/types/api";
+import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { fetchRoster, type PublicRosterEntry } from "@/lib/api/roster";
+import { collegeName } from "@/lib/colleges";
 
+const PAGE_SIZE = 10;
+
+/** A captain's teams: each sport's upcoming games for their college, and who signed up. */
 const ViewTeamSignups = () => {
-  const { user } = useUser();
+  const { viewer } = useSession();
   const { currentSeason } = useSeason();
+  const seasonId = currentSeason?.id ?? "";
 
-  const [captainSports, setCaptainSports] = useState<string[]>([]);
-  const [selectedSport, setSelectedSport] = useState<string>("");
+  // The sports they captain this season, in display order; the first until one is picked.
+  const captainSports = (currentSeason?.sports ?? []).filter((sport) => viewer?.captainOf.includes(sport.id));
+  const [pickedSport, setSelectedSport] = useState<string | null>(null);
+  const selectedSport = pickedSport ?? captainSports[0]?.id ?? "";
+  const sportName = (sportId: string) => captainSports.find((s) => s.id === sportId)?.name ?? "";
 
-  const [sportsLoading, setSportsLoading] = useState<boolean>(true);
   const [matchesLoading, setMatchesLoading] = useState<boolean>(false);
-
-  const [sportsError, setSportsError] = useState<string | null>(null);
   const [matchesError, setMatchesError] = useState<string | null>(null);
-
   const [page, setPage] = useState<number>(1);
-  const [firstVisible, setFirstVisible] = useState<string>("");
-  const [lastVisible, setLastVisible] = useState<string>("");
-  const [queryType, setQueryType] = useState<string>("index");
   const [totalPages, setTotalPages] = useState<number>(10);
-  const [filteredMatches, setFilteredMatches] = useState<any[]>([]);
-  const [openId, setOpenId] = useState<number | null>(null);
-  const toggleOpen = (id: number) => setOpenId(prev => (prev === id ? null : id));
+  const [filteredMatches, setFilteredMatches] = useState<Match[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+  // The open game's roster.
+  const [roster, setRoster] = useState<PublicRosterEntry[]>([]);
 
-  const toList = (x: any) => (Array.isArray(x) ? x : []);
-  const label = (p: any) =>
-    typeof p === "string" ? p : p?.name ?? p?.email ?? p?.uid ?? JSON.stringify(p);
-
-  const seasonId = currentSeason?.id ?? ""; // gate on this being truthy
-
-  const fetchSports = async () => {
-    // Need a user email to look up captain sports
-    if (!user?.email) {
-      setSportsError("Missing user email.");
-      setSportsLoading(false);
+  const toggleOpen = async (match: Match) => {
+    if (openId === match.id) {
+      setOpenId(null);
       return;
     }
-    setSportsLoading(true);
-    setSportsError(null);
+    setRoster([]);
+    setOpenId(match.id);
     try {
-      const response = await fetch(`/api/functions/getCaptainSports?email=${user.email}`);
-      if (!response.ok) throw new Error("Error fetching captain sports");
-      const data: CaptainSportsResponse = await response.json();
-      const list = Array.isArray(data) ? data : [];
-      setCaptainSports(list);
-      if (list.length > 0) setSelectedSport(list[0]);
+      setRoster((await fetchRoster(match.seasonId, match.id)).items);
     } catch (error) {
-      console.error(error);
-      setSportsError("Couldn’t load your captain sports.");
-    } finally {
-      setSportsLoading(false);
+      console.error("Failed to fetch the roster:", error);
     }
   };
 
   useEffect(() => {
-    fetchSports();
-    // re-run if the user context changes
-  }, [user?.email]);
-
-  const getQueryParams = (type: string) => {
-    const baseParams = {
-      type: "index",
-      pageSize: "10",
-      sortOrder: "asc",
-      college: user ? toCollegeAbbreviation[user.college] : "All",
-      date: new Date().toISOString(),
-      sport: selectedSport || "", // safe default
+    if (!seasonId || !selectedSport || !viewer?.collegeId) return;
+    let live = true;
+    setMatchesLoading(true);
+    setMatchesError(null);
+    fetchSeasonMatches(seasonId, {
+      collegeId: viewer.collegeId,
+      sportId: selectedSport,
+      status: "scheduled",
+      from: new Date().toISOString(),
+      page,
+      pageSize: PAGE_SIZE,
+    })
+      .then(
+        ({ items, total }) => {
+          if (!live) return;
+          setFilteredMatches(items);
+          if (total) setTotalPages(Math.ceil(total / PAGE_SIZE));
+        },
+        (error) => {
+          console.error("Failed to fetch matches:", error);
+          if (live) setMatchesError("Couldn’t load matches. Try again.");
+        }
+      )
+      .finally(() => live && setMatchesLoading(false));
+    return () => {
+      live = false;
     };
-
-    if (type === "next" && lastVisible) {
-      return { ...baseParams, type, lastVisible };
-    }
-    if (type === "prev" && firstVisible) {
-      return { ...baseParams, type, firstVisible };
-    }
-    if (type === "index") {
-      return { ...baseParams, pageIndex: page.toString() };
-    }
-    return baseParams;
-  };
-
-  // Only fetch matches when BOTH seasonId and selectedSport are ready,
-  // and after captainSports finished loading.
-  useEffect(() => {
-    const ready =
-      !!seasonId && !!selectedSport && !sportsLoading && !sportsError;
-
-    if (!ready) return;
-
-    const fetchMatches = async () => {
-      setMatchesLoading(true);
-      setMatchesError(null);
-      try {
-        const params = new URLSearchParams(getQueryParams(queryType));
-        const response = await fetch(
-          `/api/functions/getMatches?${params}&seasonId=${seasonId}`
-        );
-        if (!response.ok)
-          throw new Error(`Error fetching matches: ${response.statusText}`);
-
-        const data: MatchPageResponse = await response.json();
-        setFilteredMatches(Array.isArray(data.matches) ? data.matches : []);
-        // Cursors are match ids; the URL carries them as text.
-        if (data.firstVisible) setFirstVisible(String(data.firstVisible));
-        if (data.lastVisible) setLastVisible(String(data.lastVisible));
-        if (data.totalPages) setTotalPages(data.totalPages);
-      } catch (error) {
-        console.error("Failed to fetch matches:", error);
-        setMatchesError("Couldn’t load matches. Try again.");
-      } finally {
-        setMatchesLoading(false);
-      }
-    };
-
-    fetchMatches();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, queryType, selectedSport, seasonId, sportsLoading, sportsError]);
+  }, [page, selectedSport, seasonId, viewer?.collegeId]);
 
   // reset pagination when sport changes
   useEffect(() => {
     setPage(1);
-    setQueryType("index");
-    setFirstVisible("");
-    setLastVisible("");
   }, [selectedSport]);
 
-  const fmtDate = (ts?: string | null) =>
-    ts
-      ? new Date(ts).toLocaleString(undefined, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        })
-      : "TBD";
+  const fmtDate = (ts: string) =>
+    new Date(ts).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+  const sideNames = (collegeId: string | null) => roster.filter((e) => e.collegeId === collegeId).map((e) => e.name);
 
   // Loading gates
-  if (matchesLoading || sportsLoading) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
-
-  if (sportsError) {
-    return (
-      <div className="text-sm text-red-600 dark:text-red-400">
-        {sportsError}
-      </div>
-    );
-  }
+  if (matchesLoading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
 
   if (captainSports.length === 0) {
     return (
@@ -162,15 +103,15 @@ const ViewTeamSignups = () => {
       <div className="row-span-1 gap-x-3 flex flex-row items-center">
         {captainSports.map((sport) => (
           <h3
-            key={sport}
-            onClick={() => setSelectedSport(sport)}
+            key={sport.id}
+            onClick={() => setSelectedSport(sport.id)}
             className={`cursor-pointer px-2 py-2 ${
-              sport === selectedSport
+              sport.id === selectedSport
                 ? "border-b-2 border-black font-semibold"
                 : "text-gray-600 hover:text-black"
             }`}
           >
-            {sport}
+            {sport.name}
           </h3>
         ))}
       </div>
@@ -182,29 +123,29 @@ const ViewTeamSignups = () => {
           </div>
         ) : filteredMatches.length === 0 ? (
           <div className="p-3 text-sm text-gray-600 dark:text-gray-300">
-            No upcoming games for {selectedSport}.
+            No upcoming games for {sportName(selectedSport)}.
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
-            {filteredMatches.map((m: any) => (
+            {filteredMatches.map((m) => (
               <li key={m.id} className="p-3">
                 <button
-                  onClick={() => toggleOpen(m.id)}
+                  onClick={() => toggleOpen(m)}
                   aria-expanded={openId === m.id}
                   className="w-full text-left"
                 >
                   <div className="flex items-baseline justify-between">
                     <p className="font-medium truncate">
-                      {(toCollegeName[m.home_college] ?? "TBD")} vs{" "}
-                      {(toCollegeName[m.away_college] ?? "TBD")}
+                      {collegeName(m.homeCollegeId) ?? "TBD"} vs{" "}
+                      {collegeName(m.awayCollegeId) ?? "TBD"}
                     </p>
                     <span className="text-xs text-gray-500">
-                      {m.sport} • {m.type ?? "Match"}
+                      {sportName(m.sportId)} • {m.stage === "regular" ? "Regular" : (m.round ?? "Playoff")}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    {fmtDate(m.timestamp)} • {m.location ?? "Location TBD"}
-                    {m.location_extra ? ` — ${m.location_extra}` : ""}
+                    {fmtDate(m.startsAt)} • {m.venue ?? "Location TBD"}
+                    {m.venueDetail ? ` — ${m.venueDetail}` : ""}
                   </p>
                 </button>
 
@@ -212,17 +153,17 @@ const ViewTeamSignups = () => {
                   <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <h4 className="font-semibold">
-                        Home ({toCollegeName[m.home_college] ?? "TBD"})
+                        Home ({collegeName(m.homeCollegeId) ?? "TBD"})
                       </h4>
                       <div className="mt-1 flex flex-wrap gap-2">
-                        {toList(m.home_college_participants).length > 0 ? (
-                          toList(m.home_college_participants).map(
-                            (p: any, i: number) => (
+                        {sideNames(m.homeCollegeId).length > 0 ? (
+                          sideNames(m.homeCollegeId).map(
+                            (name, i) => (
                               <span
                                 key={i}
                                 className="rounded-full bg-gray-100 px-2 py-1 text-xs"
                               >
-                                {label(p)}
+                                {name}
                               </span>
                             )
                           )
@@ -236,17 +177,17 @@ const ViewTeamSignups = () => {
 
                     <div>
                       <h4 className="font-semibold">
-                        Away ({toCollegeName[m.away_college] ?? "TBD"})
+                        Away ({collegeName(m.awayCollegeId) ?? "TBD"})
                       </h4>
                       <div className="mt-1 flex flex-wrap gap-2">
-                        {toList(m.away_college_participants).length > 0 ? (
-                          toList(m.away_college_participants).map(
-                            (p: any, i: number) => (
+                        {sideNames(m.awayCollegeId).length > 0 ? (
+                          sideNames(m.awayCollegeId).map(
+                            (name, i) => (
                               <span
                                 key={i}
                                 className="rounded-full bg-gray-100 px-2 py-1 dark:text-black text-xs"
                               >
-                                {label(p)}
+                                {name}
                               </span>
                             )
                           )

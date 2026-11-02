@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useUser } from "@/context/UserContext";
+import { hasRole, useSession } from "@/context/SessionContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import PageHeading from "@/components/layout/PageHeading";
 import HeroStats from "@/components/hub/player/HeroStats";
@@ -29,13 +29,13 @@ type HubAction = {
 };
 
 const Dashboard: React.FC = () => {
-  const { user, loading } = useUser();
+  const { viewer, loading } = useSession();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  if (!user) {
+  if (!viewer) {
     return (
       <div className="min-h-screen pt-20 px-6">
         <PageHeading heading="Hub" />
@@ -131,9 +131,9 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const isAdmin = user?.mRoles.includes("admin");
-  const isCollegeRep = user?.mRoles.includes("college_rep");
-  const isCaptain = user?.mRoles.includes("captain");
+  const isAdmin = hasRole(viewer, "admin");
+  const isCollegeRep = hasRole(viewer, "college_rep");
+  const isCaptain = hasRole(viewer, "captain");
 
   return (
     <div className="min-h-screen pt-20 pb-12">
