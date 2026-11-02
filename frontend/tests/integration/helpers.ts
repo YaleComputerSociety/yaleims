@@ -12,9 +12,12 @@ if (!SECRET) throw new Error("Run through `npm run test:integration` (it starts 
 /** The emulator, read directly to check what a call changed. */
 export const db = getFirestore(getApps()[0] ?? initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2" }));
 
-/** A session cookie for `email`, with the roles the session claims (the server may check them against Firestore). */
-export const sessionFor = (email: string, mRoles: string[] = ["user"]) =>
-  jwt.sign({ name: "Test User", netid: email.split("@")[0], email, mRoles }, SECRET, { expiresIn: "1h" });
+/**
+ * A session cookie for `email`, with the roles the session claims (the new
+ * routes ignore them) and any other cookie fields (e.g. the login's college).
+ */
+export const sessionFor = (email: string, mRoles: string[] = ["user"], fields: object = {}) =>
+  jwt.sign({ name: "Test User", netid: email.split("@")[0], email, mRoles, ...fields }, SECRET, { expiresIn: "1h" });
 
 /** People of the seed (scripts/seed.mts): 8 students per college; the first is the rep, the next two captains. */
 export const people = {

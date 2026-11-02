@@ -26,6 +26,8 @@ import { getIdentity, type Identity } from "./session";
  * answer after that, so a route never reads one twice.
  */
 export interface Viewer extends Identity {
+  /** Their users/{email} doc (null: none yet). */
+  user(): Promise<UserDoc | null>;
   /** users/{email}.roles. */
   globalRoles(): Promise<GlobalRole[]>;
   /** Their player doc in the current season (college, season roles); null if they aren't a player. */
@@ -55,6 +57,7 @@ function viewerOf(identity: Identity): Viewer {
   });
   return {
     ...identity,
+    user,
     globalRoles: async () => (await user())?.roles ?? [],
     player,
     captainOf,
