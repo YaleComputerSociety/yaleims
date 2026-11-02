@@ -17,7 +17,7 @@ describe("cross-site write guard", () => {
   });
   it("refuses a write from another site", async () => {
     const r = await api("POST", "/api/functions/reportScore", report(), { origin: "https://evil.example" });
-    expect(r).toMatchObject({ status: 403, body: { error: "Cross-site request refused" } });
+    expect(r).toMatchObject({ status: 403, body: { error: { code: "forbidden", message: "Cross-site request refused" } } });
   });
   it("lets our own pages' writes through", async () => {
     expect((await api("POST", "/api/functions/reportScore", report())).status).toBe(401); // past the guard; no session

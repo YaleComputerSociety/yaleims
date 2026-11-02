@@ -2,7 +2,7 @@
 
 | Command | What | Needs |
 |---|---|---|
-| `npm test` | Unit tests (`tests/unit`): the pure shared code in `src/lib` | nothing |
+| `npm test` | Unit tests (`tests/unit`): the pure shared code in `src/lib`, and the server's request handling and permissions (`server/http.ts`, `server/auth.ts`) with the session and Firestore stubbed | nothing |
 | `npm run test:integration` | Integration tests (`tests/integration`) against the running app, and the Firestore rules tests (`tests/rules`) | the Firestore emulator |
 
 `npm run test:integration` loads the synthetic seed into the emulator (this

@@ -7,6 +7,7 @@
 // check Next.js applies to Server Actions). Requests without an Origin are
 // refused too: every browser sends one on these methods.
 import { NextResponse, type NextRequest } from "next/server";
+import { ApiError } from "@/lib/api/core";
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 
@@ -27,7 +28,8 @@ export function proxy(req: NextRequest) {
   if (SAFE_METHODS.includes(req.method) || isSameOrigin(req)) {
     return NextResponse.next();
   }
-  return NextResponse.json({ error: "Cross-site request refused" }, { status: 403 });
+  const refusal = new ApiError("forbidden", "Cross-site request refused");
+  return NextResponse.json(refusal.toBody(), { status: refusal.status });
 }
 
 export const config = { matcher: "/api/:path*" };

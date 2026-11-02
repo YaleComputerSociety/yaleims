@@ -1,6 +1,11 @@
 // The login session: the app's own HS256 JWT in the `token` cookie, minted by
 // /api/auth/redirect after Yale CAS and refreshed by /api/auth/verify. It is
 // not a Firebase ID token. Every server route reads it through this module.
+//
+// The new API (server/auth.ts) reads only the identity from it (getIdentity);
+// roles come from Firestore. The old routes still read the whole payload,
+// roles included (getSession), so the cookie keeps carrying them until those
+// routes are gone (Phase 2D step 6).
 import "server-only";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
@@ -38,33 +43,65 @@ export async function getSessionToken(): Promise<string | undefined> {
 }
 
 /**
- * The verified session, or null when the cookie is missing, expired, forged or
- * malformed. Throws only when JWT_SECRET is unset (a server misconfiguration).
+ * The verified token's payload, or null when the cookie is missing, expired,
+ * forged or malformed. Throws only when JWT_SECRET is unset (a server
+ * misconfiguration).
  *
  * Only netid and email are required: jwt.sign drops undefined values, so older
- * tokens can lack the rest. A token without mRoles gets none.
+ * tokens can lack the rest.
  */
-export async function getSession(): Promise<Session | null> {
+type Payload = Record<string, unknown> & { email: string; netid: string };
+
+async function verifiedPayload(): Promise<Payload | null> {
   const token = await getSessionToken();
   if (!token) {
     return null;
   }
   const secret = jwtSecret();
-  let decoded: any;
+  let decoded: unknown;
   try {
     decoded = jwt.verify(token, secret);
   } catch {
     return null;
   }
-  if (
-    typeof decoded !== "object" ||
-    decoded === null ||
-    typeof decoded.netid !== "string" ||
-    typeof decoded.email !== "string"
-  ) {
+  const payload = decoded as Partial<Payload> | string;
+  if (!payload || typeof payload !== "object" || typeof payload.netid !== "string" || typeof payload.email !== "string") {
     return null;
   }
-  return toSession(decoded);
+  return payload as Payload;
+}
+
+/** Who is signed in, as the Yale login said. */
+export interface Identity {
+  email: string;
+  netid: string;
+  /** "" in old tokens without a name. */
+  name: string;
+  /**
+   * The college the session was issued with (from Yalies at login). Joining
+   * a new season places a returning student by it (D30); null: none.
+   */
+  college: string | null;
+}
+
+/** The signed-in identity, or null (see verifiedPayload). Any other field of the token is ignored. */
+export async function getIdentity(): Promise<Identity | null> {
+  const payload = await verifiedPayload();
+  if (!payload) {
+    return null;
+  }
+  return {
+    email: payload.email,
+    netid: payload.netid,
+    name: typeof payload.name === "string" ? payload.name : "",
+    college: typeof payload.college === "string" && payload.college !== "" ? payload.college : null,
+  };
+}
+
+/** The whole session, roles as signed; for the old routes (see the top). A token without mRoles gets none. */
+export async function getSession(): Promise<Session | null> {
+  const payload = await verifiedPayload();
+  return payload && toSession(payload);
 }
 
 // Picks the session fields, dropping jwt's iat/exp (re-signing a payload that
