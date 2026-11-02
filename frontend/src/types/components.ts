@@ -1,4 +1,4 @@
-import type { BracketUpload, MatchJson, SlotInput, UnscoredMatch } from "./api";
+import type { BracketUpload, SlotInput } from "./api";
 import type { CollegeDoc } from "./firestore";
 
 export type Sport = {

@@ -13,8 +13,9 @@ if (!SECRET) throw new Error("Run through `npm run test:integration` (it starts 
 export const db = getFirestore(getApps()[0] ?? initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2" }));
 
 /**
- * A session cookie for `email`, with the roles the session claims (the new
- * routes ignore them) and any other cookie fields (e.g. the login's college).
+ * A session cookie for `email`, with roles in it as cookies from before Phase
+ * 2D carried them (the API ignores them: only Firestore counts) and any other
+ * cookie fields (e.g. the login's college).
  */
 export const sessionFor = (email: string, mRoles: string[] = ["user"], fields: object = {}) =>
   jwt.sign({ name: "Test User", netid: email.split("@")[0], email, mRoles, ...fields }, SECRET, { expiresIn: "1h" });

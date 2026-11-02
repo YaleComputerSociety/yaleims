@@ -1,8 +1,8 @@
 // Local sign-in without Yale CAS: prints a session cookie for a user of the
 // local emulator data (npm run seed), signed with your local JWT_SECRET, and
 // the line to paste into the browser console. The app then treats you as
-// that user; their roles, college and username come from Firestore on the
-// next page load (/api/auth/verify), as after a real login.
+// that user; their roles, college and username come from Firestore on each
+// request, as after a real login.
 //
 //   npm run dev:token -- dev@example.edu
 //
@@ -50,5 +50,5 @@ async function nameOf(address: string): Promise<string> {
 const token = jwt.sign({ name: await nameOf(email), netid: email.split("@")[0], email }, secret, { expiresIn: "7d" });
 console.log(
   `Signed in as ${email} for 7 days. In the browser console on the local site, run:\n\n` +
-    `localStorage.setItem("logout_version", "2"); document.cookie = "token=${token}; path=/"; location.reload();\n`
+    `document.cookie = "token=${token}; path=/"; location.reload();\n`
 );

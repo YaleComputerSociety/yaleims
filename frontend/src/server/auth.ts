@@ -15,7 +15,6 @@ import { getPlayer } from "./data/players";
 import { getCurrentSeasonId } from "./data/seasons";
 import { listCaptainTeams } from "./data/teams";
 import { getUser } from "./data/users";
-import { mergedRoles } from "./services/roles";
 import { getIdentity, type Identity } from "./session";
 
 // ── The viewer ─────────────────────────────────────────────────────────────
@@ -63,7 +62,9 @@ function viewerOf(identity: Identity): Viewer {
     captainOf,
     actor: async () => {
       const [u, p, teams] = await Promise.all([user(), player(), captainOf()]);
-      return { userId: identity.email, roles: mergedRoles(u, p, teams.length > 0) };
+      const roles: string[] = ["user", ...(u?.roles ?? []), ...(p?.roles ?? [])];
+      if (teams.length > 0) roles.push("captain");
+      return { userId: identity.email, roles };
     },
   };
 }

@@ -2,6 +2,7 @@
 // server/auth.ts): the session cookie and Firestore are stubbed, so these run
 // without the emulator. The integration tests check the same rules per route.
 import jwt from "jsonwebtoken";
+import { NextResponse } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PlayerDoc, UserDoc } from "@/types/firestore";
 
@@ -28,12 +29,8 @@ vi.mock("@/server/data/players", () => ({
 vi.mock("@/server/data/teams", () => ({
   listCaptainTeams: async (_season: string, email: string) => (reads.teams++, (captains[email] ?? []).map((sportId) => ({ sportId }))),
 }));
-vi.mock("@/server/services/roles", () => ({
-  mergedRoles: (user: UserDoc | null, player: PlayerDoc | null, isCaptain: boolean) =>
-    ["user", ...(user?.roles ?? []), ...(player?.roles ?? []), ...(isCaptain ? ["captain"] : [])],
-}));
 
-const { getIdentity } = await import("@/server/session");
+const { getIdentity, setSessionCookie } = await import("@/server/session");
 const { authorize, can, getViewer, requireViewer } = await import("@/server/auth");
 
 const signIn = (payload: object, secret = SECRET) => {
@@ -60,6 +57,14 @@ describe("the identity", () => {
   it("takes only who they are from an old cookie, never its roles", async () => {
     signIn({ name: "Ada L", netid: "al1", email: "al1@yale.edu", college: "Morse", mRoles: ["user", "admin"], role: "admin" });
     expect(await getIdentity()).toEqual({ email: "al1@yale.edu", netid: "al1", name: "Ada L", college: "Morse" });
+  });
+  it("is all a login's cookie carries", () => {
+    const res = new NextResponse(null);
+    const identity = { email: "al1@yale.edu", netid: "al1", name: "Ada L", college: "Morse" };
+    setSessionCookie(res, identity);
+    const { iat, exp, ...payload } = jwt.verify(res.cookies.get("token")!.value, SECRET) as Record<string, unknown>;
+    expect(payload).toEqual(identity);
+    expect(Number(exp) - Number(iat)).toBe(7 * 24 * 60 * 60);
   });
   it("has no college when the cookie names none", async () => {
     signIn({ netid: "al1", email: "al1@yale.edu", college: "" });

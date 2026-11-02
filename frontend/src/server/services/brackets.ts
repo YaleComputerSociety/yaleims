@@ -66,16 +66,6 @@ const FEEDER_SLOTS: Record<number, [number, number]> = {
 /** Tournaments: semifinal losers drop into the third place game. */
 const LOSER_SLOT: Record<number, number> = { 13: THIRD_PLACE_SLOT, 14: THIRD_PLACE_SLOT };
 
-/** Placement points as the old upload sends them, with the default for any missing or invalid value. */
-export function normalizePlacementPoints(raw: unknown): PlacementPoints {
-  const stored = (raw ?? {}) as Partial<Record<keyof PlacementPoints, unknown>>;
-  const points = (key: keyof PlacementPoints) => {
-    const v = stored[key];
-    return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : DEFAULT_PLACEMENT_POINTS[key];
-  };
-  return { first: points("first"), second: points("second"), third: points("third") };
-}
-
 // ── Create ─────────────────────────────────────────────────────────────────
 
 export type CreateResult =

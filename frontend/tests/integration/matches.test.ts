@@ -132,7 +132,7 @@ describe("PATCH /api/seasons/{s}/matches/{m}", () => {
   });
   it("won't change a scored game's colleges", async () => {
     const scored = (await db.collection(`seasons/${current}/matches`).where("status", "==", "final").limit(1).get()).docs[0];
-    const other = ["BF", "BK"].find((c) => !scored.data().collegeIds.includes(c))!;
+    const other = ["BF", "BK", "BR"].find((c) => !scored.data().collegeIds.includes(c))!;
     expect(await edit(scored.id, { homeCollegeId: other }, admin())).toMatchObject({ status: 409, body: { error: { code: "conflict" } } });
   });
 });

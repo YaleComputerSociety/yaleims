@@ -32,7 +32,7 @@ process.on("exit", stop);
 let ready = false;
 for (let i = 0; i < 90 && !ready; i++) {
   try {
-    ready = (await fetch(`${env.BASE_URL}/api/functions/getSeasons`)).ok;
+    ready = (await fetch(`${env.BASE_URL}/api/seasons`)).ok;
   } catch {
     // not listening yet
   }

@@ -41,13 +41,6 @@ export interface SeasonMatchFilter {
   to?: Date;
 }
 
-/** Which part of the sorted results to read. Cursors are match ids. */
-export type SeasonMatchPage =
-  | { kind: "all" }
-  | { kind: "offset"; offset: number; limit: number }
-  | { kind: "after"; cursorId: string; limit: number }
-  | { kind: "before"; cursorId: string; limit: number };
-
 export type SortOrder = "asc" | "desc";
 
 function seasonMatchQuery(seasonId: string, filter: SeasonMatchFilter, order: SortOrder): Query {
@@ -70,24 +63,15 @@ export async function countSeasonMatches(
   return snap.data().count;
 }
 
-/** One page of a season's games, sorted by start. Null if the page's cursor game doesn't exist. */
+/** A season's games that pass `filter`, sorted by start: all of them, or one page. */
 export async function listSeasonMatches(
   seasonId: string,
   filter: SeasonMatchFilter,
   order: SortOrder,
-  page: SeasonMatchPage
-): Promise<WithId<MatchDoc>[] | null> {
+  page?: { offset: number; limit: number }
+): Promise<WithId<MatchDoc>[]> {
   let query = seasonMatchQuery(seasonId, filter, order);
-  if (page.kind === "after" || page.kind === "before") {
-    const cursor = await adminDb.doc(paths.match(seasonId, page.cursorId)).get();
-    if (!cursor.exists) return null;
-    query =
-      page.kind === "after"
-        ? query.startAfter(cursor).limit(page.limit)
-        : query.endBefore(cursor).limitToLast(page.limit);
-  } else if (page.kind === "offset") {
-    query = query.offset(page.offset).limit(page.limit);
-  }
+  if (page) query = query.offset(page.offset).limit(page.limit);
   const snap = await query.get();
   return snap.docs.map((d) => withId<MatchDoc>(d));
 }
@@ -104,38 +88,6 @@ export async function firstMatchStart(seasonId: string, from: Date): Promise<Dat
     .limit(1)
     .get();
   return snap.empty ? null : withId<MatchDoc>(snap.docs[0]).startsAt.toDate();
-}
-
-/** Games that have started but have no result yet, oldest first. */
-export async function listUnscoredPastMatches(seasonId: string, now: Date): Promise<WithId<MatchDoc>[]> {
-  const snap = await adminDb
-    .collection(paths.matches(seasonId))
-    .where("status", "==", "scheduled")
-    .where("startsAt", "<", now)
-    .orderBy("startsAt", "asc")
-    .get();
-  return snap.docs.map((d) => withId<MatchDoc>(d));
-}
-
-/** A college's next unplayed games (starting after `now`), soonest first: up to `limitPerSide` home and away. */
-export async function listUpcomingCollegeMatches(
-  seasonId: string,
-  collegeId: string,
-  now: Date,
-  limitPerSide: number
-): Promise<WithId<MatchDoc>[]> {
-  const snap = await adminDb
-    .collection(paths.matches(seasonId))
-    .where("collegeIds", "array-contains", collegeId)
-    .where("startsAt", ">", now)
-    .orderBy("startsAt", "asc")
-    .get();
-  const upcoming = snap.docs.map((d) => withId<MatchDoc>(d)).filter((m) => m.status === "scheduled");
-  const side = (key: "homeCollegeId" | "awayCollegeId") =>
-    upcoming.filter((m) => m[key] === collegeId).slice(0, limitPerSide);
-  return [...side("homeCollegeId"), ...side("awayCollegeId")].sort(
-    (a, b) => a.startsAt.toMillis() - b.startsAt.toMillis()
-  );
 }
 
 /**
@@ -174,39 +126,4 @@ export async function listPlayedMatches(
     items: games.slice(offset, offset + limit),
     total: perSeason.reduce((sum, s) => sum + s.total, 0),
   };
-}
-
-/** A game and the season it was read from. */
-export type SeasonMatch = WithId<MatchDoc>;
-
-/**
- * Played games (a result, started in [from, before)) of every season, sorted
- * by start; ties keep the seasons' order, then the id. One time-bounded query
- * per season; the rest is filtered in memory.
- */
-export async function listPlayedMatchesAllSeasons(
-  range: { from?: Date; before: Date },
-  filter: Pick<SeasonMatchFilter, "collegeId" | "sportId">,
-  order: SortOrder
-): Promise<SeasonMatch[]> {
-  const seasons = await listSeasons();
-  const perSeason = await Promise.all(
-    seasons.map(async ({ id: seasonId }) => {
-      // A range query on one field returns startsAt asc, then doc id.
-      let query: Query = adminDb.collection(paths.matches(seasonId)).where("startsAt", "<", range.before);
-      if (range.from) query = query.where("startsAt", ">=", range.from);
-      return (await query.get()).docs.map((d) => withId<MatchDoc>(d));
-    })
-  );
-  const played = perSeason
-    .flat()
-    .filter(
-      (m) =>
-        m.status === "final" &&
-        (!filter.collegeId || m.collegeIds.includes(filter.collegeId)) &&
-        (!filter.sportId || m.sportId === filter.sportId)
-    );
-  const ms = (m: SeasonMatch) => m.startsAt.toMillis();
-  // Stable sort: equal start times stay in the order read above.
-  return played.sort((a, b) => (order === "asc" ? ms(a) - ms(b) : ms(b) - ms(a)));
 }

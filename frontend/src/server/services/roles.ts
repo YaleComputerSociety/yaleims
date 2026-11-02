@@ -1,58 +1,19 @@
-// Roles. In v3 they live in three places: users/{email}.roles (admin, dev:
-// global), the season player doc's roles (college_rep, supervisor) and the
-// teams a player captains this season (captain). The old routes check them
-// merged into one list, mRoles (mergedRoles, carried in the session); the new
-// API checks them through server/auth.ts. Changing roles is audit-logged (D32).
+// Changing roles. In v3 they live in three places: users/{email}.roles
+// (admin, dev: global), the season player doc's roles (college_rep,
+// supervisor) and the teams a player captains this season (captain). Who
+// holds which is read in server/auth.ts. Changing roles is audit-logged (D32).
 import "server-only";
 import { FieldValue, type DocumentReference, type DocumentSnapshot } from "firebase-admin/firestore";
-import type { GlobalRole, PlayerDoc, SeasonRole, UserDoc } from "@/types/firestore";
+import type { GlobalRole, PlayerDoc, SeasonRole } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
 import { playerRef } from "../data/players";
 import { getSport, listSports } from "../data/sports";
-import { collegeTeamsRef, listCaptainTeams, listCollegeTeams, newTeam, teamRef } from "../data/teams";
+import { collegeTeamsRef, newTeam, teamRef } from "../data/teams";
 import { userRef } from "../data/users";
 import { runTransaction } from "../data/util";
 
 const GLOBAL_ROLES: GlobalRole[] = ["admin", "dev"];
 const SEASON_ROLES: SeasonRole[] = ["college_rep", "supervisor"];
-
-/** The session's role list: "user", the global and season roles, and "captain". */
-export function mergedRoles(
-  user: Pick<UserDoc, "roles"> | null,
-  player: Pick<PlayerDoc, "roles"> | null,
-  isCaptain: boolean
-): string[] {
-  return ["user", ...(user?.roles ?? []), ...(player?.roles ?? []), ...(isCaptain ? ["captain"] : [])];
-}
-
-/** Names of the sports a player captains this season. */
-export async function captainSportNames(seasonId: string, playerId: string): Promise<string[]> {
-  const [teams, sports] = await Promise.all([
-    listCaptainTeams(seasonId, playerId),
-    listSports(seasonId),
-  ]);
-  const nameOf = new Map(sports.map((s) => [s.id, s.name]));
-  return teams.map((t) => nameOf.get(t.sportId) ?? t.sportId);
-}
-
-/** For a college this season: the sports each of its captains captains, by email. */
-export async function captainSportsInCollege(
-  seasonId: string,
-  collegeId: string
-): Promise<Map<string, string[]>> {
-  const [teams, sports] = await Promise.all([
-    listCollegeTeams(seasonId, collegeId),
-    listSports(seasonId),
-  ]);
-  const nameOf = new Map(sports.map((s) => [s.id, s.name]));
-  const result = new Map<string, string[]>();
-  for (const team of teams) {
-    for (const email of team.captainIds) {
-      result.set(email, [...(result.get(email) ?? []), nameOf.get(team.sportId) ?? team.sportId]);
-    }
-  }
-  return result;
-}
 
 /** Season roles and captaincies need the person's player doc and its college. */
 export type Refusal = "no-user" | "not-in-season" | "no-college" | "unknown-sport";

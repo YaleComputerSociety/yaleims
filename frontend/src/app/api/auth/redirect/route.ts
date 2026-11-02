@@ -26,10 +26,9 @@ export const GET = route(async (req) => {
   const seasonId = await getCurrentSeasonId();
   if (!seasonId) throw new Error("config/app has no current season");
 
-  const account = await signIn(profile, seasonId);
+  await signIn(profile, seasonId);
   const res = NextResponse.redirect(siteUrl(returnPath(from)));
   const name = `${profile.first_name} ${profile.last_name}`;
-  // The old routes still read roles from the cookie (Phase 2D step 6 drops them).
-  setSessionCookie(res, { name, netid, email: profile.email, ...account });
+  setSessionCookie(res, { email: profile.email, netid, name, college: profile.college ?? null });
   return res;
 });

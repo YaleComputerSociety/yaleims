@@ -27,15 +27,15 @@ export const GET = route<Params>(async (req, { params }) => {
     to: date(query.to),
   };
   if (query.page === undefined) {
-    const games = (await listSeasonMatches(seasonId, filter, query.order, { kind: "all" })) ?? [];
+    const games = await listSeasonMatches(seasonId, filter, query.order);
     return ok({ items: games.map(toMatch), total: games.length } satisfies MatchList);
   }
-  const page = { kind: "offset", offset: (query.page - 1) * query.pageSize, limit: query.pageSize } as const;
+  const page = { offset: (query.page - 1) * query.pageSize, limit: query.pageSize };
   const [games, total] = await Promise.all([
     listSeasonMatches(seasonId, filter, query.order, page),
     countSeasonMatches(seasonId, filter, query.order),
   ]);
-  return ok({ items: (games ?? []).map(toMatch), total } satisfies MatchList);
+  return ok({ items: games.map(toMatch), total } satisfies MatchList);
 });
 
 /** Adds a sport's regular-season games, all or none (admin or dev; audit-logged). */
