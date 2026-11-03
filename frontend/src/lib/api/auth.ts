@@ -4,6 +4,18 @@
 import type { GlobalRole, SeasonRole } from "@/types/firestore";
 import { request } from "./core";
 
+/** What the viewer may do anywhere (server/auth.ts `can`); per-college and per-team rights are checked by each call. */
+export interface ViewerPermissions {
+  /** Create, edit, cancel and delete games, brackets and tournaments. */
+  editSchedule: boolean;
+  /** Score games; see and resolve score reports. */
+  score: boolean;
+  /** Game day: take attendance at any game. */
+  takeAttendance: boolean;
+  setChampion: boolean;
+  manageRoles: boolean;
+}
+
 /** The signed-in person, with what they are this season. */
 export interface SessionViewer {
   email: string;
@@ -15,6 +27,7 @@ export interface SessionViewer {
   roles: (GlobalRole | SeasonRole)[];
   /** The sports (ids) whose teams they captain this season. */
   captainOf: string[];
+  can: ViewerPermissions;
 }
 
 export type SessionState = { signedIn: false } | { signedIn: true; viewer: SessionViewer };

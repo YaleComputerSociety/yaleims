@@ -4,15 +4,15 @@ import { FaCalendar } from "react-icons/fa";
 import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import type { Match } from "@/lib/api/matches";
-import { fetchMyMatches } from "@/lib/api/me";
+import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
+import MyEntryStatus from "@/components/games/MyEntryStatus";
 import { signUp, withdraw } from "@/lib/api/roster";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { calendarLink, groupByDay, matchTypeLabel } from "@/lib/format";
 
 interface MatchListItemProps {
-  match: Match;
+  match: MyMatch;
   sport: Sport | undefined;
   /** Rounded corners for its place in the day's list. */
   roundedClass?: string;
@@ -74,8 +74,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, roundedClas
 
         {/* Match Details */}
         <div className="flex-grow flex flex-col space-y-1">
-          <div className="flex text-xs sm:text-lg font-bold">
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-lg font-bold">
             {collegeName(match.homeCollegeId)} vs {collegeName(match.awayCollegeId)}
+            <MyEntryStatus mine={match.mine} started={false} />
           </div>
 
           <div className="flex flex-row">
@@ -130,7 +131,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, roundedClas
 };
 
 /** The games grouped by day. */
-const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
+const MatchList: React.FC<{ matches: MyMatch[] }> = ({ matches }) => {
   const sports = useSeason().currentSeason?.sports ?? [];
   const matchesByDate = groupByDay(matches);
 
@@ -190,7 +191,7 @@ const MatchList: React.FC<{ matches: Match[] }> = ({ matches }) => {
 
 /** The games the user signed up for that haven't started, this season. */
 const UserMatches = () => {
-  const [matches, setMatches] = useState<Match[]>([]);
+  const [matches, setMatches] = useState<MyMatch[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { currentSeason } = useSeason();
 

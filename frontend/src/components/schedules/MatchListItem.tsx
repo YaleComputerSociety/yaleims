@@ -9,6 +9,8 @@ import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { calendarLink, matchTypeLabel } from "@/lib/format";
 import type { SessionViewer } from "@/lib/api/auth";
+import type { MyMatch } from "@/lib/api/me";
+import MyEntryStatus, { CancelledBadge } from "@/components/games/MyEntryStatus";
 
 interface MatchListItemProps {
   match: Match;
@@ -16,10 +18,12 @@ interface MatchListItemProps {
   tournament: string | undefined;
   viewer: SessionViewer | null;
   isSignedUp: boolean;
+  /** The viewer's own entry, when they're on the game. */
+  mine?: MyMatch["mine"];
   onStatusChange: (id: string, signed: boolean) => void;
 }
 
-const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, viewer, isSignedUp, onStatusChange }) => {
+const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, viewer, isSignedUp, mine, onStatusChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [participantsShow, setParticipantsShow] = useState(false);
@@ -109,6 +113,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
               {match.stage === "regular" ? "Regular Season Match" : matchTypeLabel(match, tournament !== undefined)}
             </span>
             <TournamentBadge name={tournament} />
+            {match.status === "cancelled" && <CancelledBadge />}
+            <MyEntryStatus mine={mine} started={isPastMatch} />
           </div>
 
           {/* Match Date and Time */}
@@ -123,7 +129,7 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-0">
-          {isPastMatch ? (
+          {match.status === "cancelled" ? null : isPastMatch ? (
             // Show score for past matches
             <div className="text-sm sm:text-2xl font-bold ml-5">
               {match.result ? (

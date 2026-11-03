@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-const { casLoginUrl, returnPath, validateTicket, yaliesProfile } = await import("@/server/yaleLogin");
+const { casLoginUrl, returnPath, validateTicket, yaliesProfile, yaliesProfilesByEmail } = await import("@/server/yaleLogin");
 
 beforeEach(() => {
   process.env.BASE_URL = "https://yaleims.com";
@@ -56,12 +56,23 @@ describe("validateTicket", () => {
 
 describe("yaliesProfile", () => {
   it("is the first match, or null when Yalies has none with an email", async () => {
-    const fetch = answer([{ email: "ada.l@yale.edu", first_name: "Ada", last_name: "L", college: "Morse" }]);
-    expect(await yaliesProfile("al1")).toEqual({ email: "ada.l@yale.edu", first_name: "Ada", last_name: "L", college: "Morse" });
+    const fetch = answer([{ netid: "al1", email: "ada.l@yale.edu", first_name: "Ada", last_name: "L", college: "Morse" }]);
+    expect(await yaliesProfile("AL1")).toEqual({ netid: "al1", email: "ada.l@yale.edu", first_name: "Ada", last_name: "L", college: "Morse" });
     expect(fetch.mock.calls[0][1]).toMatchObject({ method: "POST", headers: { Authorization: "Bearer test-key" } });
+    // An exact NetID filter, lowercased (Yalies matches case-sensitively).
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body)).filters).toEqual({ netid: "al1" });
     answer([]);
     expect(await yaliesProfile("nobody")).toBeNull();
     answer([{ first_name: "No", last_name: "Email" }]);
     expect(await yaliesProfile("x")).toBeNull();
+  });
+});
+
+describe("yaliesProfilesByEmail", () => {
+  it("looks a list of emails up in one call, by exact email", async () => {
+    const fetch = answer([{ netid: "al1", email: "ada.l@yale.edu", first_name: "Ada", last_name: "L", college: "Morse" }]);
+    const found = await yaliesProfilesByEmail(["ada.l@yale.edu", "gone@yale.edu"]);
+    expect([...found.keys()]).toEqual(["ada.l@yale.edu"]);
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toMatchObject({ filters: { email: ["ada.l@yale.edu", "gone@yale.edu"] }, page_size: 2 });
   });
 });

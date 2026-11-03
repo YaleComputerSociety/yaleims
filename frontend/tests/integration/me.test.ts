@@ -44,7 +44,7 @@ describe("GET /api/auth/session", () => {
     const player = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.student(2, 6), ["user", "admin", "dev"]) });
     expect(player.body).toEqual({
       signedIn: true,
-      viewer: { email: people.student(2, 6), name: "Test User", username: expect.any(String), collegeId: COLLEGES[2].id, roles: [], captainOf: [] },
+      viewer: { email: people.student(2, 6), name: "Test User", username: expect.any(String), collegeId: COLLEGES[2].id, roles: [], captainOf: [], can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false } },
     });
     const rep = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.student(2, 0), []) });
     expect(rep.body.viewer.roles).toEqual(["college_rep"]);

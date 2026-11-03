@@ -94,27 +94,40 @@ describe("the viewer", () => {
   });
 });
 
-describe("the permissions (today's matrix, PHASE-2D-PLAN §3.4)", () => {
+describe("the permissions (Phase 3A defaults, P10)", () => {
   // Someone signed in with these roles; a rep or player of Morse (MC).
-  const who = async (globalRoles: UserDoc["roles"], seasonRoles: PlayerDoc["roles"] = [], collegeId: string | null = "MC") => {
-    const email = `${globalRoles.join("-")}-${seasonRoles.join("-")}-${collegeId}@yale.edu`;
+  const who = async (globalRoles: UserDoc["roles"], seasonRoles: PlayerDoc["roles"] = [], collegeId: string | null = "MC", captainOf: string[] = []) => {
+    const email = `${globalRoles.join("-")}-${seasonRoles.join("-")}-${collegeId}-${captainOf.join("-")}@yale.edu`;
     signIn({ netid: "x", email });
     users[email] = { roles: globalRoles };
     players[email] = { collegeId, roles: seasonRoles };
+    captains[email] = captainOf;
     return (await getViewer())!;
   };
-  it("gives the schedule and scoring to admins and devs", async () => {
-    for (const rule of [can.editSchedule, can.score]) {
+  it("gives game day and the schedule to supervisors and admins (dev counts as admin)", async () => {
+    for (const rule of [can.editSchedule, can.score, can.takeAttendance]) {
       expect(await rule(await who(["admin"]))).toBe(true);
       expect(await rule(await who(["dev"]))).toBe(true);
-      expect(await rule(await who([], ["college_rep", "supervisor"]))).toBe(false);
+      expect(await rule(await who([], ["supervisor"]))).toBe(true);
+      expect(await rule(await who([], ["college_rep"], "MC", ["1"]))).toBe(false);
     }
   });
-  it("gives the champion to admins only, and roles to devs only", async () => {
-    expect(await can.setChampion(await who(["admin"]))).toBe(true);
-    expect(await can.setChampion(await who(["dev"]))).toBe(false);
-    expect(await can.manageRoles(await who(["dev"]))).toBe(true);
-    expect(await can.manageRoles(await who(["admin"]))).toBe(false);
+  it("gives the champion and roles to admins only", async () => {
+    for (const rule of [can.setChampion, can.manageRoles]) {
+      expect(await rule(await who(["admin"]))).toBe(true);
+      expect(await rule(await who(["dev"]))).toBe(true);
+      expect(await rule(await who([], ["supervisor"]))).toBe(false);
+    }
+  });
+  it("lets a captain manage their own team's roster, and supervisors any", async () => {
+    const captain = await who([], [], "MC", ["1"]);
+    expect(await can.manageRoster(captain, "MC", "1")).toBe(true);
+    expect(await can.manageRoster(captain, "MC", "2")).toBe(false);
+    expect(await can.manageRoster(captain, "BK", "1")).toBe(false);
+    expect(await can.listPlayers(captain, "MC")).toBe(true);
+    expect(await can.listPlayers(captain, "BK")).toBe(false);
+    expect(await can.manageRoster(await who([], ["supervisor"]), "BK", "1")).toBe(true);
+    expect(await can.manageRoster(await who([]), "MC", "1")).toBe(false);
   });
   it("lets a rep act for their own college only", async () => {
     const rep = await who([], ["college_rep"]);
@@ -124,11 +137,12 @@ describe("the permissions (today's matrix, PHASE-2D-PLAN §3.4)", () => {
       expect(await rule(await who([]), "MC")).toBe(false);
     }
   });
-  it("lets admins and devs manage any college's captains and MVPs, and devs list its players", async () => {
+  it("lets admins manage any college's captains and MVPs; admins and supervisors list its players", async () => {
     expect(await can.manageCaptains(await who(["admin"]), "BK")).toBe(true);
     expect(await can.nameMvps(await who(["dev"]), "BK")).toBe(true);
-    expect(await can.listPlayers(await who(["dev"]), "BK")).toBe(true);
-    expect(await can.listPlayers(await who(["admin"]), "BK")).toBe(false);
+    expect(await can.manageCaptains(await who([], ["supervisor"]), "BK")).toBe(false);
+    expect(await can.listPlayers(await who(["admin"]), "BK")).toBe(true);
+    expect(await can.listPlayers(await who([], ["supervisor"]), "BK")).toBe(true);
   });
   it("shows a college's leaders to its own players", async () => {
     expect(await can.seeLeaders(await who([]), "MC")).toBe(true);

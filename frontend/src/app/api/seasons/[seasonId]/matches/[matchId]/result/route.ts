@@ -8,7 +8,7 @@ type Params = { seasonId: string; matchId: string };
 
 /**
  * Records a game's result: standings, team records, the bracket and the
- * audit log change with it (admin or dev). A scored game is undone first.
+ * audit log change with it (supervisors). A scored game is undone first.
  */
 export const PUT = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -21,7 +21,7 @@ export const PUT = route<Params>(async (req, { params }) => {
   return noContent();
 });
 
-/** Clears a game's result and takes its points back (admin or dev; audit-logged). */
+/** Clears a game's result and takes its points back (supervisors; audit-logged). */
 export const DELETE = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await authorize(can.score);

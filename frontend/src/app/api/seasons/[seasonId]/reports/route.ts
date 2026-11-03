@@ -9,7 +9,7 @@ import { ok, readQuery, route } from "@/server/http";
 
 type Params = { seasonId: string };
 
-/** The season's score reports, newest first, with each game and the resolver's name (admin or dev). */
+/** The season's score reports, newest first, with each game and the resolver's name (supervisors). */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId } = await params;
   await authorize(can.score);

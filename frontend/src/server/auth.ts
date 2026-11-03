@@ -110,39 +110,57 @@ export async function requireCurrentSeason(seasonId: string): Promise<void> {
 }
 
 // ── The permissions ────────────────────────────────────────────────────────
-// As today (PHASE-2D-PLAN §3.4): most admin work is open to admin or dev,
-// the champion to admin only, roles to dev only (D43 later makes all of it
-// "admin"; supervisors get scoring with U1). A rep acts for their own
-// college, this season.
+// The roles: admin, supervisor, college rep, captain, user. These are
+// defaults until the per-role rules are settled (P10, PHASE-3A-PLAN): an
+// admin may do everything (`dev` counts as admin, D43); a supervisor runs
+// game day (attendance, scores, the schedule) for every game; a rep acts for
+// their own college and a captain for their own team, this season.
 
 const hasGlobalRole = async (viewer: Viewer, ...roles: GlobalRole[]) =>
   (await viewer.globalRoles()).some((role) => roles.includes(role));
 
-const isAdminOrDev = (viewer: Viewer) => hasGlobalRole(viewer, "admin", "dev");
+const isAdmin = (viewer: Viewer) => hasGlobalRole(viewer, "admin", "dev");
+
+/** Admin, or this season's supervisor. */
+async function isSupervisor(viewer: Viewer): Promise<boolean> {
+  return (await isAdmin(viewer)) || !!(await viewer.player())?.roles.includes("supervisor");
+}
 
 async function isRepOf(viewer: Viewer, collegeId: string): Promise<boolean> {
   const player = await viewer.player();
   return !!player && player.roles.includes("college_rep") && player.collegeId === collegeId;
 }
 
+async function isCaptainOf(viewer: Viewer, collegeId: string, sportId?: string): Promise<boolean> {
+  const [player, sports] = await Promise.all([viewer.player(), viewer.captainOf()]);
+  return player?.collegeId === collegeId && (sportId === undefined ? sports.length > 0 : sports.includes(sportId));
+}
+
 export const can = {
-  /** Upload and edit games; create and delete brackets and tournaments. */
-  editSchedule: isAdminOrDev,
+  /** Create, edit, cancel and delete games; create and delete brackets and tournaments. */
+  editSchedule: isSupervisor,
   /** Score and undo games; see every score report, with reporters' emails, and resolve them. */
-  score: isAdminOrDev,
+  score: isSupervisor,
+  /** Mark who came to a game and add walk-ins, at any time (D34 R4, R5). */
+  takeAttendance: isSupervisor,
+  /** Look people up in the Yale directory by NetID, to add them to a game (captains and supervisors, U10). */
+  addPlayers: async (viewer: Viewer) => (await isSupervisor(viewer)) || (await viewer.captainOf()).length > 0,
+  /** Confirm, remove and add a college's players on its team's game in a sport, until it starts (D34 R3). */
+  manageRoster: async (viewer: Viewer, collegeId: string, sportId: string) =>
+    (await isSupervisor(viewer)) || isCaptainOf(viewer, collegeId, sportId),
   /** Name the season's champion and run the celebration. */
-  setChampion: (viewer: Viewer) => hasGlobalRole(viewer, "admin"),
-  /** See who is admin or dev, and set anyone's roles. */
-  manageRoles: (viewer: Viewer) => hasGlobalRole(viewer, "dev"),
-  /** A college's players this season (the captain and MVP pickers, the roles page). */
+  setChampion: isAdmin,
+  /** See who holds a role, and set anyone's roles. */
+  manageRoles: isAdmin,
+  /** A college's players this season (the captain, MVP and roster pickers, the roles page). */
   listPlayers: async (viewer: Viewer, collegeId: string) =>
-    (await hasGlobalRole(viewer, "dev")) || isRepOf(viewer, collegeId),
+    (await isSupervisor(viewer)) || (await isRepOf(viewer, collegeId)) || isCaptainOf(viewer, collegeId),
   /** Make a college's players captains of its teams, or not. */
   manageCaptains: async (viewer: Viewer, collegeId: string) =>
-    (await isAdminOrDev(viewer)) || isRepOf(viewer, collegeId),
+    (await isAdmin(viewer)) || isRepOf(viewer, collegeId),
   /** See and name a college's weekly MVPs. */
   nameMvps: async (viewer: Viewer, collegeId: string) =>
-    (await isAdminOrDev(viewer)) || isRepOf(viewer, collegeId),
+    (await isAdmin(viewer)) || isRepOf(viewer, collegeId),
   /** See a college's reps (with emails) and captains: its own players. */
   seeLeaders: async (viewer: Viewer, collegeId: string) => (await viewer.player())?.collegeId === collegeId,
 };

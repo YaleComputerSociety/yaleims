@@ -257,7 +257,7 @@ const TournamentAdminPanel: React.FC = () => {
 
       {/* Create form */}
       <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-        <h2 className="text-lg font-semibold mb-1">Create a tournament</h2>
+        <h2 className="text-lg font-semibold mb-1">Slot by slot, or from a CSV</h2>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Matches are added to the{" "}
           <span className="font-semibold">{year}</span> season and count toward

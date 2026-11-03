@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFlag, FaSpinner, FaCheck } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
-import { hasRole, useSession } from "@/context/SessionContext";
+import { useSession } from "@/context/SessionContext";
 import type { Match } from "@/lib/api/matches";
 import { fetchMatchReports, reportScore, resolveReport, type MatchScoreReport } from "@/lib/api/reports";
 import { toast } from "react-toastify";
@@ -55,7 +55,7 @@ interface ReportScoreModalProps {
 
 const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, setModalOpen }) => {
   const { viewer } = useSession();
-  const isAdminOrDev = hasRole(viewer, "admin", "dev");
+  const canResolve = !!viewer?.can.score;
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reports, setReports] = useState<MatchScoreReport[]>([]);
@@ -105,7 +105,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, s
   };
 
   const handleResolve = async (report: MatchScoreReport) => {
-    if (!isAdminOrDev) return;
+    if (!canResolve) return;
     setResolvingId(report.id);
     try {
       await resolveReport(match.seasonId, match.id, report.id);
@@ -175,7 +175,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, s
                           </span>
                         )}
                       </p>
-                      {isAdminOrDev && r.status !== "resolved" && (
+                      {canResolve && r.status !== "resolved" && (
                         <button
                           type="button"
                           className="mt-2 text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"

@@ -1,29 +1,28 @@
-// to replace withProtectedRoute later
 "use client";
 
 import React, { useEffect, ComponentType } from "react";
-import { hasRole, useSession } from "@/context/SessionContext";
+import { useSession } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import LoadingScreen from "@/components/layout/LoadingScreen";
+import type { SessionViewer } from "@/lib/api/auth";
 
 /**
- * Higher-order component to protect routes based on user roles
- * @param WrappedComponent component to lock behind role permissions
- * @param allowedRoles array of strings for roles allowed to view the component
- * @returns protected route
+ * A page only some viewers may open (the server checks every call anyway):
+ * `withRoleProtectedRoute(Page, (viewer) => viewer.can.score)`. Anyone else,
+ * signed out included, goes to the home page.
  */
-const withRoleProtectedRoute = <P extends {}>(
+const withRoleProtectedRoute = <P extends object>(
   WrappedComponent: ComponentType<P>,
-  allowedRoles: string[]
+  allowed: (viewer: SessionViewer) => boolean
 ) => {
   const ProtectedRoute: React.FC<P> = (props) => {
     const { viewer, loading } = useSession();
     const router = useRouter();
 
-    const hasAccess = hasRole(viewer, ...allowedRoles);
+    const hasAccess = !!viewer && allowed(viewer);
     useEffect(() => {
       if (!loading && !hasAccess) {
-        router.push("/"); // push to home page
+        router.push("/");
       }
     }, [loading, hasAccess, router]);
 

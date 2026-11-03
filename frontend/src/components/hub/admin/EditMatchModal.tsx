@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { FaEdit, FaSpinner } from "react-icons/fa";
 import { useSeasonDetail } from "@/context/SeasonContext";
-import { hasRole, useSession } from "@/context/SessionContext";
+import { useSession } from "@/context/SessionContext";
 import { editMatch, undoScore, type Match } from "@/lib/api/matches";
 import { COLLEGES } from "@/lib/colleges";
 
@@ -13,16 +13,18 @@ interface EditMatchModalProps {
   match: Match;
   /** Called after the score was undone (the scores page hides the row). */
   setUnscored?: (value: React.SetStateAction<boolean>) => void;
+  /** Called after an edit was saved (the page reloads the game). */
+  onSaved?: () => void;
 }
 
-type EditMatchButtonProps = Omit<EditMatchModalProps, "setModalOpen">;
+type EditMatchButtonProps = Omit<EditMatchModalProps, "setModalOpen" | "onSaved">;
 
 export const EditMatchButton: React.FC<EditMatchButtonProps> = ({ match, setUnscored }) => {
   const { viewer } = useSession();
-  const isAdmin = hasRole(viewer, "admin", "dev");
+  const canEdit = !!viewer?.can.editSchedule;
   const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
 
-  if (!isAdmin) return null;
+  if (!canEdit) return null;
 
   return (
     <>
@@ -47,7 +49,7 @@ function localDateTime(iso: string): string {
   return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
 }
 
-export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, match, setUnscored }) => {
+export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, match, setUnscored, onSaved }) => {
   const [editLoading, setEditLoading] = useState<boolean>(false);
   const [undoLoading, setUndoLoading] = useState<boolean>(false);
   const sports = useSeasonDetail(match.seasonId)?.sports ?? [];
@@ -98,8 +100,9 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, ma
         startsAt: start?.toISOString(),
         sportId: field("sport") || undefined,
       });
-      toast.success("Match updated successfully! Reload page to view changes!");
+      toast.success(onSaved ? "Game updated." : "Match updated successfully! Reload page to view changes!");
       setModalOpen(false);
+      onSaved?.();
     } catch (error) {
       toast.error((error as Error).message);
     } finally {

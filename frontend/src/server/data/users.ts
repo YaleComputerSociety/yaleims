@@ -7,10 +7,11 @@ import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
+import { placeholderNetid } from "@/lib/netid";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
-  email: true, firstname: true, lastname: true, username: true,
+  email: true, firstname: true, lastname: true, netid: true, username: true,
   roles: true, claimedAt: true, createdBy: true,
 };
 
@@ -20,7 +21,7 @@ const USER_FIELDS: Record<keyof UserDoc, true> = {
  */
 export function readUser(data: DocumentData): UserDoc {
   const user = pickFields<UserDoc>(data, USER_FIELDS);
-  return { ...user, roles: user.roles ?? [], claimedAt: user.claimedAt ?? null, createdBy: user.createdBy ?? null };
+  return { ...user, netid: user.netid ?? null, roles: user.roles ?? [], claimedAt: user.claimedAt ?? null, createdBy: user.createdBy ?? null };
 }
 
 export function userRef(email: string): DocumentReference {
@@ -48,10 +49,22 @@ export async function getUsers(emails: string[]): Promise<Map<string, UserDoc>> 
   return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
 }
 
+/** The NetIDs of the users with these emails that have one recorded, by email. */
+export async function getNetids(emails: string[]): Promise<Map<string, string>> {
+  const users = await getUsers([...new Set(emails)].filter((e) => !placeholderNetid(e)));
+  return new Map([...users].flatMap(([email, user]) => (user.netid ? [[email, user.netid] as const] : [])));
+}
+
 /** "First Last" of the users with these emails (missing ones left out), by email. */
 export async function getUserNames(emails: string[]): Promise<Map<string, string>> {
   const users = await getUsers([...new Set(emails)]);
   return new Map([...users].map(([email, user]) => [email, `${user.firstname} ${user.lastname}`]));
+}
+
+/** The email of the user with this NetID recorded; null if none. */
+export async function findUserByNetid(netid: string): Promise<string | null> {
+  const snap = await adminDb.collection(paths.users).where("netid", "==", netid).limit(1).get();
+  return snap.empty ? null : snap.docs[0].id;
 }
 
 /** Users holding a global role. */

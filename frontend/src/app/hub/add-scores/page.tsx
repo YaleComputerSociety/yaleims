@@ -15,7 +15,7 @@ import AddScoresFilterBar, {
 
 const matchTime = (match: Match) => new Date(match.startsAt).getTime();
 
-/** The season's games that started without a score yet (admins and devs), and undoing a score by id. */
+/** The season's games that started without a score yet (supervisors), and undoing a score by id. */
 const AddScoresPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -257,4 +257,4 @@ const AddScoresPage: React.FC = () => {
 
 AddScoresPage.displayName = "AddScoresPage";
 
-export default withRoleProtectedRoute(AddScoresPage, ["admin", "dev"]);
+export default withRoleProtectedRoute(AddScoresPage, (viewer) => viewer.can.score);

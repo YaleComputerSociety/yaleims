@@ -38,7 +38,7 @@ export const GET = route<Params>(async (req, { params }) => {
   return ok({ items: games.map(toMatch), total } satisfies MatchList);
 });
 
-/** Adds a sport's regular-season games, all or none (admin or dev; audit-logged). */
+/** Adds a sport's regular-season games, all or none (supervisors; audit-logged). */
 export const POST = route<Params>(async (req, { params }) => {
   const { seasonId } = await params;
   const viewer = await authorize(can.editSchedule);

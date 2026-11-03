@@ -21,6 +21,11 @@ export function rosterRef(seasonId: string, matchId: string): CollectionReferenc
   return adminDb.collection(paths.roster(seasonId, matchId)) as CollectionReference<RosterEntryDoc>;
 }
 
+export async function getRosterEntry(seasonId: string, matchId: string, playerId: string): Promise<RosterEntryDoc | null> {
+  const snap = await rosterEntryRef(seasonId, matchId, playerId).get();
+  return snap.exists ? snap.data()! : null;
+}
+
 /** Sign-up order: entries that recorded it first, then (old entries) by name. */
 function bySignup(a: RosterEntryDoc, b: RosterEntryDoc): number {
   const at = (e: RosterEntryDoc) => e.signedUpAt?.toMillis() ?? -1;

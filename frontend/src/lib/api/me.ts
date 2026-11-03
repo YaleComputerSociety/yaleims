@@ -1,8 +1,9 @@
 // The caller's own things: their username (PATCH /api/me) and the games
 // they're signed up for (GET /api/me/matches).
 import { z } from "zod";
+import type { RosterEntryDoc } from "@/types/firestore";
 import { request } from "./core";
-import type { MatchList } from "./matches";
+import type { Match } from "./matches";
 
 /** PATCH /api/me: a new username (3–20 letters, digits or underscores; unique). */
 export const meChangeSchema = z.strictObject({
@@ -15,6 +16,14 @@ export const meChangeSchema = z.strictObject({
 });
 export type MeChange = z.infer<typeof meChangeSchema>;
 
+/** One of the caller's games, with where their own entry stands: the captain's call and attendance. */
+export type MyMatch = Match & { mine: Pick<RosterEntryDoc, "captainStatus" | "present"> };
+
+export interface MyMatchList {
+  items: MyMatch[];
+  total: number;
+}
+
 /** GET /api/me/matches?seasonId&upcoming: the caller's games that season (not those a captain took them off), by start. */
 export const myMatchesQuerySchema = z.strictObject({
   seasonId: z.string().min(1),
@@ -26,5 +35,5 @@ export type MyMatchesQuery = { seasonId: string; upcoming?: boolean };
 
 export const changeMe = (change: MeChange) => request<void>("PATCH", "/api/me", { body: change });
 
-export const fetchMyMatches = (query: MyMatchesQuery) => request<MatchList>("GET", "/api/me/matches", { query });
+export const fetchMyMatches = (query: MyMatchesQuery) => request<MyMatchList>("GET", "/api/me/matches", { query });
 

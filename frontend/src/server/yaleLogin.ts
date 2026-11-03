@@ -52,23 +52,48 @@ export async function validateTicket(ticket: string, from: string | null): Promi
   return typeof netid === "string" && netid !== "" ? netid : null;
 }
 
-/** The person's Yalies profile, or null when Yalies has none (with an email) for the netid. */
+/** The person's Yalies profile, or null when Yalies has none (with an email) for the netid. Throws when Yalies can't be reached. */
 export async function yaliesProfile(netid: string): Promise<YaliesProfile | null> {
+  const [person] = await yaliesPeople({ netid: netid.toLowerCase() });
+  return person ?? null;
+}
+
+/** The Yalies profiles of these emails (as many as Yalies knows), by email; at most 100 per call. */
+export async function yaliesProfilesByEmail(emails: string[]): Promise<Map<string, YaliesProfile>> {
+  const people = emails.length ? await yaliesPeople({ email: emails }, emails.length) : [];
+  return new Map(people.map((p) => [p.email, p]));
+}
+
+/**
+ * People from Yalies' directory: `filters` match exactly (any field; a
+ * list matches any of its values; values are case-sensitive). Only people
+ * with an email. YALIES_API_URL points it elsewhere (the integration tests'
+ * fake directory).
+ */
+async function yaliesPeople(filters: Record<string, string | string[]>, pageSize = 10): Promise<YaliesProfile[]> {
   const key = process.env.YALIES_API_KEY;
   if (!key) throw new Error("YALIES_API_KEY is not set");
-  const res = await fetch("https://api.yalies.io/v2/people", {
+  const base = process.env.YALIES_API_URL ?? "https://api.yalies.io/v2";
+  const res = await fetch(`${base}/people`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ filters: { netid } }),
+    body: JSON.stringify({ filters, page_size: pageSize }),
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`Yalies answered ${res.status}`);
   const people: unknown = await res.json();
-  const profile = Array.isArray(people) ? (people[0] as Partial<YaliesProfile> | undefined) : undefined;
-  if (!profile || typeof profile.email !== "string" || !profile.email) return null;
-  return {
-    email: profile.email,
-    first_name: profile.first_name ?? "",
-    last_name: profile.last_name ?? "",
-    college: profile.college ?? null,
-  };
+  if (!Array.isArray(people)) throw new Error("Yalies answered something other than a list");
+  return people.flatMap((p: Partial<YaliesProfile>) =>
+    typeof p.email === "string" && p.email
+      ? [
+          {
+            email: p.email,
+            netid: typeof p.netid === "string" ? p.netid : null,
+            first_name: p.first_name ?? "",
+            last_name: p.last_name ?? "",
+            college: p.college ?? null,
+          },
+        ]
+      : []
+  );
 }

@@ -1,7 +1,7 @@
 // The schedule: adding a sport's regular-season games (the hub's schedule
-// upload) and editing a game's details (the hub's edit form). Both are
-// audit-logged; a reschedule also moves the start time on the game's roster
-// entries, in the same transaction.
+// upload and new-game form), editing a game's details or cancelling it (the
+// edit form), and deleting a game. All are audit-logged; a reschedule also
+// moves the start time on the game's roster entries, in the same transaction.
 import "server-only";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { MatchEdit, NewMatch } from "@/lib/api/matches";
@@ -10,6 +10,7 @@ import { logAction, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
 import { matchRef, newMatchRef } from "../data/matches";
 import { rosterRef } from "../data/roster";
+import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
 import { runTransaction } from "../data/util";
 
@@ -82,12 +83,12 @@ export async function addSchedule(
 export type EditResult =
   | "ok"
   | "not-found"
-  | "scored" // a scored game's colleges or sport can't change (undo the score first)
+  | "scored" // a scored game's colleges or sport can't change, nor can it be cancelled (undo the score first)
   | "unknown-sport"
   | "unknown-college"
   | "bad-time";
 
-/** Changes a game's colleges, venue, start or sport. */
+/** Changes a game's colleges, venue, start or sport, or cancels it (status "cancelled"; "scheduled" restores it). */
 export async function editMatch(
   seasonId: string,
   matchId: string,
@@ -117,7 +118,7 @@ export async function editMatch(
       homeCollegeId !== match.homeCollegeId ||
       awayCollegeId !== match.awayCollegeId ||
       sportId !== match.sportId;
-    if (changesTeams && match.status === "final") return "scored";
+    if ((changesTeams || edit.status) && match.status === "final") return "scored";
     const newStart = startsAt && startsAt.getTime() !== match.startsAt.toMillis()
       ? Timestamp.fromDate(startsAt)
       : null;
@@ -134,12 +135,40 @@ export async function editMatch(
       ...(edit.venue !== undefined ? { venue: edit.venue || null } : {}),
       ...(edit.venueDetail !== undefined ? { venueDetail: edit.venueDetail || null } : {}),
       ...(newStart ? { startsAt: newStart } : {}),
+      ...(edit.status ? { status: edit.status } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
     for (const entry of roster) {
       tx.update(entry.ref, { startsAt: newStart ?? match.startsAt, sportId });
     }
     logAction(tx, seasonId, { actor, action: "editMatch", params: { matchId, ...edit }, changed: [snap, ...roster] });
+    return "ok";
+  });
+}
+
+export type DeleteResult = "ok" | "not-found" | "scored" | "in-bracket";
+
+/**
+ * Deletes a game with its roster and score reports: an unscored game outside
+ * a bracket (a bracket's games go with the bracket). The log keeps a copy of
+ * everything deleted.
+ */
+export async function deleteMatch(seasonId: string, matchId: string, actor: Actor): Promise<DeleteResult> {
+  const ref = matchRef(seasonId, matchId);
+  return runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const match = snap.data();
+    if (!match) return "not-found";
+    if (match.status === "final") return "scored";
+    if (match.bracketId) return "in-bracket";
+    const [roster, reports] = await Promise.all([
+      tx.get(rosterRef(seasonId, matchId)),
+      tx.get(scoreReportsRef(seasonId, matchId)),
+    ]);
+    const children = [...roster.docs, ...reports.docs];
+    for (const doc of children) tx.delete(doc.ref);
+    tx.delete(ref);
+    logAction(tx, seasonId, { actor, action: "deleteMatch", params: { matchId }, changed: [snap, ...children] });
     return "ok";
   });
 }
