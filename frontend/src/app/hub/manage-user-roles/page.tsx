@@ -484,4 +484,4 @@ const ManageUserRolesPage = () => {
   );
 };
 
-export default withRoleProtectedRoute(ManageUserRolesPage, ["dev"]);
+export default withRoleProtectedRoute(ManageUserRolesPage, (viewer) => viewer.can.manageRoles);

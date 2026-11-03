@@ -95,6 +95,8 @@ export const matchEditSchema = z.strictObject({
   venue: venue.optional(),
   venueDetail: venue.optional(),
   startsAt: time.optional(),
+  /** Cancel the game, or restore a cancelled one. */
+  status: z.enum(["scheduled", "cancelled"]).optional(),
 });
 export type MatchEdit = z.infer<typeof matchEditSchema>;
 
@@ -118,6 +120,10 @@ export const uploadSchedule = (seasonId: string, upload: ScheduleUpload) =>
 
 export const editMatch = (seasonId: string, matchId: string, edit: MatchEdit) =>
   request<void>("PATCH", url`/api/seasons/${seasonId}/matches/${matchId}`, { body: edit });
+
+/** DELETE /api/seasons/{seasonId}/matches/{matchId}: an unscored game outside a bracket, with its roster. */
+export const deleteMatch = (seasonId: string, matchId: string) =>
+  request<void>("DELETE", url`/api/seasons/${seasonId}/matches/${matchId}`);
 
 export const scoreMatch = (seasonId: string, matchId: string, result: MatchResultInput) =>
   request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/result`, { body: result });

@@ -39,12 +39,13 @@ describe("PATCH /api/seasons/{seasonId} (the champion)", () => {
   const crown = (season: string, body: unknown, session?: string) => api("PATCH", `/api/seasons/${season}`, body, { session });
   const banner = { championCollegeId: "MC", celebrationActive: true };
 
-  it("is for admins only", async () => {
+  it("is for admins only (dev counts as admin)", async () => {
     expect((await crown(current, banner)).status).toBe(401);
     expect((await crown(current, banner, sessionFor(people.student(0, 0), ["user", "admin"]))).status).toBe(403);
+    expect((await crown(current, banner, sessionFor(people.supervisor))).status).toBe(403);
     const devOnly = people.student(2, 7);
     await setGlobalRoles(devOnly, ["dev"]);
-    expect((await crown(current, banner, sessionFor(devOnly))).status).toBe(403);
+    expect((await crown(current, banner, sessionFor(devOnly))).status).toBe(204);
   });
   it("works on the current season only", async () => {
     expect(await crown(previous, banner, sessionFor(people.admin))).toMatchObject({ status: 409, body: { error: { code: "conflict" } } });

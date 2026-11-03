@@ -84,11 +84,12 @@ describe("POST /api/seasons/{s}/matches (schedule upload)", () => {
   const upload = (body: unknown, session?: string) => api("POST", `/api/seasons/${current}/matches`, body, { session });
   const soon = new Date(Date.now() + 40 * 24 * 3600 * 1000).toISOString();
 
-  it("is for admins and devs", async () => {
+  it("is for supervisors (and admins)", async () => {
     const body = { sportId: "1", matches: [game(soon)] };
     expect((await upload(body)).status).toBe(401);
-    expect((await upload(body, player())).status).toBe(403);
-    expect((await upload(body, sessionFor(people.supervisor, ["user", "supervisor", "admin"]))).status).toBe(403);
+    // The cookie's roles don't count: only Firestore's.
+    expect((await upload(body, sessionFor(people.student(0, 6), ["user", "supervisor", "admin"]))).status).toBe(403);
+    expect((await upload(body, sessionFor(people.supervisor))).status).toBe(201);
   });
   it("refuses unknown sports and colleges, and non-JSON bodies", async () => {
     expect(await upload({ sportId: "99", matches: [game(soon)] }, admin())).toMatchObject({ status: 400, body: { error: { message: "No such sport this season." } } });

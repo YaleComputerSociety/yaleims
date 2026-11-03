@@ -14,4 +14,4 @@ const UploadTournamentsPage = () => {
   );
 };
 
-export default withRoleProtectedRoute(UploadTournamentsPage, ["admin", "dev"]);
+export default withRoleProtectedRoute(UploadTournamentsPage, (viewer) => viewer.can.editSchedule);

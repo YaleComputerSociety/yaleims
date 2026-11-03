@@ -17,7 +17,7 @@ export const GET = route<Params>(async (req, { params }) => {
   return ok({ items: toJson(brackets), total: brackets.length } satisfies BracketList);
 });
 
-/** Creates a sport's playoffs or a tournament with its games (admin or dev, current season; audit-logged). */
+/** Creates a sport's playoffs or a tournament with its games (supervisors, current season; audit-logged). */
 export const POST = route<Params>(async (req, { params }) => {
   const { seasonId } = await params;
   const viewer = await authorize(can.editSchedule);

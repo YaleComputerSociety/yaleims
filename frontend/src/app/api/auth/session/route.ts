@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import type { SessionState } from "@/lib/api/auth";
-import { getViewer } from "@/server/auth";
+import { can, getViewer } from "@/server/auth";
 import { getCurrentSeasonId } from "@/server/data/seasons";
 import { ok, route } from "@/server/http";
 import { joinSeason } from "@/server/services/accounts";
 import { clearSessionCookie, getSessionToken } from "@/server/session";
 
 /**
- * Who is signed in, with their roles, college and captaincies this season
- * (read from Firestore, not the cookie). A returning student joins the
+ * Who is signed in, with their roles, college, captaincies and what they may
+ * do this season (read from Firestore, not the cookie). A returning student joins the
  * current season here, as at login (D30), with the college of their login:
  * a GET that may create their player doc, on purpose. An invalid session
  * cookie is cleared.
@@ -22,7 +22,16 @@ export const GET = route(async () => {
   }
   const seasonId = await getCurrentSeasonId();
   if (seasonId) await joinSeason(seasonId, viewer.email, viewer.name, viewer.college);
-  const [user, player, captainOf] = await Promise.all([viewer.user(), viewer.player(), viewer.captainOf()]);
+  const [user, player, captainOf, editSchedule, score, takeAttendance, setChampion, manageRoles] = await Promise.all([
+    viewer.user(),
+    viewer.player(),
+    viewer.captainOf(),
+    can.editSchedule(viewer),
+    can.score(viewer),
+    can.takeAttendance(viewer),
+    can.setChampion(viewer),
+    can.manageRoles(viewer),
+  ]);
   return ok({
     signedIn: true,
     viewer: {
@@ -32,6 +41,7 @@ export const GET = route(async () => {
       collegeId: player?.collegeId ?? null,
       roles: [...(user?.roles ?? []), ...(player?.roles ?? [])],
       captainOf,
+      can: { editSchedule, score, takeAttendance, setChampion, manageRoles },
     },
   } satisfies SessionState);
 });

@@ -6,7 +6,7 @@ import { noContent, readBody, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string; reportId: string };
 
-/** Marks a report resolved (admin or dev; audit-logged). */
+/** Marks a report resolved (supervisors; audit-logged). */
 export const PATCH = route<Params>(async (req, { params }) => {
   const { seasonId, matchId, reportId } = await params;
   const viewer = await authorize(can.score);

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { FaEdit, FaSpinner } from "react-icons/fa";
 import { useSeasonDetail } from "@/context/SeasonContext";
-import { hasRole, useSession } from "@/context/SessionContext";
+import { useSession } from "@/context/SessionContext";
 import { editMatch, undoScore, type Match } from "@/lib/api/matches";
 import { COLLEGES } from "@/lib/colleges";
 
@@ -19,10 +19,10 @@ type EditMatchButtonProps = Omit<EditMatchModalProps, "setModalOpen">;
 
 export const EditMatchButton: React.FC<EditMatchButtonProps> = ({ match, setUnscored }) => {
   const { viewer } = useSession();
-  const isAdmin = hasRole(viewer, "admin", "dev");
+  const canEdit = !!viewer?.can.editSchedule;
   const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
 
-  if (!isAdmin) return null;
+  if (!canEdit) return null;
 
   return (
     <>

@@ -14,14 +14,16 @@ const admin = () => sessionFor(people.admin);
 describe("GET …/colleges/{c}/players", () => {
   const list = (college: string, session?: string, season = current) => api("GET", `/api/seasons/${season}/colleges/${college}/players`, undefined, { session });
 
-  it("is for the college's rep and devs, current season", async () => {
+  it("is for the college's rep and captains, supervisors and admins, current season", async () => {
     expect((await list("BF")).status).toBe(401);
     expect((await list("BF", player())).status).toBe(403);
     expect((await list("BK", rep())).status).toBe(403);
+    expect((await list("BF", sessionFor(people.student(0, 1)))).status).toBe(200); // a BF captain
+    expect((await list("BK", sessionFor(people.student(0, 1)))).status).toBe(403);
+    expect((await list("BK", sessionFor(people.supervisor))).status).toBe(200);
     const adminOnly = people.student(4, 7);
     await setGlobalRoles(adminOnly, ["admin"]);
-    expect((await list("BK", sessionFor(adminOnly))).status).toBe(403);
-    expect((await list("BK", admin())).status).toBe(200); // dev
+    expect((await list("BK", sessionFor(adminOnly))).status).toBe(200);
     expect((await list("BF", rep(), previous)).status).toBe(409);
   });
   it("lists the players by name with what they captain", async () => {

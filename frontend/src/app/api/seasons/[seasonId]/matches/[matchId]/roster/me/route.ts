@@ -12,6 +12,7 @@ const SIGN_UP_REFUSALS: Record<Exclude<SignUpResult, "ok" | "already-signed-up">
   "not-in-season": new ApiError("forbidden", "You weren't a player that season."),
   "other-college": new ApiError("forbidden", "You can only sign up for your college's games."),
   started: new ApiError("conflict", "Sign-up is closed: the game has started."),
+  cancelled: new ApiError("conflict", "This game is cancelled."),
   removed: new ApiError("forbidden", "Your captain took you off this game."),
 };
 

@@ -238,4 +238,4 @@ const UploadSchedulePage = () => {
   );
 };
 
-export default withRoleProtectedRoute(UploadSchedulePage, ["admin", "dev"]);
+export default withRoleProtectedRoute(UploadSchedulePage, (viewer) => viewer.can.editSchedule);

@@ -15,6 +15,7 @@ export type SignUpResult =
   | "not-in-season" // no player doc this season
   | "other-college" // the player's college plays neither side
   | "started"
+  | "cancelled"
   | "removed" // the captain took them off
   | "already-signed-up";
 
@@ -38,6 +39,7 @@ export async function signUp(
     if (!player) return "not-in-season";
     if (!player.collegeId || !match.collegeIds.includes(player.collegeId)) return "other-college";
     if (match.startsAt.toMillis() <= now.getTime()) return "started";
+    if (match.status === "cancelled") return "cancelled";
     const entry = entrySnap.data();
     if (entry) return entry.captainStatus === "removed" ? "removed" : "already-signed-up";
 

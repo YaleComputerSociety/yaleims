@@ -14,4 +14,4 @@ const UploadBracketsPage = () => {
   );
 };
 
-export default withRoleProtectedRoute(UploadBracketsPage, ["admin", "dev"]);
+export default withRoleProtectedRoute(UploadBracketsPage, (viewer) => viewer.can.editSchedule);
