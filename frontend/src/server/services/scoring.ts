@@ -1,6 +1,7 @@
 // Scoring a game and undoing it. One transaction each: the game's result,
 // both colleges' standings and teams' records, the bracket (winner moves on,
 // placement bonuses) and the audit entry. Then the season is re-ranked.
+// A result is locked while a game it feeds has a score: undo later rounds first.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import type { MatchDoc, MatchResult, Outcome } from "@/types/firestore";
@@ -62,8 +63,8 @@ export async function scoreMatch(
       result,
     };
     if (!isScoredGame(scored)) return "incomplete" as const;
-    const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
     const moves = await readBracketMoves(tx, seasonId, scored);
+    const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
 
     tx.update(ref, {
       homeCollegeId,
@@ -91,8 +92,9 @@ export async function scoreMatch(
 
 /**
  * Clears a game's result and takes its points back (and the placement
- * bonuses it settled). Bracket advancement is not undone: the next game keeps
- * the college that moved in. "incomplete": the game has no result.
+ * bonuses it settled), after the next round's scores have been undone.
+ * Bracket advancement is retained: the next game keeps the college that
+ * moved in. "incomplete": the game has no result.
  */
 export async function undoScore(
   seasonId: string,
@@ -105,8 +107,8 @@ export async function undoScore(
     const match = snap.data();
     if (!match) return "not-found" as const;
     if (!isScoredGame(match)) return "incomplete" as const;
-    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
     const moves = await readBracketMoves(tx, seasonId, match);
+    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
 
     tx.update(ref, {
       status: "scheduled",

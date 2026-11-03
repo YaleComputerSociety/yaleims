@@ -13,6 +13,7 @@ import {
   type Transaction,
 } from "firebase-admin/firestore";
 import { DEFAULT_PLACEMENT_POINTS, type BracketSlotInput } from "@/lib/api/brackets";
+import { ApiError } from "@/lib/api/core";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
 import { easternDate } from "@/lib/dates";
 import { winnerId } from "@/lib/results";
@@ -281,7 +282,12 @@ export interface BracketMoves {
   bracket: DocumentSnapshot<BracketDoc> | null;
 }
 
-/** Reads, inside `tx`, what scoring or undoing `game` changes in its bracket. Call before any write. */
+/**
+ * Reads, inside `tx`, what scoring or undoing `game` changes in its bracket.
+ * A scored winner/loser destination locks this result until its own score is
+ * undone. Checking its snapshot here also protects concurrent requests.
+ * Call before any write.
+ */
 export async function readBracketMoves(
   tx: Transaction,
   seasonId: string,
@@ -294,6 +300,12 @@ export async function readBracketMoves(
     read(game.nextLoserMatchId),
     game.bracketId && settles ? tx.get(bracketRef(seasonId, game.bracketId)) : null,
   ]);
+  const scoredMatchIds = [next, loserNext].flatMap((snap) => snap?.data()?.status === "final" ? [snap.id] : []);
+  if (scoredMatchIds.length > 0) {
+    throw new ApiError("conflict", "Undo the scored games in the next round before changing this result.", {
+      scoredMatchIds,
+    });
+  }
   return { next, loserNext, bracket };
 }
 
