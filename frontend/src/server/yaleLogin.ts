@@ -1,0 +1,74 @@
+// The Yale login. Yale CAS says who someone is (their netid); Yalies gives
+// their name, email and college. /api/auth/login sends people to CAS, CAS
+// sends them back to /api/auth/redirect with a ticket, and the ticket is
+// checked against the same service URL: CAS requires it byte-identical, so
+// one function builds it for both (serviceUrl).
+import "server-only";
+import { parseStringPromise } from "xml2js";
+import { safeReturnPath } from "@/lib/returnPath";
+import type { YaliesProfile } from "./services/accounts";
+
+function baseUrl(): string {
+  const base = process.env.BASE_URL;
+  if (!base) throw new Error("BASE_URL is not set");
+  return base.replace(/\/$/, "");
+}
+
+/** Yale's test CAS for local development on :3000, the real one everywhere else. */
+function casBase(): string {
+  return baseUrl() === "http://localhost:3000"
+    ? "https://secure-tst.its.yale.edu/cas"
+    : "https://secure.its.yale.edu/cas";
+}
+
+/** Where CAS sends people back: the redirect route, with the page to return to (only this site's pages). */
+function serviceUrl(from: string | null): string {
+  return `${baseUrl()}/api/auth/redirect?from=${encodeURIComponent(returnPath(from))}`;
+}
+
+/** The page on this site to return to after login ("/" for anything else: no open redirect). */
+export function returnPath(from: string | null): string {
+  return safeReturnPath(from, baseUrl());
+}
+
+/** The full URL of `path` on this site. */
+export function siteUrl(path: string): string {
+  return baseUrl() + path;
+}
+
+/** CAS's login page, which comes back to `from` after login. */
+export function casLoginUrl(from: string | null): string {
+  return `${casBase()}/login?service=${encodeURIComponent(serviceUrl(from))}`;
+}
+
+/** The netid CAS vouches for with `ticket`, or null when CAS refuses it. */
+export async function validateTicket(ticket: string, from: string | null): Promise<string | null> {
+  const res = await fetch(
+    `${casBase()}/serviceValidate?ticket=${encodeURIComponent(ticket)}&service=${encodeURIComponent(serviceUrl(from))}`
+  );
+  if (!res.ok) throw new Error(`CAS answered ${res.status}`);
+  const xml = await parseStringPromise(await res.text());
+  const netid = xml?.["cas:serviceResponse"]?.["cas:authenticationSuccess"]?.[0]?.["cas:user"]?.[0];
+  return typeof netid === "string" && netid !== "" ? netid : null;
+}
+
+/** The person's Yalies profile, or null when Yalies has none (with an email) for the netid. */
+export async function yaliesProfile(netid: string): Promise<YaliesProfile | null> {
+  const key = process.env.YALIES_API_KEY;
+  if (!key) throw new Error("YALIES_API_KEY is not set");
+  const res = await fetch("https://api.yalies.io/v2/people", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ filters: { netid } }),
+  });
+  if (!res.ok) throw new Error(`Yalies answered ${res.status}`);
+  const people: unknown = await res.json();
+  const profile = Array.isArray(people) ? (people[0] as Partial<YaliesProfile> | undefined) : undefined;
+  if (!profile || typeof profile.email !== "string" || !profile.email) return null;
+  return {
+    email: profile.email,
+    first_name: profile.first_name ?? "",
+    last_name: profile.last_name ?? "",
+    college: profile.college ?? null,
+  };
+}

@@ -1,8 +1,8 @@
 "use client";
 
-import TournamentAdminPanel from "@src/components/Dashboard/Admin/TournamentAdminPanel";
-import PageHeading from "@src/components/PageHeading";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import TournamentAdminPanel from "@/components/hub/admin/TournamentAdminPanel";
+import PageHeading from "@/components/layout/PageHeading";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import React from "react";
 
 const UploadTournamentsPage = () => {

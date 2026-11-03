@@ -1,22 +1,22 @@
 "use client";
 
 import React from "react";
-import { useUser } from "@src/context/UserContext";
-import LoadingScreen from "@src/components/LoadingScreen";
-import PageHeading from "@src/components/PageHeading";
-import HeroStats from "@src/components/Dashboard/User/HeroStats";
-import QuickActionCard from "@src/components/Dashboard/QuickActionCard";
-import SectionCard from "@src/components/Dashboard/SectionCard";
-import PopupActionCard from "@src/components/Dashboard/PopupActionCard";
-import ScoreReportsAdmin from "@src/components/Dashboard/Admin/ScoreReportsAdmin";
-import ChampionControls from "@src/components/Dashboard/Admin/ChampionControls";
-import ViewCaptainsCollegeRep from "@src/components/Dashboard/User/ViewCaptainsCollegeRep";
-import UserMatches from "@src/components/Dashboard/User/UserMatches";
-import AssignCaptain from "@src/components/Dashboard/College_Rep/AssignCaptain";
-import SelectMVP from "@src/components/Dashboard/College_Rep/SelectMVP";
-import ViewCaptainSports from "@src/components/Dashboard/Captain/ViewCaptainSports";
-import ViewTeamSignups from "@src/components/Dashboard/Captain/ViewTeamSignups";
-import SignInPrompt from "@src/components/SignInPrompt";
+import { hasRole, useSession } from "@/context/SessionContext";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import PageHeading from "@/components/layout/PageHeading";
+import HeroStats from "@/components/hub/player/HeroStats";
+import QuickActionCard from "@/components/hub/QuickActionCard";
+import SectionCard from "@/components/hub/SectionCard";
+import PopupActionCard from "@/components/hub/PopupActionCard";
+import ScoreReportsAdmin from "@/components/hub/admin/ScoreReportsAdmin";
+import ChampionControls from "@/components/hub/admin/ChampionControls";
+import ViewCaptainsCollegeRep from "@/components/hub/player/ViewCaptainsCollegeRep";
+import UserMatches from "@/components/hub/player/UserMatches";
+import AssignCaptain from "@/components/hub/rep/AssignCaptain";
+import SelectMVP from "@/components/hub/rep/SelectMVP";
+import ViewCaptainSports from "@/components/hub/captain/ViewCaptainSports";
+import ViewTeamSignups from "@/components/hub/captain/ViewTeamSignups";
+import SignInPrompt from "@/components/layout/SignInPrompt";
 
 type HubAction = {
   title: string;
@@ -29,13 +29,13 @@ type HubAction = {
 };
 
 const Dashboard: React.FC = () => {
-  const { user, loading } = useUser();
+  const { viewer, loading } = useSession();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  if (!user) {
+  if (!viewer) {
     return (
       <div className="min-h-screen pt-20 px-6">
         <PageHeading heading="Hub" />
@@ -131,9 +131,9 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  const isAdmin = user?.mRoles.includes("admin");
-  const isCollegeRep = user?.mRoles.includes("college_rep");
-  const isCaptain = user?.mRoles.includes("captain");
+  const isAdmin = hasRole(viewer, "admin");
+  const isCollegeRep = hasRole(viewer, "college_rep");
+  const isCaptain = hasRole(viewer, "captain");
 
   return (
     <div className="min-h-screen pt-20 pb-12">

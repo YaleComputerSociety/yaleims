@@ -19,8 +19,8 @@ export interface ScoreInput {
   homeForfeit: boolean;
   awayForfeit: boolean;
   /** Used only when the game has no college on that side yet. */
-  homeTeam?: string;
-  awayTeam?: string;
+  homeCollegeId?: string;
+  awayCollegeId?: string;
 }
 
 /** The outcome of a score: a forfeit loses, two forfeits are a double forfeit, equal scores a draw. */
@@ -43,8 +43,8 @@ export async function scoreMatch(
     const match = snap.data();
     if (!match) return "not-found" as const;
     if (match.status === "final") return "already-scored" as const;
-    const homeCollegeId = match.homeCollegeId ?? input.homeTeam ?? null;
-    const awayCollegeId = match.awayCollegeId ?? input.awayTeam ?? null;
+    const homeCollegeId = match.homeCollegeId ?? input.homeCollegeId ?? null;
+    const awayCollegeId = match.awayCollegeId ?? input.awayCollegeId ?? null;
     if (!homeCollegeId || !awayCollegeId) return "incomplete" as const;
 
     const result: MatchResult = {

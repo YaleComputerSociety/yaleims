@@ -8,14 +8,9 @@ import { FieldValue, type Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { AuditLogDoc } from "@/types/firestore";
-import type { Session } from "../session";
 
 /** Who did it: their email and their roles at the time. */
 export type Actor = AuditLogDoc["actor"];
-
-export function actorOf(session: Session): Actor {
-  return { userId: session.email, roles: session.mRoles };
-}
 
 /** A doc as read in the transaction (a snapshot of any type fits). */
 interface ReadDoc {

@@ -1,7 +1,6 @@
 // What a game's result does to the standings and to the two teams' records:
-// one table for scoring (+1) and undoing or deleting (-1) a result. Pure, so
-// the scoring service and the migration's standings check (database/migrate)
-// count the same way.
+// one table for scoring (+1) and undoing or deleting (-1) a result, so every
+// change to the standings counts the same way.
 import type { MatchResult, StandingStats, TeamDoc } from "../types/firestore";
 
 export type StandingDelta = Partial<StandingStats>;

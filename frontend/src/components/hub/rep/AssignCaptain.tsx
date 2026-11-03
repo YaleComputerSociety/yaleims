@@ -1,0 +1,259 @@
+import { useSeason } from "@/context/SeasonContext";
+import { useSession } from "@/context/SessionContext";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
+
+/** The rep's college: make its players captains of its teams this term, or not. */
+export default function AssignCaptain() {
+  const { currentSeason } = useSeason();
+  const { viewer } = useSession();
+  const collegeId = viewer?.collegeId ?? null;
+  const [players, setPlayers] = useState<CollegePlayer[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [selectSport, setSelectSport] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectUser, setSelectUser] = useState<CollegePlayer | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!currentSeason || !collegeId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      setPlayers((await fetchCollegePlayers(currentSeason.id, collegeId)).items);
+    } catch (err) {
+      console.error(err);
+      setError("Couldn’t load roster/captains. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentSeason, collegeId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const filteredUsers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return [];
+    return players.filter((p) => p.name.toLowerCase().includes(term) || p.id.toLowerCase().includes(term));
+  }, [searchTerm, players]);
+
+  const currentCaptains = players.filter((p) => p.captainOf.length > 0);
+  // The sports of this term, in display order; captains by sport id.
+  const currentSports = (currentSeason?.sports ?? []).filter((sport) => sport.term === currentSeason?.currentTerm);
+  const captainsBySport = useMemo(() => {
+    const map: Record<string, CollegePlayer[]> = {};
+    for (const p of players) for (const sportId of p.captainOf) (map[sportId] ||= []).push(p);
+    return map;
+  }, [players]);
+  const totalAssignments = currentCaptains.reduce((sum, p) => sum + p.captainOf.length, 0);
+
+  const userIsCaptainForSelected = !!selectUser && !!selectSport && selectUser.captainOf.includes(selectSport);
+
+  if (loading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
+
+  const handleAction = async (assign: boolean) => {
+    setNotice(null);
+    setError(null);
+
+    if (!selectUser) return setError("Pick a user first.");
+    if (!selectSport) return setError("Pick a sport first.");
+    if (assign && userIsCaptainForSelected) return setError("User is already captain for that sport.");
+    if (!assign && !userIsCaptainForSelected) return setError("User isn’t captain for that sport.");
+
+    setIsSubmitting(true);
+    try {
+      await (assign ? assignCaptain : removeCaptain)(currentSeason.id, collegeId!, selectSport, selectUser.id);
+      setNotice(assign ? "Captain assigned." : "Captain removed.");
+      setSelectUser(null);
+      setSelectSport("");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setIsSubmitting(false);
+      await fetchData();
+    }
+  };
+
+  return (
+  <div className="space-y-5 py-4">
+    {/* Status banner */}
+    <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30">
+      {currentCaptains.length === 0 ? (
+        <div className="text-sm">
+          <span className="font-semibold">No captains set</span> for {currentSeason.currentTerm} yet. Assign captains below.
+        </div>
+      ) : (
+        <div className="text-sm">
+          <span className="font-semibold">{currentCaptains.length}</span> unique captain
+          {currentCaptains.length > 1 ? "s" : ""} set across{" "}
+          <span className="font-semibold">{totalAssignments}</span> sport
+          {totalAssignments !== 1 ? "s" : ""}.
+        </div>
+      )}
+    </div>
+
+    {/* Alerts */}
+    {error && (
+      <div
+        className="rounded-md px-3 py-2 text-sm bg-red-50 text-red-700 dark:bg-red-950/30 shadow-sm dark:shadow-black/20"
+        role="alert"
+      >
+        {error}
+      </div>
+    )}
+    {notice && (
+      <div
+        className="rounded-md px-3 py-2 text-sm bg-green-50 text-green-800 dark:bg-green-950/30 shadow-sm dark:shadow-black/20"
+        role="status"
+        aria-live="polite"
+      >
+        {notice}
+      </div>
+    )}
+
+    {/* Main content */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Left panel: actions */}
+      <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40 space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            className="px-3 py-2 text-sm bg-green-600 text-white rounded-md shadow hover:opacity-90 disabled:opacity-50"
+            disabled={isSubmitting || !selectUser || !selectSport || userIsCaptainForSelected}
+            onClick={() => handleAction(true)}
+          >
+            Assign Captain
+          </button>
+          <button
+            className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md shadow hover:opacity-90 disabled:opacity-50"
+            disabled={isSubmitting || !selectUser || !selectSport || !userIsCaptainForSelected}
+            onClick={() => handleAction(false)}
+          >
+            Remove Captain
+          </button>
+
+          <select
+            name="sports"
+            onChange={(e) => setSelectSport(e.target.value)}
+            className="rounded-md px-3 py-2 text-sm bg-white dark:bg-black
+                       ring-1 ring-black/10 focus:ring-2 focus:ring-black/20
+                       dark:ring-white/10 dark:focus:ring-white/20"
+            value={selectSport}
+          >
+            <option value="">— pick a sport —</option>
+            {currentSports.map((sport) => {
+              const count = captainsBySport[sport.id]?.length ?? 0;
+              const label = count ? `${sport.name} • ${count} captain${count > 1 ? "s" : ""}` : sport.name;
+              return (
+                <option key={sport.id} value={sport.id}>
+                  {label}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full max-w-md">
+          <input
+            type="search"
+            autoComplete="off"
+            placeholder="Search by name or email…"
+            className="w-full rounded-md px-3 py-2 text-sm bg-white dark:bg-black
+                       ring-1 ring-black/10 focus:ring-2 focus:ring-black/20
+                       dark:ring-white/10 dark:focus:ring-white/20"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md shadow-lg bg-white dark:bg-gray-900">
+              {filteredUsers.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-gray-500">No matches.</li>
+              ) : (
+                filteredUsers.slice(0, 10).map((u) => (
+                  <li
+                    key={u.id}
+                    className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => {
+                      setSelectUser(u);
+                      setSearchTerm("");
+                    }}
+                  >
+                    {u.name || u.id}{" "}
+                    <span className="text-xs text-gray-500">({u.id})</span>
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
+
+        {/* Selected user */}
+        {selectUser && (
+          <div className="flex items-center gap-3">
+            <div className="rounded-md px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 shadow-sm dark:shadow-black/20">
+              Selected: <strong>{selectUser.name || selectUser.id}</strong>
+            </div>
+            <button
+              type="button"
+              className="text-xs underline text-gray-600"
+              onClick={() => setSelectUser(null)}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        <p className="text-xs text-gray-500">
+          {selectUser && selectSport
+            ? userIsCaptainForSelected
+              ? "This user is already captain for this sport."
+              : "Ready to assign."
+            : "Pick a sport and a user to enable actions."}
+        </p>
+      </div>
+
+      {/* Right panel: current captains */}
+      <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40">
+        <h3 className="font-semibold mb-3">Current Captains</h3>
+        {Object.keys(captainsBySport).length === 0 ? (
+          <p className="text-sm text-gray-500">No captains yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {currentSports.map((sport) => (
+              <li
+                key={sport.id}
+                className="rounded-md px-3 py-2 shadow-sm bg-white dark:bg-neutral-900 dark:shadow-black/30"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">{sport.name}</span>
+                  <div className="flex flex-wrap gap-2">
+                    {(captainsBySport[sport.id] ?? []).map((c) => (
+                      <span
+                        key={`${sport.id}-${c.id}`}
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs
+                                   bg-neutral-100 shadow-sm dark:bg-neutral-800 dark:shadow-black/20"
+                        title={c.id}
+                      >
+                        {c.id}
+                      </span>
+                    ))}
+                    {(captainsBySport[sport.id] ?? []).length === 0 && (
+                      <span className="text-xs text-gray-500">No captain</span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  </div>
+  )}

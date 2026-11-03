@@ -1,5 +1,19 @@
 import React, { createContext, useState, ReactNode } from "react";
-import { Filters, FiltersContextType } from "@src/types/components";
+
+/** The scores page's filters. */
+export interface Filters {
+  college: string;
+  sport: string;
+  date: string;
+  selected: string;
+}
+
+interface FiltersContextType {
+  filter: Filters;
+  setFilter: React.Dispatch<React.SetStateAction<Filters>>;
+  resetFilters: () => void;
+}
+
 // Create the context with an undefined default value
 export const FiltersContext = createContext<FiltersContextType>({
   filter: { college: "", sport: "", date: "", selected: ""}, // Provide default values

@@ -31,27 +31,39 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - run: npm test
       # Errors fail the job; warnings are reported but allowed.
       - run: npm run lint
       # Builds without any env vars or secrets (verified from a clean clone).
       - run: npm run build
 
-  migrate:
-    name: Schema v3 migration (type-check)
+  integration:
+    name: Integration and rules tests (emulator)
     runs-on: ubuntu-latest
+    # About 3 minutes; a hang fails here, not after GitHub's 6 hours.
+    timeout-minutes: 15
     defaults:
       run:
-        working-directory: database/migrate
+        working-directory: frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # A demo- project never reaches a real Firebase project.
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-yims
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: database/migrate/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
+      # The Firestore emulator runs on Java.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
       - run: npm ci
-      # Also type-checks the frontend types and lib modules it imports.
-      - run: npm run typecheck
+      # Seeds the emulator, starts the app on it, runs tests/integration and tests/rules.
+      - run: npx -y firebase-tools@14 emulators:exec --only firestore --project demo-yims --config ../database/firebase.json "npm run test:integration"
 
   sidelined-elo:
     name: Sidelined Elo (type-check, import guard)

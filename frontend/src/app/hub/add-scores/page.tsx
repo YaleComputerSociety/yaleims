@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { UnscoredMatch, UnscoredMatchesResponse } from "@src/types/api";
-import MatchCard from "@src/components/AddScores/MatchCard";
-import LoadingScreen from "@src/components/LoadingScreen";
-import { useSeason } from "@src/context/SeasonContext";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
-import { currentYear, emojiMap, toCollegeName } from "@src/utils/helpers";
-import UndoScoreMatchModal from "@src/components/AddScores/UndoScoreMatchModal";
-import PageHeading from "@src/components/PageHeading";
+import MatchCard from "@/components/hub/admin/MatchCard";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import { useSeason } from "@/context/SeasonContext";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
+import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { collegeName } from "@/lib/colleges";
+import UndoScoreMatchModal from "@/components/hub/admin/UndoScoreMatchModal";
+import PageHeading from "@/components/layout/PageHeading";
 import AddScoresFilterBar, {
   AddScoresSortOrder,
-} from "@src/components/AddScores/AddScoresFilterBar";
+} from "@/components/hub/admin/AddScoresFilterBar";
 
-const matchTime = (match: UnscoredMatch) =>
-  match.timestamp._seconds * 1000 + match.timestamp._nanoseconds / 1000000;
+const matchTime = (match: Match) => new Date(match.startsAt).getTime();
 
+/** The season's games that started without a score yet (admins and devs), and undoing a score by id. */
 const AddScoresPage: React.FC = () => {
-  const [matches, setMatches] = useState<UnscoredMatch[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [unscoreId, setUnscoreId] = useState<string>(""); // For unscore input
   const [unscoreMessage, setUnscoreMessage] = useState<string | null>(null);
@@ -27,33 +27,28 @@ const AddScoresPage: React.FC = () => {
   const [collegeFilter, setCollegeFilter] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<AddScoresSortOrder>("oldest");
-  const [scoredIds, setScoredIds] = useState<Set<UnscoredMatch["id"]>>(new Set());
+  const [scoredIds, setScoredIds] = useState<Set<string>>(new Set());
   const { currentSeason, seasonLoading } = useSeason();
-  const year = currentSeason?.year || currentYear;
+  const sportOf = useMemo(() => new Map((currentSeason?.sports ?? []).map((s) => [s.id, s])), [currentSeason]);
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `/api/functions/getUnscoredMatches?seasonId=${year}`
-        );
-
-        if (response.ok) {
-          const data: UnscoredMatchesResponse = await response.json();
-          setMatches(data.matches);
+    if (!currentSeason) return;
+    let live = true;
+    setLoading(true);
+    fetchSeasonMatches(currentSeason.id, { status: "scheduled", to: new Date().toISOString() })
+      .then(
+        ({ items }) => {
+          if (!live) return;
+          setMatches(items);
           setScoredIds(new Set());
-        }
-      } catch (error) {
-        console.error("Failed to fetch matches:", error);
-      } finally {
-        setLoading(false);
-      }
+        },
+        (error) => console.error("Failed to fetch matches:", error)
+      )
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
     };
-
-    if (seasonLoading) return;
-    fetchMatches();
-  }, [refreshKey, year, seasonLoading]);
+  }, [refreshKey, currentSeason]);
 
   const matchList = useMemo(
     () => (Array.isArray(matches) ? matches : []),
@@ -63,20 +58,21 @@ const AddScoresPage: React.FC = () => {
   // only offer sports / colleges that actually have matches waiting, with counts
   const sportOptions = useMemo(() => {
     const counts = new Map<string, number>();
-    matchList.forEach((m) => counts.set(m.sport, (counts.get(m.sport) || 0) + 1));
+    matchList.forEach((m) => counts.set(m.sportId, (counts.get(m.sportId) || 0) + 1));
     return Array.from(counts.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([sport, count]) => ({
-        value: sport,
-        label: `${emojiMap[sport] ?? ""} ${sport} (${count})`.trim(),
+      .map(([sportId, count]) => ({ sport: sportOf.get(sportId), sportId, count }))
+      .sort((a, b) => (a.sport?.name ?? "").localeCompare(b.sport?.name ?? ""))
+      .map(({ sport, sportId, count }) => ({
+        value: sportId,
+        label: `${sport?.emoji ?? ""} ${sport?.name ?? sportId} (${count})`.trim(),
       }));
-  }, [matchList]);
+  }, [matchList, sportOf]);
 
   const collegeOptions = useMemo(() => {
     const counts = new Map<string, number>();
     matchList.forEach((m) => {
-      [m.home_college, m.away_college].forEach((c) => {
-        const name = toCollegeName[c] || c;
+      [m.homeCollegeId, m.awayCollegeId].forEach((c) => {
+        const name = collegeName(c);
         if (name) counts.set(name, (counts.get(name) || 0) + 1);
       });
     });
@@ -102,19 +98,19 @@ const AddScoresPage: React.FC = () => {
     const query = search.trim().toLowerCase();
     return new Set(
       matchList
-        .filter((m) => !sportFilter || m.sport === sportFilter)
+        .filter((m) => !sportFilter || m.sportId === sportFilter)
         .filter(
           (m) =>
             !collegeFilter ||
-            toCollegeName[m.home_college] === collegeFilter ||
-            toCollegeName[m.away_college] === collegeFilter
+            collegeName(m.homeCollegeId) === collegeFilter ||
+            collegeName(m.awayCollegeId) === collegeFilter
         )
         .filter((m) => !query || String(m.id).toLowerCase().includes(query))
         .map((m) => m.id)
     );
   }, [matchList, sportFilter, collegeFilter, search]);
 
-  const handleScored = (matchId: UnscoredMatch["id"]) =>
+  const handleScored = (matchId: string) =>
     setScoredIds((prev) => new Set(prev).add(matchId));
 
   const remainingCount = matchList.filter((m) => !scoredIds.has(m.id)).length;
@@ -191,7 +187,7 @@ const AddScoresPage: React.FC = () => {
                     key={match.id}
                     className={visibleIds.has(match.id) ? "w-full" : "hidden"}
                   >
-                    <MatchCard match={match} onScored={handleScored} />
+                    <MatchCard match={match} sport={sportOf.get(match.sportId)} onScored={handleScored} />
                   </div>
                 ))}
               </>

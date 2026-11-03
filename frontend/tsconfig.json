@@ -23,9 +23,6 @@
       }
     ],
     "paths": {
-      "@src/*": [
-        "./src/*"
-      ],
       "@/*": [
         "./src/*"
       ]
@@ -35,9 +32,12 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.mts",
     ".next/types/**/*.ts",
     "src/app/api/auth/login/route.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-test/types/**/*.ts",
+    ".next-test/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

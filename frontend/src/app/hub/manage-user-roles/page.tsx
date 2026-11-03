@@ -1,13 +1,75 @@
 "use client";
 
-import PageHeading from "@src/components/PageHeading";
-import withRoleProtectedRoute from "@src/components/withRoleProtectedRoute";
+import PageHeading from "@/components/layout/PageHeading";
+import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import React, { useState, useEffect, useMemo } from "react";
-import { colleges, sports } from "@src/utils/helpers";
-import type { UserDoc, WithId } from "@src/types/legacy";
+import { toast } from "react-toastify";
+import { useSeason } from "@/context/SeasonContext";
+import { fetchCollegePlayers } from "@/lib/api/colleges";
+import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder } from "@/lib/api/users";
+import { COLLEGES, collegeName } from "@/lib/colleges";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "captain", "college_rep", "user"];
+
+/** The roles PUT /api/users/{email}/roles stores ("user" and "captain" aren't stored roles). */
+const STORED_ROLES = userRolesSchema.shape.roles.element.options;
+type StoredRole = (typeof STORED_ROLES)[number];
+
+/** Someone listed: their roles as one list ("user", global, this season's, "captain") and their captaincies (sport ids). */
+interface Person {
+  email: string;
+  name: string;
+  college: string | null;
+  roles: string[];
+  captainOf: string[];
+}
+
+const rolesOf = (globalRoles: string[], seasonRoles: string[], captainOf: string[]) => [
+  "user",
+  ...globalRoles,
+  ...seasonRoles,
+  ...(captainOf.length > 0 ? ["captain"] : []),
+];
+
+const personOf = (holder: RoleHolder): Person => ({
+  email: holder.id,
+  name: `${holder.firstname} ${holder.lastname}`,
+  college: collegeName(holder.player?.collegeId),
+  roles: rolesOf(holder.roles, holder.player?.roles ?? [], holder.captainOf),
+  captainOf: holder.captainOf,
+});
+
+/**
+ * The people of a group: "Admin" and "Dev" list everyone holding that role;
+ * a college name lists the college's captains and reps this season.
+ */
+async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
+  if (group === "Admin" || group === "Dev") {
+    return (await fetchRoleHolders({ role: group === "Admin" ? "admin" : "dev" })).items.map(personOf);
+  }
+  const collegeId = COLLEGES.find((c) => c.name === group)?.id;
+  if (!collegeId) return [];
+  // A college's players carry their season roles; the global ones come from the role lists.
+  const [players, admins, devs] = await Promise.all([
+    fetchCollegePlayers(seasonId, collegeId),
+    fetchRoleHolders({ role: "admin" }),
+    fetchRoleHolders({ role: "dev" }),
+  ]);
+  const globalRoles = (email: string) => [
+    ...(admins.items.some((u) => u.id === email) ? ["admin"] : []),
+    ...(devs.items.some((u) => u.id === email) ? ["dev"] : []),
+  ];
+  return players.items
+    .filter((p) => p.captainOf.length > 0 || p.roles.includes("college_rep"))
+    .map((p) => ({
+      email: p.id,
+      name: p.name,
+      college: collegeName(p.collegeId),
+      roles: rolesOf(globalRoles(p.id), p.roles, p.captainOf),
+      captainOf: p.captainOf,
+    }));
+}
 
 // Skeleton loader component
 const TableSkeleton = () => (
@@ -70,13 +132,16 @@ const TableSkeleton = () => (
 );
 
 const ManageUserRolesPage = () => {
-  const collegeNames = colleges.map((college) => college.name);
+  const { currentSeason } = useSeason();
+  const sports = currentSeason?.sports ?? [];
+  const collegeNames = COLLEGES.map((college) => college.name);
   const dropdownOptions = ["Admin", "Dev", ...collegeNames];
 
   const [selectedCollege, setSelectedCollege] = useState<string>(
     dropdownOptions[0] || ""
   );
-  const [specialRoleUsers, setSpecialRoleUsers] = useState<WithId<UserDoc>[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [specialRoleUsers, setSpecialRoleUsers] = useState<Person[]>([]);
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editingRoles, setEditingRoles] = useState<string[]>([]);
   const [editingSportsCaptainOf, setEditingSportsCaptainOf] = useState<
@@ -86,32 +151,29 @@ const ManageUserRolesPage = () => {
   const [loadError, setLoadError] = useState<string>("");
 
   useEffect(() => {
-    if (!selectedCollege) return;
+    if (!selectedCollege || !currentSeason) return;
+    let live = true;
     setLoading(true);
     setLoadError("");
-    fetch(
-      `/api/functions/getSpecialUsers?college=${encodeURIComponent(selectedCollege)}`
-    )
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        // Without this an unauthorized or failed lookup was indistinguishable
-        // from a college that genuinely has no captains or reps.
-        if (!res.ok) {
-          throw new Error(data.error || `Request failed (${res.status})`);
+    loadGroup(selectedCollege, currentSeason.id)
+      .then(
+        (people) => live && setSpecialRoleUsers(people),
+        (err: Error) => {
+          console.error("Failed to load special users:", err);
+          if (!live) return;
+          setSpecialRoleUsers([]);
+          setLoadError(err.message);
         }
-        setSpecialRoleUsers(data.users || []);
-      })
-      .catch((err) => {
-        console.error("Failed to load special users:", err);
-        setSpecialRoleUsers([]);
-        setLoadError(err.message || "Failed to load users.");
-      })
-      .finally(() => setLoading(false));
-  }, [selectedCollege]);
+      )
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [selectedCollege, currentSeason, reloadKey]);
 
   // Group users by role
   const usersByRole = useMemo(() => {
-    const grouped: Record<string, WithId<UserDoc>[]> = {
+    const grouped: Record<string, Person[]> = {
       admin: [],
       dev: [],
       captain: [],
@@ -119,8 +181,7 @@ const ManageUserRolesPage = () => {
     };
 
     specialRoleUsers.forEach((user) => {
-      const roles = user.mRoles || [];
-      roles.forEach((role) => {
+      user.roles.forEach((role) => {
         if (grouped[role]) {
           grouped[role].push(user);
         }
@@ -153,8 +214,8 @@ const ManageUserRolesPage = () => {
         user.email === userId
           ? {
               ...user,
-              mRoles: editingRoles,
-              sportsCaptainOf: editingSportsCaptainOf,
+              roles: editingRoles,
+              captainOf: editingSportsCaptainOf,
             }
           : user
       )
@@ -167,29 +228,15 @@ const ManageUserRolesPage = () => {
     setEditingRoles([]);
     setEditingSportsCaptainOf([]);
 
-    // Send update to backend
+    // Send update to backend; "captain" turns the chosen sports on.
     try {
-      const response = await fetch(`/api/functions/updateUserRoles`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          roles: rolesToSave,
-          sportsCaptainOf: sportsToSave,
-        }),
+      await setUserRoles(userId, {
+        roles: rolesToSave.filter((r): r is StoredRole => (STORED_ROLES as readonly string[]).includes(r)),
+        captainOf: rolesToSave.includes("captain") ? sportsToSave : [],
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update roles");
-      }
-
-      console.log("Successfully updated user roles and sports");
     } catch (error) {
-      console.error("Failed to update roles:", error);
-      // Revert optimistic update on error
-      window.location.reload();
-      alert("Failed to update user roles. Please try again.");
+      toast.error((error as Error).message);
+      setReloadKey((k) => k + 1); // undo the optimistic update
     }
   };
 
@@ -199,15 +246,15 @@ const ManageUserRolesPage = () => {
     );
   };
 
-  const toggleSport = (sportName: string) => {
+  const toggleSport = (sportId: string) => {
     setEditingSportsCaptainOf((prev) =>
-      prev.includes(sportName)
-        ? prev.filter((s) => s !== sportName)
-        : [...prev, sportName]
+      prev.includes(sportId)
+        ? prev.filter((s) => s !== sportId)
+        : [...prev, sportId]
     );
   };
 
-  const RoleTable = ({ role, users }: { role: string; users: WithId<UserDoc>[] }) => {
+  const RoleTable = ({ role, users }: { role: string; users: Person[] }) => {
     if (users.length === 0) return null;
 
     return (
@@ -249,8 +296,7 @@ const ManageUserRolesPage = () => {
                   className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {(user.firstname || "") + " " + (user.lastname || "") ||
-                      "N/A"}
+                    {user.name || "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {user.email}
@@ -277,7 +323,7 @@ const ManageUserRolesPage = () => {
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-1">
-                        {(user.mRoles || []).map((r) => (
+                        {user.roles.map((r) => (
                           <span
                             key={r}
                             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
@@ -299,9 +345,9 @@ const ManageUserRolesPage = () => {
                             {sports.map((sport) => (
                               <button
                                 key={sport.id}
-                                onClick={() => toggleSport(sport.name)}
+                                onClick={() => toggleSport(sport.id)}
                                 className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                  editingSportsCaptainOf.includes(sport.name)
+                                  editingSportsCaptainOf.includes(sport.id)
                                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                     : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
                                 }`}
@@ -316,19 +362,17 @@ const ManageUserRolesPage = () => {
                           Select captain role first
                         </span>
                       )
-                    ) : (user.mRoles || []).includes("captain") ? (
+                    ) : user.roles.includes("captain") ? (
                       <div className="flex flex-wrap gap-1">
-                        {(user.sportsCaptainOf || []).length > 0 ? (
-                          (user.sportsCaptainOf || []).map((sportName) => {
-                            const sport = sports.find(
-                              (s) => s.name === sportName
-                            );
+                        {user.captainOf.length > 0 ? (
+                          user.captainOf.map((sportId) => {
+                            const sport = sports.find((s) => s.id === sportId);
                             return (
                               <span
-                                key={sportName}
+                                key={sportId}
                                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                               >
-                                {sport?.emoji} {sportName}
+                                {sport?.emoji} {sport?.name ?? sportId}
                               </span>
                             );
                           })
@@ -346,7 +390,7 @@ const ManageUserRolesPage = () => {
                     {editingUser === user.email ? (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => saveRoleChanges(user.email ?? user.id)}
+                          onClick={() => saveRoleChanges(user.email)}
                           className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 font-medium"
                         >
                           Done
@@ -361,11 +405,7 @@ const ManageUserRolesPage = () => {
                     ) : (
                       <button
                         onClick={() =>
-                          startEditing(
-                            user.email ?? user.id, // the doc id is the email
-                            user.mRoles || [],
-                            user.sportsCaptainOf || []
-                          )
+                          startEditing(user.email, user.roles, user.captainOf)
                         }
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                       >

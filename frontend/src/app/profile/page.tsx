@@ -1,127 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@src/context/UserContext";
+import { useSession } from "@/context/SessionContext";
+import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
-import { toCollegeAbbreviation } from "@src/utils/helpers"; // Ensure this import is correct
-import type { CollegeMatchJson } from "@src/types/api";
-import type { MatchParticipant } from "@src/types/legacy";
-import LoadingScreen from "@src/components/LoadingScreen";
-import ListView from "@src/components/Profile/ListView";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import ListView from "@/components/profile/ListView";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
-import { getCollegeFlag } from "@/utils/versionedImages";
-import SignInPrompt from "@src/components/SignInPrompt";
+import { getCollegeFlag } from "@/lib/images";
+import SignInPrompt from "@/components/layout/SignInPrompt";
+import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { changeMe, fetchMyMatches } from "@/lib/api/me";
+import { collegeName } from "@/lib/colleges";
+
+/** How many of the college's next games the profile lists. */
+const UPCOMING_LIMIT = 6;
 
 const Profile = () => {
-  const { user, loading, casSignOut, setUser } = useUser();
-  const [matches, setMatches] = useState<CollegeMatchJson[]>([]);
+  const { viewer, loading, signOut, setViewer } = useSession();
+  const { currentSeason } = useSeason();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [myMatchIds, setMyMatchIds] = useState<Set<string>>(new Set());
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [newUsername, setNewUsername] = useState(user?.username || "");
+  const [newUsername, setNewUsername] = useState(viewer?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
-  const matchesLimit = 3; // will fetch double this amount of matches; this number can be changed if wanted
-
+  // The college's next games this season, and which of them the user plays.
+  const collegeId = viewer?.collegeId ?? null;
   useEffect(() => {
-    const fetchUserMatches = async () => {
-      if (!user || !user.email || matches.length > 0) return;
-
-      setFetching(true);
-      try {
-        const userCollegeAbbreviation =
-          toCollegeAbbreviation[user.college] || user.college;
-
-        const response = await fetch(
-          `/api/functions/getCollegeMatches?college=${userCollegeAbbreviation}&limit=${matchesLimit}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error fetching matches: ${response.statusText}`);
-        }
-
-        const fetchedMatches: CollegeMatchJson[] = await response.json();
-
-        setMatches(fetchedMatches);
-      } catch (error) {
-        console.error("Error fetching user matches:", error);
-      } finally {
-        setFetching(false);
-      }
+    if (!collegeId || !currentSeason) return;
+    let live = true;
+    setFetching(true);
+    Promise.all([
+      fetchSeasonMatches(currentSeason.id, {
+        collegeId,
+        status: "scheduled",
+        from: new Date().toISOString(),
+        page: 1,
+        pageSize: UPCOMING_LIMIT,
+      }),
+      fetchMyMatches({ seasonId: currentSeason.id, upcoming: true }),
+    ])
+      .then(
+        ([college, mine]) => {
+          if (!live) return;
+          setMatches(college.items);
+          setMyMatchIds(new Set(mine.items.map((m) => m.id)));
+        },
+        (err) => console.error("Error fetching user matches:", err)
+      )
+      .finally(() => live && setFetching(false));
+    return () => {
+      live = false;
     };
-
-    fetchUserMatches();
-  }, [user, matches.length]);
+  }, [collegeId, currentSeason]);
 
   useEffect(() => {
-    if (user?.username) setNewUsername(user.username);
-  }, [user?.username]);
+    if (viewer?.username) setNewUsername(viewer.username);
+  }, [viewer?.username]);
 
-  const signedUpMatches = matches.filter((match) => {
-    const homeParticipants = match.home_college_participants || [];
-    const awayParticipants = match.away_college_participants || [];
-
-    return (
-      homeParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      ) ||
-      awayParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      )
-    );
-  });
-
-  const availableMatches = matches.filter((match) => {
-    const homeParticipants = match.home_college_participants || [];
-    const awayParticipants = match.away_college_participants || [];
-
-    return (
-      !homeParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      ) &&
-      !awayParticipants.some(
-        (participant: MatchParticipant) => participant.email === user?.email
-      )
-    );
-  });
+  const signedUpMatches = matches.filter((match) => myMatchIds.has(match.id));
+  const availableMatches = matches.filter((match) => !myMatchIds.has(match.id));
 
   const handleEditUsername = async () => {
     setEditLoading(true);
     setError("");
-
     try {
-      const response = await fetch("/api/functions/updateUsername", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newUsername: newUsername.trim() }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Update the user context
-          if (setUser && user) {
-            setUser({
-              ...user,
-              username: data.username, // Update the username only
-            });
-          }
-          setIsEditing(false); // Close the popup
-        } else {
-          setError("Failed to update username. Please try again.");
-        }
-      } else {
-        const errorMessage = await response.text();
-        setError(errorMessage || "An unexpected error occurred.");
-      }
-    } catch (error) {
-      console.error("Error updating username:", error);
-      setError("Failed to update username. Please try again.");
+      const username = newUsername.trim();
+      await changeMe({ username });
+      setViewer((v) => ({ ...v, username }));
+      setIsEditing(false);
+    } catch (err) {
+      setError((err as Error).message);
     } finally {
       setEditLoading(false);
     }
@@ -129,7 +82,7 @@ const Profile = () => {
 
   const handleLogout = async () => {
     try {
-      await casSignOut();
+      await signOut();
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -139,7 +92,7 @@ const Profile = () => {
     return <LoadingScreen />;
   }
 
-  if (!user) {
+  if (!viewer) {
     return (
       <div className="flex justify-center items-center h-screen px-4">
         <SignInPrompt message="Sign in to see your profile." />
@@ -151,7 +104,7 @@ const Profile = () => {
     <div className="flex min-h-screen flex-col max-w-[1500px] mx-auto">
       <div className="flex-grow m-3 ">
         <h2 className="text-lg sm:text-2xl font-semibold text-center mt-10">
-          Hey {user.name.split(" ")[0]}, play some IMs today!
+          Hey {viewer.name.split(" ")[0]}, play some IMs today!
         </h2>
         <div className="mx-auto p-6 m-4 rounded-lg flex flex-col space-y-6 lg:items-start lg:flex-row lg:space-y-0 lg:space-x-6 justify-center lg:ml-10">
           {/* Right Side: Stats */}
@@ -162,8 +115,8 @@ const Profile = () => {
               </h2>
               <div className="flex justify-center items-center space-x-4">
                 <Image
-                  src={getCollegeFlag(user.college)}
-                  alt={user.college}
+                  src={getCollegeFlag(collegeName(viewer.collegeId) ?? "")}
+                  alt={collegeName(viewer.collegeId) ?? ""}
                   width={100}
                   height={100}
                   className="rounded-md object-contain"
@@ -185,7 +138,7 @@ const Profile = () => {
 
             <div className="hidden sm:block">
               <button
-                onClick={casSignOut}
+                onClick={signOut}
                 className="mt-6 py-2 px-4 bg-red-500 text-white rounded-md"
               >
                 Log Out

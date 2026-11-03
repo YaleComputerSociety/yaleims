@@ -1,24 +1,6 @@
 import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
-import { safeReturnPath } from "@/lib/returnPath";
+import { route } from "@/server/http";
+import { casLoginUrl } from "@/server/yaleLogin";
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const BASE_URL = process.env.BASE_URL;
-  if (!BASE_URL) {
-    throw new Error("Please define the BASE_URL environment variable");
-  }
-  // Only pages on this site; anything else returns to "/" after login.
-  const from = safeReturnPath(request.nextUrl.searchParams.get("from"), BASE_URL);
-  const serviceUrl = `${BASE_URL}/api/auth/redirect?from=${encodeURIComponent(from)}`;
-  const encodedServiceUrl = encodeURIComponent(serviceUrl);
-  
-  if (BASE_URL === "http://localhost:3000") {
-    return NextResponse.redirect(
-      `http://secure-tst.its.yale.edu/cas/login?service=${encodedServiceUrl}`
-    );
-  }
-
-  return NextResponse.redirect(
-    `https://secure.its.yale.edu/cas/login?service=${encodedServiceUrl}`
-  );
-}
+/** Sends the visitor to Yale CAS; after login they come back to ?from (a page of this site). */
+export const GET = route(async (req) => NextResponse.redirect(casLoginUrl(new URL(req.url).searchParams.get("from"))));

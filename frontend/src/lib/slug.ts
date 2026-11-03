@@ -1,5 +1,5 @@
 // Bracket doc ids are slugs of the bracket's name (doc ids can't contain
-// slashes). No dependencies, so the migration (database/migrate) uses it too.
+// slashes).
 
 /** "One Day Volleyball Tournament" → "one-day-volleyball-tournament" (at most 80 chars). */
 export function slugify(name: string): string {

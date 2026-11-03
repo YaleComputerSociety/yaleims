@@ -22,6 +22,12 @@ export function seasonRef(seasonId: string): DocumentReference<SeasonDoc> {
   return adminDb.doc(paths.season(seasonId)) as DocumentReference<SeasonDoc>;
 }
 
+/** A season, or null. The frozen pre-v3 docs "current" and "past" aren't seasons (no startYear). */
+export async function getSeason(seasonId: string): Promise<WithId<SeasonDoc> | null> {
+  const snap = await seasonRef(seasonId).get();
+  return snap.exists && typeof snap.data()?.startYear === "number" ? withId<SeasonDoc>(snap) : null;
+}
+
 /**
  * Every season, oldest first. The collection also holds the frozen pre-v3
  * docs "current" and "past"; ordering by startYear leaves them out.

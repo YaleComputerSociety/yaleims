@@ -1,20 +1,10 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE, secureCookies } from "@/server/session";
+import { route } from "@/server/http";
+import { clearSessionCookie } from "@/server/session";
 
-export async function GET(): Promise<NextResponse> {
-  const BASE_URL = process.env.BASE_URL;
-  if (!BASE_URL) {
-    throw new Error("Please define the BASE_URL environment variable");
-  }
-  const response = NextResponse.redirect(`${process.env.BASE_URL}/hub`);
-
-  response.cookies.delete({
-    name: SESSION_COOKIE,
-    secure: secureCookies,
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-  });
-
-  return response;
-}
+/** Ends the session: clears the cookie, 204 (the page then goes home). Signed out already: the same. */
+export const POST = route(async () => {
+  const res = new NextResponse(null, { status: 204 });
+  clearSessionCookie(res);
+  return res;
+});

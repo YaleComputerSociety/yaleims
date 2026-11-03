@@ -32,26 +32,6 @@ export async function listRoster(seasonId: string, matchId: string): Promise<Ros
   return snap.docs.map((d) => d.data()).sort(bySignup);
 }
 
-/** The rosters of several games of a season, by game id (30 games per query). */
-export async function listRosters(
-  seasonId: string,
-  matchIds: string[]
-): Promise<Map<string, RosterEntryDoc[]>> {
-  const rosters = new Map<string, RosterEntryDoc[]>(matchIds.map((id) => [id, []]));
-  for (let i = 0; i < matchIds.length; i += 30) {
-    const snap = await adminDb
-      .collectionGroup(collectionGroups.roster)
-      .where("matchId", "in", matchIds.slice(i, i + 30))
-      .get();
-    for (const d of snap.docs) {
-      const entry = d.data() as RosterEntryDoc;
-      if (entry.seasonId === seasonId) rosters.get(entry.matchId)?.push(entry);
-    }
-  }
-  for (const roster of rosters.values()) roster.sort(bySignup);
-  return rosters;
-}
-
 /** A player's roster entries in a season, by the game's start. */
 export async function listPlayerEntries(seasonId: string, playerId: string): Promise<RosterEntryDoc[]> {
   const snap = await adminDb

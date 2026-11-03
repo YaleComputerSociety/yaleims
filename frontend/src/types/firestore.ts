@@ -1,8 +1,8 @@
 // Firestore documents of schema v3 (REDESIGN.md section 4), one type per
 // collection. Types only, no runtime code: the server data layer
-// (src/server/data), the browser listeners and the migration
-// (database/migrate) import them. Paths live in src/lib/paths.ts. The schema
-// before v3 is in ./legacy.ts.
+// (src/server/data), the API contract (src/lib/api) and the browser
+// listeners import them. Paths live in src/lib/paths.ts. The schema before v3
+// is described in git tag v3-migration (src/types/legacy.ts).
 //
 // Everything that belongs to a season lives under seasons/{seasonId} (D29);
 // global are only users, usernames and config/app. References are ids:

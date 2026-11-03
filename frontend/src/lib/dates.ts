@@ -1,6 +1,5 @@
 // The league's calendar: days are Eastern-time days (D34), whatever time zone
-// the code runs in (the server runs on UTC). No dependencies, so the
-// migration (database/migrate) uses it too.
+// the code runs in (the server runs on UTC).
 import type { EasternDate } from "../types/firestore";
 
 const easternDay = new Intl.DateTimeFormat("en-CA", {
@@ -29,4 +28,20 @@ export function mondayOf(day: EasternDate): EasternDate {
   const date = new Date(Date.UTC(y, m - 1, d));
   date.setUTCDate(d - ((date.getUTCDay() + 6) % 7));
   return date.toISOString().slice(0, 10);
+}
+
+/** Midnight Eastern at the start of `day`, as an instant. */
+export function easternMidnight(day: EasternDate): Date {
+  const [y, m, d] = day.split("-").map(Number);
+  // Midnight Eastern is 04:00 UTC in summer time (EDT), 05:00 in winter (EST).
+  const edt = new Date(Date.UTC(y, m - 1, d, 4));
+  return Number(easternHour.format(edt)) === 0 ? edt : new Date(Date.UTC(y, m - 1, d, 5));
+}
+
+const easternHour = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" });
+
+/** The day `days` days after `day` (before, for a negative count). */
+export function addDays(day: EasternDate, days: number): EasternDate {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }

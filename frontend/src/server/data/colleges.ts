@@ -19,16 +19,6 @@ export async function listColleges(seasonId: string): Promise<WithId<CollegeDoc>
 }
 
 /**
- * A season's standings: most points first, then most wins, then id
- * descending (the order the leaderboard has always had).
- */
-export async function listStandings(seasonId: string): Promise<WithId<CollegeDoc>[]> {
-  return (await listColleges(seasonId)).sort(
-    (a, b) => b.points - a.points || b.wins - a.wins || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
-  );
-}
-
-/**
  * Re-ranks a season's colleges: most points, then most wins. The first
  * re-rank of an (Eastern) day also keeps each college's previous rank in
  * prevRank (the leaderboard's rank change).
