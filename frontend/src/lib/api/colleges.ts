@@ -13,10 +13,10 @@ export const collegeIdSchema = z.string().refine((id) => COLLEGE_IDS.includes(id
 
 // ── Players and leaders ────────────────────────────────────────────────────
 
-/** A college's player this season, with the sports (ids) they captain. */
-export type CollegePlayer = Json<WithId<PlayerDoc>> & { captainOf: string[] };
+/** A college's player this season, with their NetID (null: none recorded, or a guest) and the sports (ids) they captain. */
+export type CollegePlayer = Json<WithId<PlayerDoc>> & { netid: string | null; captainOf: string[] };
 
-/** GET …/colleges/{c}/players (the college's rep, devs; current season): by name. */
+/** GET …/colleges/{c}/players (the college's rep and captains, supervisors; current season): by name. */
 export interface CollegePlayerList {
   items: CollegePlayer[];
   total: number;

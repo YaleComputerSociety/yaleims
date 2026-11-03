@@ -31,9 +31,10 @@ export default function GameRow({
     minute: "2-digit",
   });
   const playing = sheet?.items.filter((e) => e.captainStatus !== "removed") ?? [];
+  // Supervisors: how many of each side are marked present ("Present BF 2 · GH 1").
   const counts = sheet
     ? sheet.supervisor
-      ? `Attendance ${playing.filter((e) => e.present).length}/${playing.length}`
+      ? `Present ${sheet.collegeIds.map((c) => `${c} ${playing.filter((e) => e.collegeId === c && e.present).length}`).join(" · ")}`
       : `${playing.length} signed up · ✓${playing.filter((e) => e.captainStatus === "confirmed").length}`
     : null;
   const state =

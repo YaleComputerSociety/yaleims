@@ -49,6 +49,8 @@ export interface UserDoc {
   email: string;
   firstname: string;
   lastname: string;
+  /** Their Yale NetID, recorded at login since Phase 3A (null: not seen since; guests have no user). */
+  netid: string | null;
   username: string;
   roles: GlobalRole[];
   /** The user's first own login; null = created for them by a captain/supervisor (U10). */

@@ -16,16 +16,26 @@ import {
   changeRosterEntry,
   fetchRosterSheet,
   type RosterChange,
-  type RosterEntry,
   type RosterSheet as Sheet,
 } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
 import { useNow } from "@/lib/useNow";
 
+type SheetEntry = Sheet["items"][number];
+
+/**
+ * What tells same-named players apart, shown in brackets after the name: the
+ * NetID, "guest" for a guest, or the email of someone whose NetID isn't
+ * recorded yet (it is at their next visit).
+ */
+function who(player: { playerId: string; netid: string | null }): string {
+  return player.playerId.startsWith("guest-") ? "guest" : (player.netid ?? player.playerId);
+}
+
 /** How an entry got on the roster, for the row's small print; supervisors also see the captain's confirmation. */
-function origin(entry: RosterEntry, supervisor: boolean): string {
+function origin(entry: SheetEntry, supervisor: boolean): string {
   const how = entry.playerId.startsWith("guest-")
-    ? "guest"
+    ? "added by supervisor"
     : entry.addedBy === "supervisor"
       ? "walk-in"
       : entry.addedBy === "captain"
@@ -74,7 +84,7 @@ export default function RosterSheet({ match, onChange }: { match: Match; onChang
       setBusy(null);
     }
   };
-  const change = (entry: RosterEntry, c: RosterChange) =>
+  const change = (entry: SheetEntry, c: RosterChange) =>
     run(entry.playerId, () => changeRosterEntry(match.seasonId, match.id, entry.playerId, c));
 
   return (
@@ -104,11 +114,11 @@ export default function RosterSheet({ match, onChange }: { match: Match; onChang
 interface SideProps {
   match: Match;
   collegeId: string;
-  entries: RosterEntry[];
+  entries: SheetEntry[];
   supervisor: boolean;
   locked: boolean;
   busy: string | null;
-  change: (entry: RosterEntry, c: RosterChange) => Promise<void>;
+  change: (entry: SheetEntry, c: RosterChange) => Promise<void>;
   run: (key: string, action: () => Promise<unknown>) => Promise<void>;
 }
 
@@ -150,7 +160,9 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
               />
             )}
             <div className="flex-1 min-w-0">
-              <div className="truncate font-medium">{entry.name}</div>
+              <div className="truncate font-medium">
+                {entry.name} <span className="font-normal text-gray-500 dark:text-gray-400">({who(entry)})</span>
+              </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">{origin(entry, supervisor)}</div>
             </div>
             {!locked && !supervisor && entry.captainStatus !== "confirmed" && (
@@ -192,7 +204,9 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
           <div className="text-xs uppercase tracking-wide text-gray-400 pt-3 pb-1">Taken off</div>
           {removed.map((entry) => (
             <div key={entry.playerId} className="flex items-center justify-between py-1.5 text-sm text-gray-500">
-              <span className="line-through">{entry.name}</span>
+              <span className="line-through">
+                {entry.name} ({who(entry)})
+              </span>
               {!locked && (
                 <button
                   className="text-xs inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 disabled:opacity-50"
@@ -232,7 +246,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
 interface AddPlayerProps {
   match: Match;
   collegeId: string;
-  onRoster: RosterEntry[];
+  onRoster: SheetEntry[];
   supervisor: boolean;
   busy: string | null;
   run: (key: string, action: () => Promise<unknown>) => Promise<void>;
@@ -257,7 +271,11 @@ function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPla
     if (!players || !q) return [];
     const taken = new Set(onRoster.filter((e) => e.captainStatus !== "removed").map((e) => e.playerId));
     return players
-      .filter((p) => !taken.has(p.id) && (p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)))
+      .filter(
+        (p) =>
+          !taken.has(p.id) &&
+          [p.name, p.id, p.netid ?? ""].some((field) => field.toLowerCase().includes(q))
+      )
       .slice(0, 6);
   }, [players, term, onRoster]);
 
@@ -278,7 +296,7 @@ function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPla
       <input
         autoFocus
         type="search"
-        placeholder={`Name or email of a ${collegeName(collegeId)} player`}
+        placeholder={`Name, NetID or email of a ${collegeName(collegeId)} player`}
         className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-black ring-1 ring-black/10 dark:ring-white/10 focus:ring-2 focus:ring-blue-400 outline-none"
         value={term}
         onChange={(e) => setTerm(e.target.value)}
@@ -287,7 +305,7 @@ function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPla
       {matches.map((p) => (
         <div key={p.id} className="flex items-center justify-between text-sm">
           <span>
-            {p.name} <span className="text-xs text-gray-500">{p.id.startsWith("guest-") ? "guest" : p.id}</span>
+            {p.name} <span className="text-xs text-gray-500">({who({ playerId: p.id, netid: p.netid })})</span>
           </span>
           <button
             className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-600 text-white disabled:opacity-50"

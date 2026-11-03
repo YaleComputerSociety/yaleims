@@ -26,7 +26,7 @@ export const GET = route(async (req) => {
   const seasonId = await getCurrentSeasonId();
   if (!seasonId) throw new Error("config/app has no current season");
 
-  await signIn(profile, seasonId);
+  await signIn(profile, netid, seasonId);
   const res = NextResponse.redirect(siteUrl(returnPath(from)));
   const name = `${profile.first_name} ${profile.last_name}`;
   setSessionCookie(res, { email: profile.email, netid, name, college: profile.college ?? null });

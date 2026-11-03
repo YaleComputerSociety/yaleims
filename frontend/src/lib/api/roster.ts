@@ -56,7 +56,8 @@ export interface RosterSheet {
   collegeIds: string[];
   /** A supervisor: takes attendance, any time; otherwise a captain, until the start. */
   supervisor: boolean;
-  items: RosterEntry[];
+  /** Each entry with the player's NetID (null: none recorded, or a guest), to tell same-named players apart. */
+  items: (RosterEntry & { netid: string | null })[];
   total: number;
 }
 

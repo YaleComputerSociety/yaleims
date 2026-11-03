@@ -10,7 +10,7 @@ import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
-  email: true, firstname: true, lastname: true, username: true,
+  email: true, firstname: true, lastname: true, netid: true, username: true,
   roles: true, claimedAt: true, createdBy: true,
 };
 
@@ -20,7 +20,7 @@ const USER_FIELDS: Record<keyof UserDoc, true> = {
  */
 export function readUser(data: DocumentData): UserDoc {
   const user = pickFields<UserDoc>(data, USER_FIELDS);
-  return { ...user, roles: user.roles ?? [], claimedAt: user.claimedAt ?? null, createdBy: user.createdBy ?? null };
+  return { ...user, netid: user.netid ?? null, roles: user.roles ?? [], claimedAt: user.claimedAt ?? null, createdBy: user.createdBy ?? null };
 }
 
 export function userRef(email: string): DocumentReference {
@@ -46,6 +46,12 @@ export async function getUsers(emails: string[]): Promise<Map<string, UserDoc>> 
   if (emails.length === 0) return new Map();
   const snaps = await adminDb.getAll(...emails.map(userRef));
   return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
+}
+
+/** The NetIDs of the users with these emails that have one recorded, by email. */
+export async function getNetids(emails: string[]): Promise<Map<string, string>> {
+  const users = await getUsers([...new Set(emails)].filter((e) => !e.startsWith("guest-")));
+  return new Map([...users].flatMap(([email, user]) => (user.netid ? [[email, user.netid] as const] : [])));
 }
 
 /** "First Last" of the users with these emails (missing ones left out), by email. */

@@ -1,5 +1,6 @@
 // Accounts: the user behind a Yale login and their season membership. The
-// first login creates users/{email} with a generated username; the first
+// first login creates users/{email} with a generated username and the NetID
+// (recorded for users from before, at their next login or visit); the first
 // visit of a season creates the season's player doc (D30) with the college
 // Yalies gave.
 import "server-only";
@@ -52,11 +53,11 @@ export interface YaliesProfile {
  * one a captain made for them, U10) and their membership of the season.
  * Throws for a non-Yale email.
  */
-export async function signIn(profile: YaliesProfile, seasonId: string): Promise<void> {
+export async function signIn(profile: YaliesProfile, netid: string, seasonId: string): Promise<void> {
   if (!profile.email || !profile.email.endsWith("@yale.edu")) {
     throw new Error("You must use a Yale email to sign in.");
   }
-  await getOrCreateUser(profile);
+  await getOrCreateUser(profile, netid);
   const name = `${profile.first_name} ${profile.last_name}`.trim();
   await joinSeason(seasonId, profile.email, name, profile.college);
 }
@@ -66,12 +67,15 @@ export async function signIn(profile: YaliesProfile, seasonId: string): Promise<
  * of the username counter ("Anonymous" if that one is taken). Counter,
  * username and user change in one transaction.
  */
-async function getOrCreateUser(profile: YaliesProfile): Promise<void> {
+async function getOrCreateUser(profile: YaliesProfile, netid: string): Promise<void> {
   const ref = userRef(profile.email);
   await runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (snap.exists) {
-      if (!readUser(snap.data()!).claimedAt) tx.update(ref, { claimedAt: FieldValue.serverTimestamp() });
+      const user = readUser(snap.data()!);
+      if (!user.claimedAt || user.netid !== netid) {
+        tx.update(ref, { netid, ...(user.claimedAt ? {} : { claimedAt: FieldValue.serverTimestamp() }) });
+      }
       return;
     }
     const n = ((await tx.get(usernameCounterRef())).data()?.count || 0) + 1;
@@ -85,12 +89,18 @@ async function getOrCreateUser(profile: YaliesProfile): Promise<void> {
       email: profile.email,
       firstname: profile.first_name,
       lastname: profile.last_name,
+      netid,
       username,
       roles: [],
       claimedAt: FieldValue.serverTimestamp(),
       createdBy: null,
     });
   });
+}
+
+/** Records the NetID of a user who has none yet (signed in before NetIDs were kept). */
+export async function recordNetid(email: string, netid: string): Promise<void> {
+  await userRef(email).update({ netid });
 }
 
 /**

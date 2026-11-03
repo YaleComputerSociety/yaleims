@@ -217,3 +217,30 @@ describe("reads for the game-day screens", () => {
     expect((await api("GET", "/api/users?role=supervisor", undefined, { session: supervisor() })).status).toBe(403);
   });
 });
+
+describe("NetIDs (to tell same-named players apart)", () => {
+  it("come with the sheet's entries and the college's player list", async () => {
+    const { captain, collegeId, game, path } = await captainWithGame();
+    const sheet = await api("GET", `${path}/sheet`, undefined, { session: sessionFor(captain) });
+    for (const e of sheet.body.items) {
+      const user = (await db.doc(`users/${e.playerId}`).get()).data();
+      expect(e.netid).toBe(user?.netid ?? null);
+    }
+    expect(sheet.body.items.some((e: { netid: string | null }) => e.netid)).toBe(true);
+    const list = await api("GET", `/api/seasons/${current}/colleges/${collegeId}/players`, undefined, { session: sessionFor(captain) });
+    expect(list.body.items.every((p: { netid: unknown }) => p.netid === null || typeof p.netid === "string")).toBe(true);
+    expect(list.body.items.filter((p: { netid: string | null }) => p.netid).length).toBeGreaterThan(0);
+    expect(game.id).toBeTruthy();
+  });
+
+  it("are recorded on a visit for a user who has none yet, never overwritten", async () => {
+    await db.doc(`users/${people.supervisor}`).update({ netid: null });
+    await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.supervisor) });
+    expect((await db.doc(`users/${people.supervisor}`).get()).data()!.netid).toBe("supervisor");
+    const student = people.student(3, 5);
+    const before = (await db.doc(`users/${student}`).get()).data()!.netid;
+    expect(before).toBeTruthy();
+    await api("GET", "/api/auth/session", undefined, { session: sessionFor(student) });
+    expect((await db.doc(`users/${student}`).get()).data()!.netid).toBe(before);
+  });
+});
