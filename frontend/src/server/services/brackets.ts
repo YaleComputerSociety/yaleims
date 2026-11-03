@@ -26,7 +26,7 @@ import type {
   PlacementPoints,
   Placements,
 } from "@/types/firestore";
-import { logAction, type Actor } from "../data/auditLog";
+import { logAction, readAuditedChildren, type Actor } from "../data/auditLog";
 import { bracketRef } from "../data/brackets";
 import { collegeRef, listColleges, recalculateRanks } from "../data/colleges";
 import { matchRef, newMatchRef } from "../data/matches";
@@ -249,13 +249,13 @@ export async function deleteBracket(
     }
     const scoredGames = scored.map((s) => s.data()!).filter(isScoredGame);
     const placementColleges = Object.values(bracket.placements ?? {}).filter((c): c is string => !!c);
-    const [standingDocs, placementDocs, rosters, reports] = await Promise.all([
+    const [standingDocs, placementDocs] = await Promise.all([
       readStandingDocs(tx, seasonId, scoredGames),
       placementColleges.length > 0 ? tx.getAll(...placementColleges.map((c) => collegeRef(seasonId, c))) : [],
-      Promise.all(gameRefs.map((r) => tx.get(rosterRef(seasonId, r.id)))),
-      Promise.all(gameRefs.map((r) => tx.get(scoreReportsRef(seasonId, r.id)))),
     ]);
-    const children = [...rosters.flatMap((q) => q.docs), ...reports.flatMap((q) => q.docs)];
+    const changed = [bracketSnap, ...gameSnaps.filter((s) => s.exists), ...standingDocs, ...placementDocs];
+    const children = await readAuditedChildren(tx,
+      gameRefs.flatMap((r) => [rosterRef(seasonId, r.id), scoreReportsRef(seasonId, r.id)]), changed);
 
     for (const game of scoredGames) applyResult(tx, seasonId, game, -1, standingDocs);
     takeBackPlacements(tx, seasonId, bracket, ["first", "second", "third"]);
@@ -264,7 +264,7 @@ export async function deleteBracket(
       actor,
       action: bracket.kind === "tournament" ? "deleteTournament" : "deleteBracket",
       params: { bracketId, force },
-      changed: [bracketSnap, ...gameSnaps.filter((s) => s.exists), ...children, ...standingDocs, ...placementDocs],
+      changed: [...changed, ...children],
     });
     return { status: "deleted", matchCount: gameRefs.length };
   });

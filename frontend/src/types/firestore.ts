@@ -314,15 +314,36 @@ export interface BracketDoc {
 
 // ── seasons/{s}/auditLog/{entryId} ─────────────────────────────────────────
 
-/**
- * One supervisor/admin action (D32), written in the same transaction as the
- * change. `before` holds each target doc as it was (null = it didn't exist).
- */
-export interface AuditLogDoc {
+/** Metadata shared by legacy inline audit entries and large chunked entries. */
+export interface AuditLogMetadata {
   at: StoredTimestamp;
   actor: { userId: string; roles: string[] };
   action: string;
+}
+
+/** The complete action payload, read through server/data/auditLog.getAuditLog. */
+export interface AuditLogPayload {
   params: Record<string, unknown>;
   targets: string[];
+  /** Each target as it was; null means it did not exist before the action. */
   before: Record<string, Record<string, unknown> | null>;
 }
+
+/** seasons/{s}/auditLog/{id}/auditPayloadChunks/{part}: a slice of encoded JSON. */
+export interface AuditPayloadChunkDoc {
+  data: Uint8Array;
+}
+
+/**
+ * One privileged action, committed atomically with its changes. Small entries
+ * retain the original inline shape. Large payloads live in ordered private
+ * chunks; their manifest is explicit so readers cannot mistake a partial
+ * snapshot for a complete one. Small params stay on the root for queries.
+ */
+export type AuditLogDoc = AuditLogMetadata & (AuditLogPayload | {
+  params: Record<string, unknown>;
+  payload: { encoding: "firestore-json-v1"; chunkCount: number; byteLength: number; sha256: string };
+});
+
+/** An audit entry with its complete payload reconstructed, regardless of storage format. */
+export type AuditLogRecord = AuditLogMetadata & AuditLogPayload;

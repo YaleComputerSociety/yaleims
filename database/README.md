@@ -6,6 +6,7 @@
 | `firestore.indexes.json` | Composite indexes and field overrides. Every query the server makes that combines filters or sorts needs one here (the emulator doesn't check; production answers "requires an index"). It still lists the indexes of the pre-v3 collections, kept until the old data is deleted. |
 | `firebase.json` | Which rules and indexes deploy, and the emulator's ports (Firestore :8080, UI :4000). `npm run emulator` in `frontend/` uses it. |
 | `misc/` | Hand-run admin scripts: the season rollover and the schedule spreadsheet converter (see `misc/README.md`). |
+| `audit-log.md` | Inline and chunked audit records, the server reader, operation budgets, and maintenance guidance. |
 
 The schema (schema v3: everything of a season under `seasons/{seasonId}`;
 global `users`, `usernames`, `config/app`) is documented in

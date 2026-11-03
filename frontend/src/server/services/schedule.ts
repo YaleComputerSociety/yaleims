@@ -6,7 +6,7 @@ import "server-only";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { MatchEdit, NewMatch } from "@/lib/api/matches";
 import type { MatchDoc } from "@/types/firestore";
-import { logAction, type Actor } from "../data/auditLog";
+import { logAction, readAuditedChildren, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
 import { matchRef, newMatchRef } from "../data/matches";
 import { rosterRef } from "../data/roster";
@@ -161,11 +161,7 @@ export async function deleteMatch(seasonId: string, matchId: string, actor: Acto
     if (!match) return "not-found";
     if (match.status === "final") return "scored";
     if (match.bracketId) return "in-bracket";
-    const [roster, reports] = await Promise.all([
-      tx.get(rosterRef(seasonId, matchId)),
-      tx.get(scoreReportsRef(seasonId, matchId)),
-    ]);
-    const children = [...roster.docs, ...reports.docs];
+    const children = await readAuditedChildren(tx, [rosterRef(seasonId, matchId), scoreReportsRef(seasonId, matchId)], [snap]);
     for (const doc of children) tx.delete(doc.ref);
     tx.delete(ref);
     logAction(tx, seasonId, { actor, action: "deleteMatch", params: { matchId }, changed: [snap, ...children] });

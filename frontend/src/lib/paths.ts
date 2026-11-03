@@ -17,6 +17,8 @@ const college = (seasonId: string, collegeId: string) =>
   `${season(seasonId)}/colleges/${seg(collegeId)}`;
 const match = (seasonId: string, matchId: string | number) =>
   `${season(seasonId)}/matches/${seg(matchId)}`;
+const auditLogEntry = (seasonId: string, entryId: string) =>
+  `${season(seasonId)}/auditLog/${seg(entryId)}`;
 
 export const paths = {
   /** { currentSeasonId, features } */
@@ -65,6 +67,9 @@ export const paths = {
     `${season(seasonId)}/brackets/${seg(bracketId)}`,
 
   auditLog: (seasonId: string) => `${season(seasonId)}/auditLog`,
+  auditLogEntry,
+  auditPayloadChunk: (seasonId: string, entryId: string, part: string) =>
+    `${auditLogEntry(seasonId, entryId)}/auditPayloadChunks/${seg(part)}`,
 };
 
 /**

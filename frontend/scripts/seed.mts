@@ -355,7 +355,6 @@ async function activity(seasonSports: (SportDoc & { id: string })[]): Promise<vo
     const reporter = students.find((p) => p.collegeId === m.homeCollegeId)!;
     const id = await addScoreReport(CURRENT, g.id, {
       reason: i === 0 ? "The score is flipped" : "We won this one", reportedBy: reporter.email, reporterName: fullName(reporter),
-      scoreAtReport: { home: m.result?.homeScore ?? null, away: m.result?.awayScore ?? null },
     });
     if (i === 1) await resolveScoreReport(CURRENT, g.id, id, SEED_ACTOR);
   }
