@@ -24,12 +24,13 @@ const FIRST_ROUND: [number, number, number][] = [
 ];
 const BYE_SLOT = [1, 7];
 
+/** The rounds, with their slots (the byes go with the first round) and, by default, how many hours after the first round they start. */
 const ROUNDS = [
-  { key: "r1", label: "First round", slots: [2, 3, 4, 8, 9, 10] },
-  { key: "qf", label: "Quarterfinals", slots: [5, 6, 11, 12] },
-  { key: "sf", label: "Semifinals", slots: [13, 14] },
-  { key: "f", label: "Final", slots: [15] },
-  { key: "third", label: "Third place", slots: [16] },
+  { key: "r1", label: "First round", slots: [1, 2, 3, 4, 7, 8, 9, 10], hoursAfter: 0 },
+  { key: "qf", label: "Quarterfinals", slots: [5, 6, 11, 12], hoursAfter: 1 },
+  { key: "sf", label: "Semifinals", slots: [13, 14], hoursAfter: 2 },
+  { key: "f", label: "Final", slots: [15], hoursAfter: 3 },
+  { key: "third", label: "Third place", slots: [16], hoursAfter: 3 },
 ] as const;
 type RoundKey = (typeof ROUNDS)[number]["key"];
 
@@ -59,13 +60,18 @@ export default function BracketBuilder({ kind, onCreated }: { kind: Kind; onCrea
   const halfNames = kind === "playoffs" ? ["Blue division", "Green division"] : ["Top half", "Bottom half"];
   const picked = new Set(halves.flat().filter(Boolean));
 
-  /** A round's when and where, falling back to the first round's for anything left empty. */
+  /** A round's when and where; anything left empty follows the first round (its time a set number of hours later). */
   const whenOf = (key: RoundKey): When => {
     const own = when[key];
     const first = when.r1;
+    const later = (time: string, hours: number) => {
+      if (!time) return "";
+      const [h, m] = time.split(":").map(Number);
+      return `${String(Math.min(23, h + hours)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    };
     return {
       date: own.date || first.date,
-      time: own.time || first.time,
+      time: own.time || later(first.time, ROUNDS.find((r) => r.key === key)!.hoursAfter),
       venue: own.venue || first.venue,
       venueDetail: own.venueDetail || first.venueDetail,
     };
@@ -93,7 +99,7 @@ export default function BracketBuilder({ kind, onCreated }: { kind: Kind; onCrea
     const out: BracketSlotInput[] = [];
     halves.forEach((seeds, h) => {
       const college = (seed: number) => seeds[seed - 1] || null;
-      out.push({ ...base(BYE_SLOT[h]), homeCollegeId: college(1), homeSeed: 1, startsAt: null, venue: null, venueDetail: null });
+      out.push({ ...base(BYE_SLOT[h]), homeCollegeId: college(1), homeSeed: 1 });
       for (const [slot, home, away] of FIRST_ROUND) {
         out.push({ ...base(slot + 6 * h), homeCollegeId: college(home), homeSeed: home, awayCollegeId: college(away), awaySeed: away });
       }
@@ -203,13 +209,13 @@ export default function BracketBuilder({ kind, onCreated }: { kind: Kind; onCrea
 
       <div className="space-y-2">
         <h4 className="font-semibold text-sm">When and where</h4>
-        <p className="text-xs text-gray-500">Later rounds left empty take the first round&apos;s date, time and place; edit single games later from Game Day.</p>
+        <p className="text-xs text-gray-500">Later rounds left empty follow the first round an hour apart, at the same place; edit single games later from Game Day.</p>
         <div className="space-y-2">
           {rounds.map((r) => (
             <div key={r.key} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-center">
               <span className="col-span-2 sm:col-span-1 text-sm font-medium">{r.label}</span>
               <input type="date" aria-label={`${r.label} date`} className={input} value={when[r.key].date} onChange={(e) => setRound(r.key, "date", e.target.value)} />
-              <input type="time" aria-label={`${r.label} time`} className={input} value={when[r.key].time} onChange={(e) => setRound(r.key, "time", e.target.value)} />
+              <input type="time" aria-label={`${r.label} time`} title={r.key === "r1" ? undefined : `Default ${whenOf(r.key).time || "—"}`} className={input} value={when[r.key].time || (r.key === "r1" ? "" : whenOf(r.key).time)} onChange={(e) => setRound(r.key, "time", e.target.value)} />
               <input aria-label={`${r.label} venue`} placeholder={r.key === "r1" ? "Venue" : whenOf(r.key).venue || "Venue"} className={input} value={when[r.key].venue} onChange={(e) => setRound(r.key, "venue", e.target.value)} />
               <input aria-label={`${r.label} field`} placeholder={r.key === "r1" ? "Field / court" : whenOf(r.key).venueDetail || "Field / court"} className={input} value={when[r.key].venueDetail} onChange={(e) => setRound(r.key, "venueDetail", e.target.value)} />
             </div>
