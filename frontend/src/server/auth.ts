@@ -141,8 +141,10 @@ export const can = {
   editSchedule: isSupervisor,
   /** Score and undo games; see every score report, with reporters' emails, and resolve them. */
   score: isSupervisor,
-  /** Mark who came to a game, add walk-ins and guests, at any time (D34 R4, R5). */
+  /** Mark who came to a game and add walk-ins, at any time (D34 R4, R5). */
   takeAttendance: isSupervisor,
+  /** Look people up in the Yale directory by NetID, to add them to a game (captains and supervisors, U10). */
+  addPlayers: async (viewer: Viewer) => (await isSupervisor(viewer)) || (await viewer.captainOf()).length > 0,
   /** Confirm, remove and add a college's players on its team's game in a sport, until it starts (D34 R3). */
   manageRoster: async (viewer: Viewer, collegeId: string, sportId: string) =>
     (await isSupervisor(viewer)) || isCaptainOf(viewer, collegeId, sportId),

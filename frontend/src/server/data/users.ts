@@ -7,6 +7,7 @@ import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
+import { placeholderNetid } from "@/lib/netid";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
@@ -50,7 +51,7 @@ export async function getUsers(emails: string[]): Promise<Map<string, UserDoc>> 
 
 /** The NetIDs of the users with these emails that have one recorded, by email. */
 export async function getNetids(emails: string[]): Promise<Map<string, string>> {
-  const users = await getUsers([...new Set(emails)].filter((e) => !e.startsWith("guest-")));
+  const users = await getUsers([...new Set(emails)].filter((e) => !placeholderNetid(e)));
   return new Map([...users].flatMap(([email, user]) => (user.netid ? [[email, user.netid] as const] : [])));
 }
 
@@ -58,6 +59,12 @@ export async function getNetids(emails: string[]): Promise<Map<string, string>> 
 export async function getUserNames(emails: string[]): Promise<Map<string, string>> {
   const users = await getUsers([...new Set(emails)]);
   return new Map([...users].map(([email, user]) => [email, `${user.firstname} ${user.lastname}`]));
+}
+
+/** The email of the user with this NetID recorded; null if none. */
+export async function findUserByNetid(netid: string): Promise<string | null> {
+  const snap = await adminDb.collection(paths.users).where("netid", "==", netid).limit(1).get();
+  return snap.empty ? null : snap.docs[0].id;
 }
 
 /** Users holding a global role. */

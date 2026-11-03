@@ -8,6 +8,7 @@ import { useSeason } from "@/context/SeasonContext";
 import { fetchCollegePlayers } from "@/lib/api/colleges";
 import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder } from "@/lib/api/users";
 import { COLLEGES, collegeName } from "@/lib/colleges";
+import { placeholderNetid } from "@/lib/netid";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "supervisor", "college_rep", "captain", "user"];
@@ -65,7 +66,7 @@ async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
     ...(devs.items.some((u) => u.id === email) ? ["dev"] : []),
   ];
   return players.items
-    .filter((p) => !p.id.startsWith("guest-"))
+    .filter((p) => !placeholderNetid(p.id))
     .map((p) => ({
       email: p.id,
       name: p.name,

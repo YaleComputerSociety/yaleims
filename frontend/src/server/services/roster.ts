@@ -1,19 +1,24 @@
 // The roster sheet (D34, U5-ROSTER-WORKFLOW.md): before a game, each team's
-// captain prepares their college's side (confirm, remove, add players) until
-// it starts; a supervisor marks who came and adds walk-ins and guests, at
-// any time. Who may act on which side is the route's check (server/auth.ts
+// captain prepares their college's side (confirm, remove, add players, by
+// NetID too) until it starts; a supervisor marks who came and adds walk-ins,
+// at any time. Who may act on which side is the route's check (server/auth.ts
 // can.manageRoster, can.takeAttendance); the deadlines are here. A
 // supervisor's change after the game's day (Eastern) is audit-logged (R5).
 import "server-only";
-import { randomBytes } from "node:crypto";
 import { FieldValue, type Transaction, type WithFieldValue } from "firebase-admin/firestore";
+import { collegeIdOfName } from "@/lib/colleges";
 import { easternDate } from "@/lib/dates";
+import { placeholderId } from "@/lib/netid";
 import type { CaptainStatus, MatchDoc, RosterEntryDoc } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
+import { listColleges } from "../data/colleges";
 import { matchRef } from "../data/matches";
 import { playerRef } from "../data/players";
 import { rosterEntryRef } from "../data/roster";
+import { findUserByNetid, getUser } from "../data/users";
 import { runTransaction } from "../data/util";
+import { yaliesProfile } from "../yaleLogin";
+import { claimPlaceholders, ensureAccount, joinSeason, type YaliesProfile } from "./accounts";
 
 /** Who acts: a supervisor (any time, may take attendance) or a captain (until the start). */
 export interface SheetEditor {
@@ -131,51 +136,62 @@ export async function addPlayer(
   });
 }
 
-export type GuestResult = { status: "ok"; playerId: string } | { status: "no-match" | "other-college" };
+export type NetidAddResult =
+  | { status: "added"; playerId: string; verified: boolean }
+  | { status: "no-match" | "not-in-season" | "started" }
+  /** Their college (Yalies, or their player doc this season) isn't the side's. */
+  | { status: "other-college"; collegeId: string | null };
 
 /**
- * Adds someone who has no account as a name-only guest player of `collegeId`
- * this season (playerId "guest-<random>"), present at the game (supervisors).
+ * Adds someone by NetID to `collegeId`'s side of a game (U10): the account
+ * that has this NetID; else the person Yalies knows by it, whose account is
+ * created for them (unclaimed) when they have none, if their college is the
+ * side's; else, when Yalies doesn't know the NetID or can't be reached, a
+ * placeholder player "netid-<netid>" on that side, matched to the real
+ * account at that person's sign-in or a later lookup that finds them.
  */
-export async function addGuest(
+export async function addByNetid(
   seasonId: string,
   matchId: string,
   collegeId: string,
-  name: string,
+  netid: string,
+  name: string | null,
   by: SheetEditor,
   now = new Date()
-): Promise<GuestResult> {
-  const playerId = `guest-${randomBytes(6).toString("hex")}`;
-  const entryRef = rosterEntryRef(seasonId, matchId, playerId);
-  return runTransaction(async (tx) => {
-    const match = (await tx.get(matchRef(seasonId, matchId))).data();
-    if (!match) return { status: "no-match" };
-    if (!match.collegeIds.includes(collegeId)) return { status: "other-college" };
+): Promise<NetidAddResult> {
+  const via = by.supervisor ? "supervisor" : "captain";
+  const colleges = await listColleges(seasonId);
+  let profile: YaliesProfile | null = null;
+  try {
+    profile = await yaliesProfile(netid);
+  } catch {
+    // Yalies can't be reached: the account we know, or a placeholder.
+  }
 
-    tx.create(playerRef(seasonId, playerId), {
-      seasonId,
-      collegeId,
-      name,
-      userId: null,
-      roles: [],
-      joinedAt: FieldValue.serverTimestamp(),
-      joinedVia: "supervisor",
-    });
-    tx.create(entryRef, {
-      ...newEntry(match, matchId, playerId, collegeId, name, by),
-      present: true,
-      presentBy: by.actor.userId,
-      presentAt: FieldValue.serverTimestamp(),
-    });
-    logIfLate(tx, by, match, now, {
-      actor: by.actor,
-      action: "addRosterGuest",
-      params: { matchId, collegeId, name },
-      changed: [],
-      created: [playerRef(seasonId, playerId), entryRef],
-    });
-    return { status: "ok", playerId };
-  });
+  let playerId: string;
+  if (profile) {
+    const yaliesCollege = collegeIdOfName(colleges, profile.college);
+    if (yaliesCollege !== collegeId) return { status: "other-college", collegeId: yaliesCollege };
+    const fullName = `${profile.first_name} ${profile.last_name}`.trim();
+    await ensureAccount(profile, netid, by.actor, seasonId);
+    await claimPlaceholders(netid, profile.email, fullName);
+    await joinSeason(seasonId, profile.email, fullName, collegeId, via);
+    playerId = profile.email;
+  } else {
+    const known = await findUserByNetid(netid);
+    if (known) {
+      const user = await getUser(known);
+      await joinSeason(seasonId, known, `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim() || netid, collegeId, via);
+      playerId = known;
+    } else {
+      playerId = placeholderId(netid);
+      await joinSeason(seasonId, playerId, name || netid, collegeId, via);
+    }
+  }
+  const result = await addPlayer(seasonId, matchId, playerId, by, now);
+  if (result === "ok") return { status: "added", playerId, verified: !!profile || !playerId.startsWith("netid-") };
+  if (result === "other-college") return { status: "other-college", collegeId: null };
+  return { status: result };
 }
 
 /** A roster entry added by a captain or supervisor, before their call. */

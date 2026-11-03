@@ -5,18 +5,24 @@
 // under `firebase emulators:exec`, as CI does). Never touches production.
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { serveFakeYalies } from "../tests/integration/fakeYalies";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error("Start the Firestore emulator first (npm run emulator) and set FIRESTORE_EMULATOR_HOST=127.0.0.1:8080.");
   process.exit(1);
 }
 const port = Number(process.env.TEST_PORT ?? 3210);
+// The app looks people up in a fake Yale directory, never the real one.
+const yaliesPort = port + 1;
+const yalies = await serveFakeYalies(yaliesPort);
 const env = {
   ...process.env,
   NEXT_PUBLIC_USE_EMULATOR: "true",
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2",
   JWT_SECRET: randomBytes(32).toString("hex"),
   BASE_URL: `http://localhost:${port}`,
+  YALIES_API_URL: `http://127.0.0.1:${yaliesPort}`,
+  YALIES_API_KEY: "fake",
   NEXT_TELEMETRY_DISABLED: "1",
 };
 
@@ -26,10 +32,13 @@ if (seeded.status !== 0) process.exit(seeded.status ?? 1);
 // A separate build directory, so it runs next to your own `next dev`. Next
 // itself, not through npx: npx doesn't pass the SIGTERM on, which on Linux
 // leaves the server running after the tests. Its request log is discarded,
-// not piped: nothing reads a pipe while spawnSync runs the tests below, and on
-// Linux a full pipe blocks the server (CI hung after a few hundred requests).
+// not piped: a pipe nobody reads fills up, and on Linux a full pipe blocks
+// the server (CI hung after a few hundred requests).
 const server = spawn("node_modules/.bin/next", ["dev", "-p", String(port)], { env: { ...env, NEXT_DIST_DIR: ".next-test" }, stdio: ["ignore", "ignore", "inherit"] });
-const stop = () => server.kill("SIGTERM");
+const stop = () => {
+  server.kill("SIGTERM");
+  yalies.close();
+};
 process.on("exit", stop);
 
 let ready = false;
@@ -48,8 +57,10 @@ if (!ready) {
   process.exit(1);
 }
 
-const tests = spawnSync("npx", ["vitest", "run", "--project", "integration", ...process.argv.slice(2)], {
+// Async, so this process keeps serving the fake directory while the tests run.
+const tests = spawn("npx", ["vitest", "run", "--project", "integration", ...process.argv.slice(2)], {
   env: { ...env, BASE: env.BASE_URL, TEST_JWT_SECRET: env.JWT_SECRET },
   stdio: "inherit",
 });
-process.exit(tests.status ?? 1);
+const status = await new Promise<number | null>((resolve) => tests.on("exit", resolve));
+process.exit(status ?? 1);

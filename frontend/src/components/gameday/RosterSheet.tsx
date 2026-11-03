@@ -2,7 +2,8 @@
 // A game's roster sheet (D34, U5-ROSTER-WORKFLOW.md), for the sides the
 // viewer manages: a captain confirms, removes and adds their college's
 // players until the game starts; a supervisor ticks who came (one tap per
-// player, any time), adds walk-ins and guests. The server decides who
+// player, any time) and adds walk-ins. Both add players by NetID too
+// (U10). The server decides who
 // manages which side (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -10,8 +11,9 @@ import { FaCheck, FaTimes, FaUndo } from "react-icons/fa";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { fetchCollegePlayers, type CollegePlayer } from "@/lib/api/colleges";
 import type { Match } from "@/lib/api/matches";
+import { lookUpNetid, type DirectoryEntry } from "@/lib/api/directory";
 import {
-  addGuest,
+  addByNetid,
   addRosterPlayer,
   changeRosterEntry,
   fetchRosterSheet,
@@ -19,24 +21,24 @@ import {
   type RosterSheet as Sheet,
 } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
+import { NETID_PATTERN, placeholderNetid } from "@/lib/netid";
 import { useNow } from "@/lib/useNow";
 
 type SheetEntry = Sheet["items"][number];
 
 /**
  * What tells same-named players apart, shown in brackets after the name: the
- * NetID, "guest" for a guest, or the email of someone whose NetID isn't
- * recorded yet (it is at their next visit).
+ * NetID ("unverified" for a NetID not yet matched to anyone), or the email of
+ * someone whose NetID isn't recorded yet (it is at their next visit).
  */
 function who(player: { playerId: string; netid: string | null }): string {
-  return player.playerId.startsWith("guest-") ? "guest" : (player.netid ?? player.playerId);
+  const pending = placeholderNetid(player.playerId);
+  return pending ? `${pending} · unverified` : (player.netid ?? player.playerId);
 }
 
 /** How an entry got on the roster, for the row's small print; supervisors also see the captain's confirmation. */
 function origin(entry: SheetEntry, supervisor: boolean): string {
-  const how = entry.playerId.startsWith("guest-")
-    ? "added by supervisor"
-    : entry.addedBy === "supervisor"
+  const how = entry.addedBy === "supervisor"
       ? "walk-in"
       : entry.addedBy === "captain"
         ? "added by captain"
@@ -223,7 +225,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
 
       {!locked && (
         <div className="px-4 py-3 space-y-3 border-t border-black/5 dark:border-white/5">
-          <AddPlayer match={match} collegeId={collegeId} onRoster={entries} supervisor={supervisor} busy={busy} run={run} />
+          <AddPlayer match={match} collegeId={collegeId} onRoster={entries} busy={busy} run={run} />
           {bulk.todo.length > 0 && (
             <button
               className="w-full py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white disabled:opacity-50"
@@ -247,16 +249,23 @@ interface AddPlayerProps {
   match: Match;
   collegeId: string;
   onRoster: SheetEntry[];
-  supervisor: boolean;
   busy: string | null;
   run: (key: string, action: () => Promise<unknown>) => Promise<void>;
 }
 
-/** Adds one of the college's season players by name or email; supervisors can add a guest. */
-function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPlayerProps) {
+/**
+ * Adds a player to the side (U10): first one of the college's players this
+ * season, found by name, NetID or email; otherwise a NetID looked up in the
+ * Yale directory (their account is made for them), or, when the directory
+ * doesn't know it or can't be reached, the NetID unverified, matched to the
+ * person later.
+ */
+function AddPlayer({ match, collegeId, onRoster, busy, run }: AddPlayerProps) {
   const [open, setOpen] = useState(false);
   const [players, setPlayers] = useState<CollegePlayer[] | null>(null);
   const [term, setTerm] = useState("");
+  const [lookup, setLookup] = useState<DirectoryEntry | "looking" | null>(null);
+  const [label, setLabel] = useState("");
 
   useEffect(() => {
     if (!open || players) return;
@@ -266,18 +275,15 @@ function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPla
     );
   }, [open, players, match.seasonId, collegeId]);
 
+  const q = term.trim().toLowerCase();
   const matches = useMemo(() => {
-    const q = term.trim().toLowerCase();
     if (!players || !q) return [];
     const taken = new Set(onRoster.filter((e) => e.captainStatus !== "removed").map((e) => e.playerId));
     return players
-      .filter(
-        (p) =>
-          !taken.has(p.id) &&
-          [p.name, p.id, p.netid ?? ""].some((field) => field.toLowerCase().includes(q))
-      )
+      .filter((p) => !taken.has(p.id) && [p.name, p.id, p.netid ?? ""].some((field) => field.toLowerCase().includes(q)))
       .slice(0, 6);
-  }, [players, term, onRoster]);
+  }, [players, q, onRoster]);
+  const isNetid = NETID_PATTERN.test(q);
 
   if (!open) {
     return (
@@ -286,10 +292,27 @@ function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPla
       </button>
     );
   }
-  const add = (playerId: string) =>
-    run(playerId, () => addRosterPlayer(match.seasonId, match.id, playerId)).then(() => setTerm(""));
-  const guest = () =>
-    run("guest", () => addGuest(match.seasonId, match.id, { name: term.trim(), collegeId })).then(() => setTerm(""));
+  const reset = () => {
+    setTerm("");
+    setLookup(null);
+    setLabel("");
+  };
+  const add = (playerId: string) => run(playerId, () => addRosterPlayer(match.seasonId, match.id, playerId)).then(reset);
+  const addNetid = () =>
+    run(`netid-${q}`, async () => {
+      const added = await addByNetid(match.seasonId, match.id, { netid: q, collegeId, name: label.trim() || null });
+      if (!added.verified) toast.info(`${q} added unverified: it's matched to the person when they sign in.`);
+    }).then(reset);
+  const lookUp = async () => {
+    setLookup("looking");
+    try {
+      setLookup(await lookUpNetid(q));
+    } catch (err) {
+      toast.error((err as Error).message);
+      setLookup(null);
+    }
+  };
+  const pill = "px-3 py-1 text-xs font-semibold rounded-full text-white disabled:opacity-50";
 
   return (
     <div className="space-y-2">
@@ -299,37 +322,81 @@ function AddPlayer({ match, collegeId, onRoster, supervisor, busy, run }: AddPla
         placeholder={`Name, NetID or email of a ${collegeName(collegeId)} player`}
         className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-black ring-1 ring-black/10 dark:ring-white/10 focus:ring-2 focus:ring-blue-400 outline-none"
         value={term}
-        onChange={(e) => setTerm(e.target.value)}
+        onChange={(e) => {
+          setTerm(e.target.value);
+          setLookup(null);
+        }}
       />
       {players === null && <LoadingSpinner />}
       {matches.map((p) => (
-        <div key={p.id} className="flex items-center justify-between text-sm">
+        <div key={p.id} className="flex items-center justify-between gap-2 text-sm">
           <span>
             {p.name} <span className="text-xs text-gray-500">({who({ playerId: p.id, netid: p.netid })})</span>
           </span>
-          <button
-            className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-600 text-white disabled:opacity-50"
-            disabled={busy !== null}
-            onClick={() => add(p.id)}
-          >
+          <button className={`${pill} bg-blue-600`} disabled={busy !== null} onClick={() => add(p.id)}>
             Add
           </button>
         </div>
       ))}
-      {players && term.trim() && matches.length === 0 && (
-        <p className="text-xs text-gray-500">No {collegeName(collegeId)} player this season matches.</p>
+      {players && q && matches.length === 0 && !isNetid && (
+        <p className="text-xs text-gray-500">
+          No {collegeName(collegeId)} player this season matches. Type their NetID to look them up in the Yale
+          directory.
+        </p>
       )}
-      {supervisor && term.trim().length > 1 && (
-        <button
-          className="text-xs text-gray-600 dark:text-gray-300 underline disabled:opacity-50"
-          disabled={busy !== null}
-          onClick={guest}
-        >
-          Not found? Add “{term.trim()}” as a guest
+
+      {isNetid && lookup === null && (
+        <button className={`${pill} bg-gray-700 dark:bg-gray-600`} disabled={busy !== null} onClick={lookUp}>
+          Look up {q} in the Yale directory
         </button>
       )}
+      {lookup === "looking" && <LoadingSpinner />}
+      {lookup && lookup !== "looking" && lookup.status === "found" && (
+        <div className="flex items-center justify-between gap-2 text-sm rounded-lg bg-gray-50 dark:bg-gray-900 px-3 py-2">
+          <span>
+            {lookup.name} <span className="text-xs text-gray-500">({lookup.netid})</span>
+            {lookup.collegeId && lookup.collegeId !== collegeId && (
+              <span className="block text-xs text-red-600 dark:text-red-400">
+                In {collegeName(lookup.collegeId)}, not {collegeName(collegeId)}.
+              </span>
+            )}
+          </span>
+          <button
+            className={`${pill} bg-blue-600`}
+            disabled={busy !== null || (!!lookup.collegeId && lookup.collegeId !== collegeId)}
+            onClick={addNetid}
+          >
+            Add
+          </button>
+        </div>
+      )}
+      {lookup && lookup !== "looking" && lookup.status !== "found" && (
+        <div className="space-y-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm">
+          <p className="text-amber-900 dark:text-amber-200">
+            {lookup.status === "not-found"
+              ? `The Yale directory has no ${lookup.netid}. Check the NetID, or add it unverified:`
+              : "The Yale directory isn't answering right now. You can add the NetID unverified:"}{" "}
+            it&apos;s matched to the person when they sign in.
+          </p>
+          <input
+            placeholder="Their name (optional)"
+            className="w-full rounded-md px-2 py-1 text-sm bg-white dark:bg-black ring-1 ring-black/10 dark:ring-white/10"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+          />
+          <button className={`${pill} bg-amber-600`} disabled={busy !== null} onClick={addNetid}>
+            Add {lookup.netid} unverified
+          </button>
+        </div>
+      )}
       <div>
-        <button className="text-xs text-gray-500" onClick={() => setOpen(false)}>
+        <button
+          className="text-xs text-gray-500"
+          onClick={() => {
+            reset();
+            setOpen(false);
+          }}
+        >
           Done
         </button>
       </div>

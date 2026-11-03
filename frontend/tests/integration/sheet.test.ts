@@ -115,33 +115,94 @@ describe("the captain's side", () => {
 });
 
 describe("the supervisor's attendance", () => {
-  it("marks anyone present at any time, adds walk-ins and guests, and logs changes after the game's day", async () => {
+  it("marks anyone present at any time, adds walk-ins, and logs changes after the game's day", async () => {
     const past = (await db.collection(`seasons/${current}/matches`).where("stage", "==", "regular").where("startsAt", "<", new Date(Date.now() - 2 * 86400_000)).orderBy("startsAt", "desc").limit(1).get()).docs[0];
     const m = past.data() as MatchDoc;
     const path = `/api/seasons/${current}/matches/${past.id}/roster`;
     const walkIn = await playerNotOn(past.id, m.collegeIds[0]);
 
-    const logsBefore = (await db.collection(`seasons/${current}/auditLog`).where("action", "in", ["addRosterPlayer", "changeRosterEntry", "addRosterGuest"]).get()).size;
+    const logsBefore = (await db.collection(`seasons/${current}/auditLog`).where("action", "in", ["addRosterPlayer", "changeRosterEntry"]).get()).size;
     expect((await api("PUT", `${path}/${encodeURIComponent(walkIn)}`, undefined, { session: supervisor() })).status).toBe(204);
     expect((await db.doc(`seasons/${current}/matches/${past.id}/roster/${walkIn}`).get()).data()).toMatchObject({ addedBy: "supervisor", present: true, presentBy: people.supervisor });
     expect((await api("PATCH", `${path}/${encodeURIComponent(walkIn)}`, { present: false }, { session: supervisor() })).status).toBe(204);
+    const logsAfter = (await db.collection(`seasons/${current}/auditLog`).where("action", "in", ["addRosterPlayer", "changeRosterEntry"]).get()).size;
+    expect(logsAfter - logsBefore).toBe(2);
+  });
+});
 
-    const guest = await api("POST", `${path}/guests`, { name: "Walk In", collegeId: m.collegeIds[1] }, { session: supervisor() });
-    expect(guest.status).toBe(201);
-    expect(guest.body.playerId).toMatch(/^guest-[0-9a-f]{12}$/);
-    expect((await db.doc(`seasons/${current}/players/${guest.body.playerId}`).get()).data()).toMatchObject({ collegeId: m.collegeIds[1], name: "Walk In", userId: null, joinedVia: "supervisor" });
-    expect((await db.doc(`seasons/${current}/matches/${past.id}/roster/${guest.body.playerId}`).get()).data()).toMatchObject({ present: true, name: "Walk In" });
+describe("adding by NetID (U10; a fake Yale directory: tests/integration/fakeYalies.ts)", () => {
+  /** An upcoming regular game of Benjamin Franklin (the fake directory's zz901 and zz903). */
+  async function bfGame() {
+    const games = await db.collection(`seasons/${current}/matches`).where("collegeIds", "array-contains", "BF").where("startsAt", ">", new Date()).orderBy("startsAt").get();
+    const game = games.docs.find((g) => (g.data() as MatchDoc).stage === "regular" && (g.data() as MatchDoc).collegeIds.length === 2)!;
+    return { game, path: `/api/seasons/${current}/matches/${game.id}/roster` };
+  }
 
-    const logsAfter = (await db.collection(`seasons/${current}/auditLog`).where("action", "in", ["addRosterPlayer", "changeRosterEntry", "addRosterGuest"]).get()).size;
-    expect(logsAfter - logsBefore).toBe(3);
+  it("looks a NetID up: the directory's person, not found, or unavailable (captains and supervisors)", async () => {
+    expect(await api("GET", "/api/directory/zz901", undefined, { session: supervisor() })).toMatchObject({ status: 200, body: { status: "found", name: "Zoe Zane", collegeId: "BF" } });
+    expect((await api("GET", "/api/directory/ZZ950", undefined, { session: supervisor() })).body).toEqual({ status: "not-found", netid: "zz950" });
+    expect((await api("GET", "/api/directory/zz999", undefined, { session: supervisor() })).body.status).toBe("unavailable");
+    expect((await api("GET", "/api/directory/zz901", undefined, { session: sessionFor(people.student(0, 1)) })).status).toBe(200); // a captain
+    expect((await api("GET", "/api/directory/zz901", undefined, { session: sessionFor(player(0, 6)) })).status).toBe(403);
+    expect((await api("GET", "/api/directory/a%20b", undefined, { session: supervisor() })).status).toBe(400);
   });
 
-  it("refuses guests from anyone else and for a college not in the game", async () => {
-    const { captain, game, path } = await captainWithGame();
-    const notPlaying = ["BF", "BK", "BR", "DC"].find((c) => !(game.data() as MatchDoc).collegeIds.includes(c))!;
-    expect((await api("POST", `${path}/guests`, { name: "X", collegeId: (game.data() as MatchDoc).collegeIds[0] }, { session: sessionFor(captain) })).status).toBe(403);
-    expect((await api("POST", `${path}/guests`, { name: "X", collegeId: notPlaying }, { session: supervisor() })).status).toBe(409);
-    expect((await api("POST", `${path}/guests`, { name: " ", collegeId: notPlaying }, { session: supervisor() })).status).toBe(400);
+  it("adds the directory's person: an unclaimed account with their NetID, the season, the roster", async () => {
+    const { game, path } = await bfGame();
+    const r = await api("POST", `${path}/netid`, { netid: "zz901", collegeId: "BF" }, { session: supervisor() });
+    expect(r).toMatchObject({ status: 201, body: { playerId: "zoe.zane@yale.edu", verified: true } });
+    expect((await db.doc("users/zoe.zane@yale.edu").get()).data()).toMatchObject({ netid: "zz901", firstname: "Zoe", claimedAt: null, createdBy: people.supervisor });
+    expect((await db.doc(`seasons/${current}/players/zoe.zane@yale.edu`).get()).data()).toMatchObject({ collegeId: "BF", name: "Zoe Zane", joinedVia: "supervisor" });
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/zoe.zane@yale.edu`).get()).data()).toMatchObject({ collegeId: "BF", present: true });
+    const logs = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "createAccountFor").get()).docs.map((d) => d.data().params);
+    expect(logs).toContainEqual({ email: "zoe.zane@yale.edu", netid: "zz901" });
+    // Their account carries the NetID, so it's found by it on the sheet.
+    const sheet = await api("GET", `${path}/sheet`, undefined, { session: supervisor() });
+    expect(sheet.body.items.find((e: { playerId: string }) => e.playerId === "zoe.zane@yale.edu").netid).toBe("zz901");
+  });
+
+  it("refuses the directory's person of another college", async () => {
+    const { path } = await bfGame();
+    const r = await api("POST", `${path}/netid`, { netid: "zz902", collegeId: "BF" }, { session: supervisor() });
+    expect(r).toMatchObject({ status: 409 });
+    expect(r.body.error.message).toContain("Morse");
+  });
+
+  it("adds a NetID the directory doesn't know (or can't answer for) unverified; the person's visit claims it", async () => {
+    const { game, path } = await bfGame();
+    const captain = people.student(0, 1); // a BF captain (of the game's sport or not: a supervisor adds here)
+    const r = await api("POST", `${path}/netid`, { netid: "ZZ950", collegeId: "BF", name: "New Kid" }, { session: supervisor() });
+    expect(r).toMatchObject({ status: 201, body: { playerId: "netid-zz950", verified: false } });
+    expect((await db.doc(`seasons/${current}/players/netid-zz950`).get()).data()).toMatchObject({ collegeId: "BF", name: "New Kid", userId: null });
+    const down = await api("POST", `${path}/netid`, { netid: "zz999", collegeId: "BF" }, { session: supervisor() });
+    expect(down).toMatchObject({ status: 201, body: { playerId: "netid-zz999", verified: false } });
+    expect(captain).toBeTruthy();
+
+    // The person behind zz950 opens the site signed in: the entry becomes theirs.
+    const email = "new.kid@yale.edu";
+    await api("GET", "/api/auth/session", undefined, { session: sessionFor(email, [], { netid: "zz950", name: "New Kid", college: "Benjamin Franklin" }) });
+    expect((await db.doc(`seasons/${current}/players/netid-zz950`).get()).exists).toBe(false);
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/netid-zz950`).get()).exists).toBe(false);
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${email}`).get()).data()).toMatchObject({ playerId: email, collegeId: "BF", present: true });
+    const claims = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "claimPlaceholder").get()).docs.map((d) => d.data().params);
+    expect(claims).toContainEqual({ netid: "zz950", email });
+  });
+
+  it("finds an account by its stored NetID when the directory doesn't know it", async () => {
+    const { game, path } = await bfGame();
+    // A BF student with the seed's NetID (not in the fake directory) who isn't on the game.
+    const onGame = new Set((await db.collection(`seasons/${current}/matches/${game.id}/roster`).get()).docs.map((d) => d.id));
+    const bf = (await db.collection(`seasons/${current}/players`).where("collegeId", "==", "BF").get()).docs.map((d) => d.id).filter((id) => !onGame.has(id));
+    const users = await Promise.all(bf.map(async (id) => ({ id, netid: (await db.doc(`users/${id}`).get()).data()?.netid as string | null })));
+    const { id: student, netid } = users.find((u) => u.netid)!;
+    const r = await api("POST", `${path}/netid`, { netid, collegeId: "BF" }, { session: supervisor() });
+    expect(r).toMatchObject({ status: 201, body: { playerId: student, verified: true } });
+  });
+
+  it("is for the side's captain (until the start) and supervisors", async () => {
+    const { path } = await bfGame();
+    expect((await api("POST", `${path}/netid`, { netid: "zz903", collegeId: "BF" }, { session: sessionFor(player(0, 6)) })).status).toBe(403);
+    expect((await api("POST", `${path}/netid`, { netid: "zz903", collegeId: "XX" }, { session: supervisor() })).status).toBe(400);
   });
 });
 

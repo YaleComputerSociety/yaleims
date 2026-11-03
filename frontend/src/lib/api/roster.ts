@@ -1,10 +1,11 @@
 // The roster API: who is on a game (/api/seasons/{s}/matches/{m}/roster),
 // the caller's own sign-up (…/roster/me), and the sheet captains and
-// supervisors work on (…/roster/sheet, …/roster/{playerId}, …/roster/guests).
+// supervisors work on (…/roster/sheet, …/roster/{playerId}, …/roster/netid).
 // The rules follow D34 (services/signups.ts, services/roster.ts).
 import { z } from "zod";
 import type { RosterEntryDoc } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
+import { NETID_PATTERN } from "../netid";
 import { request, toJson, url, type Json } from "./core";
 
 /** The caller's own entry, whole. */
@@ -56,7 +57,7 @@ export interface RosterSheet {
   collegeIds: string[];
   /** A supervisor: takes attendance, any time; otherwise a captain, until the start. */
   supervisor: boolean;
-  /** Each entry with the player's NetID (null: none recorded, or a guest), to tell same-named players apart. */
+  /** Each entry with the player's NetID, to tell same-named players apart (null: none recorded yet, or a placeholder "netid-<netid>", whose id holds it). */
   items: (RosterEntry & { netid: string | null })[];
   total: number;
 }
@@ -70,12 +71,19 @@ export const rosterChangeSchema = z
   .refine((c) => c.captainStatus !== undefined || c.present !== undefined, "Send captainStatus or present.");
 export type RosterChange = z.infer<typeof rosterChangeSchema>;
 
-/** POST …/roster/guests: someone without an account, present at the game (supervisors). */
-export const guestSchema = z.strictObject({
-  name: z.string().trim().min(1).max(80),
+/** POST …/roster/netid: someone by NetID, on a side the caller manages (U10). `name` only labels an unverified NetID. */
+export const netidAddSchema = z.strictObject({
+  netid: z.string().trim().toLowerCase().regex(NETID_PATTERN, "That doesn't look like a NetID."),
   collegeId: collegeIdSchema,
+  name: z.string().trim().max(80).nullable().default(null),
 });
-export type Guest = z.infer<typeof guestSchema>;
+export type NetidAdd = z.input<typeof netidAddSchema>;
+
+/** POST …/roster/netid answers 201: who went on the roster; verified = Yalies (or their account) confirmed them. */
+export interface NetidAddResult {
+  playerId: string;
+  verified: boolean;
+}
 
 export const fetchRosterSheet = (seasonId: string, matchId: string) =>
   request<RosterSheet>("GET", url`/api/seasons/${seasonId}/matches/${matchId}/roster/sheet`);
@@ -87,5 +95,5 @@ export const changeRosterEntry = (seasonId: string, matchId: string, playerId: s
 export const addRosterPlayer = (seasonId: string, matchId: string, playerId: string) =>
   request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/${playerId}`);
 
-export const addGuest = (seasonId: string, matchId: string, guest: Guest) =>
-  request<{ playerId: string }>("POST", url`/api/seasons/${seasonId}/matches/${matchId}/roster/guests`, { body: guest });
+export const addByNetid = (seasonId: string, matchId: string, add: NetidAdd) =>
+  request<NetidAddResult>("POST", url`/api/seasons/${seasonId}/matches/${matchId}/roster/netid`, { body: add });
