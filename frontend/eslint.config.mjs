@@ -24,5 +24,6 @@ export default defineConfig([
     plugins: { "@typescript-eslint": tseslint.plugin },
     rules: { "@typescript-eslint/no-explicit-any": "error" },
   },
-  globalIgnores([".next*/**", "next-env.d.ts"]),
+  // iCloud's sync conflict copies ("name 2.tsx") when the repo sits in a synced folder.
+  globalIgnores([".next*/**", "next-env.d.ts", "**/* 2.*", "**/* 2/**"]),
 ]);
