@@ -36,7 +36,8 @@ let ready = false;
 const deadline = Date.now() + 90_000;
 while (!ready && Date.now() < deadline) {
   try {
-    ready = (await fetch(`${env.BASE_URL}/api/seasons`, { signal: AbortSignal.timeout(10_000) })).ok;
+    // The first answer waits for the route's first compile (slow on a cold cache): only the deadline cuts it off.
+    ready = (await fetch(`${env.BASE_URL}/api/seasons`, { signal: AbortSignal.timeout(Math.max(1000, deadline - Date.now())) })).ok;
   } catch {
     // not listening yet (or not answering)
   }
