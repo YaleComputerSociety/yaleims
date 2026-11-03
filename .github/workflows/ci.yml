@@ -40,6 +40,8 @@ jobs:
   integration:
     name: Integration and rules tests (emulator)
     runs-on: ubuntu-latest
+    # About 3 minutes; a hang fails here, not after GitHub's 6 hours.
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend

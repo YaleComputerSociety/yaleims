@@ -23,18 +23,22 @@ const env = {
 const seeded = spawnSync("npm", ["run", "-s", "seed"], { env, stdio: "inherit" });
 if (seeded.status !== 0) process.exit(seeded.status ?? 1);
 
-// A separate build directory, so it runs next to your own `next dev`.
-const server = spawn("npx", ["next", "dev", "-p", String(port)], { env: { ...env, NEXT_DIST_DIR: ".next-test" }, stdio: ["ignore", "pipe", "inherit"] });
-server.stdout.on("data", () => {});
+// A separate build directory, so it runs next to your own `next dev`. Next
+// itself, not through npx: npx doesn't pass the SIGTERM on, which on Linux
+// leaves the server running after the tests. Its request log is discarded,
+// not piped: nothing reads a pipe while spawnSync runs the tests below, and on
+// Linux a full pipe blocks the server (CI hung after a few hundred requests).
+const server = spawn("node_modules/.bin/next", ["dev", "-p", String(port)], { env: { ...env, NEXT_DIST_DIR: ".next-test" }, stdio: ["ignore", "ignore", "inherit"] });
 const stop = () => server.kill("SIGTERM");
 process.on("exit", stop);
 
 let ready = false;
-for (let i = 0; i < 90 && !ready; i++) {
+const deadline = Date.now() + 90_000;
+while (!ready && Date.now() < deadline) {
   try {
-    ready = (await fetch(`${env.BASE_URL}/api/seasons`)).ok;
+    ready = (await fetch(`${env.BASE_URL}/api/seasons`, { signal: AbortSignal.timeout(10_000) })).ok;
   } catch {
-    // not listening yet
+    // not listening yet (or not answering)
   }
   if (!ready) await new Promise((r) => setTimeout(r, 1000));
 }
