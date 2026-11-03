@@ -11,3 +11,7 @@ database/misc/**/*.csv
 
 # v3 migration reports (anomaly refs may hold emails)
 migration-report*.json
+
+# iCloud sync conflict copies ("name 2.tsx", "folder 2/") when the repo sits in a synced folder
+* 2.*
+* 2/
