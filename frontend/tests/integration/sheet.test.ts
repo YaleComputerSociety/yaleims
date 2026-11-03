@@ -192,3 +192,28 @@ describe("GET /api/auth/session: what the viewer may do", () => {
     expect(await can(player(0, 6))).toEqual({ editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false });
   });
 });
+
+describe("reads for the game-day screens", () => {
+  it("GET …/matches/{m}: one game, public", async () => {
+    const game = (await db.collection(`seasons/${current}/matches`).limit(1).get()).docs[0];
+    const r = await api("GET", `/api/seasons/${current}/matches/${game.id}`);
+    expect(r).toMatchObject({ status: 200, body: { id: game.id, seasonId: current } });
+    expect(r.body).not.toHaveProperty("scoredBy");
+    expect((await api("GET", `/api/seasons/${current}/matches/nope`)).status).toBe(404);
+  });
+
+  it("GET /api/me/matches: each game with the caller's captain call and attendance", async () => {
+    const { captain, collegeId, game } = await captainWithGame();
+    const me = await playerNotOn(game.id, collegeId);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(me) })).status).toBe(204);
+    await api("PATCH", `/api/seasons/${current}/matches/${game.id}/roster/${encodeURIComponent(me)}`, { captainStatus: "confirmed" }, { session: sessionFor(captain) });
+    const r = await api("GET", `/api/me/matches?seasonId=${current}&upcoming=true`, undefined, { session: sessionFor(me) });
+    expect(r.body.items.find((m: { id: string }) => m.id === game.id)).toMatchObject({ mine: { captainStatus: "confirmed", present: false } });
+  });
+
+  it("GET /api/users?role=supervisor: this season's supervisors (admins)", async () => {
+    const r = await api("GET", "/api/users?role=supervisor", undefined, { session: sessionFor(people.admin) });
+    expect(r.body.items.map((u: { id: string }) => u.id)).toEqual([people.supervisor]);
+    expect((await api("GET", "/api/users?role=supervisor", undefined, { session: supervisor() })).status).toBe(403);
+  });
+});

@@ -9,6 +9,7 @@ import LoadingScreen from "@/components/layout/LoadingScreen";
 import { FaSpinner } from "react-icons/fa";
 import { uploadSchedule, type NewMatch } from "@/lib/api/matches";
 import { parseScheduleCsv } from "@/lib/csv/schedule";
+import NewGameForm from "@/components/hub/admin/NewGameForm";
 
 /** A parsed file: one sport's games for one season. */
 interface Schedule {
@@ -124,9 +125,14 @@ const UploadSchedulePage = () => {
   }
 
   return (
-    <div className="min-h-screen pt-16 flex flex-col items-center">
-      <PageHeading heading="Upload Schedule from CSV" />
+    <div className="min-h-screen pt-16 pb-16 px-3 flex flex-col items-center">
+      <PageHeading heading="Add Games" />
+      <div className="bg-white/50 dark:bg-black/50 rounded-xl shadow-lg p-4 sm:p-8 mt-8 w-full max-w-lg flex flex-col gap-4 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-lg font-semibold">One game</h2>
+        <NewGameForm />
+      </div>
       <div className="bg-white/50 dark:bg-black/50 rounded-xl shadow-lg p-4 sm:p-8 mt-8 w-full max-w-lg flex flex-col gap-6 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+        <h2 className="text-lg font-semibold">A sport&apos;s schedule from a CSV</h2>
         {/* Sport Dropdown */}
         <div className="flex flex-col gap-2 w-full">
           <label

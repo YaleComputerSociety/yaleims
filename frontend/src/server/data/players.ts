@@ -5,7 +5,7 @@ import "server-only";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import type { PlayerDoc, WithId } from "@/types/firestore";
+import type { PlayerDoc, SeasonRole, WithId } from "@/types/firestore";
 import { withId } from "./util";
 
 export function playerRef(seasonId: string, playerId: string): DocumentReference<PlayerDoc> {
@@ -36,6 +36,12 @@ export async function listCollegeReps(seasonId: string, collegeId: string): Prom
     .where("collegeId", "==", collegeId)
     .where("roles", "array-contains", "college_rep")
     .get();
+  return snap.docs.map((d) => withId<PlayerDoc>(d));
+}
+
+/** Everyone holding a season role (e.g. the supervisors) this season. */
+export async function listPlayersWithRole(seasonId: string, role: SeasonRole): Promise<WithId<PlayerDoc>[]> {
+  const snap = await adminDb.collection(paths.players(seasonId)).where("roles", "array-contains", role).get();
   return snap.docs.map((d) => withId<PlayerDoc>(d));
 }
 

@@ -9,7 +9,7 @@ import { useSession } from "@/context/SessionContext";
 import { useStandings } from "@/hooks/useStandings";
 import { useTournamentNames } from "@/hooks/useTournamentNames";
 import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
-import { fetchMyMatches } from "@/lib/api/me";
+import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
 import { COLLEGES, collegeName } from "@/lib/colleges";
 import GameCard, { getMatchStatus } from "@/components/games/GameCard";
 import DateScroller from "@/components/games/DateScroller";
@@ -163,15 +163,15 @@ const GamesPage: React.FC = () => {
 
   // ── user sign-up state ────────────────────────────────────────────────────────
   const { viewer } = useSession();
-  // The games the user signed up for (ids). Until these land we can't tell
-  // sign-up state apart from not-signed-up, so the cards show a skeleton rather
-  // than flashing "Sign Up" at someone already playing.
-  const [signedUpIds, setSignedUpIds] = useState<Set<string>>(new Set());
+  // The games the user signed up for, by id, with their entry's status. Until
+  // these land we can't tell sign-up state apart from not-signed-up, so the
+  // cards show a skeleton rather than flashing "Sign Up" at someone already playing.
+  const [myEntries, setMyEntries] = useState<Map<string, MyMatch["mine"]>>(new Map());
   const [userMatchesLoading, setUserMatchesLoading] = useState(true);
 
   useEffect(() => {
     if (!viewer || !selectedSeason) {
-      setSignedUpIds(new Set());
+      setMyEntries(new Map());
       setUserMatchesLoading(!!viewer); // signed in: waiting for the season
       return;
     }
@@ -179,7 +179,7 @@ const GamesPage: React.FC = () => {
     setUserMatchesLoading(true);
     fetchMyMatches({ seasonId: selectedSeason })
       .then(
-        ({ items }) => live && setSignedUpIds(new Set(items.map((m) => m.id))),
+        ({ items }) => live && setMyEntries(new Map(items.map((m) => [m.id, m.mine]))),
         (err) => console.error("Error fetching user matches:", err)
       )
       .finally(() => live && setUserMatchesLoading(false));
@@ -189,9 +189,9 @@ const GamesPage: React.FC = () => {
   }, [viewer, selectedSeason]);
 
   const handleSignUpStatusChange = useCallback((matchId: string, signed: boolean) => {
-    setSignedUpIds((prev) => {
-      const next = new Set(prev);
-      if (signed) next.add(matchId);
+    setMyEntries((prev) => {
+      const next = new Map(prev);
+      if (signed) next.set(matchId, { captainStatus: null, present: false });
       else next.delete(matchId);
       return next;
     });
@@ -498,7 +498,8 @@ const GamesPage: React.FC = () => {
                       onCollegeClick={handleCollegeClick}
                       onSportClick={handleSportClick}
                       viewer={viewer}
-                      isSignedUp={signedUpIds.has(match.id)}
+                      isSignedUp={myEntries.has(match.id)}
+                      mine={myEntries.get(match.id)}
                       signUpStatusLoading={userMatchesLoading}
                       onStatusChange={handleSignUpStatusChange}
                     />

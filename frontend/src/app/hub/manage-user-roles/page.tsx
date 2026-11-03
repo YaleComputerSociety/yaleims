@@ -10,7 +10,10 @@ import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder } from
 import { COLLEGES, collegeName } from "@/lib/colleges";
 
 // Available roles for the multi-select dropdown
-const ALL_ROLES = ["admin", "dev", "captain", "college_rep", "user"];
+const ALL_ROLES = ["admin", "dev", "supervisor", "college_rep", "captain", "user"];
+
+/** The groups listing everyone holding a role; any other group is a college. */
+const ROLE_GROUPS: Record<string, "admin" | "dev" | "supervisor"> = { Admin: "admin", Dev: "dev", Supervisor: "supervisor" };
 
 /** The roles PUT /api/users/{email}/roles stores ("user" and "captain" aren't stored roles). */
 const STORED_ROLES = userRolesSchema.shape.roles.element.options;
@@ -41,12 +44,13 @@ const personOf = (holder: RoleHolder): Person => ({
 });
 
 /**
- * The people of a group: "Admin" and "Dev" list everyone holding that role;
- * a college name lists the college's captains and reps this season.
+ * The people of a group: a role group lists everyone holding that role; a
+ * college name lists all the college's players this season (the page shows
+ * those with a role, and finds the others to give one).
  */
 async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
-  if (group === "Admin" || group === "Dev") {
-    return (await fetchRoleHolders({ role: group === "Admin" ? "admin" : "dev" })).items.map(personOf);
+  if (ROLE_GROUPS[group]) {
+    return (await fetchRoleHolders({ role: ROLE_GROUPS[group] })).items.map(personOf);
   }
   const collegeId = COLLEGES.find((c) => c.name === group)?.id;
   if (!collegeId) return [];
@@ -61,7 +65,7 @@ async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
     ...(devs.items.some((u) => u.id === email) ? ["dev"] : []),
   ];
   return players.items
-    .filter((p) => p.captainOf.length > 0 || p.roles.includes("college_rep"))
+    .filter((p) => !p.id.startsWith("guest-"))
     .map((p) => ({
       email: p.id,
       name: p.name,
@@ -135,7 +139,7 @@ const ManageUserRolesPage = () => {
   const { currentSeason } = useSeason();
   const sports = currentSeason?.sports ?? [];
   const collegeNames = COLLEGES.map((college) => college.name);
-  const dropdownOptions = ["Admin", "Dev", ...collegeNames];
+  const dropdownOptions = [...Object.keys(ROLE_GROUPS), ...collegeNames];
 
   const [selectedCollege, setSelectedCollege] = useState<string>(
     dropdownOptions[0] || ""
@@ -149,12 +153,17 @@ const ManageUserRolesPage = () => {
   >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string>("");
+  // A college's players picked to be given a role, and the search for them.
+  const [added, setAdded] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!selectedCollege || !currentSeason) return;
     let live = true;
     setLoading(true);
     setLoadError("");
+    setAdded([]);
+    setSearch("");
     loadGroup(selectedCollege, currentSeason.id)
       .then(
         (people) => live && setSpecialRoleUsers(people),
@@ -171,11 +180,12 @@ const ManageUserRolesPage = () => {
     };
   }, [selectedCollege, currentSeason, reloadKey]);
 
-  // Group users by role
+  // Group users by role ("user" alone isn't a role worth listing)
   const usersByRole = useMemo(() => {
     const grouped: Record<string, Person[]> = {
       admin: [],
       dev: [],
+      supervisor: [],
       captain: [],
       college_rep: [],
     };
@@ -458,21 +468,51 @@ const ManageUserRolesPage = () => {
               <div className="text-center py-12 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                 <p className="text-red-700 dark:text-red-300">{loadError}</p>
               </div>
-            ) : specialRoleUsers.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No users with special roles found for {selectedCollege}.
+            ) : ROLE_GROUPS[selectedCollege] ? (
+              specialRoleUsers.length === 0 ? (
+                <p className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  Nobody is {ROLE_GROUPS[selectedCollege]} yet. Pick their college to give them the role.
                 </p>
-              </div>
-            ) : selectedCollege === "Admin" || selectedCollege === "Dev" ? (
-              <RoleTable
-                role={selectedCollege.toLowerCase()}
-                users={specialRoleUsers}
-              />
+              ) : (
+                <RoleTable role={ROLE_GROUPS[selectedCollege]} users={specialRoleUsers} />
+              )
             ) : (
               <div>
+                <div className="mb-8 max-w-md">
+                  <label htmlFor="find-player" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Give someone in {selectedCollege} a role
+                  </label>
+                  <input
+                    id="find-player"
+                    type="search"
+                    placeholder="Name or email"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  {search.trim() &&
+                    specialRoleUsers
+                      .filter((p) => !added.includes(p.email))
+                      .filter((p) => `${p.name} ${p.email}`.toLowerCase().includes(search.trim().toLowerCase()))
+                      .slice(0, 6)
+                      .map((p) => (
+                        <button
+                          key={p.email}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          onClick={() => {
+                            setAdded((a) => [...a, p.email]);
+                            setSearch("");
+                            startEditing(p.email, p.roles, p.captainOf);
+                          }}
+                        >
+                          {p.name} <span className="text-xs text-gray-500">{p.email}</span>
+                        </button>
+                      ))}
+                </div>
+                <RoleTable role="New roles" users={specialRoleUsers.filter((p) => added.includes(p.email))} />
                 <RoleTable role="admin" users={usersByRole.admin} />
                 <RoleTable role="dev" users={usersByRole.dev} />
+                <RoleTable role="supervisor" users={usersByRole.supervisor} />
                 <RoleTable role="captain" users={usersByRole.captain} />
                 <RoleTable role="college_rep" users={usersByRole.college_rep} />
               </div>

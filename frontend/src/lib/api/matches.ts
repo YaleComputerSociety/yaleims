@@ -58,6 +58,10 @@ export type PlayedMatchesQuery = z.input<typeof playedMatchesQuerySchema>;
 export const fetchSeasonMatches = (seasonId: string, query: SeasonMatchesQuery = {}) =>
   request<MatchList>("GET", url`/api/seasons/${seasonId}/matches`, { query });
 
+/** GET /api/seasons/{seasonId}/matches/{matchId} (public). */
+export const fetchMatch = (seasonId: string, matchId: string) =>
+  request<Match>("GET", url`/api/seasons/${seasonId}/matches/${matchId}`);
+
 export const fetchPlayedMatches = (query: PlayedMatchesQuery = {}) =>
   request<MatchList>("GET", "/api/matches", { query });
 

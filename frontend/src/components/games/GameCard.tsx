@@ -14,6 +14,8 @@ import type { SessionViewer } from "@/lib/api/auth";
 import { getCollegeFlag } from "@/lib/images";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
+import MyEntryStatus, { CancelledBadge } from "@/components/games/MyEntryStatus";
+import type { MyMatch } from "@/lib/api/me";
 
 const LIVE_WINDOW_MS = 1 * 60 * 60 * 1000; // 1 hour
 
@@ -39,6 +41,8 @@ interface GameCardProps {
   onSportClick?: (sport: string) => void;
   viewer: SessionViewer | null;
   isSignedUp?: boolean;
+  /** The viewer's own entry, when they're on the game. */
+  mine?: MyMatch["mine"];
   signUpStatusLoading?: boolean;
   onStatusChange?: (matchId: string, signed: boolean) => void;
 }
@@ -51,6 +55,7 @@ const GameCard: React.FC<GameCardProps> = ({
   onSportClick,
   viewer,
   isSignedUp = false,
+  mine,
   signUpStatusLoading = false,
   onStatusChange,
 }) => {
@@ -67,6 +72,7 @@ const GameCard: React.FC<GameCardProps> = ({
     (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
 
   const isPastMatch = new Date(match.startsAt) < new Date();
+  const isCancelled = match.status === "cancelled";
 
   const changeSignUp = async (signed: boolean) => {
     setSignUpLoading(true);
@@ -297,8 +303,11 @@ const GameCard: React.FC<GameCardProps> = ({
               </span>
             )}
 
+            {isCancelled && <CancelledBadge />}
+            <MyEntryStatus mine={mine} started={isPastMatch} />
+
             {/* Sign-up button */}
-            {viewer && status === "upcoming" && !isPastMatch && isUserTeam && (
+            {viewer && status === "upcoming" && !isPastMatch && !isCancelled && isUserTeam && (
               signUpStatusLoading ? (
                 <div
                   className="h-6 w-[74px] rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"

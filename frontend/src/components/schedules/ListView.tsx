@@ -5,7 +5,7 @@ import { format, isSameDay, startOfDay, eachDayOfInterval } from "date-fns";
 import { useSeason } from "@/context/SeasonContext";
 import { useTournamentNames } from "@/hooks/useTournamentNames";
 import type { Match } from "@/lib/api/matches";
-import { fetchMyMatches } from "@/lib/api/me";
+import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
 import Link from "next/link";
 
 interface ListViewProps {
@@ -20,8 +20,8 @@ interface ListViewProps {
 
 const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => {
   const { viewer } = useSession();
-  // The games the user signed up for that haven't started (ids).
-  const [signedUpIds, setSignedUpIds] = useState<Set<string>>(new Set());
+  // The games the user signed up for that haven't started, by id, with their entry's status.
+  const [myEntries, setMyEntries] = useState<Map<string, MyMatch["mine"]>>(new Map());
   const [loading, setLoading] = useState(true);
   const dateRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { currentSeason } = useSeason();
@@ -40,7 +40,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
     setLoading(true);
     fetchMyMatches({ seasonId: currentSeason.id, upcoming: true })
       .then(
-        ({ items }) => live && setSignedUpIds(new Set(items.map((m) => m.id))),
+        ({ items }) => live && setMyEntries(new Map(items.map((m) => [m.id, m.mine]))),
         (err) => console.error("Error fetching user matches:", err)
       )
       .finally(() => live && setLoading(false));
@@ -57,9 +57,9 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
   }, [matches]);
 
   const handleStatusChange = useCallback((matchId: string, signed: boolean) => {
-    setSignedUpIds((prev) => {
-      const next = new Set(prev);
-      if (signed) next.add(matchId);
+    setMyEntries((prev) => {
+      const next = new Map(prev);
+      if (signed) next.set(matchId, { captainStatus: null, present: false });
       else next.delete(matchId);
       return next;
     });
@@ -145,7 +145,8 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
                 tournament={tournamentOf(match)}
                 viewer={viewer}
                 onStatusChange={handleStatusChange}
-                isSignedUp={signedUpIds.has(match.id)}
+                isSignedUp={myEntries.has(match.id)}
+                mine={myEntries.get(match.id)}
               />
             ))}
           </div>

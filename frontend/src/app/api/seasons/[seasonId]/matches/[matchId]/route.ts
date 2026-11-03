@@ -1,10 +1,19 @@
 import { ApiError } from "@/lib/api/core";
-import { matchEditSchema } from "@/lib/api/matches";
+import { matchEditSchema, toMatch } from "@/lib/api/matches";
 import { authorize, can } from "@/server/auth";
-import { noContent, readBody, route } from "@/server/http";
+import { getMatch } from "@/server/data/matches";
+import { noContent, ok, readBody, route } from "@/server/http";
 import { deleteMatch, editMatch, type DeleteResult, type EditResult } from "@/server/services/schedule";
 
 type Params = { seasonId: string; matchId: string };
+
+/** One game (public, like the season's list). */
+export const GET = route<Params>(async (req, { params }) => {
+  const { seasonId, matchId } = await params;
+  const match = await getMatch(seasonId, matchId);
+  if (!match) throw new ApiError("not-found", "No such game this season.");
+  return ok(toMatch({ id: matchId, ...match }));
+});
 
 const REFUSALS: Record<Exclude<EditResult, "ok">, ApiError> = {
   "not-found": new ApiError("not-found", "No such game this season."),

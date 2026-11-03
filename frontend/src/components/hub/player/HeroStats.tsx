@@ -9,7 +9,7 @@ import { collegeName } from "@/lib/colleges";
 export default function HeroStats() {
   const { viewer } = useSession();
   const { currentSeason } = useSeason();
-  // How many games the user signed up for this season.
+  // How many games the user signed up for this season that have started (U12).
   const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +19,7 @@ export default function HeroStats() {
     setLoading(true);
     fetchMyMatches({ seasonId: currentSeason.id })
       .then(
-        ({ total }) => live && setGamesPlayed(total),
+        ({ items }) => live && setGamesPlayed(items.filter((m) => new Date(m.startsAt).getTime() <= Date.now()).length),
         (error) => console.error("Failed to fetch stats:", error)
       )
       .finally(() => live && setLoading(false));
