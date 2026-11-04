@@ -63,7 +63,7 @@ jobs:
           java-version: 21
       - run: npm ci
       # Seeds the emulator, starts the app on it, runs tests/integration and tests/rules.
-      - run: npx -y firebase-tools@14 emulators:exec --only firestore --project demo-yims --config ../database/firebase.json "npm run test:integration"
+      - run: npm run test:emulator
 
   sidelined-elo:
     name: Sidelined Elo (type-check, import guard)

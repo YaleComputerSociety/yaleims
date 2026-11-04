@@ -35,7 +35,7 @@ if (!secret) {
 /** The user's name from the local emulator, so the app greets them properly. */
 async function nameOf(address: string): Promise<string> {
   const host = process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080";
-  const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2";
+  const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims";
   try {
     // "Bearer owner" is the emulator's admin access: the security rules don't let the browser read users.
     const res = await fetch(`http://${host}/v1/projects/${project}/databases/(default)/documents/users/${encodeURIComponent(address)}`, {
