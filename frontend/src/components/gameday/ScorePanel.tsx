@@ -70,8 +70,9 @@ export default function ScorePanel({ match, onSaved }: { match: Match; onSaved: 
   const digits = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (/^\d{0,3}$/.test(e.target.value)) set(e.target.value);
   };
-  const forfeits = forfeit !== "none";
-  const ready = forfeits || (home !== "" && away !== "");
+  const homeForfeit = forfeit === "home" || forfeit === "both";
+  const awayForfeit = forfeit === "away" || forfeit === "both";
+  const ready = (homeForfeit || home !== "") && (awayForfeit || away !== "");
 
   return (
     <div className="rounded-xl border border-black/10 dark:border-white/10 p-5 space-y-5">
@@ -82,8 +83,8 @@ export default function ScorePanel({ match, onSaved }: { match: Match; onSaved: 
             inputMode="numeric"
             aria-label={`${homeName} score`}
             className="w-20 h-14 text-center text-2xl font-bold rounded-lg ring-1 ring-black/15 dark:ring-white/15 bg-white dark:bg-black disabled:opacity-40"
-            value={forfeits ? "" : home}
-            disabled={forfeits}
+            value={homeForfeit ? "0" : home}
+            disabled={homeForfeit}
             onChange={digits(setHome)}
           />
         </label>
@@ -94,8 +95,8 @@ export default function ScorePanel({ match, onSaved }: { match: Match; onSaved: 
             inputMode="numeric"
             aria-label={`${awayName} score`}
             className="w-20 h-14 text-center text-2xl font-bold rounded-lg ring-1 ring-black/15 dark:ring-white/15 bg-white dark:bg-black disabled:opacity-40"
-            value={forfeits ? "" : away}
-            disabled={forfeits}
+            value={awayForfeit ? "0" : away}
+            disabled={awayForfeit}
             onChange={digits(setAway)}
           />
         </label>
@@ -126,10 +127,10 @@ export default function ScorePanel({ match, onSaved }: { match: Match; onSaved: 
           act(
             () =>
               scoreMatch(match.seasonId, match.id, {
-                homeScore: forfeits ? 0 : Number(home),
-                awayScore: forfeits ? 0 : Number(away),
-                homeForfeit: forfeit === "home" || forfeit === "both",
-                awayForfeit: forfeit === "away" || forfeit === "both",
+                homeScore: homeForfeit ? 0 : Number(home),
+                awayScore: awayForfeit ? 0 : Number(away),
+                homeForfeit,
+                awayForfeit,
               }),
             "Score saved"
           )
