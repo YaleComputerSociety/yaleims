@@ -48,8 +48,15 @@ let analyticsPromise: Promise<Analytics | null> | null = null;
 
 export function initAnalytics() {
   if (analyticsPromise) return analyticsPromise;         // already started
-  if (typeof window === "undefined") {
-    analyticsPromise = Promise.resolve(null);            // SSR → no-op
+  // The emulator needs only a project id. Don't initialize Analytics without
+  // its cloud configuration or send local development traffic to production.
+  if (
+    typeof window === "undefined" ||
+    process.env.NEXT_PUBLIC_USE_EMULATOR === "true" ||
+    !firebaseConfig.appId ||
+    !firebaseConfig.measurementId
+  ) {
+    analyticsPromise = Promise.resolve(null);
     return analyticsPromise;
   }
 

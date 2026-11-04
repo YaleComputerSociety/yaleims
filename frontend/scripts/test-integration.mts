@@ -18,7 +18,7 @@ const yalies = await serveFakeYalies(yaliesPort);
 const env = {
   ...process.env,
   NEXT_PUBLIC_USE_EMULATOR: "true",
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2",
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims",
   JWT_SECRET: randomBytes(32).toString("hex"),
   BASE_URL: `http://localhost:${port}`,
   YALIES_API_URL: `http://127.0.0.1:${yaliesPort}`,

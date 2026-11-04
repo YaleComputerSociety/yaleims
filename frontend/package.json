@@ -10,11 +10,16 @@
     "lint": "eslint src tests scripts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",
-    "test:integration": "tsx scripts/test-integration.mts",
-    "emulator": "npx -y firebase-tools@14 emulators:start --only firestore --config ../database/firebase.json --project yims-125a2",
-    "seed": "tsx --conditions=react-server scripts/seed.mts",
-    "dev:token": "tsx scripts/dev-token.mts",
-    "make-admin": "tsx scripts/make-admin.mts"
+    "test:integration": "node --env-file-if-exists=.env.local --import tsx scripts/test-integration.mts",
+    "emulator": "npx -y firebase-tools@14 emulators:start --only firestore --config ../database/firebase.json --project demo-yims",
+    "seed": "node --env-file-if-exists=.env.local --conditions=react-server --import tsx scripts/seed.mts",
+    "dev:token": "node --env-file-if-exists=.env.local --import tsx scripts/dev-token.mts",
+    "make-admin": "node --env-file-if-exists=.env.local --import tsx scripts/make-admin.mts",
+    "dev:setup": "node scripts/dev-setup.mjs",
+    "dev:doctor": "node --env-file-if-exists=.env.local scripts/dev-doctor.mjs",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "test:watch": "vitest --project unit",
+    "test:emulator": "NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-yims npx -y firebase-tools@14 emulators:exec --only firestore --project demo-yims --config ../database/firebase.json \"npm run test:integration\""
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
@@ -50,5 +55,8 @@
     "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=22.9.0 <23"
   }
 }

@@ -9,7 +9,7 @@
 // standings, team records and bracket advancement are exactly what the app
 // would produce, audit log included.
 //
-//   npm run emulator           (repo/database: Firestore emulator on :8080)
+//   npm run emulator           (from frontend/: Firestore emulator on :8080)
 //   npm run seed               (this script; wipes the emulator first)
 //   npm run dev:emulator       (the app on the emulator)
 //   npm run dev:token -- dev@example.edu   (a session cookie to sign in as someone)
@@ -27,7 +27,7 @@ if (!host) {
   console.error("Refusing to run: FIRESTORE_EMULATOR_HOST is not set (this script only writes to the emulator).");
   process.exit(1);
 }
-process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??= "yims-125a2";
+process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??= "demo-yims";
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
 // The app's modules read the environment when they load, so they come after the guard.
@@ -409,6 +409,6 @@ console.log(
   `Done in ${Math.round((Date.now() - started) / 1000)}s: ${lastPlayed} + ${nowPlayed} regular games scored, ` +
   `${students.length} students, ${alumni.length} alumni.\n` +
   `Sign in locally: npm run dev:token -- dev@example.edu (admin + dev), player001@example.edu (Benjamin Franklin's rep), ` +
-  `player002@example.edu (a captain), player003@example.edu (a player).`
+  `player002@example.edu (a captain), player004@example.edu (a player).`
 );
 process.exit(0);

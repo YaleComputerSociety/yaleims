@@ -10,7 +10,7 @@ const SECRET = process.env.TEST_JWT_SECRET;
 if (!SECRET) throw new Error("Run through `npm run test:integration` (it starts the app and sets TEST_JWT_SECRET).");
 
 /** The emulator, read directly to check what a call changed. */
-export const db = getFirestore(getApps()[0] ?? initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2" }));
+export const db = getFirestore(getApps()[0] ?? initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims" }));
 
 /**
  * A session cookie for `email`, with roles in it as cookies from before Phase
