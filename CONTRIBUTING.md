@@ -1,141 +1,187 @@
 # Contributing to YaleIMs
 
-Start with the [README](README.md): the quick start gets the site running on
-your machine against a local emulator, and "How it fits together" is the map
-of the code. This file is the how-to.
+Use [README.md](README.md) for the application map and emulator setup.
+Run application commands from `frontend/`. Production releases and maintenance
+require maintainer access; ordinary local work uses synthetic data.
 
-## Branches, commits, pull requests
+## Branches and review
 
-- Branch from `main`: `feat/<topic>`, `fix/<topic>`, `chore/<topic>`,
-  `refactor/<topic>` (or `<issue number>-<topic>`).
-- Commit messages say what changed and why, in the
-  [Conventional Commits](https://www.conventionalcommits.org) style:
-  `fix(brackets): a winner advances when the seed is missing`.
-- Before opening a pull request, from `frontend/`:
-  ```bash
-  npm run typecheck && npm run lint && npm test
-  FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run test:integration
-  ```
-  and click through the pages you touched (`npm run dev:emulator`, signed in
-  with `npm run dev:token` as the roles that use them).
-- The pull request says what changed, why, and how you tested it. CI must be
-  green; a maintainer reviews and merges.
-- Never commit secrets (`.env.local`, service account keys) or real people's
-  data. The seed is made up on purpose.
+Create a focused branch from the team's current base, normally `main`:
+`feat/topic`, `fix/topic`, `chore/topic`, or `refactor/topic`. Inspect existing
+working changes before switching branches. Use Conventional Commit messages,
+for example `fix(matches): reject empty match edits`.
 
-## Adding an API route
+Before opening a pull request:
 
-Routes live at the URL they serve: `src/app/api/seasons/[seasonId]/matches/[matchId]/reports/route.ts`
-is `/api/seasons/{s}/matches/{m}/reports`, which mirrors the Firestore path
-`seasons/{s}/matches/{m}/scoreReports`. That file is a good one to copy.
+```bash
+# frontend/; Firestore emulator already running
+npm run check
+npm run test:integration
+# Stop your interactive Next dev server before building:
+npm run build
+```
 
-1. **The contract** goes in `src/lib/api/<resource>.ts`, next to the
-   resource's other calls: the zod schema of the body or query
-   (`z.strictObject`, so unknown fields are refused), the response type (the
-   document as `Json<WithId<Doc>>`, or an `Omit<>` of it when some readers
-   mustn't see emails) and the typed client call (`request()`), which pages
-   use.
-2. **The handler** reads top to bottom: parse the URL params, check who is
-   calling, validate the input, do the work, respond. From
-   `app/api/seasons/[seasonId]/colleges/[collegeId]/mvps/[week]/route.ts`:
-   ```ts
-   export const PUT = route<Params>(async (req, { params }) => {
-     const { seasonId, collegeId, week } = await readParams(params, mvpParamsSchema);
-     const viewer = await authorize(can.nameMvps, collegeId);   // 401 / 403
-     const { playerId } = await readBody(req, mvpAwardSchema);  // 400 on bad input
-     const player = await getPlayer(seasonId, playerId);
-     if (player?.collegeId !== collegeId) {
-       throw new ApiError("bad-request", "They aren't a player of this college that season.");
-     }
-     await setMvp(seasonId, collegeId, { week, playerId, name: player.name, awardedBy: viewer.email });
-     return noContent();                                        // or ok(body) / created({ id })
-   });
-   ```
-   Throw `new ApiError("not-found" | "conflict" | …, "a message the user can
-   read")` for expected failures; anything else becomes a logged, generic 500.
-3. **Who may do it** is a named rule in `can` (`src/server/auth.ts`). Add one
-   there rather than checking roles in the route, so every permission can be
-   read in one place.
-4. **Firestore access** goes through `src/server/data/<collection>.ts` (the
-   only code that touches Firestore) or, when it spans collections or needs a
-   transaction, a function in `src/server/services/`. Writes by admins,
-   supervisors and reps are audit-logged in the same transaction
-   (`logAction`).
-5. **Tests:** add the route to the auth matrix
-   (`tests/integration/auth-matrix.test.ts`: who gets 401/403/allowed) and its
-   behavior to the resource's file in `tests/integration/`. Pure logic gets a
-   unit test in `tests/unit/`.
+Alternatively, with emulator ports free, `npm run test:emulator` manages the
+emulator for the API/rules suite. The suite wipes and reseeds its configured
+emulator project. Refresh the interactive app and rediscover generated IDs
+afterward. Test touched screens as their allowed and refused roles, signed
+out where relevant, and at narrow widths for UI changes.
 
-Conventions: GET reads; POST creates (201 with the id); PATCH changes fields;
-PUT sets something whole (idempotent); DELETE removes (204). Lists are
-`{ items, total }`, paged with `page` and `pageSize` where they can be long.
-"Today" and "this week" are Eastern days (`lib/dates.ts`). Errors are always
-`{ error: { code, message } }`.
+Describe the resulting behavior, reason for the change, and validation you
+actually performed. Wait for CI and review before merging. A merge is not a
+substitute for the maintainer release procedure below.
 
-## Adding a page
+Never commit local environment files, service-account keys, real student
+records, backups, generated output, or emulator logs. Keep repository Markdown
+to the root `README.md`, root `CONTRIBUTING.md`, and concise directory
+`README.md` files. Detailed guides, reviews, specifications, research notes,
+and change logs belong outside the Git checkout. The ignore rules also cover
+generated agent Markdown; it can reappear locally when Next runs.
 
-- `src/app/<url>/page.tsx`; its components in `src/components/<area>/`.
-  Static pages (no state) are server components.
-- Get data with the `lib/api` client calls; the season, its sports and the
-  colleges come from `useSeason()` (`context/SeasonContext`), the signed-in
-  person from `useSession()` (`context/SessionContext`).
-- A page that needs sign-in shows `SignInPrompt` when a call answers 401.
-  Failed actions show their error's message in a toast; a failed background
-  read keeps the page's empty state.
-- Hub sections for a role go in `components/hub/<role>/` and are wired into
-  `app/hub/page.tsx`.
+## Code boundaries
 
-## Adding a field or a collection
+- Pages and components own interaction and rendering. Fetch through
+  `src/lib/api`; use `useSession()` and `useSeason()` for shared state.
+- `src/lib/api/<resource>.ts` owns strict Zod request/query schemas, response
+  types, serialization, and typed calls through `request()`.
+- `src/app/api/**/route.ts` owns HTTP handling. Use `route()`, `readBody()`,
+  `readQuery()`/`readParams()` as appropriate, and the standard response helpers.
+- `src/server/auth.ts` owns named permission rules in `can`. A hidden button
+  does not authorize an action. Read current roles from Firestore, not token
+  claims; use `authorize(can.rule, ...)` for privileged handlers.
+- Data modules own Firestore access and references. Services coordinate
+  domain operations across entities and use transactions for related writes.
+- Shared pure behavior belongs in `src/lib`. Server modules use `server-only`
+  to keep privileged code out of browser bundles.
 
-1. **The schema:** add it to the document's interface in
-   `src/types/firestore.ts` with a comment saying what it means. A new
-   collection also gets its path in `src/lib/paths.ts` and a module in
-   `src/server/data/`.
-2. **Existing documents** don't have the new field. Either read it with a
-   default (`doc.field ?? fallback`), or backfill it with a one-off script
-   that runs against the emulator first and in production only with a
-   maintainer's go-ahead (after a backup).
-3. **Queries** on the new field need an index in
-   `database/firestore.indexes.json` when they combine filters or sort
-   (the emulator doesn't enforce indexes; production answers "requires an
-   index"). Index deploys are part of the release.
-4. **Rules:** nothing to do unless the browser must read it live; the rules
-   deny everything else (`database/firestore.rules`, tested in
-   `tests/rules/`).
-5. **The seed** (`scripts/seed.mts`) should produce realistic values, so the
-   pages and tests see them.
+URLs generally mirror season-scoped document paths, with caller-specific
+`/api/me/*` and cross-season `/api/matches` exceptions. Use GET to read, POST
+to create, PATCH to edit fields, PUT to set a resource, and DELETE to remove.
+Successful handlers use `ok()`, `created()`, or `noContent()`; expected failures
+throw `ApiError`. The error shape is `{ error: { code, message } }`, optionally
+with details. Lists use `{ items, total }`; use existing pagination conventions.
 
-## Tests
+API writes require an Origin matching their host and port (`src/proxy.ts`).
+CLI tests should use `tests/integration/helpers.ts` or set that header explicitly.
+Serialize timestamps through the existing JSON helpers and omit private fields
+for each audience; do not return raw stored records indiscriminately.
 
-`frontend/tests/README.md` has the details. In short: unit tests
-(`npm test`) for pure code; integration tests run the real API against the
-emulator with the seed loaded (they wipe the emulator); rules tests check
-what the browser may read. CI runs all of them on every pull request.
+## Adding or changing behavior
+
+1. Update the resource contract in `src/lib/api` and the relevant types.
+2. Add a named permission if needed, then implement the route using the
+   existing HTTP and authorization helpers.
+3. Put persistence in `server/data` and multi-entity behavior in a service.
+   Transaction callbacks can retry: finish reads before writes and keep
+   external side effects outside retried callbacks.
+4. Audit privileged mutations in the same transaction as their changes.
+   Use `logAction()` and the existing size budgets. Read complete audit
+   records through `getAuditLog()` so chunked payloads are reconstructed.
+   A rejected operation must not leave partial changes or partial audit data.
+5. Add tests for invalid input, permissions, domain conflicts, and stored
+   effects. Check affected UI states, including loading and failed requests.
+
+Scoring, undo, bracket advancement, standings, team records, and audit history
+are related operations. Preserve their invariants together, including rejection
+of a correction that would overwrite an already scored downstream game.
+Use `lib/dates.ts` for league-day rules in Eastern time; be explicit when UI
+presentation uses the viewer's local time instead.
+
+## Schema, queries, and rules
+
+`src/types/firestore.ts` defines the stored schema; `src/lib/paths.ts` builds
+paths. Add fields there and handle existing documents with defaults or a
+reviewed backfill. Update the synthetic seed when a new field or scenario
+should be exercised locally. Keep user-provided path segments validated.
+
+Review `database/firestore.indexes.json` for every new query shape. The emulator
+does not enforce composite indexes or every production size/transaction limit.
+Check relevant limits and arrange a maintainer-controlled cloud check when
+needed. Deploy new indexes and wait until ready before releasing dependent code.
+
+`database/firestore.rules` permits public browser reads only for season docs
+and standings, and denies browser writes. The Admin SDK bypasses these rules,
+so API permissions and privacy checks are separate. Changes to browser access
+need rules tests and a coordinated release.
+
+## Tests and debugging
+
+| Change | Where to test |
+|---|---|
+| Pure rules, formatting, dates, input contracts | `tests/unit/` |
+| HTTP/domain behavior and stored side effects | Resource tests in `tests/integration/` |
+| Route authorization | `tests/integration/auth-matrix.test.ts` |
+| Browser Firestore policy | `tests/rules/firestore.test.ts` |
+| Browser interactions, layout, accessibility | Manual checks in the browser; no browser E2E suite is configured |
+
+```bash
+npm test -- tests/unit/format.test.ts
+npm run test:watch -- tests/unit/format.test.ts
+npm run test:integration -- tests/integration/matches.test.ts
+npm run test:integration -- tests/integration/matches.test.ts -t "reschedules"
+npm run test:integration -- tests/rules/firestore.test.ts
+```
+
+The integration wrapper starts Next on 3210 in `.next-test/`, supplies a
+throwaway session secret, and serves fake Yalies on 3211. Use the wrapper
+rather than invoking the integration Vitest project directly. Its helpers
+provide `api()`, `sessionFor()`, `people`, `seasons()`, and the emulator `db`.
+Files run sequentially because they share state. Unit tests need no emulator.
+
+Use browser Network/Console for requests and UI failures, the Next terminal
+for server errors, and the Emulator UI for stored effects. A 401 indicates
+session failure; a 403 can indicate authorization or Origin; a 409 indicates
+a domain conflict. Build and interactive dev share `.next/`, so stop dev
+before building. If a restricted runner cannot start Turbopack workers,
+`npm run build -- --webpack` selects the alternative compiler.
+
+The emulator suite does not test real CAS, cloud IAM, production indexes, or
+browser rendering. Cover those boundaries explicitly when changing them.
+For Elo package changes, from `sidelined/elo/` run `npm ci`,
+`npm run typecheck`, and `npm run check:not-imported` (also enforced in CI).
+
+## Maintenance
+
+Maintenance scripts are optional; install their package only when needed.
+`database/misc/firebaseAdmin.js` uses the emulator host when set and otherwise
+requires explicit `--prod`. Production scripts use maintainer credentials;
+local emulator work needs none. Keep input policies, plans, snapshots, and
+backups outside the repository.
+
+| Task | Entry point |
+|---|---|
+| Start a season | From `database/misc/`: `npm ci`, then `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node start_new_season.js YYYY-YYYY [--make-current]`. Copies missing season/college/sport docs; `--make-current` updates configuration. |
+| Convert a schedule workbook | `python3 database/misc/format_schedule.py /path/to/schedule.xlsx -o /tmp/schedule.csv --sport Soccer`; Python standard library only. Upload the CSV through the Hub. |
+
+`database/misc` has no automated test script; its inherited
+`npm test` placeholder intentionally fails.
 
 ## Releasing (maintainers)
 
-Production is Firebase App Hosting backend `yaleims-1` in project
-`yims-125a2`. Automatic rollouts are off: every release is a deliberate,
-pinned rollout.
+The repository configures Firebase App Hosting backend `yaleims-1` in project
+`yims-125a2`. The workflow below uses an explicit commit-pinned rollout.
+Check the backend's live-branch/automatic-rollout settings and IAM in the
+Firebase console before releasing; those settings are not proved by local files.
+See Firebase's [rollout and rollback documentation](https://firebase.google.com/docs/app-hosting/rollouts).
 
-1. Merge the pull request to `main` once CI is green.
-2. If the release needs new indexes or touches existing data: take a
-   backup (`gcloud firestore export gs://yims-125a2-backups/<date>-<what>`)
-   and deploy the indexes first, from `database/`:
-   `npx firebase-tools deploy --only firestore:indexes --project yims-125a2`.
-   If it offers to delete indexes, answer no and find out why.
-3. Roll out the exact commit:
-   `npx firebase-tools apphosting:rollouts:create yaleims-1 -g <full commit sha> --project yims-125a2`.
-4. Check the live site: every page, signed out and signed in, and the
-   feature you shipped.
-5. Rules changes go out **after** the build that needs them is live:
-   `npx firebase-tools deploy --only firestore:rules --project yims-125a2`
-   from `database/`.
+1. Merge the reviewed change once checks pass and record its full commit SHA.
+2. For changes to data or indexes, take a backup first, for example
+   `gcloud firestore export gs://yims-125a2-backups/DATE-LABEL`.
+   Review any backfill separately; a code rollback does not reverse data writes.
+3. Deploy needed indexes from `database/`, then wait for them to become ready:
+   `npx -y firebase-tools@14 deploy --only firestore:indexes --project yims-125a2`.
+   Review proposed deletions before proceeding.
+4. Run the pinned rollout:
+   `npx -y firebase-tools@14 apphosting:rollouts:create yaleims-1 -g FULL_COMMIT_SHA --project yims-125a2`.
+5. Check rollout/build logs, the live site signed out and in, relevant roles,
+   and the feature's stored effects. Coordinate rules changes with the code
+   that requires them; deploy compatible rules explicitly from `database/`:
+   `npx -y firebase-tools@14 deploy --only firestore:rules --project yims-125a2`.
 
-**Rollback:** in the Firebase console (App Hosting → `yaleims-1` →
-Rollouts), send traffic back to the previous build. If rules were deployed
-with the release, put the previous rules back first.
-
-Secrets (`JWT_SECRET`, `YALIES_API_KEY`) live in Cloud Secret Manager and
-are only available at runtime (`frontend/apphosting.yaml`). Changing
-`JWT_SECRET` signs everyone out.
+For rollback, use App Hosting's rollback controls to return to a known-good
+build and restore compatible rules as needed. Verify data/index compatibility
+before rollback. Avoid bare `firebase deploy`; target the intended resource.
+`frontend/apphosting.yaml` contains deployment environment and Secret Manager
+references. `JWT_SECRET` and `YALIES_API_KEY` are runtime secrets; changing the
+session secret signs everyone out. Keep production secrets out of local files
+and source control.

@@ -1,5 +1,5 @@
 "use client";
-// Game day (supervisors; U1, U5-ROSTER-WORKFLOW.md): one day's games of the
+// Game day (supervisors): one day's games of the
 // current season, grouped by what needs doing: on now, later, earlier and
 // not scored yet, done. Mobile-first; tapping a game opens its attendance
 // and score. Days are Eastern days (lib/dates.ts).

@@ -1,5 +1,5 @@
 "use client";
-// One game on game day (U5-ROSTER-WORKFLOW.md): the roster sheet (a captain
+// One game on game day: the roster sheet (a captain
 // prepares their side; a supervisor takes attendance) and, for supervisors,
 // the score; the ⋯ menu edits, cancels or deletes the game. The tabs and the
 // menu follow what the session says the viewer may do; the server checks

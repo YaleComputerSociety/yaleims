@@ -1,4 +1,4 @@
-// Firestore documents of schema v3 (REDESIGN.md section 4), one type per
+// Firestore documents of schema v3, one type per
 // collection. Types only, no runtime code: the server data layer
 // (src/server/data), the API contract (src/lib/api) and the browser
 // listeners import them. Paths live in src/lib/paths.ts. The schema before v3

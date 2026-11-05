@@ -1,5 +1,5 @@
 "use client";
-// A game's roster sheet (D34, U5-ROSTER-WORKFLOW.md), for the sides the
+// A game's roster sheet, for the sides the
 // viewer manages: a captain confirms, removes and adds their college's
 // players until the game starts; a supervisor ticks who came (one tap per
 // player, any time) and adds walk-ins. Both add players by NetID too

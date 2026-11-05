@@ -1,7 +1,7 @@
 // Every Firestore path the app uses, in one place. Plain strings, so both the
 // Admin SDK on the server (src/server/data) and the browser SDK (live
 // listeners) can use them: adminDb.doc(p), doc(db, p), collection(db, p).
-// The tree is schema v3 (REDESIGN.md section 4; documents in types/firestore.ts).
+// The tree is schema v3; document types live in types/firestore.ts.
 
 /** One path segment; throws if it would change the path's shape. */
 function seg(value: string | number): string {
