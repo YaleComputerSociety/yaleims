@@ -12,8 +12,8 @@
 import { existsSync, readFileSync } from "fs";
 import admin from "firebase-admin";
 
-const PROJECT_ID = "yims-125a2";
 const emulator = process.env.FIRESTORE_EMULATOR_HOST;
+const PROJECT_ID = emulator ? (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims") : "yims-125a2";
 
 if (!emulator && !process.argv.includes("--prod")) {
   console.error(

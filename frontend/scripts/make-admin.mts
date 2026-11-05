@@ -24,7 +24,7 @@ if (!email?.includes("@")) {
   process.exit(1);
 }
 
-const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "yims-125a2";
+const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims";
 const db = getFirestore(getApps()[0] ?? initializeApp({ projectId }));
 const ref = db.doc(`users/${email}`);
 const snap = await ref.get();
