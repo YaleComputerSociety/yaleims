@@ -169,12 +169,15 @@ describe("bracket result corrections", () => {
     expect((await db.doc(`seasons/${current}/brackets/${f.id}`).get()).data()!.placements).toEqual({ first: null, second: null, third: null });
   });
 
-  it("serializes concurrent scoring of a corrected feeder and its next game", async () => {
+  it.each(["feeder first", "next game first"])("serializes concurrent scoring (%s)", async (order) => {
     const f = await createFixture();
     expect((await score(f, 2)).status).toBe(204);
     expect((await undo(f, 2)).status).toBe(204);
     const before = await totals();
-    const [feeder, next] = await Promise.all([score(f, 2, 0, 2), score(f, 5)]);
+    const responses = await Promise.all(order === "feeder first"
+      ? [score(f, 2, 0, 2), score(f, 5)]
+      : [score(f, 5), score(f, 2, 0, 2)]);
+    const [feeder, next] = order === "feeder first" ? responses : [responses[1], responses[0]];
     expect(next.status).toBe(204);
     expect([204, 409]).toContain(feeder.status);
 

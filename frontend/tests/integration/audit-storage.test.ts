@@ -1,13 +1,12 @@
 // Large audited deletes must preserve all snapshots and commit atomically.
 // Fixtures live only in the integration runner's disposable emulator.
 import { Timestamp } from "firebase-admin/firestore";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { COLLEGES } from "@/lib/colleges";
 import { paths } from "@/lib/paths";
 import type { BracketDetail } from "@/lib/api/brackets";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
-vi.mock("server-only", () => ({}));
 const { getAuditLog, logAction } = await import("@/server/data/auditLog");
 const { addScoreReport } = await import("@/server/data/scoreReports");
 const { AUDIT_CHUNK_BYTES, AUDIT_MAX_BYTES, AUDIT_MAX_TARGETS } = await import("@/server/data/auditPayload");

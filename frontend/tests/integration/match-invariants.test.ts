@@ -1,10 +1,9 @@
 // Domain rules must hold for full requests, partial edits and concurrent writers.
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { BracketDetail } from "@/lib/api/brackets";
 import { paths } from "@/lib/paths";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
-vi.mock("server-only", () => ({}));
 const { addSchedule } = await import("@/server/services/schedule");
 
 let current: string;
