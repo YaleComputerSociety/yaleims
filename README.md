@@ -124,8 +124,9 @@ The integration runner uses its own Next server on 3210, fake directory on
 both see the reseeded emulator data. Run one integration suite at a time.
 `TEST_PORT=3220 npm run test:integration` uses 3220/3221 instead.
 
-CI runs typecheck, unit tests, lint, and build; a separate job runs the
-emulator suite; another checks the inactive Elo package. See
+CI audits all three npm lockfiles and runs typecheck, unit tests, lint, build,
+the emulator suite, and inactive Elo checks. Weekly audits and Dependabot PRs
+keep dependencies under review. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for targeted tests, change conventions,
 maintenance, and releases.
 

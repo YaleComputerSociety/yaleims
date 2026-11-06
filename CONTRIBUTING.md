@@ -160,6 +160,54 @@ For Elo package changes, from `sidelined/elo/` run `npm ci`,
 
 ## Maintenance
 
+### Dependencies
+
+The three npm packages (`frontend/`, `database/misc/`, `sidelined/elo/`) have
+independent lockfiles. From each changed package, run `npm ci` and
+`npm audit --package-lock-only --audit-level=low`. CI audits all locked
+dependencies, including development and optional ones, on every PR/main push
+and weekly; registry failures also fail the check. No advisories are exempted.
+Dependabot proposes weekly npm and GitHub Actions updates; maintainers review
+and merge them. Related Firebase, Next, and React packages are grouped to keep
+their peer requirements aligned. No update is automatically merged or deployed.
+
+Read parent-package release notes and published Node/peer requirements before
+updating a major. Prefer compatible parent upgrades and review the lockfile;
+do not use `npm audit fix --force` or silence a failing audit. The app uses
+Firebase 12 with rules-unit-testing 5 on Node 22; Firebase 13's matching rules
+tester requires Node 24. Plan that runtime migration together rather than
+mixing incompatible majors. The already imported `typescript-eslint` is a
+direct development dependency.
+
+Temporary npm overrides are limited to specific parent versions:
+
+| Parent | Replacement and reason | Remove when |
+|---|---|---|
+| typescript-estree 8.72.1 (frontend) | minimatch `^11.0.1`; fixes [GHSA-g3hv-75wg-m249](https://github.com/isaacs/minimatch/security/advisories/GHSA-g3hv-75wg-m249), retaining the matching API the parser uses | The parser requests a patched release; clean install, audit and lint pass without the override |
+| Browser Firestore 4.17.2 (frontend) | gRPC `^1.14.7`; replaces its vulnerable `~1.9.0` transport within the same major | Firebase requests patched gRPC; rules and live listener checks pass without the override |
+| Admin Firestore 9.4.0 (all packages) | firestore-api `^0.7.1`; replaces the `^0.2.0` generated client and its stale GAX/auth/filesystem dependencies | The wrapper requests the patched generated client; full app/maintenance checks pass without the override |
+
+The generated-client override crosses a pre-1.0 package boundary. Its Node 22
+and Firestore v1 APIs match the wrapper's use; discontinued v1beta1 is unused.
+Recheck upstream release notes and compatibility when updating these parents.
+Version scopes prevent an override silently following a new parent; a failing
+audit must be resolved before merging. These overrides do not waive advisories.
+
+ESLint 9 remains compatible with the current import, React, and accessibility
+plugins, whose declared peers stop at 9. It is
+[end-of-life](https://eslint.org/version-support/); upgrade those plugins and
+ESLint together once their peer requirements support 10. Do not bypass peers
+with `--force`/`--legacy-peer-deps`. This support limitation is separate from
+the advisory gate, which currently passes without exclusions.
+
+For Firebase updates, run the complete app/rules suite and check both browser
+listeners (standings and championship) against the emulator, including a live
+server update. For Admin updates, preserve transaction/query retry ownership,
+audit serialization, and emulator isolation. Maintenance uses modular Admin
+imports; check its explicit production refusal and season rollover on synthetic
+data. For inactive Elo, run its existing typecheck and import guard; do not run
+historical database entry points as an update check.
+
 Maintenance scripts are optional; install their package only when needed.
 `database/misc/firebaseAdmin.js` uses the emulator host when set and otherwise
 requires explicit `--prod`. Production scripts use maintainer credentials;

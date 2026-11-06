@@ -10,7 +10,8 @@
 // Credentials for --prod: ./serviceaccount.json if present (gitignored), else
 // Application Default Credentials (`gcloud auth application-default login`).
 import { existsSync, readFileSync } from "fs";
-import admin from "firebase-admin";
+import { cert, initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 const emulator = process.env.FIRESTORE_EMULATOR_HOST;
 const PROJECT_ID = emulator ? (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims") : "yims-125a2";
@@ -25,14 +26,14 @@ if (!emulator && !process.argv.includes("--prod")) {
 }
 
 const keyPath = new URL("./serviceaccount.json", import.meta.url);
-admin.initializeApp({
+const app = initializeApp({
   projectId: PROJECT_ID,
   ...(!emulator && existsSync(keyPath)
-    ? { credential: admin.credential.cert(JSON.parse(readFileSync(keyPath, "utf8"))) }
+    ? { credential: cert(JSON.parse(readFileSync(keyPath, "utf8"))) }
     : {}),
 });
 
 console.log(`Target: ${emulator ? `emulator at ${emulator}` : `PRODUCTION (${PROJECT_ID})`}`);
 
-export const db = admin.firestore();
-export const { FieldValue, Timestamp } = admin.firestore;
+export const db = getFirestore(app);
+export { FieldValue, Timestamp } from "firebase-admin/firestore";

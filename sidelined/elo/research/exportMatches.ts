@@ -10,16 +10,17 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 // Initialize Firebase Admin SDK with project ID
-if (!admin.apps || admin.apps.length === 0) {
-  admin.initializeApp({
+if (!getApps().length) {
+  initializeApp({
     projectId: "yims-125a2",
   });
 }
 
-const db = admin.firestore();
+const db = getFirestore();
 
 interface MatchData {
   id: string;

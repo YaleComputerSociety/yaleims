@@ -1,10 +1,8 @@
 // recalcOdds.ts
 // Shared helpers to recalculate Elo-based odds and write them to match docs.
-import admin from "./firebaseAdmin.js";
+import { db } from "./firebaseAdmin.js";
 import { hybridOddsCalculator } from "./elo_odds_calculator.js";
 import { Filter } from "firebase-admin/firestore";
-
-const db = admin.firestore();
 
 /**
  * Recalculate odds for a single match and write them to the match doc.
