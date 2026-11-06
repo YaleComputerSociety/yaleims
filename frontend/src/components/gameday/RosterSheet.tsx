@@ -46,26 +46,46 @@ function origin(entry: SheetEntry, supervisor: boolean): string {
   return supervisor && entry.captainStatus === "confirmed" ? `${how} · captain ✓` : how;
 }
 
-export default function RosterSheet({ match, onChange }: { match: Match; onChange?: (sheet: Sheet) => void }) {
+interface RosterSheetProps {
+  match: Match;
+  onChange?: (sheet: Sheet) => void;
+}
+
+export default function RosterSheet(props: RosterSheetProps) {
+  const { match } = props;
+  // New teams need a fresh sheet, including draft player additions. Key the
+  // stateful component here so every caller drops the old team's state,
+  // while ordinary time/place edits preserve it.
+  const teams = `${match.seasonId}:${match.id}:${match.homeCollegeId}:${match.awayCollegeId}`;
+  return <MatchRosterSheet key={teams} {...props} />;
+}
+
+function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null); // the playerId (or action) being saved
   const now = useNow();
+  const mounted = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
   const load = useCallback(async () => {
     try {
       const next = await fetchRosterSheet(match.seasonId, match.id);
+      if (!mounted.current) return;
       setSheet(next);
       onChangeRef.current?.(next);
     } catch (err) {
-      setError((err as Error).message);
+      if (mounted.current) setError((err as Error).message);
     }
   }, [match.seasonId, match.id]);
 
   useEffect(() => {
+    mounted.current = true;
     load();
+    // A replaced team's outstanding request must not update state or report
+    // its old sheet to a parent after this component has unmounted.
+    return () => { mounted.current = false; };
   }, [load]);
 
   if (error) return <p className="text-sm text-red-600 dark:text-red-400 py-6 text-center">{error}</p>;

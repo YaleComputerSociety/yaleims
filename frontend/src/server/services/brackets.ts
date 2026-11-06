@@ -35,6 +35,7 @@ import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
 import { runTransaction } from "../data/util";
+import type { MatchChange } from "./matchRoster";
 import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
 // ── Layout ─────────────────────────────────────────────────────────────────
@@ -323,23 +324,20 @@ export function movedDocs(moves: BracketMoves): DocumentSnapshot<MatchDoc | Brac
 }
 
 /**
- * After a decisive result: the winner moves into the next game (always,
- * D31; its seed with it), a tournament semifinal's loser into the third
- * place game, and a tournament's final or third place game settles its
- * placement bonuses (each awarded once). An odd slot fills the next game's
- * away side, an even slot its home side.
+ * Plan the winner/loser destinations before any writes, so roster cleanup
+ * uses exactly the participants that advancement will store. An odd slot
+ * fills the next game's away side, an even slot its home side.
  */
-export function applyBracketMoves(
-  tx: Transaction,
-  seasonId: string,
+export function advancingMatches(
   game: MatchDoc,
   moves: BracketMoves
-): void {
+): MatchChange[] {
   const winner = game.result && winnerId(game.homeCollegeId, game.awayCollegeId, game.result);
-  if (!winner || game.bracketSlot === null) return;
+  if (!winner || game.bracketSlot === null) return [];
   const winnerIsHome = winner === game.homeCollegeId;
   const loser = winnerIsHome ? game.awayCollegeId : game.homeCollegeId;
   const side = game.bracketSlot % 2 === 1 ? "away" : "home";
+  const changes: MatchChange[] = [];
 
   const moveInto = (snap: DocumentSnapshot<MatchDoc> | null, collegeId: string | null, seed: number | null) => {
     const next = snap?.data();
@@ -348,15 +346,40 @@ export function applyBracketMoves(
     const away = side === "away" ? collegeId : next.awayCollegeId;
     const problem = matchTeamsProblem({ ...next, homeCollegeId: home, awayCollegeId: away });
     if (problem) throw new ApiError("conflict", `Cannot advance this result. ${problem}`, { matchId: snap.id });
-    tx.update(snap.ref, {
-      [`${side}CollegeId`]: collegeId,
-      [`${side}Seed`]: seed,
-      collegeIds: [...new Set([home, away].filter((c) => c !== null))],
-      updatedAt: FieldValue.serverTimestamp(),
+    changes.push({
+      before: snap,
+      after: {
+        ...next,
+        [`${side}CollegeId`]: collegeId,
+        [`${side}Seed`]: seed,
+        collegeIds: [...new Set([home, away].filter((c) => c !== null))],
+      },
     });
   };
   moveInto(moves.next, winner, winnerIsHome ? game.homeSeed : game.awaySeed);
   moveInto(moves.loserNext, loser, winnerIsHome ? game.awaySeed : game.homeSeed);
+  return changes;
+}
+
+/** Apply planned advancement and award a tournament's placements once. */
+export function applyBracketMoves(
+  tx: Transaction,
+  seasonId: string,
+  game: MatchDoc,
+  moves: BracketMoves,
+  advancements: MatchChange[]
+): void {
+  for (const { before, after } of advancements) {
+    tx.update(before.ref, {
+      homeCollegeId: after.homeCollegeId, awayCollegeId: after.awayCollegeId,
+      homeSeed: after.homeSeed, awaySeed: after.awaySeed, collegeIds: after.collegeIds,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+
+  const winner = game.result && winnerId(game.homeCollegeId, game.awayCollegeId, game.result);
+  if (!winner || game.bracketSlot === null) return;
+  const loser = winner === game.homeCollegeId ? game.awayCollegeId : game.homeCollegeId;
 
   const bracket = moves.bracket?.data();
   if (!bracket?.placements || !bracket.placementPoints) return;

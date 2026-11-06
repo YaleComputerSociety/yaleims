@@ -91,9 +91,12 @@ export interface ScheduleUploadResult {
   matchIds: string[];
 }
 
-/** PATCH /api/seasons/{seasonId}/matches/{matchId}: the fields to change. */
+/**
+ * PATCH /api/seasons/{seasonId}/matches/{matchId}: teams, time, venue or status.
+ * Sport is fixed at creation. Replacing a college clears its entire roster;
+ * an incoming college starts blank. A home/away swap retains both rosters.
+ */
 export const matchEditSchema = z.strictObject({
-  sportId: z.string().min(1).optional(),
   homeCollegeId: collegeIdSchema.optional(),
   awayCollegeId: collegeIdSchema.optional(),
   venue: venue.optional(),

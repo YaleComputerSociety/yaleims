@@ -11,7 +11,8 @@ import { logAction, type Actor } from "../data/auditLog";
 import { collegeRef, recalculateRanks } from "../data/colleges";
 import { matchRef } from "../data/matches";
 import { runTransaction } from "../data/util";
-import { applyBracketMoves, movedDocs, readBracketMoves, reversePlacements } from "./brackets";
+import { advancingMatches, applyBracketMoves, movedDocs, readBracketMoves, reversePlacements } from "./brackets";
+import { applyRosterChanges, readRosterChanges } from "./matchRoster";
 import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
 export interface ScoreInput {
@@ -69,10 +70,13 @@ export async function scoreMatch(
     if (problem) throw new ApiError("bad-request", problem);
     if (!isScoredGame(scored)) return "incomplete" as const;
     const moves = await readBracketMoves(tx, seasonId, scored);
+    const advancements = advancingMatches(scored, moves);
     const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
     // Reuse the transaction's standing snapshots to verify season membership.
     const known = (id: string) => standingDocs.some((doc) => doc.ref.path === collegeRef(seasonId, id).path && doc.exists);
     if (!known(homeCollegeId) || !known(awayCollegeId)) return "unknown-college" as const;
+    const changed = [snap, ...standingDocs, ...movedDocs(moves)];
+    const roster = await readRosterChanges(tx, seasonId, [{ before: snap, after: scored }, ...advancements], changed);
 
     tx.update(ref, {
       homeCollegeId,
@@ -85,12 +89,13 @@ export async function scoreMatch(
       updatedAt: FieldValue.serverTimestamp(),
     });
     applyResult(tx, seasonId, scored, 1, standingDocs);
-    applyBracketMoves(tx, seasonId, scored, moves);
+    applyBracketMoves(tx, seasonId, scored, moves, advancements);
+    applyRosterChanges(tx, roster);
     logAction(tx, seasonId, {
       actor,
       action: "scoreMatch",
       params: input,
-      changed: [snap, ...standingDocs, ...movedDocs(moves)],
+      changed: [...changed, ...roster.map((c) => c.before)],
     });
     return "scored" as const;
   });

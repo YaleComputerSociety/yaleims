@@ -119,7 +119,7 @@ describe("server match invariants", () => {
     const final = await snapshot(id);
     expect((await edit(id, { status: "cancelled" })).status).toBe(409);
     expect((await edit(id, { homeCollegeId: "BR" })).status).toBe(409);
-    expect((await edit(id, { sportId: "2" })).status).toBe(409);
+    expect((await edit(id, { sportId: "2" })).status).toBe(400);
     expect(await snapshot(id)).toEqual(final);
     expect((await edit(id, { venue: "Updated court" })).status).toBe(204);
     expect((await api("DELETE", `${gameUrl(id)}/result`, undefined, admin())).status).toBe(204);

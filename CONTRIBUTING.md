@@ -84,6 +84,11 @@ for each audience; do not return raw stored records indiscriminately.
 Scoring, undo, bracket advancement, standings, team records, and audit history
 are related operations. Preserve their invariants together, including rejection
 of a correction that would overwrite an already scored downstream game.
+The sport is fixed when a game is created. A college replacement clears its
+entire roster, including attendance; the incoming college starts blank, and
+the remaining college's entries stay. Schedule edits and bracket advancement
+share `services/matchRoster.ts`; include its changes in the same audited
+transaction. A home/away swap retains both colleges' entries.
 Use `lib/dates.ts` for league-day rules in Eastern time; be explicit when UI
 presentation uses the viewer's local time instead.
 

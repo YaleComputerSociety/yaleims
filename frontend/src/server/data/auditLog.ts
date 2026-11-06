@@ -113,7 +113,7 @@ export async function getAuditLog(seasonId: string, entryId: string): Promise<Au
 }
 
 /**
- * Read delete children in small ID-ordered pages inside the caller's transaction.
+ * Read children to audit in small ID-ordered pages inside the caller's transaction.
  * Stop at the shared target/byte budget instead of loading an unbounded query.
  * `parents` includes the games, bracket and standings already read for the audit.
  */

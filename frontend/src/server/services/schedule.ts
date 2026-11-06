@@ -15,6 +15,7 @@ import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
 import { runTransaction } from "../data/util";
+import { applyRosterChanges, readRosterChanges } from "./matchRoster";
 
 export type AddScheduleResult =
   | { status: "added"; matchIds: string[] }
@@ -87,23 +88,21 @@ export async function addSchedule(
 export type EditResult =
   | "ok"
   | "not-found"
-  | "scored" // a scored game's colleges or sport can't change, nor can it be cancelled (undo the score first)
-  | "unknown-sport"
+  | "scored" // a scored game's colleges can't change, nor can it be cancelled (undo the score first)
   | "unknown-college"
   | "bad-time";
 
-/** Changes a game's colleges, venue, start or sport, or cancels it (status "cancelled"; "scheduled" restores it). */
+/** Changes teams, venue, start or status. Sport is fixed; new colleges start with blank rosters. */
 export async function editMatch(
   seasonId: string,
   matchId: string,
   edit: MatchEdit,
   actor: Actor
 ): Promise<EditResult> {
-  const [sport, colleges] = await Promise.all([
-    edit.sportId ? getSport(seasonId, edit.sportId) : null,
-    listColleges(seasonId),
-  ]);
-  if (edit.sportId && !sport) return "unknown-sport";
+  // Also protect internal callers: structural TypeScript arguments can carry
+  // extra fields even though the strict HTTP contract no longer permits sport.
+  if ("sportId" in edit) throw new ApiError("bad-request", "A game's sport cannot change. Cancel or delete it and create a new game.");
+  const colleges = await listColleges(seasonId);
   const startsAt = edit.startsAt ? new Date(edit.startsAt) : null;
   if (startsAt && isNaN(startsAt.getTime())) return "bad-time";
 
@@ -115,11 +114,9 @@ export async function editMatch(
 
     const homeCollegeId = edit.homeCollegeId ?? match.homeCollegeId;
     const awayCollegeId = edit.awayCollegeId ?? match.awayCollegeId;
-    const sportId = sport?.id ?? match.sportId;
     const changesTeams =
       homeCollegeId !== match.homeCollegeId ||
-      awayCollegeId !== match.awayCollegeId ||
-      sportId !== match.sportId;
+      awayCollegeId !== match.awayCollegeId;
     if ((changesTeams || edit.status) && match.status === "final") return "scored";
     // A PATCH may omit either side; validate the full teams read in this transaction.
     const problem = matchTeamsProblem({ ...match, homeCollegeId, awayCollegeId });
@@ -128,26 +125,24 @@ export async function editMatch(
     const newStart = startsAt && startsAt.getTime() !== match.startsAt.toMillis()
       ? Timestamp.fromDate(startsAt)
       : null;
-    // Roster entries carry the game's start and sport.
-    const roster = newStart || sportId !== match.sportId ? (await tx.get(rosterRef(seasonId, matchId))).docs : [];
+    const collegeIds = [...new Set([homeCollegeId, awayCollegeId].filter((c) => c !== null))];
+    const roster = await readRosterChanges(tx, seasonId, [{
+      before: snap,
+      after: { ...match, homeCollegeId, awayCollegeId, collegeIds, startsAt: newStart ?? match.startsAt },
+    }], [snap]);
 
     tx.update(ref, {
       homeCollegeId,
       awayCollegeId,
-      collegeIds: [...new Set([homeCollegeId, awayCollegeId].filter((c) => c !== null))],
-      sportId,
-      // A game keeps the points it was created with unless its sport changes.
-      pointsForWin: sportId !== match.sportId ? sport!.pointsForWin : match.pointsForWin,
+      collegeIds,
       ...(edit.venue !== undefined ? { venue: edit.venue || null } : {}),
       ...(edit.venueDetail !== undefined ? { venueDetail: edit.venueDetail || null } : {}),
       ...(newStart ? { startsAt: newStart } : {}),
       ...(edit.status ? { status: edit.status } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    for (const entry of roster) {
-      tx.update(entry.ref, { startsAt: newStart ?? match.startsAt, sportId });
-    }
-    logAction(tx, seasonId, { actor, action: "editMatch", params: { matchId, ...edit }, changed: [snap, ...roster] });
+    applyRosterChanges(tx, roster);
+    logAction(tx, seasonId, { actor, action: "editMatch", params: { matchId, ...edit }, changed: [snap, ...roster.map((c) => c.before)] });
     return "ok";
   });
 }

@@ -97,7 +97,7 @@ export default function GamePage() {
               {menuOpen && (
                 <div className="absolute right-0 mt-1 w-48 rounded-lg shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black/10 dark:ring-white/10 z-20 py-1 text-sm">
                   <button className="block w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => { setMenuOpen(false); setEditing(true); }}>
-                    Edit time and place
+                    Edit game
                   </button>
                   {!match.result && (
                     <button
