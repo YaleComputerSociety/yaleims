@@ -4,9 +4,11 @@
 // A result is locked while a game it feeds has a score: undo later rounds first.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
+import { ApiError } from "@/lib/api/core";
+import { matchTeamsProblem, scoreStateProblem } from "@/lib/matchRules";
 import type { MatchDoc, MatchResult, Outcome } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
-import { recalculateRanks } from "../data/colleges";
+import { collegeRef, recalculateRanks } from "../data/colleges";
 import { matchRef } from "../data/matches";
 import { runTransaction } from "../data/util";
 import { applyBracketMoves, movedDocs, readBracketMoves, reversePlacements } from "./brackets";
@@ -36,14 +38,15 @@ function outcomeOf(input: ScoreInput): Outcome {
 export async function scoreMatch(
   input: ScoreInput,
   actor: Actor
-): Promise<"scored" | "not-found" | "already-scored" | "incomplete"> {
+): Promise<"scored" | "not-found" | "already-scored" | "cancelled" | "incomplete" | "unknown-college"> {
   const { seasonId } = input;
   const ref = matchRef(seasonId, input.matchId);
   const outcome = await runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const match = snap.data();
     if (!match) return "not-found" as const;
-    if (match.status === "final") return "already-scored" as const;
+    const stateProblem = scoreStateProblem(match.status);
+    if (stateProblem) return stateProblem;
     const homeCollegeId = match.homeCollegeId ?? input.homeCollegeId ?? null;
     const awayCollegeId = match.awayCollegeId ?? input.awayCollegeId ?? null;
     if (!homeCollegeId || !awayCollegeId) return "incomplete" as const;
@@ -62,9 +65,14 @@ export async function scoreMatch(
       status: "final",
       result,
     };
+    const problem = matchTeamsProblem(scored);
+    if (problem) throw new ApiError("bad-request", problem);
     if (!isScoredGame(scored)) return "incomplete" as const;
     const moves = await readBracketMoves(tx, seasonId, scored);
     const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
+    // Reuse the transaction's standing snapshots to verify season membership.
+    const known = (id: string) => standingDocs.some((doc) => doc.ref.path === collegeRef(seasonId, id).path && doc.exists);
+    if (!known(homeCollegeId) || !known(awayCollegeId)) return "unknown-college" as const;
 
     tx.update(ref, {
       homeCollegeId,

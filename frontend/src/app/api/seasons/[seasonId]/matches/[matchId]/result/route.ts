@@ -17,7 +17,9 @@ export const PUT = route<Params>(async (req, { params }) => {
   const outcome = await scoreMatch({ seasonId, matchId, ...result }, await viewer.actor());
   if (outcome === "not-found") throw new ApiError("not-found", "No such game this season.");
   if (outcome === "already-scored") throw new ApiError("conflict", "This game is already scored; undo the score first.");
+  if (outcome === "cancelled") throw new ApiError("conflict", "Restore this cancelled game before scoring it.");
   if (outcome === "incomplete") throw new ApiError("bad-request", "The game has no college on one side; name both.");
+  if (outcome === "unknown-college") throw new ApiError("bad-request", "A game's college does not exist this season.");
   return noContent();
 });
 

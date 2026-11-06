@@ -17,6 +17,7 @@ import { ApiError } from "@/lib/api/core";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
 import { easternDate } from "@/lib/dates";
 import { winnerId } from "@/lib/results";
+import { matchTeamsProblem } from "@/lib/matchRules";
 import type {
   BracketDoc,
   BracketKind,
@@ -158,7 +159,7 @@ export async function createBracket(
 
     const ref = refs.get(slot)!;
     slots.push({ slot, round, matchId: ref.id, byeCollegeId: null, byeSeed: null, byeStartsAt: null });
-    games.push([ref, {
+    const game: MatchDoc = {
       seasonId,
       sportId: sport.id,
       homeCollegeId,
@@ -182,7 +183,10 @@ export async function createBracket(
       scoredBy: null,
       scoredAt: null,
       updatedAt: now,
-    }]);
+    };
+    const problem = matchTeamsProblem(game);
+    if (problem) return { status: "bad-input", error: `Slot ${slot}: ${problem}` };
+    games.push([ref, game]);
   }
 
   const days = new Set(games.map(([, g]) => easternDate(g.startsAt.toDate())));
@@ -342,6 +346,8 @@ export function applyBracketMoves(
     if (!snap || !next || !collegeId) return;
     const home = side === "home" ? collegeId : next.homeCollegeId;
     const away = side === "away" ? collegeId : next.awayCollegeId;
+    const problem = matchTeamsProblem({ ...next, homeCollegeId: home, awayCollegeId: away });
+    if (problem) throw new ApiError("conflict", `Cannot advance this result. ${problem}`, { matchId: snap.id });
     tx.update(snap.ref, {
       [`${side}CollegeId`]: collegeId,
       [`${side}Seed`]: seed,

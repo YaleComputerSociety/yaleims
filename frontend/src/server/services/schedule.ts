@@ -5,6 +5,8 @@
 import "server-only";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import type { MatchEdit, NewMatch } from "@/lib/api/matches";
+import { ApiError } from "@/lib/api/core";
+import { matchTeamsProblem } from "@/lib/matchRules";
 import type { MatchDoc } from "@/types/firestore";
 import { logAction, readAuditedChildren, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
@@ -19,7 +21,7 @@ export type AddScheduleResult =
   | { status: "unknown-sport" }
   | { status: "bad-rows"; problems: string[] };
 
-/** Adds a sport's games to a season, all or none: every row needs a date and two known colleges. */
+/** Adds games all or none: every row needs a date and two distinct known colleges. */
 export async function addSchedule(
   seasonId: string,
   sportId: string,
@@ -63,6 +65,8 @@ export async function addSchedule(
       scoredAt: null,
       updatedAt: now,
     };
+    const problem = matchTeamsProblem(doc);
+    if (problem) problems.push(`Row ${i + 1}: ${problem}`);
     return { ref: newMatchRef(seasonId), doc };
   });
   if (problems.length > 0) return { status: "bad-rows", problems };
@@ -100,8 +104,6 @@ export async function editMatch(
     listColleges(seasonId),
   ]);
   if (edit.sportId && !sport) return "unknown-sport";
-  const known = (c: string | undefined) => c === undefined || colleges.some((x) => x.id === c);
-  if (!known(edit.homeCollegeId) || !known(edit.awayCollegeId)) return "unknown-college";
   const startsAt = edit.startsAt ? new Date(edit.startsAt) : null;
   if (startsAt && isNaN(startsAt.getTime())) return "bad-time";
 
@@ -119,6 +121,10 @@ export async function editMatch(
       awayCollegeId !== match.awayCollegeId ||
       sportId !== match.sportId;
     if ((changesTeams || edit.status) && match.status === "final") return "scored";
+    // A PATCH may omit either side; validate the full teams read in this transaction.
+    const problem = matchTeamsProblem({ ...match, homeCollegeId, awayCollegeId });
+    if (problem) throw new ApiError("bad-request", problem);
+    if ([homeCollegeId, awayCollegeId].some((c) => c !== null && !colleges.some((x) => x.id === c))) return "unknown-college";
     const newStart = startsAt && startsAt.getTime() !== match.startsAt.toMillis()
       ? Timestamp.fromDate(startsAt)
       : null;
