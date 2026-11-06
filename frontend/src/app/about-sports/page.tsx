@@ -17,6 +17,7 @@ const fallSports = [
 const winterSports = ["Broomball", "CHoops", "MHoops", "WHoops", "Dodgeball"];
 
 const springSports = ["Indoor Soccer", "Volleyball", "Netball"];
+const miscellaneousSports = ["Badminton", "Ultimate"];
 
 const AboutSportsPage = () => {
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
@@ -63,6 +64,14 @@ const AboutSportsPage = () => {
               <div key={index}>
                 <SportCard sport={sport} handleClick={handleSportClick} />
               </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-center md:text-left">Miscellaneous Sports</h2>
+          <div className="flex flex-row py-2 flex-wrap gap-x-8 justify-center md:justify-start">
+            {miscellaneousSports.map((sport) => (
+              <SportCard key={sport} sport={sport} handleClick={handleSportClick} />
             ))}
           </div>
         </div>

@@ -66,6 +66,7 @@ export interface UsernameDoc {
 
 // ── seasons/{seasonId} ─────────────────────────────────────────────────────
 
+/** The academic calendar terms; some sports run throughout the season. */
 export type Term = "fall" | "winter" | "spring";
 
 /** seasons/{seasonId}, e.g. "2026-2027". */
@@ -83,7 +84,8 @@ export interface SeasonDoc {
 export interface SportDoc {
   name: string;
   emoji: string;
-  term: Term;
+  /** Miscellaneous sports are available in every academic calendar term. */
+  term: Term | "miscellaneous";
   pointsForWin: number;
   active: boolean;
 }

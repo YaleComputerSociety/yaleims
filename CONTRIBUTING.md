@@ -148,6 +148,12 @@ requires explicit `--prod`. Production scripts use maintainer credentials;
 local emulator work needs none. Keep input policies, plans, snapshots, and
 backups outside the repository.
 
+Keep `frontend/scripts/` focused on recurring development and test commands.
+One-off data corrections belong in a maintainer workspace outside this checkout,
+alongside their purpose, source revision, reviewed policy, backup, execution
+record, and dedicated tests. Keep reusable domain logic in `src/lib` or the
+server services and cover it with the application tests.
+
 | Task | Entry point |
 |---|---|
 | Start a season | From `database/misc/`: `npm ci`, then `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 node start_new_season.js YYYY-YYYY [--make-current]`. Copies missing season/college/sport docs; `--make-current` updates configuration. |

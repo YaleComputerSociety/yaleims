@@ -24,9 +24,12 @@ describe("GET /api/seasons/{seasonId}", () => {
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ id: current, label: current, celebrationActive: false });
     const sports = r.body.sports as { id: string; name: string; term: string }[];
-    expect(sports).toHaveLength(15);
+    expect(sports).toHaveLength(17);
     expect(sports.slice(0, 3).map((s) => s.name)).toEqual(["Cornhole", "Flag Football", "Pickleball"]);
     expect(sports.map((s) => s.term).indexOf("spring")).toBeGreaterThan(sports.map((s) => s.term).lastIndexOf("winter"));
+    expect(sports.slice(-2).map((s) => [s.name, s.term])).toEqual([
+      ["Badminton", "miscellaneous"], ["Ultimate", "miscellaneous"],
+    ]);
     const first = (await db.collection(`seasons/${current}/matches`).orderBy("startsAt").limit(1).get()).docs[0].data().startsAt.toDate();
     expect(r.body.mvpWeekOne).toBe(mondayOf(easternDate(first)));
   });
