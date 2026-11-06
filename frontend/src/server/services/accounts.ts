@@ -8,6 +8,7 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { collegeIdOfName } from "@/lib/colleges";
+import { ApiError } from "@/lib/api/core";
 import { placeholderId, placeholderNetid } from "@/lib/netid";
 import type { JoinedVia, PlayerDoc, RosterEntryDoc } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
@@ -15,7 +16,7 @@ import { listColleges } from "../data/colleges";
 import { playerRef } from "../data/players";
 import { listPlayerEntries, rosterEntryRef } from "../data/roster";
 import { listSeasons } from "../data/seasons";
-import { readUser, userRef, usernameCounterRef, usernameRef } from "../data/users";
+import { readUser, userRef, usernameCounterRef, usernameRef, usersByNetidQuery } from "../data/users";
 import { runTransaction } from "../data/util";
 
 // Generated usernames: adjective + noun + the username counter, e.g.
@@ -154,6 +155,12 @@ export async function joinSeason(
   return runTransaction(async (tx) => {
     const existing = (await tx.get(ref)).data();
     if (existing) return existing;
+    const unverifiedNetid = placeholderNetid(email);
+    if (unverifiedNetid && !(await tx.get(usersByNetidQuery(unverifiedNetid))).empty) {
+      // A concurrent login/directory lookup has verified the identity. A stale
+      // add must retry with that account, rather than recreate its placeholder.
+      throw new ApiError("conflict", "This NetID now has a verified account. Retry adding the player.");
+    }
     const collegeId = collegeIdOfName(colleges, collegeName);
     tx.create(ref, {
       seasonId,

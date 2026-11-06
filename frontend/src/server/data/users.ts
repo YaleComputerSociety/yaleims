@@ -63,8 +63,13 @@ export async function getUserNames(emails: string[]): Promise<Map<string, string
 
 /** The email of the user with this NetID recorded; null if none. */
 export async function findUserByNetid(netid: string): Promise<string | null> {
-  const snap = await adminDb.collection(paths.users).where("netid", "==", netid).limit(1).get();
+  const snap = await usersByNetidQuery(netid).get();
   return snap.empty ? null : snap.docs[0].id;
+}
+
+/** Also read transactionally before creating an unverified placeholder. */
+export function usersByNetidQuery(netid: string) {
+  return adminDb.collection(paths.users).where("netid", "==", netid).limit(1);
 }
 
 /** Users holding a global role. */

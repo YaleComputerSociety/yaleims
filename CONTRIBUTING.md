@@ -89,6 +89,10 @@ entire roster, including attendance; the incoming college starts blank, and
 the remaining college's entries stay. Schedule edits and bracket advancement
 share `services/matchRoster.ts`; include its changes in the same audited
 transaction. A home/away swap retains both colleges' entries.
+Roster additions, captain assignments and MVP awards must read the referenced
+player inside their write transaction, so a concurrent identity claim cannot
+leave a reference to a deleted player. Check the known account's NetID inside
+the transaction before creating an unverified placeholder.
 Use `lib/dates.ts` for league-day rules in Eastern time; be explicit when UI
 presentation uses the viewer's local time instead.
 

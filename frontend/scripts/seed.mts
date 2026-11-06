@@ -43,7 +43,7 @@ const { createBracket } = await import("@/server/services/brackets");
 const { setCaptain } = await import("@/server/services/roles");
 const { signUp } = await import("@/server/services/signups");
 const { addScoreReport, resolveScoreReport } = await import("@/server/data/scoreReports");
-const { setMvp } = await import("@/server/data/mvps");
+const { setMvp } = await import("@/server/services/mvps");
 
 // ── Reference data ─────────────────────────────────────────────────────────
 
@@ -367,7 +367,7 @@ async function activity(seasonSports: (SportDoc & { id: string })[]): Promise<vo
   for (const [ci, c] of COLLEGES.slice(0, 6).entries()) {
     for (let week = 1; week <= weeks; week++) {
       const p = students[ci * PER_COLLEGE + 1 + (week % 6)];
-      await setMvp(CURRENT, c.id, { week, playerId: p.email, name: fullName(p), awardedBy: students[ci * PER_COLLEGE].email });
+      await setMvp(CURRENT, c.id, { week, playerId: p.email, awardedBy: students[ci * PER_COLLEGE].email });
     }
   }
 }
