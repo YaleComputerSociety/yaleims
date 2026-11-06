@@ -117,6 +117,12 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Login callbacks carry single-use state/tickets. Override the general
+        // referrer policy here so it cannot overwrite a route-level setting.
+        source: "/api/auth/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
     ];
   },
 };

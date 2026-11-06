@@ -31,6 +31,10 @@ export const paths = {
   /** { count }: how many usernames have been generated (the number in them). */
   usernameCounter: "counters/usernames",
 
+  /** Private, expiring pre-login records; the ID is a hash of the random state. */
+  loginAttempts: "loginAttempts",
+  loginAttempt: (stateHash: string) => `loginAttempts/${seg(stateHash)}`,
+
   /** Season docs; also holds the frozen pre-v3 docs "current" and "past". */
   seasons: "seasons",
   season,

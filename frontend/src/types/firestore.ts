@@ -5,7 +5,8 @@
 // is described in git tag v3-migration (src/types/legacy.ts).
 //
 // Everything that belongs to a season lives under seasons/{seasonId} (D29);
-// global are only users, usernames and config/app. References are ids:
+// global are accounts, usernames, configuration, counters and short-lived login
+// attempts. References are ids:
 // collegeId = the college's abbreviation ("MY"), sportId = the sports doc id,
 // userId / playerId = an email (a guest player has "guest-<random>"). A field
 // whose value is unknown or doesn't apply is stored as null, not left out.
@@ -27,7 +28,7 @@ export type WithId<T> = T & { id: string };
 /** A calendar day in Eastern time, "yyyy-mm-dd" (the league's day, D34). */
 export type EasternDate = string;
 
-// ── Global: config/app, users/{email}, usernames/{username} ────────────────
+// ── Global: config/app, users, usernames, loginAttempts ───────────────────
 
 /** config/app: the current season and feature switches. */
 export interface AppConfigDoc {
@@ -62,6 +63,16 @@ export interface UserDoc {
 /** usernames/{username}: who holds the username. */
 export interface UsernameDoc {
   userId: string;
+}
+
+/** loginAttempts/{stateHash}: private, single-use browser binding before CAS login. */
+export interface LoginAttemptDoc {
+  /** SHA-256 of the independent HttpOnly browser proof; never the proof itself. */
+  browserHash: string;
+  /** Sanitized local path; the callback never trusts a new return destination. */
+  from: string;
+  /** Checked synchronously; Firestore TTL only cleans up abandoned attempts. */
+  expiresAt: StoredTimestamp;
 }
 
 // ── seasons/{seasonId} ─────────────────────────────────────────────────────

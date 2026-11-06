@@ -41,6 +41,7 @@ describe("reads", () => {
     "usernames/bulldog1",
     "config/app",
     "counters/usernames",
+    "loginAttempts/state-hash",
     // pre-v3 collections and leftovers
     "matches/seasons/2025-2026/1",
     "colleges/MC",
@@ -52,6 +53,7 @@ describe("reads", () => {
 
   it("denies listing users and matches", async () => {
     await assertFails(getDocs(collection(visitor(), "users")));
+    await assertFails(getDocs(collection(visitor(), "loginAttempts")));
     await assertFails(getDocs(collection(visitor(), "seasons/2026-2027/matches")));
     await assertFails(getDocs(collection(visitor(), "seasons/2026-2027/auditLog/e1/auditPayloadChunks")));
   });
@@ -62,6 +64,7 @@ describe("writes", () => {
     await assertFails(setDoc(doc(visitor(), "seasons/2026-2027"), { celebrationActive: true }));
     await assertFails(setDoc(doc(visitor(), "seasons/2026-2027/colleges/MC"), { points: 1000 }));
     await assertFails(setDoc(doc(visitor(), "users/a@yale.edu"), { roles: ["admin"] }));
+    await assertFails(setDoc(doc(visitor(), "loginAttempts/state-hash"), { browserHash: "forged" }));
     await assertFails(setDoc(doc(visitor(), "seasons/2026-2027/auditLog/e1/auditPayloadChunks/0000"), { data: "forged" }));
   });
 });

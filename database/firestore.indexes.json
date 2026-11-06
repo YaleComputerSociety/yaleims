@@ -1322,6 +1322,12 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "loginAttempts",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "auditPayloadChunks",
       "fieldPath": "data",
       "indexes": []

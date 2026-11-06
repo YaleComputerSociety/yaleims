@@ -66,6 +66,12 @@ CLI tests should use `tests/integration/helpers.ts` or set that header explicitl
 Serialize timestamps through the existing JSON helpers and omit private fields
 for each audience; do not return raw stored records indiscriminately.
 
+CAS login uses a ten-minute browser-bound attempt (`server/login.ts`). Its URL
+state and HttpOnly proof are independent; only their hashes and the local return
+path live in private `loginAttempts` records. Consume the attempt transactionally
+before CAS validation or account writes. Expiry is checked synchronously; TTL
+only cleans abandoned attempts. A new login replaces the pending browser proof.
+
 ## Adding or changing behavior
 
 1. Update the resource contract in `src/lib/api` and the relevant types.
@@ -132,7 +138,9 @@ npm run test:integration -- tests/rules/firestore.test.ts
 ```
 
 The integration wrapper starts Next on 3210 in `.next-test/`, supplies a
-throwaway session secret, and serves fake Yalies on 3211. Use the wrapper
+throwaway session secret, and serves fake Yalies on 3211 and fake CAS on 3212.
+A test-only fetch preload redirects validation; the app's CAS authority is fixed.
+Use the wrapper
 rather than invoking the integration Vitest project directly. Its helpers
 provide `api()`, `sessionFor()`, `people`, `seasons()`, and the emulator `db`.
 Files run sequentially because they share state. Unit tests need no emulator.
@@ -144,8 +152,9 @@ a domain conflict. Build and interactive dev share `.next/`, so stop dev
 before building. If a restricted runner cannot start Turbopack workers,
 `npm run build -- --webpack` selects the alternative compiler.
 
-The emulator suite does not test real CAS, cloud IAM, production indexes, or
-browser rendering. Cover those boundaries explicitly when changing them.
+The emulator suite does not test real CAS/service registration, cloud IAM,
+production indexes/TTL, or browser rendering. Cover those boundaries explicitly
+when changing them.
 For Elo package changes, from `sidelined/elo/` run `npm ci`,
 `npm run typecheck`, and `npm run check:not-imported` (also enforced in CI).
 
@@ -186,6 +195,10 @@ See Firebase's [rollout and rollback documentation](https://firebase.google.com/
 3. Deploy needed indexes from `database/`, then wait for them to become ready:
    `npx -y firebase-tools@14 deploy --only firestore:indexes --project yims-125a2`.
    Review proposed deletions before proceeding.
+   For login changes, verify `loginAttempts.expiresAt` TTL is enabled and the
+   CAS service registration accepts `/api/auth/redirect?state=...`; the local
+   fixtures cannot establish either production setting. Old pending callbacks
+   without a matching attempt must restart sign-in; existing sessions stay valid.
 4. Run the pinned rollout:
    `npx -y firebase-tools@14 apphosting:rollouts:create yaleims-1 -g FULL_COMMIT_SHA --project yims-125a2`.
 5. Check rollout/build logs, the live site signed out and in, relevant roles,
