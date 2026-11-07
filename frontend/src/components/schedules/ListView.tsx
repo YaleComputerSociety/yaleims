@@ -7,6 +7,8 @@ import { useTournamentNames } from "@/hooks/useTournamentNames";
 import type { Match } from "@/lib/api/matches";
 import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signInUrl } from "@/lib/api/auth";
 
 interface ListViewProps {
   /** The current season's games, by start. */
@@ -20,6 +22,7 @@ interface ListViewProps {
 
 const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => {
   const { viewer } = useSession();
+  const pathname = usePathname() || "/";
   // The games the user signed up for that haven't started, by id, with their entry's status.
   const [myEntries, setMyEntries] = useState<Map<string, MyMatch["mine"]>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -111,7 +114,7 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
     <div className="space-y-4">
       {!viewer && (
         <Link
-          href="/api/auth/login"
+          href={signInUrl(pathname)}
           prefetch={false}
           className="bg-green-500 dark:bg-green-600 shadow-md p-4 rounded-md hover:shadow-lg hover:scale-105 transition-transform duration-300 text-center"
         >

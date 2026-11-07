@@ -1,4 +1,4 @@
-// The roster sheet (D34, U5-ROSTER-WORKFLOW.md): before a game, each team's
+// The roster sheet: before a game, each team's
 // captain prepares their college's side (confirm, remove, add players, by
 // NetID too) until it starts; a supervisor marks who came and adds walk-ins,
 // at any time. Who may act on which side is the route's check (server/auth.ts

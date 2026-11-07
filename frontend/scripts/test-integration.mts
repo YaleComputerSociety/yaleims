@@ -6,15 +6,17 @@
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { serveFakeYalies } from "../tests/integration/fakeYalies";
+import { serveFakeCas } from "../tests/integration/fakeCas";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error("Start the Firestore emulator first (npm run emulator) and set FIRESTORE_EMULATOR_HOST=127.0.0.1:8080.");
   process.exit(1);
 }
 const port = Number(process.env.TEST_PORT ?? 3210);
-// The app looks people up in a fake Yale directory, never the real one.
+// Local directory and CAS validation fixtures; never the real Yale services.
 const yaliesPort = port + 1;
 const yalies = await serveFakeYalies(yaliesPort);
+const cas = await serveFakeCas(port + 2);
 const env = {
   ...process.env,
   NEXT_PUBLIC_USE_EMULATOR: "true",
@@ -23,6 +25,7 @@ const env = {
   BASE_URL: `http://localhost:${port}`,
   YALIES_API_URL: `http://127.0.0.1:${yaliesPort}`,
   YALIES_API_KEY: "fake",
+  TEST_CAS_URL: `http://127.0.0.1:${port + 2}`,
   NEXT_TELEMETRY_DISABLED: "1",
 };
 
@@ -34,10 +37,14 @@ if (seeded.status !== 0) process.exit(seeded.status ?? 1);
 // leaves the server running after the tests. Its request log is discarded,
 // not piped: a pipe nobody reads fills up, and on Linux a full pipe blocks
 // the server (CI hung after a few hundred requests).
-const server = spawn("node_modules/.bin/next", ["dev", "-p", String(port)], { env: { ...env, NEXT_DIST_DIR: ".next-test" }, stdio: ["ignore", "ignore", "inherit"] });
+const server = spawn(process.execPath, ["--import", new URL("../tests/integration/casFetch.mjs", import.meta.url).href,
+  "node_modules/next/dist/bin/next", "dev", "-p", String(port)], {
+  env: { ...env, NEXT_DIST_DIR: ".next-test" }, stdio: ["ignore", "ignore", "inherit"],
+});
 const stop = () => {
   server.kill("SIGTERM");
   yalies.close();
+  cas.close();
 };
 process.on("exit", stop);
 

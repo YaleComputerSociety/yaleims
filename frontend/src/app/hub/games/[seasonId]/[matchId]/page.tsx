@@ -1,5 +1,5 @@
 "use client";
-// One game on game day (U5-ROSTER-WORKFLOW.md): the roster sheet (a captain
+// One game on game day: the roster sheet (a captain
 // prepares their side; a supervisor takes attendance) and, for supervisors,
 // the score; the ⋯ menu edits, cancels or deletes the game. The tabs and the
 // menu follow what the session says the viewer may do; the server checks
@@ -97,7 +97,7 @@ export default function GamePage() {
               {menuOpen && (
                 <div className="absolute right-0 mt-1 w-48 rounded-lg shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black/10 dark:ring-white/10 z-20 py-1 text-sm">
                   <button className="block w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => { setMenuOpen(false); setEditing(true); }}>
-                    Edit time and place
+                    Edit game
                   </button>
                   {!match.result && (
                     <button

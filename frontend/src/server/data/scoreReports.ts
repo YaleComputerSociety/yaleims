@@ -6,7 +6,9 @@ import { adminDb } from "../firebaseAdmin";
 import { collectionGroups, paths } from "@/lib/paths";
 import type { ScoreReportDoc, WithId } from "@/types/firestore";
 import { logAction, type Actor } from "./auditLog";
-import { withId } from "./util";
+import { runTransaction, withId } from "./util";
+import { matchRef } from "./matches";
+import { ApiError } from "@/lib/api/core";
 
 /** A game's reports, for services that read them in a transaction. */
 export function scoreReportsRef(seasonId: string, matchId: string): CollectionReference<ScoreReportDoc> {
@@ -32,20 +34,26 @@ export async function listSeasonScoreReports(seasonId: string): Promise<WithId<S
   return snap.docs.map((d) => withId<ScoreReportDoc>(d));
 }
 
-/** Files an open report; returns its id. */
+/** Files a report against an existing game, with its score read in the same transaction. */
 export async function addScoreReport(
   seasonId: string,
   matchId: string,
-  report: Pick<ScoreReportDoc, "reason" | "reportedBy" | "reporterName" | "scoreAtReport">
+  report: Pick<ScoreReportDoc, "reason" | "reportedBy" | "reporterName">
 ): Promise<string> {
-  const ref = await scoreReportsRef(seasonId, matchId).add({
-    seasonId,
-    matchId,
-    ...report,
-    reportedAt: FieldValue.serverTimestamp(),
-    status: "open",
-    resolvedBy: null,
-    resolvedAt: null,
+  const ref = scoreReportsRef(seasonId, matchId).doc();
+  await runTransaction(async (tx) => {
+    const match = (await tx.get(matchRef(seasonId, matchId))).data();
+    if (!match) throw new ApiError("not-found", "No such game this season.");
+    tx.create(ref, {
+      seasonId,
+      matchId,
+      ...report,
+      reportedAt: FieldValue.serverTimestamp(),
+      scoreAtReport: { home: match.result?.homeScore ?? null, away: match.result?.awayScore ?? null },
+      status: "open",
+      resolvedBy: null,
+      resolvedAt: null,
+    });
   });
   return ref.id;
 }

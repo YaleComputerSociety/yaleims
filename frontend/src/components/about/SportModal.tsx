@@ -2,6 +2,7 @@
 
 import React from "react";
 import { sportEmoji } from "./SportCard";
+import { useSeason } from "@/context/SeasonContext";
 
 interface SportInfo {
   points: number;
@@ -10,6 +11,16 @@ interface SportInfo {
 }
 
 const sportInfoMap: Record<string, SportInfo> = {
+  Badminton: {
+    points: 8,
+    players: 8,
+    description: "Badminton is organized as a double elimination tournament.",
+  },
+  Ultimate: {
+    points: 7,
+    players: 7,
+    description: "Ultimate has four regular games and three playoff games on the league schedule.",
+  },
   Soccer: {
     points: 11,
     players: 11,
@@ -30,13 +41,13 @@ const sportInfoMap: Record<string, SportInfo> = {
   },
   Pickleball: {
     points: 6,
-    players: 2,
+    players: 6,
     description:
       "Pickleball is played in doubles with teams competing in a best-of-3-games match, with games played to 11 points (win by 2). Only the serving team can score, and servers alternate sides after each point. Both teams must let the ball bounce once on each side during the first two hits (double bounce rule), after which volleys are allowed. Players must avoid stepping into the non-volley zone when volleying. Faults include hitting out of bounds, failing to clear the net, or violating the double bounce or non-volley rules. Teams switch sides after each game, and the first to win 2 games takes the match.",
   },
   "Table Tennis": {
-    points: 8,
-    players: 8,
+    points: 10,
+    players: 10,
     description:
       "Table tennis is played as 4 singles and 2 doubles, with the tiebreak determined by the number of sets won. Matches consist of the best of 3 games, each played to 21 points (win by 2). Players or pairs alternate serves every 5 points, with a single serve alternating after 20-20.In singles, players take turns hitting the ball after it bounces once on their side, aiming to return it over the net. In doubles, teammates alternate hits in sequence. Points are scored when the opponent fails to return the ball, hits it out of bounds, or commits a fault during service or play. Teams must rotate ends after each game, with service and receiving roles reversing.",
   },
@@ -102,6 +113,7 @@ interface SportModalProps {
 }
 
 const SportModal: React.FC<SportModalProps> = ({ sport, setSport }) => {
+  const { currentSeason } = useSeason();
   if (!sport) {
     return null;
   }
@@ -127,7 +139,7 @@ const SportModal: React.FC<SportModalProps> = ({ sport, setSport }) => {
           <div>
             <div className="flex flex-row space-x-4 gap-1">
               <p className="font-bold">Points: </p>
-              {sportInfoMap[sport].points}
+              {currentSeason?.sports.find((item) => item.name === sport)?.pointsForWin ?? sportInfoMap[sport].points}
             </div>
             <div className="flex flex-row space-x-4 gap-1">
               <p className="font-bold">Players Per Team: </p>

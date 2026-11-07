@@ -3,6 +3,7 @@ import { useSession } from "@/context/SessionContext";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
+import { isSportInTerm } from "@/lib/sports";
 
 /** The rep's college: make its players captains of its teams this term, or not. */
 export default function AssignCaptain() {
@@ -45,8 +46,10 @@ export default function AssignCaptain() {
   }, [searchTerm, players]);
 
   const currentCaptains = players.filter((p) => p.captainOf.length > 0);
-  // The sports of this term, in display order; captains by sport id.
-  const currentSports = (currentSeason?.sports ?? []).filter((sport) => sport.term === currentSeason?.currentTerm);
+  // This term's sports and the miscellaneous sports, in display order.
+  const currentSports = currentSeason
+    ? currentSeason.sports.filter((sport) => isSportInTerm(sport, currentSeason.currentTerm))
+    : [];
   const captainsBySport = useMemo(() => {
     const map: Record<string, CollegePlayer[]> = {};
     for (const p of players) for (const sportId of p.captainOf) (map[sportId] ||= []).push(p);

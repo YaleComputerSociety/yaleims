@@ -1,8 +1,7 @@
 import { mvpAwardSchema, mvpParamsSchema } from "@/lib/api/colleges";
 import { ApiError } from "@/lib/api/core";
 import { authorize, can } from "@/server/auth";
-import { setMvp } from "@/server/data/mvps";
-import { getPlayer } from "@/server/data/players";
+import { setMvp } from "@/server/services/mvps";
 import { noContent, readBody, readParams, route } from "@/server/http";
 
 type Params = { seasonId: string; collegeId: string; week: string };
@@ -16,10 +15,8 @@ export const PUT = route<Params>(async (req, { params }) => {
   const { seasonId, collegeId, week } = await readParams(params, mvpParamsSchema);
   const viewer = await authorize(can.nameMvps, collegeId);
   const { playerId } = await readBody(req, mvpAwardSchema);
-  const player = await getPlayer(seasonId, playerId);
-  if (player?.collegeId !== collegeId) {
+  if (!(await setMvp(seasonId, collegeId, { week, playerId, awardedBy: viewer.email }))) {
     throw new ApiError("bad-request", "They aren't a player of this college that season.");
   }
-  await setMvp(seasonId, collegeId, { week, playerId, name: player.name, awardedBy: viewer.email });
   return noContent();
 });

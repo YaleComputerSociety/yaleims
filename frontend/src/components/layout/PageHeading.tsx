@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { signInUrl } from '@/lib/api/auth';
 import { useSession } from '@/context/SessionContext'
 import useLightTheme from "@/hooks/useLightTheme";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
@@ -116,6 +118,7 @@ interface PageHeadingProps {
 
 export default function PageHeading({ heading }: PageHeadingProps) {
   const { viewer, loading } = useSession();
+  const pathname = usePathname() || "/";
   const { isLight, toggleTheme } = useLightTheme();
   const { collapsed } = useNavbar();
   const isMobile = useIsMobile();
@@ -151,7 +154,7 @@ export default function PageHeading({ heading }: PageHeadingProps) {
                 ) : (
                 <Link
                     className="py-1.5 px-4 rounded-xl border text-sm font-medium cursor-pointer transition-all duration-200 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 hover:bg-blue-500/5"
-                    href="/api/auth/login"
+                    href={signInUrl(pathname)}
                     prefetch={false}
                 >
                     Sign In

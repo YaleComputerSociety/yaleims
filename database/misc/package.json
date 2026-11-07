@@ -10,6 +10,14 @@
   "license": "ISC",
   "description": "Hand-run admin scripts (season rollover, one-off fixes); see README.md",
   "dependencies": {
-    "firebase-admin": "^13.4.0"
+    "firebase-admin": "^14.5.0"
+  },
+  "engines": {
+    "node": ">=22.9.0 <23"
+  },
+  "overrides": {
+    "@google-cloud/firestore@9.4.0": {
+      "@google-cloud/firestore-api": "^0.7.1"
+    }
   }
 }

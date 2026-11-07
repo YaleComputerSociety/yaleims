@@ -52,7 +52,7 @@ function localDateTime(iso: string): string {
 export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, match, setUnscored, onSaved }) => {
   const [editLoading, setEditLoading] = useState<boolean>(false);
   const [undoLoading, setUndoLoading] = useState<boolean>(false);
-  const sports = useSeasonDetail(match.seasonId)?.sports ?? [];
+  const sport = useSeasonDetail(match.seasonId)?.sports.find((s) => s.id === match.sportId);
 
   const handleUnscoreMatch = async () => {
     setUndoLoading(true);
@@ -98,7 +98,6 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, ma
         venue: field("location") || null,
         venueDetail: field("location_extra") || null,
         startsAt: start?.toISOString(),
-        sportId: field("sport") || undefined,
       });
       toast.success(onSaved ? "Game updated." : "Match updated successfully! Reload page to view changes!");
       setModalOpen(false);
@@ -114,7 +113,7 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, ma
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg text-center border border-gray-200 dark:border-gray-700 mx-2 sm:mx-0 w-full max-w-xs sm:max-w-md">
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg text-center border border-gray-200 dark:border-gray-700 mx-2 sm:mx-0 w-full max-w-xs sm:max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
           Edit Match
         </h3>
@@ -141,6 +140,9 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, ma
               />
             </div>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Replacing a college clears its entire roster, including attendance. The new college starts with a blank roster.
+          </p>
           {/* Location fields */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1">
@@ -180,19 +182,17 @@ export const EditMatchModal: React.FC<EditMatchModalProps> = ({ setModalOpen, ma
               <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
                 Sport
               </label>
-              <select
+              <input
                 className="w-full border rounded px-2 py-1 text-sm dark:bg-gray-800 dark:text-gray-100"
-                defaultValue={match.sportId}
-                name="sport"
-              >
-                {sports.map((sport) => (
-                  <option key={sport.id} value={sport.id}>
-                    {sport.name}
-                  </option>
-                ))}
-              </select>
+                value={sport?.name ?? match.sportId}
+                aria-label="Sport (cannot be changed)"
+                readOnly
+              />
             </div>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            To change the sport, cancel or delete this game and create a new one.
+          </p>
 
           <div className="flex gap-2 mt-2">
             <button

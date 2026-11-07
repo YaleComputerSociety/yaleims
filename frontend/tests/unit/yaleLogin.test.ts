@@ -21,12 +21,11 @@ const casSuccess = `<cas:serviceResponse xmlns:cas="http://www.yale.edu/tp/cas">
 const casFailure = `<cas:serviceResponse xmlns:cas="http://www.yale.edu/tp/cas"><cas:authenticationFailure code="INVALID_TICKET">no</cas:authenticationFailure></cas:serviceResponse>`;
 
 describe("the CAS service URL", () => {
-  it("is the same for login and the ticket check, with `from` and the ticket encoded", async () => {
-    const from = "/games?sport=Flag Football&college=MC#today";
-    const loginService = new URL(casLoginUrl(from)).searchParams.get("service")!;
-    expect(loginService).toBe("https://yaleims.com/api/auth/redirect?from=%2Fgames%3Fsport%3DFlag%2520Football%26college%3DMC%23today"); // the path as a URL (space = %20), encoded
-    // CAS sends the user back to the service URL; the redirect route reads `from` from it.
-    const comeback = new URL(loginService).searchParams.get("from");
+  it("is the same for login and the ticket check, including the attempt state", async () => {
+    const state = "A".repeat(43);
+    const loginService = new URL(casLoginUrl(state)).searchParams.get("service")!;
+    expect(loginService).toBe(`https://yaleims.com/api/auth/redirect?state=${state}`);
+    const comeback = new URL(loginService).searchParams.get("state")!;
     const fetch = answer(casSuccess);
     expect(await validateTicket("ST-1&x=2", comeback)).toBe("abc123");
     const checked = new URL(fetch.mock.calls[0][0] as string);
@@ -38,9 +37,11 @@ describe("the CAS service URL", () => {
     expect(returnPath("https://evil.example/x")).toBe("/");
     expect(returnPath("//evil.example")).toBe("/");
     expect(returnPath(null)).toBe("/");
+    expect(returnPath("/games?sport=Flag Football&college=MC#today"))
+      .toBe("/games?sport=Flag%20Football&college=MC#today");
     process.env.BASE_URL = "http://localhost:3000";
-    expect(casLoginUrl("/hub")).toBe(
-      "https://secure-tst.its.yale.edu/cas/login?service=" + encodeURIComponent("http://localhost:3000/api/auth/redirect?from=%2Fhub")
+    expect(casLoginUrl("A".repeat(43))).toBe(
+      "https://secure-tst.its.yale.edu/cas/login?service=" + encodeURIComponent(`http://localhost:3000/api/auth/redirect?state=${"A".repeat(43)}`)
     );
   });
 });
@@ -48,9 +49,9 @@ describe("the CAS service URL", () => {
 describe("validateTicket", () => {
   it("is null when CAS refuses the ticket, and throws when CAS is down", async () => {
     answer(casFailure);
-    expect(await validateTicket("ST-bad", "/")).toBeNull();
+    expect(await validateTicket("ST-bad", "A".repeat(43))).toBeNull();
     answer("busy", 503);
-    await expect(validateTicket("ST-1", "/")).rejects.toThrow("CAS answered 503");
+    await expect(validateTicket("ST-1", "A".repeat(43))).rejects.toThrow("CAS answered 503");
   });
 });
 

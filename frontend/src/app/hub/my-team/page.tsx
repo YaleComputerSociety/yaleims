@@ -1,5 +1,5 @@
 "use client";
-// My team (captains; U5-ROSTER-WORKFLOW.md): the upcoming games of the team
+// My team (captains): the upcoming games of the team
 // they captain this season, with how many signed up and how many they
 // confirmed; tapping a game opens its roster to confirm, remove and add
 // players until it starts. Captains of two sports pick one.

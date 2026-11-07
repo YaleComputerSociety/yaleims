@@ -44,6 +44,7 @@ const cases: Record<string, Case> = {
   "upload a schedule": { method: "POST", path: (s) => `/api/seasons/${s}/matches`, body: { sportId: "99", matches: [game] }, allowed: supervisors },
   "edit a game": { method: "PATCH", path: (s) => `/api/seasons/${s}/matches/nope`, body: { venue: "X" }, allowed: supervisors },
   "score a game": { method: "PUT", path: (s) => `/api/seasons/${s}/matches/nope/result`, body: { homeScore: 1, awayScore: 0, homeForfeit: false, awayForfeit: false }, allowed: supervisors },
+  "correct a score": { method: "PATCH", path: (s) => `/api/seasons/${s}/matches/nope/result`, body: { homeScore: 1, awayScore: 0, homeForfeit: false, awayForfeit: false }, allowed: supervisors },
   "undo a score": { method: "DELETE", path: (s) => `/api/seasons/${s}/matches/nope/result`, allowed: supervisors },
   "delete a game": { method: "DELETE", path: (s) => `/api/seasons/${s}/matches/nope`, allowed: supervisors },
   "add by NetID": { method: "POST", path: (s) => `/api/seasons/${s}/matches/nope/roster/netid`, body: { netid: "zz950", collegeId: "BF" }, allowed: signedIn },

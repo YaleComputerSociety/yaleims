@@ -12,10 +12,10 @@
 // -----------------------------------------------------------------------------
 // TODO: Incorporate in upload matches and upload brackets - for each match, it gives the correct odds when added
 // TODO: make sure that odds are not set for matches that are still TBD / not fully filled out yet
-import admin from "./firebaseAdmin.js";
+import { FieldValue } from "firebase-admin/firestore";
+import { db } from "./firebaseAdmin.js";
 
-const db = admin.firestore();
-const inc = admin.firestore.FieldValue.increment;
+const inc = FieldValue.increment;
 
 // -----------------------------------------------------------------------------
 // CENTRALIZED ELO CONFIGURATION
@@ -303,7 +303,7 @@ export async function updateEloRatings(
     matchType,
     home_college_score,
     away_college_score,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    timestamp: FieldValue.serverTimestamp(),
   });
 
   await batch.commit();

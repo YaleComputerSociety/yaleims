@@ -16,10 +16,8 @@
 // -----------------------------------------------------------------------------
 
 import { pathToFileURL } from "url";
-import admin from "./firebaseAdmin.js";
+import { db } from "./firebaseAdmin.js";
 import { ELO_CONFIG } from "./elo_system.js";
-
-const db = admin.firestore();
 
 // All sports your app tracks
 const SPORTS = [

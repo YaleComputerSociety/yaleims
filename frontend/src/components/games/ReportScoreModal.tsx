@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FaFlag, FaSpinner, FaCheck } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
 import { useSession } from "@/context/SessionContext";
+import { signInUrl } from "@/lib/api/auth";
 import type { Match } from "@/lib/api/matches";
 import { fetchMatchReports, reportScore, resolveReport, type MatchScoreReport } from "@/lib/api/reports";
 import { toast } from "react-toastify";
@@ -21,10 +22,8 @@ export const ReportScoreButton: React.FC<ReportScoreButtonProps> = ({ match, spo
 
   const handleClick = () => {
     if (!viewer) {
-      const from = encodeURIComponent("/games");
       // A full page load: the login route redirects to Yale's CAS.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.href = `/api/auth/login?from=${from}`;
+      window.location.href = signInUrl("/games");
       return;
     }
     setModalOpen(true);

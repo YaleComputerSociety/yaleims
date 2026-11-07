@@ -21,6 +21,8 @@ export const sportEmoji: Record<string, string> = {
   Volleyball: "🏐",
   Netball: "🥅",
   Kanjam: "🥏",
+  Badminton: "🏸",
+  Ultimate: "🥏",
 };
 
 const sportColors: ColorMap = {
@@ -38,6 +40,8 @@ const sportColors: ColorMap = {
   "Indoor Soccer": "border-[#BBB59E]",
   Volleyball: "border-[#5F4E47]",
   Netball: "border-[#AF2819]",
+  Badminton: "border-[#378923]",
+  Ultimate: "border-[#0047AB]",
 };
 
 // no Tailwind prefixes here – just the colours
@@ -57,6 +61,8 @@ const sportHex: Record<string, string> = {
   'Indoor Soccer':'#BBB59E',
   Volleyball:    '#5F4E47',
   Netball:       '#AF2819',
+  Badminton:     '#378923',
+  Ultimate:      '#0047AB',
 };
 
 
@@ -75,6 +81,8 @@ const sportDisplayName: ColorMap = {
   "Indoor Soccer": "Indoor\nSoccer",
   Volleyball: "Volleyball",
   Netball: "Netball",
+  Badminton: "Badminton",
+  Ultimate: "Ultimate",
 };
 
 interface SportCardProps {

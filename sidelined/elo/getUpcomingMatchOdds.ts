@@ -1,8 +1,7 @@
 import * as functions from "firebase-functions";
-import admin from "./firebaseAdmin.js";
+import type { Timestamp } from "firebase-admin/firestore";
+import { db } from "./firebaseAdmin.js";
 import { hybridOddsCalculator } from "./elo_odds_calculator.js";
-
-const db = admin.firestore();
 
 /**
  * HTTP function to get odds for all unscored matches in a season.
@@ -66,7 +65,7 @@ export const getUpcomingMatchOdds = functions.https.onRequest(async (req, res) =
       const homeTeam: string | undefined = data.home_college;
       const awayTeam: string | undefined = data.away_college;
       const matchType: "Regular" | "Playoff" | "Final" | undefined = data.type;
-      const ts: admin.firestore.Timestamp | undefined = data.timestamp;
+      const ts: Timestamp | undefined = data.timestamp;
       const matchSport: string | undefined = data.sport;
 
       // Skip matches missing required fields or with TBD teams

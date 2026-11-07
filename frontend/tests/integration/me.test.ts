@@ -22,9 +22,11 @@ describe("login", () => {
     expect(r.status).toBe(307);
     const cas = new URL(r.location!);
     expect(cas.origin + cas.pathname).toBe("https://secure.its.yale.edu/cas/login");
-    expect(cas.searchParams.get("service")).toBe(`${BASE}/api/auth/redirect?from=%2Fgames`);
-    const evil = new URL((await raw("GET", "/api/auth/login?from=https://evil.example")).location!);
-    expect(evil.searchParams.get("service")).toBe(`${BASE}/api/auth/redirect?from=%2F`);
+    const service = new URL(cas.searchParams.get("service")!);
+    expect(service.origin + service.pathname).toBe(`${BASE}/api/auth/redirect`);
+    expect(service.searchParams.get("state")).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(service.searchParams.has("from")).toBe(false);
+    expect(r.setCookie).toContain("yims_login=");
   });
   it("back from CAS without a ticket: to CAS again", async () => {
     const r = await raw("GET", "/api/auth/redirect?from=%2Fhub");

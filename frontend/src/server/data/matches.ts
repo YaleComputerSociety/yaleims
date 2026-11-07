@@ -6,7 +6,6 @@ import type { DocumentReference, Query } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { MatchDoc, MatchStatus, WithId } from "@/types/firestore";
-import { listSeasons } from "./seasons";
 import { withId } from "./util";
 
 export function matchRef(seasonId: string, matchId: string): DocumentReference<MatchDoc> {
@@ -53,27 +52,35 @@ function seasonMatchQuery(seasonId: string, filter: SeasonMatchFilter, order: So
   return query;
 }
 
-/** How many of a season's games pass `filter`. */
-export async function countSeasonMatches(
-  seasonId: string,
-  filter: SeasonMatchFilter,
-  order: SortOrder
-): Promise<number> {
-  const snap = await seasonMatchQuery(seasonId, filter, order).count().get();
-  return snap.data().count;
-}
-
-/** A season's games that pass `filter`, sorted by start: all of them, or one page. */
+/** A season's games that pass `filter`, sorted by start. */
 export async function listSeasonMatches(
   seasonId: string,
   filter: SeasonMatchFilter,
   order: SortOrder,
-  page?: { offset: number; limit: number }
 ): Promise<WithId<MatchDoc>[]> {
-  let query = seasonMatchQuery(seasonId, filter, order);
-  if (page) query = query.offset(page.offset).limit(page.limit);
-  const snap = await query.get();
+  const snap = await seasonMatchQuery(seasonId, filter, order).get();
   return snap.docs.map((d) => withId<MatchDoc>(d));
+}
+
+/** One numbered page and the filtered total, from a single season. */
+export async function listSeasonMatchPage(
+  seasonId: string,
+  filter: SeasonMatchFilter,
+  order: SortOrder,
+  { page, pageSize }: { page: number; pageSize: number },
+): Promise<{ items: WithId<MatchDoc>[]; total: number }> {
+  const query = seasonMatchQuery(seasonId, filter, order);
+  const offset = (page - 1) * pageSize;
+  const count = query.count().get().then((snap) => snap.data().count);
+  const readPage = async () => {
+    // Read page one in parallel with the count. Later pages can skip the
+    // offset query entirely when they are beyond the end of the results.
+    if (offset > 0 && offset >= (await count)) return [];
+    const snap = await query.offset(offset).limit(pageSize).get();
+    return snap.docs.map((d) => withId<MatchDoc>(d));
+  };
+  const [items, total] = await Promise.all([readPage(), count]);
+  return { items, total };
 }
 
 /**
@@ -88,42 +95,4 @@ export async function firstMatchStart(seasonId: string, from: Date): Promise<Dat
     .limit(1)
     .get();
   return snap.empty ? null : withId<MatchDoc>(snap.docs[0]).startsAt.toDate();
-}
-
-/**
- * One page of the played games (status final) of every season, sorted by
- * start, and how many there are in all. Each season runs the same filtered
- * query, limited to the games up to the page's end; the results are merged.
- * So a page reads about seasons × (offset + limit) games. Not a
- * collection-group query: the id "matches" is shared with Elo and the old
- * tree (lib/paths.ts).
- */
-export async function listPlayedMatches(
-  filter: Omit<SeasonMatchFilter, "status">,
-  order: SortOrder,
-  offset: number,
-  limit: number
-): Promise<{ items: WithId<MatchDoc>[]; total: number }> {
-  const seasons = await listSeasons();
-  const perSeason = await Promise.all(
-    seasons.map(async ({ id }) => {
-      const query = seasonMatchQuery(id, { ...filter, status: "final" }, order);
-      const [games, count] = await Promise.all([query.limit(offset + limit).get(), query.count().get()]);
-      return { games: games.docs.map((d) => withId<MatchDoc>(d)), total: count.data().count };
-    })
-  );
-  // Equal start times: by season, then by id, the way each season's query breaks ties.
-  const sign = order === "asc" ? 1 : -1;
-  const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-  const games = perSeason
-    .flatMap((s) => s.games)
-    .sort(
-      (a, b) =>
-        sign *
-        (a.startsAt.toMillis() - b.startsAt.toMillis() || compare(a.seasonId, b.seasonId) || compare(a.id, b.id))
-    );
-  return {
-    items: games.slice(offset, offset + limit),
-    total: perSeason.reduce((sum, s) => sum + s.total, 0),
-  };
 }

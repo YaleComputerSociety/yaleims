@@ -1322,6 +1322,17 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "loginAttempts",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "auditLog",
+      "fieldPath": "before",
+      "indexes": []
+    },
+    {
       "collectionGroup": "reports",
       "fieldPath": "reportedAt",
       "ttl": false,

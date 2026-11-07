@@ -1,7 +1,8 @@
 // Server-only Firestore access with the Firebase Admin SDK.
 //
-// Only src/server/data/* imports this; everything else goes through those
-// modules. It bypasses security rules, so authorization happens in the route.
+// Data modules and Node maintenance/test entry points import this; application
+// services go through the data modules. Authorization happens in the route
+// because this client bypasses security rules.
 //
 // Credentials: on App Hosting the backend's service account
 // (firebase-app-hosting-compute@) is picked up automatically. Locally, run
@@ -25,4 +26,32 @@ const adminApp: App =
   getApps()[0] ??
   initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
 
-export const adminDb: Firestore = getFirestore(adminApp);
+function configuredFirestore(): Firestore {
+  const db = getFirestore(adminApp);
+  const noStreamReplay = { retry_codes_name: "no_stream_replay" };
+  db.settings({
+    // Firestore owns transaction retries and query resumption. Legacy GAX
+    // stream retries can replay an aborted transaction ID; transport retries
+    // after partial query results can also duplicate documents.
+    gaxServerStreamingRetries: true,
+    clientConfig: {
+      interfaces: {
+        "google.firestore.v1.Firestore": {
+          retry_codes: { no_stream_replay: [] },
+          methods: {
+            BatchGetDocuments: noStreamReplay,
+            RunQuery: noStreamReplay,
+            RunAggregationQuery: noStreamReplay,
+          },
+        },
+      },
+    },
+  });
+  return db;
+}
+
+// Next can reload this module during development. Settings must be applied
+// before the first request, so keep the configured client across reloads.
+// Restart the dev server when changing client initialization settings.
+const clients = globalThis as typeof globalThis & { yimsAdminDb?: Firestore };
+export const adminDb: Firestore = clients.yimsAdminDb ??= configuredFirestore();

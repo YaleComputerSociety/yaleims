@@ -15,11 +15,10 @@
  *   GOOGLE_CLOUD_PROJECT=yims-125a2 node lib/scripts/replayEloSeason.js
  */
 
-import admin from "../firebaseAdmin.js";
+import type { Timestamp } from "firebase-admin/firestore";
+import { db } from "../firebaseAdmin.js";
 import { updateEloRatings } from "../elo_system.js";
 import { hybridOddsCalculator } from "../elo_odds_calculator.js";
-
-const db = admin.firestore();
 
 interface MatchPrediction {
   matchId: string;
@@ -70,7 +69,7 @@ async function replayEloSeason(season: string) {
     const homeTeam: string | undefined = data.home_college;
     const awayTeam: string | undefined = data.away_college;
     const matchType: "Regular" | "Playoff" | "Final" | undefined = data.type;
-    const ts: admin.firestore.Timestamp | undefined = data.timestamp;
+    const ts: Timestamp | undefined = data.timestamp;
     const homeScore: number = data.home_college_score ?? 0;
     const awayScore: number = data.away_college_score ?? 0;
     const matchSport: string | undefined = data.sport;

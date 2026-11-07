@@ -43,7 +43,7 @@ const { createBracket } = await import("@/server/services/brackets");
 const { setCaptain } = await import("@/server/services/roles");
 const { signUp } = await import("@/server/services/signups");
 const { addScoreReport, resolveScoreReport } = await import("@/server/data/scoreReports");
-const { setMvp } = await import("@/server/data/mvps");
+const { setMvp } = await import("@/server/services/mvps");
 
 // ── Reference data ─────────────────────────────────────────────────────────
 
@@ -54,7 +54,7 @@ const SPORTS: (SportDoc & { id: string })[] = [
   { id: "3", name: "Spikeball", emoji: "💥", term: "fall", pointsForWin: 6, active: true },
   { id: "4", name: "Cornhole", emoji: "🌽", term: "fall", pointsForWin: 6, active: true },
   { id: "5", name: "Pickleball", emoji: "🥒", term: "fall", pointsForWin: 6, active: true },
-  { id: "6", name: "Table Tennis", emoji: "🏓", term: "fall", pointsForWin: 8, active: true },
+  { id: "6", name: "Table Tennis", emoji: "🏓", term: "fall", pointsForWin: 10, active: true },
   { id: "7", name: "Broomball", emoji: "🧹", term: "winter", pointsForWin: 6, active: true },
   { id: "10", name: "Dodgeball", emoji: "🤾‍♂️", term: "winter", pointsForWin: 8, active: true },
   { id: "13", name: "CHoops", emoji: "🏀", term: "winter", pointsForWin: 5, active: true },
@@ -64,7 +64,10 @@ const SPORTS: (SportDoc & { id: string })[] = [
   { id: "9", name: "Indoor Soccer", emoji: "⚽", term: "spring", pointsForWin: 5, active: true },
   { id: "11", name: "Volleyball", emoji: "🏐", term: "spring", pointsForWin: 6, active: true },
   { id: "12", name: "Netball", emoji: "🥅", term: "spring", pointsForWin: 7, active: true },
+  { id: "16", name: "Badminton", emoji: "🏸", term: "miscellaneous", pointsForWin: 8, active: true },
+  { id: "17", name: "Ultimate", emoji: "🥏", term: "miscellaneous", pointsForWin: 7, active: true },
 ];
+// Only calendar terms receive synthetic schedules with term-based dates.
 const TERMS: Term[] = ["fall", "winter", "spring"];
 const VENUES = ["Pierson-Sage Fields", "Payne Whitney Gym", "Lanman Center", "Morse-Stiles Crescent"];
 const FIRST = ["Alex", "Blair", "Casey", "Dana", "Eli", "Frankie", "Gray", "Harper", "Indy", "Jordan", "Kai", "Logan", "Morgan", "Noor", "Oakley", "Parker", "Quinn", "Riley", "Sage", "Taylor", "Uma", "Val", "Wren", "Yael"];
@@ -355,7 +358,6 @@ async function activity(seasonSports: (SportDoc & { id: string })[]): Promise<vo
     const reporter = students.find((p) => p.collegeId === m.homeCollegeId)!;
     const id = await addScoreReport(CURRENT, g.id, {
       reason: i === 0 ? "The score is flipped" : "We won this one", reportedBy: reporter.email, reporterName: fullName(reporter),
-      scoreAtReport: { home: m.result?.homeScore ?? null, away: m.result?.awayScore ?? null },
     });
     if (i === 1) await resolveScoreReport(CURRENT, g.id, id, SEED_ACTOR);
   }
@@ -365,7 +367,7 @@ async function activity(seasonSports: (SportDoc & { id: string })[]): Promise<vo
   for (const [ci, c] of COLLEGES.slice(0, 6).entries()) {
     for (let week = 1; week <= weeks; week++) {
       const p = students[ci * PER_COLLEGE + 1 + (week % 6)];
-      await setMvp(CURRENT, c.id, { week, playerId: p.email, name: fullName(p), awardedBy: students[ci * PER_COLLEGE].email });
+      await setMvp(CURRENT, c.id, { week, playerId: p.email, awardedBy: students[ci * PER_COLLEGE].email });
     }
   }
 }

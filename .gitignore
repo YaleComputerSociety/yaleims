@@ -15,3 +15,12 @@ migration-report*.json
 # iCloud sync conflict copies ("name 2.tsx", "folder 2/") when the repo sits in a synced folder
 * 2.*
 * 2/
+
+# Written by `next dev` when an AI agent runs it (a pointer to Next's docs).
+frontend/AGENTS.md
+
+# Runtime/debug logs are local artifacts.
+*.log
+
+# macOS directory metadata.
+.DS_Store

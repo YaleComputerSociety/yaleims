@@ -1,23 +1,24 @@
 import React from "react";
-import { useSeason } from "@/context/SeasonContext";
 import { COLLEGES } from "@/lib/colleges";
+import type { Sport } from "@/lib/api/seasons";
 import type { Filters } from "@/context/FiltersContext";
 
 interface TableHeaderProps {
   handleFilterChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   filter: Filters;
+  sports: Sport[];
   sortOrder: string;
   handleSortOrderChange: (newSortOrder: string) => void;
 }
 
-/** The scores page's filters: the time window, a college, a sport (the current season's) and the order. */
+/** Filters for the selected season's results. */
 const TableHeader: React.FC<TableHeaderProps> = ({
   handleFilterChange,
   filter,
+  sports,
   sortOrder,
   handleSortOrderChange,
 }) => {
-  const sports = useSeason().currentSeason?.sports ?? [];
   return (
   <div className="flex flex-wrap px-2 py-2 rounded-md justify-center justify-self-center">
     {/* Date/Time Column with Dropdown Filter */}
@@ -29,7 +30,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           className="text-sm  rounded-md py-1 px-1 bg-white dark:bg-black"
           value={filter.date}
         >
-          <option value="AllPast">All Past Games</option>
+          <option value="AllPast">All Season Results</option>
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>
           <option value="last7days">Last 7 Days</option>

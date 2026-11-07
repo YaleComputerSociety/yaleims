@@ -7,11 +7,10 @@
 // -----------------------------------------------------------------------------
 
 import * as functions from "firebase-functions";
-import admin from "../firebaseAdmin.js";
+import type { Timestamp } from "firebase-admin/firestore";
+import { db } from "../firebaseAdmin.js";
 import * as fs from "fs";
 import * as path from "path";
-
-const db = admin.firestore();
 
 // -----------------------------------------------------------------------------
 // TUNABLE PARAMETERS INTERFACE
@@ -441,7 +440,7 @@ async function runExperiment(
     const awayTeam: string = data.away_college;
     const winner: string = data.winner;
     const matchType: "Regular" | "Playoff" | "Final" = data.type;
-    const ts: admin.firestore.Timestamp = data.timestamp;
+    const ts: Timestamp = data.timestamp;
     const homeScore: number = data.home_college_score ?? 0;
     const awayScore: number = data.away_college_score ?? 0;
     const matchSport: string = data.sport;

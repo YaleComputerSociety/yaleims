@@ -1,6 +1,5 @@
 // The matches API: a season's games (/api/seasons/{seasonId}/matches), one
-// game's details and result, and the played games of every season
-// (/api/matches, the scores page).
+// game's details and result, and one season's played games (/api/matches).
 import { z } from "zod";
 import type { MatchDoc, WithId } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
@@ -46,9 +45,10 @@ export const seasonMatchesQuerySchema = z.strictObject({
 });
 export type SeasonMatchesQuery = z.input<typeof seasonMatchesQuerySchema>;
 
-/** GET /api/matches (signed in): played games of every season, newest first, always paged. */
+/** GET /api/matches (signed in): played games in the selected or current season. */
 export const playedMatchesQuerySchema = z.strictObject({
   ...filters,
+  seasonId: z.string().regex(/^\d{4}-\d{4}$/, "Choose a season in YYYY-YYYY format").optional(),
   order: z.enum(["asc", "desc"]).default("desc"),
   page: page.default(1),
   pageSize,
@@ -91,9 +91,12 @@ export interface ScheduleUploadResult {
   matchIds: string[];
 }
 
-/** PATCH /api/seasons/{seasonId}/matches/{matchId}: the fields to change. */
+/**
+ * PATCH /api/seasons/{seasonId}/matches/{matchId}: teams, time, venue or status.
+ * Sport is fixed at creation. Replacing a college clears its entire roster;
+ * an incoming college starts blank. A home/away swap retains both rosters.
+ */
 export const matchEditSchema = z.strictObject({
-  sportId: z.string().min(1).optional(),
   homeCollegeId: collegeIdSchema.optional(),
   awayCollegeId: collegeIdSchema.optional(),
   venue: venue.optional(),
@@ -119,6 +122,13 @@ export const matchResultSchema = z.strictObject({
 });
 export type MatchResultInput = z.infer<typeof matchResultSchema>;
 
+/**
+ * PATCH …/result: corrects a scored game's result in one step. A bracket
+ * game must keep its winner (409 otherwise: undo it, later rounds first).
+ */
+export const matchCorrectionSchema = matchResultSchema.omit({ homeCollegeId: true, awayCollegeId: true });
+export type MatchCorrection = z.infer<typeof matchCorrectionSchema>;
+
 export const uploadSchedule = (seasonId: string, upload: ScheduleUpload) =>
   request<ScheduleUploadResult>("POST", url`/api/seasons/${seasonId}/matches`, { body: upload });
 
@@ -131,6 +141,9 @@ export const deleteMatch = (seasonId: string, matchId: string) =>
 
 export const scoreMatch = (seasonId: string, matchId: string, result: MatchResultInput) =>
   request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/result`, { body: result });
+
+export const correctScore = (seasonId: string, matchId: string, correction: MatchCorrection) =>
+  request<void>("PATCH", url`/api/seasons/${seasonId}/matches/${matchId}/result`, { body: correction });
 
 export const undoScore = (seasonId: string, matchId: string) =>
   request<void>("DELETE", url`/api/seasons/${seasonId}/matches/${matchId}/result`);

@@ -1,34 +1,59 @@
 import { NextResponse } from "next/server";
-import { ApiError } from "@/lib/api/core";
 import { getCurrentSeasonId } from "@/server/data/seasons";
-import { route } from "@/server/http";
+import { logFailure, route } from "@/server/http";
+import { consumeLogin, LoginFailure, startLogin } from "@/server/login";
 import { signIn } from "@/server/services/accounts";
-import { setSessionCookie } from "@/server/session";
-import { casLoginUrl, returnPath, siteUrl, validateTicket, yaliesProfile } from "@/server/yaleLogin";
+import { getIdentity, setSessionCookie } from "@/server/session";
+import { siteUrl, validateTicket, yaliesProfile } from "@/server/yaleLogin";
 
 /**
  * Where Yale CAS sends people back (the URL registered with CAS). With a
- * valid ticket: signs them in (the first login creates the account, the
- * first of a season their player doc, D30), sets the session cookie and
- * returns them to ?from. Without a ticket: back to CAS.
+ * browser-bound, single-use attempt and valid ticket: signs them in (the first
+ * login creates the account and season player doc, D30), sets the session cookie and
+ * returns them to the stored local path. A bare callback starts a fresh attempt.
+ * A failed sign-in ends on a page, never on an API error (failedLogin).
  */
 export const GET = route(async (req) => {
   const params = new URL(req.url).searchParams;
-  const from = params.get("from");
-  const ticket = params.get("ticket");
-  if (!ticket) return NextResponse.redirect(casLoginUrl(from));
+  if (!params.has("ticket") && !params.has("state")) return startLogin(params.get("from"));
+  try {
+    return await finishLogin(params);
+  } catch (error) {
+    return failedLogin(req, error);
+  }
+});
 
-  const netid = await validateTicket(ticket, from);
-  if (!netid) throw new ApiError("unauthenticated", "Yale login failed. Please try again.");
+async function finishLogin(params: URLSearchParams): Promise<NextResponse> {
+  const ticket = params.get("ticket");
+  if (!ticket || params.getAll("ticket").length !== 1 || params.getAll("state").length !== 1) {
+    throw new LoginFailure("expired");
+  }
+  const state = params.get("state")!;
+  const from = await consumeLogin(state);
+
+  const netid = await validateTicket(ticket, state);
+  if (!netid) throw new LoginFailure("refused");
   const profile = await yaliesProfile(netid);
-  if (!profile) throw new ApiError("forbidden", "We couldn't find your Yale profile, so you can't sign in.");
-  if (!profile.email.endsWith("@yale.edu")) throw new ApiError("forbidden", "You must use a Yale email to sign in.");
+  if (!profile || !profile.email.endsWith("@yale.edu")) throw new LoginFailure("no-profile");
   const seasonId = await getCurrentSeasonId();
   if (!seasonId) throw new Error("config/app has no current season");
 
   await signIn(profile, netid, seasonId);
-  const res = NextResponse.redirect(siteUrl(returnPath(from)));
+  const res = NextResponse.redirect(siteUrl(from));
   const name = `${profile.first_name} ${profile.last_name}`;
   setSessionCookie(res, { email: profile.email, netid, name, college: profile.college ?? null });
   return res;
-});
+}
+
+/**
+ * Someone already signed in goes home: a stale second tab or a refreshed
+ * callback. Anyone else gets a page saying what happened, with a "Sign in
+ * again" button. Never an automatic restart: with cookies blocked, that
+ * would loop through CAS. An existing session is never replaced.
+ */
+async function failedLogin(req: Request, error: unknown): Promise<NextResponse> {
+  const problem = error instanceof LoginFailure ? error.problem : "unavailable";
+  if (!(error instanceof LoginFailure)) await logFailure(req, error);
+  if (await getIdentity()) return NextResponse.redirect(siteUrl("/"));
+  return NextResponse.redirect(siteUrl(`/sign-in-failed?problem=${problem}`));
+}

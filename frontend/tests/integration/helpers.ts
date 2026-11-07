@@ -1,16 +1,18 @@
 // Shared by the integration tests: calls to the running app (BASE), session
 // cookies for the seeded people, and direct emulator reads to check what a
 // call changed. scripts/test-integration.mts sets BASE and TEST_JWT_SECRET.
-import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { vi } from "vitest";
 import jwt from "jsonwebtoken";
+import { adminDb } from "@/server/firebaseAdmin";
+
+vi.mock("server-only", () => ({}));
 
 export const BASE = process.env.BASE ?? "http://localhost:3210";
 const SECRET = process.env.TEST_JWT_SECRET;
 if (!SECRET) throw new Error("Run through `npm run test:integration` (it starts the app and sets TEST_JWT_SECRET).");
 
 /** The emulator, read directly to check what a call changed. */
-export const db = getFirestore(getApps()[0] ?? initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims" }));
+export const db = adminDb;
 
 /**
  * A session cookie for `email`, with roles in it as cookies from before Phase

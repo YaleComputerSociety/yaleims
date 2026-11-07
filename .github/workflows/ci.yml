@@ -4,6 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    # Recheck published advisories even when the lockfiles have not changed.
+    - cron: "0 14 * * 1"
 
 permissions:
   contents: read
@@ -14,6 +17,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  advisories:
+    name: Dependency advisories (${{ matrix.directory }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: [frontend, database/misc, sidelined/elo]
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # Scan all locked dependencies, including development and optional ones.
+      # No install scripts, credentials, severity exclusions, or automatic fixes.
+      - run: npm audit --package-lock-only --audit-level=low
+
   frontend:
     name: Frontend (typecheck, lint, build)
     runs-on: ubuntu-latest

@@ -1,14 +1,20 @@
-// Scoring a game and undoing it. One transaction each: the game's result,
-// both colleges' standings and teams' records, the bracket (winner moves on,
-// placement bonuses) and the audit entry. Then the season is re-ranked.
+// Scoring a game, correcting its score and undoing it. One transaction each:
+// the game's result, both colleges' standings and teams' records, the bracket
+// (winner moves on, placement bonuses) and the audit entry. Then the season is
+// re-ranked. A correction that keeps the winner leaves the bracket alone; a
+// bracket game's winner changes only by undoing it, later rounds first.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
+import { ApiError } from "@/lib/api/core";
+import { matchTeamsProblem, scoreStateProblem } from "@/lib/matchRules";
+import { winnerId } from "@/lib/results";
 import type { MatchDoc, MatchResult, Outcome } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
-import { recalculateRanks } from "../data/colleges";
+import { collegeRef, recalculateRanks } from "../data/colleges";
 import { matchRef } from "../data/matches";
 import { runTransaction } from "../data/util";
-import { applyBracketMoves, movedDocs, readBracketMoves, reversePlacements } from "./brackets";
+import { advancingMatches, applyBracketMoves, movedDocs, readBracketMoves, reversePlacements } from "./brackets";
+import { applyRosterChanges, readRosterChanges } from "./matchRoster";
 import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
 export interface ScoreInput {
@@ -32,27 +38,32 @@ function outcomeOf(input: ScoreInput): Outcome {
   return input.homeScore > input.awayScore ? "home" : "away";
 }
 
+function resultOf(input: ScoreInput): MatchResult {
+  return {
+    homeScore: input.homeScore,
+    awayScore: input.awayScore,
+    outcome: outcomeOf(input),
+    forfeit: input.homeForfeit || input.awayForfeit,
+  };
+}
+
 export async function scoreMatch(
   input: ScoreInput,
   actor: Actor
-): Promise<"scored" | "not-found" | "already-scored" | "incomplete"> {
+): Promise<"scored" | "not-found" | "already-scored" | "cancelled" | "incomplete" | "unknown-college"> {
   const { seasonId } = input;
   const ref = matchRef(seasonId, input.matchId);
   const outcome = await runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const match = snap.data();
     if (!match) return "not-found" as const;
-    if (match.status === "final") return "already-scored" as const;
+    const stateProblem = scoreStateProblem(match.status);
+    if (stateProblem) return stateProblem;
     const homeCollegeId = match.homeCollegeId ?? input.homeCollegeId ?? null;
     const awayCollegeId = match.awayCollegeId ?? input.awayCollegeId ?? null;
     if (!homeCollegeId || !awayCollegeId) return "incomplete" as const;
 
-    const result: MatchResult = {
-      homeScore: input.homeScore,
-      awayScore: input.awayScore,
-      outcome: outcomeOf(input),
-      forfeit: input.homeForfeit || input.awayForfeit,
-    };
+    const result = resultOf(input);
     const scored: MatchDoc = {
       ...match,
       homeCollegeId,
@@ -61,9 +72,17 @@ export async function scoreMatch(
       status: "final",
       result,
     };
+    const problem = matchTeamsProblem(scored);
+    if (problem) throw new ApiError("bad-request", problem);
     if (!isScoredGame(scored)) return "incomplete" as const;
-    const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
     const moves = await readBracketMoves(tx, seasonId, scored);
+    const advancements = advancingMatches(scored, moves);
+    const standingDocs = await readStandingDocs(tx, seasonId, [scored]);
+    // Reuse the transaction's standing snapshots to verify season membership.
+    const known = (id: string) => standingDocs.some((doc) => doc.ref.path === collegeRef(seasonId, id).path && doc.exists);
+    if (!known(homeCollegeId) || !known(awayCollegeId)) return "unknown-college" as const;
+    const changed = [snap, ...standingDocs, ...movedDocs(moves)];
+    const roster = await readRosterChanges(tx, seasonId, [{ before: snap, after: scored }, ...advancements]);
 
     tx.update(ref, {
       homeCollegeId,
@@ -76,12 +95,13 @@ export async function scoreMatch(
       updatedAt: FieldValue.serverTimestamp(),
     });
     applyResult(tx, seasonId, scored, 1, standingDocs);
-    applyBracketMoves(tx, seasonId, scored, moves);
+    applyBracketMoves(tx, seasonId, scored, moves, advancements);
+    applyRosterChanges(tx, roster);
     logAction(tx, seasonId, {
       actor,
       action: "scoreMatch",
       params: input,
-      changed: [snap, ...standingDocs, ...movedDocs(moves)],
+      changed: [...changed, ...roster.map((c) => c.before)],
     });
     return "scored" as const;
   });
@@ -90,9 +110,49 @@ export async function scoreMatch(
 }
 
 /**
+ * Replaces a scored game's result: this game's points and records are taken
+ * back and given again. With the same winner (and so the same loser) nothing
+ * in the bracket changes, even when later rounds are scored. A bracket game
+ * whose winner changes is "winner-changes": undo it instead (later rounds
+ * first), so advancement moves the right college. A regular game's winner
+ * can change here. "incomplete": the game has no result.
+ */
+export async function correctScore(
+  input: Omit<ScoreInput, "homeCollegeId" | "awayCollegeId">,
+  actor: Actor
+): Promise<"corrected" | "not-found" | "incomplete" | "winner-changes"> {
+  const { seasonId } = input;
+  const ref = matchRef(seasonId, input.matchId);
+  const outcome = await runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const match = snap.data();
+    if (!match) return "not-found" as const;
+    if (!isScoredGame(match)) return "incomplete" as const;
+    const corrected = { ...match, result: resultOf(input) };
+    const winnerOf = (game: typeof match) => winnerId(game.homeCollegeId, game.awayCollegeId, game.result);
+    if (match.bracketId && winnerOf(corrected) !== winnerOf(match)) return "winner-changes" as const;
+    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
+
+    tx.update(ref, {
+      result: corrected.result,
+      scoredBy: actor.userId,
+      scoredAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    applyResult(tx, seasonId, match, -1, standingDocs);
+    applyResult(tx, seasonId, corrected, 1, standingDocs);
+    logAction(tx, seasonId, { actor, action: "correctScore", params: input, changed: [snap, ...standingDocs] });
+    return "corrected" as const;
+  });
+  if (outcome === "corrected") await recalculateRanks(seasonId);
+  return outcome;
+}
+
+/**
  * Clears a game's result and takes its points back (and the placement
- * bonuses it settled). Bracket advancement is not undone: the next game keeps
- * the college that moved in. "incomplete": the game has no result.
+ * bonuses it settled), after the next round's scores have been undone.
+ * Bracket advancement is retained: the next game keeps the college that
+ * moved in. "incomplete": the game has no result.
  */
 export async function undoScore(
   seasonId: string,
@@ -105,8 +165,8 @@ export async function undoScore(
     const match = snap.data();
     if (!match) return "not-found" as const;
     if (!isScoredGame(match)) return "incomplete" as const;
-    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
     const moves = await readBracketMoves(tx, seasonId, match);
+    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
 
     tx.update(ref, {
       status: "scheduled",

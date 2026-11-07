@@ -21,9 +21,9 @@ function casBase(): string {
     : "https://secure.its.yale.edu/cas";
 }
 
-/** Where CAS sends people back: the redirect route, with the page to return to (only this site's pages). */
-function serviceUrl(from: string | null): string {
-  return `${baseUrl()}/api/auth/redirect?from=${encodeURIComponent(returnPath(from))}`;
+/** The same browser-bound service URL for login and validation; return paths stay server-side. */
+function serviceUrl(state: string): string {
+  return `${baseUrl()}/api/auth/redirect?state=${encodeURIComponent(state)}`;
 }
 
 /** The page on this site to return to after login ("/" for anything else: no open redirect). */
@@ -36,15 +36,15 @@ export function siteUrl(path: string): string {
   return baseUrl() + path;
 }
 
-/** CAS's login page, which comes back to `from` after login. */
-export function casLoginUrl(from: string | null): string {
-  return `${casBase()}/login?service=${encodeURIComponent(serviceUrl(from))}`;
+/** CAS's login page, which comes back with this attempt's state. */
+export function casLoginUrl(state: string): string {
+  return `${casBase()}/login?service=${encodeURIComponent(serviceUrl(state))}`;
 }
 
 /** The netid CAS vouches for with `ticket`, or null when CAS refuses it. */
-export async function validateTicket(ticket: string, from: string | null): Promise<string | null> {
+export async function validateTicket(ticket: string, state: string): Promise<string | null> {
   const res = await fetch(
-    `${casBase()}/serviceValidate?ticket=${encodeURIComponent(ticket)}&service=${encodeURIComponent(serviceUrl(from))}`
+    `${casBase()}/serviceValidate?ticket=${encodeURIComponent(ticket)}&service=${encodeURIComponent(serviceUrl(state))}`
   );
   if (!res.ok) throw new Error(`CAS answered ${res.status}`);
   const xml = await parseStringPromise(await res.text());
