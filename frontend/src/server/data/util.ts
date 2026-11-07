@@ -1,5 +1,5 @@
 import "server-only";
-import type { DocumentData, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
+import type { DocumentData, DocumentSnapshot, Query, QueryDocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import type { WithId } from "@/types/firestore";
 import { ApiError } from "@/lib/api/core";
@@ -9,16 +9,27 @@ import { ApiError } from "@/lib/api/core";
  * whose writes span entities; they get document refs from the data modules.
  */
 export function runTransaction<T>(fn: (tx: Transaction) => Promise<T>): Promise<T> {
-  return adminDb.runTransaction(fn).catch((error: unknown) => {
-    // Firestore also counts index work toward transaction limits. Its own
-    // size rejection is authoritative even after our application budgets pass.
-    const code = error && typeof error === "object" && "code" in error ? error.code : null;
-    const message = error instanceof Error ? error.message : "";
-    if ((code === 3 || code === 9) && /maximum (?:entity|request|transaction) size|transaction (?:is )?too (?:big|large)|request (?:payload |size )?(?:is )?too large/i.test(message)) {
-      throw new ApiError("conflict", "This operation exceeds Firestore's size limit. Contact the site maintainers to process it in smaller batches.");
-    }
-    throw error;
-  });
+  return adminDb.runTransaction(fn);
+}
+
+/** The most child records (roster entries, score reports) one action changes in one transaction. */
+const MAX_CHILDREN = 2000;
+
+/**
+ * Every doc of `collections` (a game's roster and reports, say), read in
+ * `tx`. More than MAX_CHILDREN in all is refused before any write: far more
+ * than a real game has, and a transaction that size would be slow and close
+ * to Firestore's 10 MiB request limit.
+ */
+export async function readChildren(tx: Transaction, collections: Query[]): Promise<QueryDocumentSnapshot[]> {
+  const snaps = await Promise.all(collections.map((c) => tx.get(c.limit(MAX_CHILDREN + 1))));
+  const docs = snaps.flatMap((s) => s.docs);
+  if (docs.length > MAX_CHILDREN) {
+    throw new ApiError("conflict", `This would change more than ${MAX_CHILDREN} records at once. Contact the site maintainers.`, {
+      maxChildren: MAX_CHILDREN,
+    });
+  }
+  return docs;
 }
 
 /**

@@ -8,13 +8,13 @@ import type { MatchEdit, NewMatch } from "@/lib/api/matches";
 import { ApiError } from "@/lib/api/core";
 import { matchTeamsProblem } from "@/lib/matchRules";
 import type { MatchDoc } from "@/types/firestore";
-import { logAction, readAuditedChildren, type Actor } from "../data/auditLog";
+import { logAction, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
 import { matchRef, newMatchRef } from "../data/matches";
 import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
-import { runTransaction } from "../data/util";
+import { readChildren, runTransaction } from "../data/util";
 import { applyRosterChanges, readRosterChanges } from "./matchRoster";
 
 export type AddScheduleResult =
@@ -129,7 +129,7 @@ export async function editMatch(
     const roster = await readRosterChanges(tx, seasonId, [{
       before: snap,
       after: { ...match, homeCollegeId, awayCollegeId, collegeIds, startsAt: newStart ?? match.startsAt },
-    }], [snap]);
+    }]);
 
     tx.update(ref, {
       homeCollegeId,
@@ -162,7 +162,7 @@ export async function deleteMatch(seasonId: string, matchId: string, actor: Acto
     if (!match) return "not-found";
     if (match.status === "final") return "scored";
     if (match.bracketId) return "in-bracket";
-    const children = await readAuditedChildren(tx, [rosterRef(seasonId, matchId), scoreReportsRef(seasonId, matchId)], [snap]);
+    const children = await readChildren(tx, [rosterRef(seasonId, matchId), scoreReportsRef(seasonId, matchId)]);
     for (const doc of children) tx.delete(doc.ref);
     tx.delete(ref);
     logAction(tx, seasonId, { actor, action: "deleteMatch", params: { matchId }, changed: [snap, ...children] });

@@ -86,9 +86,10 @@ restart, which would loop when cookies are blocked).
    Transaction callbacks can retry: finish reads before writes and keep
    external side effects outside retried callbacks.
 4. Audit privileged mutations in the same transaction as their changes.
-   Use `logAction()` and the existing size budgets. Read complete audit
-   records through `getAuditLog()` so chunked payloads are reconstructed.
-   A rejected operation must not leave partial changes or partial audit data.
+   Use `logAction()` and list the most important docs first: an entry keeps
+   copies until its size budget is used, then only paths and counts
+   (`truncated`), so logging never makes an action fail. Read child records
+   with `readChildren()`. A rejected operation must not leave partial changes.
 5. Add tests for invalid input, permissions, domain conflicts, and stored
    effects. Check affected UI states, including loading and failed requests.
 

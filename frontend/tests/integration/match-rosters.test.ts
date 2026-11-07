@@ -5,12 +5,10 @@ import { Timestamp } from "firebase-admin/firestore";
 import type { BracketDetail } from "@/lib/api/brackets";
 import { COLLEGES } from "@/lib/colleges";
 import { paths } from "@/lib/paths";
-import type { MatchDoc, RosterEntryDoc } from "@/types/firestore";
+import type { AuditLogDoc, MatchDoc, RosterEntryDoc } from "@/types/firestore";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
-const { getAuditLog } = await import("@/server/data/auditLog");
 const { editMatch: editMatchService } = await import("@/server/services/schedule");
-const { AUDIT_MAX_TARGETS } = await import("@/server/data/auditPayload");
 
 let current: string;
 const games: string[] = [];
@@ -110,7 +108,7 @@ async function latestAudit(action: string, matchId: string) {
   const snap = logs.docs.filter((d) => d.data().params.matchId === matchId)
     .sort((a, b) => b.data().at.toMillis() - a.data().at.toMillis())[0];
   expect(snap).toBeDefined();
-  return (await getAuditLog(current, snap.id))!;
+  return snap!.data() as AuditLogDoc;
 }
 
 async function expectArchived(action: string, id: string, removed: Awaited<ReturnType<typeof entries>>) {
@@ -332,14 +330,18 @@ describe("rosters follow match participants", () => {
       : entry.data);
   });
 
-  it("rejects a bracket reconciliation over the combined audit budget without any writes", async () => {
+  it("clears large replaced rosters while keeping the audit entry small", async () => {
     const { source, next, loserNext } = await createBracket();
-    await fillRoster(next, "MC", AUDIT_MAX_TARGETS / 2);
-    await fillRoster(loserNext, "JE", AUDIT_MAX_TARGETS / 2);
+    await fillRoster(next, "MC", 500);
+    await fillRoster(loserNext, "JE", 500);
     try {
-      const before = await state([source, next, loserNext]);
-      expect(await score(source)).toMatchObject({ status: 409, body: { error: { code: "conflict", details: { maxTargets: AUDIT_MAX_TARGETS } } } });
-      expect(await state([source, next, loserNext])).toEqual(before);
+      expect((await score(source)).status).toBe(204);
+      expect(await entries(next)).toEqual([]);
+      expect(await entries(loserNext)).toEqual([]);
+      const audit = await latestAudit("scoreMatch", source);
+      expect(audit.before[paths.match(current, source)]).toMatchObject({ status: "scheduled" });
+      expect(audit.truncated!.copies).toBeGreaterThan(0);
+      expect(audit.targets.length + audit.truncated!.paths).toBeGreaterThan(1000);
     } finally {
       // Keep fixture teardown within the normal bracket-delete budget too.
       await db.recursiveDelete(rosterRef(next));

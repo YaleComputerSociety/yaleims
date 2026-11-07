@@ -1,20 +1,23 @@
-// Large audited deletes must preserve all snapshots and commit atomically.
+// Audit entries stay small however large the action, so logging never makes
+// an action fail; an action beyond the child-record cap is refused whole.
 // Fixtures live only in the integration runner's disposable emulator.
 import { Timestamp } from "firebase-admin/firestore";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { COLLEGES } from "@/lib/colleges";
 import { paths } from "@/lib/paths";
 import type { BracketDetail } from "@/lib/api/brackets";
+import type { AuditLogDoc } from "@/types/firestore";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
-const { getAuditLog, logAction } = await import("@/server/data/auditLog");
+const { logAction } = await import("@/server/data/auditLog");
 const { addScoreReport } = await import("@/server/data/scoreReports");
-const { AUDIT_CHUNK_BYTES, AUDIT_MAX_BYTES, AUDIT_MAX_TARGETS } = await import("@/server/data/auditPayload");
+
+/** Well above the 256 KiB entry budget's estimate, and far below Firestore's 1 MiB. */
+const ENTRY_CEILING = 300 * 1024;
 
 let current: string;
 const matchIds: string[] = [];
 const bracketIds: string[] = [];
-const temporaryAuditIds: string[] = [];
 const admin = () => ({ session: sessionFor(people.admin) });
 
 beforeAll(async () => {
@@ -38,7 +41,6 @@ afterEach(async () => {
   for (const id of matchIds.splice(0)) {
     await db.recursiveDelete(db.doc(`seasons/${current}/matches/${id}`));
   }
-  for (const id of temporaryAuditIds.splice(0)) await db.recursiveDelete(db.doc(paths.auditLogEntry(current, id)));
 });
 
 async function createGame(): Promise<string> {
@@ -77,7 +79,9 @@ async function findLog(action: string, key: string, id: string) {
   const logs = await db.collection(paths.auditLog(current)).where("action", "==", action).get();
   const snap = logs.docs.find((d) => d.data().params[key] === id);
   expect(snap).toBeDefined();
-  return snap!;
+  // The stored size, as Firestore's own JSON encoding of the values bounds it.
+  expect(Buffer.byteLength(JSON.stringify(snap!.data()))).toBeLessThan(ENTRY_CEILING);
+  return snap!.data() as AuditLogDoc;
 }
 
 async function expectUntouched(id: string, count: number) {
@@ -114,53 +118,47 @@ async function createTournament(): Promise<BracketDetail> {
 }
 
 describe("bounded audit storage", () => {
-  it("deletes a game with 360 maximum-length Unicode reports", async () => {
+  it("deletes a game with 360 maximum-length Unicode reports, keeping the game's copy and counting the rest", async () => {
     const id = await createGame();
     const at = await addReports(id, 360);
     const before = (await db.doc(paths.match(current, id)).get()).data();
-    const response = await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin());
-    expect(response.status).toBe(204);
-    expect((await db.doc(`seasons/${current}/matches/${id}`).get()).exists).toBe(false);
-    expect((await db.collection(`seasons/${current}/matches/${id}/scoreReports`).get()).empty).toBe(true);
-    const root = await findLog("deleteMatch", "matchId", id);
-    expect(root.data().payload.chunkCount).toBeGreaterThan(1);
-    expect(root.data().before).toBeUndefined();
-    const chunks = await root.ref.collection("auditPayloadChunks").get();
-    expect(chunks.size).toBe(root.data().payload.chunkCount);
-    for (const chunk of chunks.docs) expect(chunk.data().data.length).toBeLessThanOrEqual(AUDIT_CHUNK_BYTES);
-    const log = (await getAuditLog(current, root.id))!;
-    expect(log.targets).toHaveLength(361);
-    expect(log.before[paths.match(current, id)]).toStrictEqual(before);
-    for (let i = 0; i < 360; i++) {
-      expect(log.before[paths.scoreReport(current, id, `report-${i}`)]).toMatchObject({ reason: "漢".repeat(1000) });
-      expect(log.before[paths.scoreReport(current, id, `report-${i}`)]!.reportedAt).toStrictEqual(at);
-    }
-  });
-
-  it("preserves a source document near Firestore's own size limit", async () => {
-    const id = await createGame();
-    const note = "é".repeat(500_000);
-    await db.doc(paths.match(current, id)).update({ legacyNote: note });
     expect((await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin())).status).toBe(204);
-    const root = await findLog("deleteMatch", "matchId", id);
-    const log = (await getAuditLog(current, root.id))!;
-    expect(log.before[paths.match(current, id)]!.legacyNote).toBe(note);
+    expect((await db.doc(paths.match(current, id)).get()).exists).toBe(false);
+    expect((await db.collection(paths.scoreReports(current, id)).get()).empty).toBe(true);
+    const log = await findLog("deleteMatch", "matchId", id);
+    expect(log.before[paths.match(current, id)]).toStrictEqual(before);
+    expect(log.targets).toHaveLength(361);
+    const copied = Object.keys(log.before).filter((p) => p.includes("/scoreReports/"));
+    expect(copied.length).toBeGreaterThan(0);
+    expect(log.before[copied[0]]!.reportedAt).toStrictEqual(at);
+    expect(log.truncated).toEqual({ copies: 360 - copied.length, paths: 0 });
   });
 
-  it("rejects a delete over the payload budget without removing children or writing an audit", async () => {
+  it("deletes a game whose document is near Firestore's size limit, listing it without a copy", async () => {
     const id = await createGame();
-    await addReports(id, 720);
-    const response = await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin());
-    expect(response).toMatchObject({ status: 409, body: { error: { code: "conflict", details: { maxPayloadBytes: AUDIT_MAX_BYTES } } } });
-    await expectUntouched(id, 720);
+    await db.doc(paths.match(current, id)).update({ legacyNote: "é".repeat(500_000) });
+    expect((await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin())).status).toBe(204);
+    const log = await findLog("deleteMatch", "matchId", id);
+    expect(log.targets).toEqual([paths.match(current, id)]);
+    expect(log.before).toEqual({});
+    expect(log.truncated).toEqual({ copies: 1, paths: 0 });
   });
 
-  it("rejects a delete over the target budget even when the records are small", async () => {
+  it("writes a small entry with nothing truncated for an ordinary delete", async () => {
     const id = await createGame();
-    await addReports(id, AUDIT_MAX_TARGETS, "A short reason");
+    await addReports(id, 3, "A short reason");
+    expect((await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin())).status).toBe(204);
+    const log = await findLog("deleteMatch", "matchId", id);
+    expect(Object.keys(log.before)).toHaveLength(4);
+    expect(log.truncated).toBeNull();
+  });
+
+  it("refuses an action beyond the child-record cap without any change or audit", async () => {
+    const id = await createGame();
+    await addReports(id, 2001, "A short reason");
     const response = await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin());
-    expect(response).toMatchObject({ status: 409, body: { error: { code: "conflict", details: { maxTargets: AUDIT_MAX_TARGETS } } } });
-    await expectUntouched(id, AUDIT_MAX_TARGETS);
+    expect(response).toMatchObject({ status: 409, body: { error: { code: "conflict", details: { maxChildren: 2000 } } } });
+    await expectUntouched(id, 2001);
   });
 
   it("deletes a large scored tournament atomically and reverses its points", async () => {
@@ -169,33 +167,29 @@ describe("bounded audit storage", () => {
     const before = await standings();
     expect((await api("PUT", `/api/seasons/${current}/matches/${match.id}/result`, { homeScore: 2, awayScore: 0, homeForfeit: false, awayForfeit: false }, admin())).status).toBe(204);
     await addReports(match.id, 360);
-    const sourceRefs = [
+    const sources = await db.getAll(
       db.doc(paths.bracket(current, bracket.id)),
       ...bracket.matches.map((m) => db.doc(paths.match(current, m.id))),
       ...COLLEGES.filter((c) => match.collegeIds.includes(c.id)).flatMap((c) => [
         db.doc(paths.college(current, c.id)), db.doc(paths.team(current, c.id, match.sportId)),
       ]),
-    ];
-    const sources = await db.getAll(...sourceRefs);
+    );
     expect((await api("DELETE", `/api/seasons/${current}/brackets/${bracket.id}?force=true`, undefined, admin())).status).toBe(204);
     expect(await standings()).toEqual(before);
     expect((await db.doc(paths.bracket(current, bracket.id)).get()).exists).toBe(false);
     expect((await db.getAll(...bracket.matches.map((m) => db.doc(paths.match(current, m.id))))).every((s) => !s.exists)).toBe(true);
     expect((await db.collection(paths.scoreReports(current, match.id)).get()).empty).toBe(true);
-    const root = await findLog("deleteTournament", "bracketId", bracket.id);
-    const log = (await getAuditLog(current, root.id))!;
+    // The bracket, its games and the standings come first, so they are all copied.
+    const log = await findLog("deleteTournament", "bracketId", bracket.id);
     for (const source of sources) expect(log.before[source.ref.path]).toStrictEqual(source.data());
-    expect(Object.keys(log.before).filter((p) => p.includes("/scoreReports/"))).toHaveLength(360);
+    expect(log.truncated!.copies).toBeGreaterThan(0);
   });
 
-  it("does not commit chunk documents when the associated transaction aborts", async () => {
+  it("writes no audit entry when the action's transaction aborts", async () => {
     const id = await createGame();
     await addReports(id, 80);
-    const counts = async () => Promise.all([
-      db.collection(paths.auditLog(current)).count().get().then((s) => s.data().count),
-      db.collectionGroup("auditPayloadChunks").count().get().then((s) => s.data().count),
-    ]);
-    const before = await counts();
+    const count = () => db.collection(paths.auditLog(current)).count().get().then((s) => s.data().count);
+    const before = await count();
     await expect(db.runTransaction(async (tx) => {
       const parent = await tx.get(db.doc(paths.match(current, id)));
       const reports = await tx.get(db.collection(paths.scoreReports(current, id)));
@@ -206,13 +200,12 @@ describe("bounded audit storage", () => {
       });
       throw new Error("Abort the whole operation");
     })).rejects.toThrow("Abort the whole operation");
-    expect(await counts()).toEqual(before);
+    expect(await count()).toBe(before);
     await expectUntouched(id, 80);
   });
 
   it("refuses a late report writer whose game has already been deleted", async () => {
     const id = await createGame();
-    expect((await db.doc(paths.match(current, id)).get()).exists).toBe(true);
     expect((await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin())).status).toBe(204);
     await expect(addScoreReport(current, id, {
       reason: "A report started before deletion", reportedBy: people.student(0, 7), reporterName: "Late reporter",
@@ -232,29 +225,5 @@ describe("bounded audit storage", () => {
     for (const result of results) expect([201, 404]).toContain(result.status);
     expect((await db.doc(paths.match(current, id)).get()).exists).toBe(false);
     expect((await db.collection(paths.scoreReports(current, id)).get()).empty).toBe(true);
-  });
-
-  it("reads legacy inline audits and fails explicitly on missing or corrupt chunks", async () => {
-    const legacy = db.collection(paths.auditLog(current)).doc();
-    temporaryAuditIds.push(legacy.id);
-    const old = { at: Timestamp.now(), actor: { userId: people.admin, roles: ["admin"] }, action: "legacyAction", params: {}, targets: ["old/path"], before: { "old/path": null } };
-    await legacy.create(old);
-    expect(await getAuditLog(current, legacy.id)).toStrictEqual(old);
-
-    const id = await createGame();
-    await addReports(id, 80);
-    expect((await api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin())).status).toBe(204);
-    const root = await findLog("deleteMatch", "matchId", id);
-    temporaryAuditIds.push(root.id);
-    const chunkRef = db.doc(paths.auditPayloadChunk(current, root.id, "0000"));
-    const original = (await chunkRef.get()).data()!;
-    const corrupted = Buffer.from(original.data as Buffer);
-    corrupted[0] ^= 1;
-    await chunkRef.update({ data: corrupted });
-    await expect(getAuditLog(current, root.id)).rejects.toThrow("checksum mismatch");
-    await chunkRef.delete();
-    await expect(getAuditLog(current, root.id)).rejects.toThrow("Missing or invalid audit payload chunk");
-    await chunkRef.create(original);
-    expect((await getAuditLog(current, root.id))!.targets).toHaveLength(81);
   });
 });

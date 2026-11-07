@@ -4,8 +4,8 @@
 import "server-only";
 import type { CollectionReference, DocumentSnapshot, QueryDocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import type { MatchDoc, RosterEntryDoc } from "@/types/firestore";
-import { readAuditedChildren } from "../data/auditLog";
 import { rosterRef } from "../data/roster";
+import { readChildren } from "../data/util";
 
 export interface MatchChange {
   before: DocumentSnapshot<MatchDoc>;
@@ -22,13 +22,11 @@ interface RosterChange {
  * A replacement college starts blank. Retain entries only for colleges that
  * remain in the game; this also removes stale entries for an incoming college.
  * Swapping home/away preserves both rosters. Rescheduling changes only starts.
- * `parents` includes all other snapshots in this operation's audit budget.
  */
 export async function readRosterChanges(
   tx: Transaction,
   seasonId: string,
-  changes: MatchChange[],
-  parents: DocumentSnapshot[]
+  changes: MatchChange[]
 ): Promise<RosterChange[]> {
   const rosters = new Map<string, {
     ref: CollectionReference<RosterEntryDoc>;
@@ -52,8 +50,7 @@ export async function readRosterChanges(
   }
   if (rosters.size === 0) return [];
 
-  // One paged read shares the audit limits across every affected match.
-  const entries = await readAuditedChildren(tx, [...rosters.values()].map((r) => r.ref), parents);
+  const entries = await readChildren(tx, [...rosters.values()].map((r) => r.ref));
   const planned: RosterChange[] = [];
   for (const entry of entries) {
     const roster = rosters.get(entry.ref.parent.path)!;

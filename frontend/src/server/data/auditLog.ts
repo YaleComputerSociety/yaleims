@@ -1,17 +1,24 @@
 // The audit log (D32): every write only supervisors and up can make is
 // recorded in seasons/{seasonId}/auditLog, in the same transaction as the
-// change, with each doc it changes as it was before (null: it didn't exist).
-// Large payloads use bounded private chunks; getAuditLog reconstructs both
-// formats. Global actions go to the current season's log. Limits are checked
-// before committing: an oversized action cannot leave partial writes or logs.
+// change, with each doc it changes as it was before (null: it didn't exist),
+// so a change can be reviewed and reversed. Global actions go to the current
+// season's log. Server-only: the rules deny every client access.
+//
+// An entry stays light and always fits in one document, so logging can never
+// be why an action fails: within the entry's budget it lists every doc's path,
+// then keeps copies in the order the caller lists the docs (the game, bracket
+// and standings first, then rosters and reports); what doesn't fit is counted
+// (`truncated`). Backups and point-in-time recovery cover what is left out.
 import "server-only";
-import { createHash } from "node:crypto";
-import { FieldPath, FieldValue, type Query, type QueryDocumentSnapshot, type Transaction } from "firebase-admin/firestore";
+import { DocumentReference, FieldValue, Timestamp, type Transaction } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
-import { ApiError } from "@/lib/api/core";
-import type { AuditLogDoc, AuditLogPayload, AuditLogRecord } from "@/types/firestore";
-import { AUDIT_CHUNK_BYTES, AUDIT_INLINE_BYTES, AUDIT_MAX_BYTES, AUDIT_MAX_TARGETS, canInlineAuditData, decodeAuditData, encodeAuditData } from "./auditPayload";
+import type { AuditLogDoc } from "@/types/firestore";
+
+/** An entry's budget: a quarter of Firestore's 1 MiB document limit. */
+const ENTRY_BYTES = 256 * 1024;
+/** Request parameters beyond this are not copied (a large schedule upload, say). */
+const PARAMS_BYTES = 64 * 1024;
 
 /** Who did it: their email and their roles at the time. */
 export type Actor = AuditLogDoc["actor"];
@@ -22,18 +29,10 @@ interface ReadDoc {
   data(): unknown;
 }
 
-function tooLarge(): never {
-  throw new ApiError("conflict", "This operation exceeds the safe size limit. Contact the site maintainers to process it in smaller batches.", {
-    maxTargets: AUDIT_MAX_TARGETS, maxPayloadBytes: AUDIT_MAX_BYTES,
-  });
-}
-
-const partId = (i: number) => String(i).padStart(4, "0");
-const checksum = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
-
 /**
  * Records `action` inside `tx`. `changed`: the docs the action updates or
- * deletes, as read in this transaction; `created`: the docs it creates.
+ * deletes, as read in this transaction, the most important first; `created`:
+ * the docs it creates.
  */
 export function logAction(
   tx: Transaction,
@@ -47,99 +46,53 @@ export function logAction(
     created?: { path: string }[];
   }
 ): void {
-  const targets = new Set([...entry.changed.map((d) => d.ref.path), ...(entry.created ?? []).map((r) => r.path)]);
-  if (targets.size > AUDIT_MAX_TARGETS) tooLarge();
-  const before: AuditLogPayload["before"] = {};
-  for (const doc of entry.changed) {
-    before[doc.ref.path] = (doc.data() as Record<string, unknown> | undefined) ?? null;
+  // A JSON round trip drops undefined values, which Firestore rejects.
+  const fullParams = JSON.parse(JSON.stringify(entry.params));
+  const params = storedSize(fullParams) <= PARAMS_BYTES ? fullParams : { truncated: true };
+  const docs = new Map<string, unknown>();
+  for (const doc of entry.changed) docs.set(doc.ref.path, doc.data() ?? null);
+  for (const ref of entry.created ?? []) docs.set(ref.path, null);
+
+  // Every path first (what was touched matters most), then the copies.
+  let budget = ENTRY_BYTES - storedSize({ actor: entry.actor, action: entry.action, params });
+  const targets: string[] = [];
+  for (const path of docs.keys()) {
+    if (storedSize(path) > budget) break;
+    targets.push(path);
+    budget -= storedSize(path);
   }
-  for (const ref of entry.created ?? []) before[ref.path] = null;
-  const payload: AuditLogPayload = {
-    // Preserve the existing JSON semantics of request parameters (drop undefined).
-    params: JSON.parse(JSON.stringify(entry.params)),
-    targets: Object.keys(before),
-    before,
-  };
-  const bytes = encodeAuditData(payload);
-  if (bytes.length > AUDIT_MAX_BYTES) tooLarge();
-  const params = encodeAuditData(payload.params).length <= 8 * 1024 && canInlineAuditData(payload.params) ? payload.params : {};
-  const metadata = {
+  const before: AuditLogDoc["before"] = {};
+  for (const path of targets) {
+    const data = docs.get(path) as Record<string, unknown> | null;
+    const bytes = storedSize(path) + storedSize(data);
+    if (bytes > budget) continue; // a large doc doesn't keep smaller ones after it out
+    before[path] = data;
+    budget -= bytes;
+  }
+  const copiesLeftOut = docs.size - Object.keys(before).length;
+
+  tx.create(adminDb.collection(paths.auditLog(seasonId)).doc(), {
     at: FieldValue.serverTimestamp(),
     actor: entry.actor,
     action: entry.action,
     params,
-  };
-  if (encodeAuditData({ actor: entry.actor, action: entry.action, params }).length > 16 * 1024) tooLarge();
-  const ref = adminDb.collection(paths.auditLog(seasonId)).doc();
-  if (bytes.length <= AUDIT_INLINE_BYTES && canInlineAuditData(payload)) {
-    tx.create(ref, { ...metadata, ...payload });
-    return;
-  }
-  const chunkCount = Math.ceil(bytes.length / AUDIT_CHUNK_BYTES);
-  tx.create(ref, {
-    ...metadata,
-    payload: { encoding: "firestore-json-v1", chunkCount, byteLength: bytes.length, sha256: checksum(bytes) },
+    targets,
+    before,
+    truncated: copiesLeftOut > 0 ? { copies: copiesLeftOut, paths: docs.size - targets.length } : null,
   });
-  for (let i = 0; i < chunkCount; i++) {
-    tx.create(adminDb.doc(paths.auditPayloadChunk(seasonId, ref.id, partId(i))), {
-      data: bytes.subarray(i * AUDIT_CHUNK_BYTES, (i + 1) * AUDIT_CHUNK_BYTES),
-    });
-  }
 }
 
-/** The full action, including older inline entries; fail on missing or corrupt chunks. */
-export async function getAuditLog(seasonId: string, entryId: string): Promise<AuditLogRecord | null> {
-  const snap = await adminDb.doc(paths.auditLogEntry(seasonId, entryId)).get();
-  if (!snap.exists) return null;
-  const entry = snap.data() as AuditLogDoc;
-  if (!("payload" in entry)) return entry;
-  const { encoding, chunkCount, byteLength, sha256 } = entry.payload;
-  if (encoding !== "firestore-json-v1" || !Number.isInteger(byteLength) || byteLength < 1 || byteLength > AUDIT_MAX_BYTES
-    || !Number.isInteger(chunkCount) || chunkCount !== Math.ceil(byteLength / AUDIT_CHUNK_BYTES)) {
-    throw new Error("Invalid audit payload manifest");
+/** About what `value` adds to a stored document (Firestore's storage-size rules). */
+function storedSize(value: unknown): number {
+  if (value === null || value === undefined || typeof value === "boolean") return 1;
+  if (typeof value === "number") return 8;
+  if (typeof value === "string") return Buffer.byteLength(value, "utf8") + 1;
+  if (value instanceof Timestamp) return 8;
+  if (value instanceof Uint8Array) return value.length;
+  if (value instanceof DocumentReference) return Buffer.byteLength(value.path, "utf8") + 16;
+  if (Array.isArray(value)) return value.reduce((sum: number, v) => sum + storedSize(v), 0);
+  if (typeof value === "object") {
+    return Object.entries(value).reduce((sum, [key, v]) => sum + storedSize(key) + storedSize(v), 0);
   }
-  const chunks = await adminDb.getAll(...Array.from({ length: chunkCount }, (_, i) =>
-    adminDb.doc(paths.auditPayloadChunk(seasonId, entryId, partId(i)))));
-  const buffers = chunks.map((chunk, i) => {
-    const data: unknown = chunk.data()?.data;
-    const expected = Math.min(AUDIT_CHUNK_BYTES, byteLength - i * AUDIT_CHUNK_BYTES);
-    if (!Buffer.isBuffer(data) || data.length !== expected) throw new Error("Missing or invalid audit payload chunk");
-    return data;
-  });
-  const bytes = Buffer.concat(buffers);
-  if (checksum(bytes) !== sha256) throw new Error("Audit payload checksum mismatch");
-  const payload = decodeAuditData(bytes, adminDb) as AuditLogPayload;
-  return { at: entry.at, actor: entry.actor, action: entry.action, ...payload };
-}
-
-/**
- * Read children to audit in small ID-ordered pages inside the caller's transaction.
- * Stop at the shared target/byte budget instead of loading an unbounded query.
- * `parents` includes the games, bracket and standings already read for the audit.
- */
-export async function readAuditedChildren(tx: Transaction, collections: Query[], parents: ReadDoc[]): Promise<QueryDocumentSnapshot[]> {
-  const seen = new Set<string>();
-  let bytes = 0;
-  const include = (doc: ReadDoc) => {
-    if (seen.has(doc.ref.path)) return false;
-    seen.add(doc.ref.path);
-    bytes += encodeAuditData({ [doc.ref.path]: doc.data() ?? null }).length;
-    if (seen.size > AUDIT_MAX_TARGETS || bytes > AUDIT_MAX_BYTES) tooLarge();
-    return true;
-  };
-  parents.forEach(include);
-  const children: QueryDocumentSnapshot[] = [];
-  for (const collection of collections) {
-    let cursor: QueryDocumentSnapshot | undefined;
-    while (true) {
-      const limit = Math.min(50, AUDIT_MAX_TARGETS - seen.size + 1);
-      let query = collection.orderBy(FieldPath.documentId()).limit(limit);
-      if (cursor) query = query.startAfter(cursor);
-      const page = await tx.get(query);
-      for (const doc of page.docs) if (include(doc)) children.push(doc);
-      if (page.size < limit) break;
-      cursor = page.docs[page.docs.length - 1];
-    }
-  }
-  return children;
+  return 16;
 }

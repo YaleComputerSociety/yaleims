@@ -27,14 +27,14 @@ import type {
   PlacementPoints,
   Placements,
 } from "@/types/firestore";
-import { logAction, readAuditedChildren, type Actor } from "../data/auditLog";
+import { logAction, type Actor } from "../data/auditLog";
 import { bracketRef } from "../data/brackets";
 import { collegeRef, listColleges, recalculateRanks } from "../data/colleges";
 import { matchRef, newMatchRef } from "../data/matches";
 import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
-import { runTransaction } from "../data/util";
+import { readChildren, runTransaction } from "../data/util";
 import type { MatchChange } from "./matchRoster";
 import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
@@ -259,8 +259,7 @@ export async function deleteBracket(
       placementColleges.length > 0 ? tx.getAll(...placementColleges.map((c) => collegeRef(seasonId, c))) : [],
     ]);
     const changed = [bracketSnap, ...gameSnaps.filter((s) => s.exists), ...standingDocs, ...placementDocs];
-    const children = await readAuditedChildren(tx,
-      gameRefs.flatMap((r) => [rosterRef(seasonId, r.id), scoreReportsRef(seasonId, r.id)]), changed);
+    const children = await readChildren(tx, gameRefs.flatMap((r) => [rosterRef(seasonId, r.id), scoreReportsRef(seasonId, r.id)]));
 
     for (const game of scoredGames) applyResult(tx, seasonId, game, -1, standingDocs);
     takeBackPlacements(tx, seasonId, bracket, ["first", "second", "third"]);

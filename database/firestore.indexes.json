@@ -1328,8 +1328,8 @@
       "indexes": []
     },
     {
-      "collectionGroup": "auditPayloadChunks",
-      "fieldPath": "data",
+      "collectionGroup": "auditLog",
+      "fieldPath": "before",
       "indexes": []
     },
     {

@@ -82,7 +82,7 @@ export async function scoreMatch(
     const known = (id: string) => standingDocs.some((doc) => doc.ref.path === collegeRef(seasonId, id).path && doc.exists);
     if (!known(homeCollegeId) || !known(awayCollegeId)) return "unknown-college" as const;
     const changed = [snap, ...standingDocs, ...movedDocs(moves)];
-    const roster = await readRosterChanges(tx, seasonId, [{ before: snap, after: scored }, ...advancements], changed);
+    const roster = await readRosterChanges(tx, seasonId, [{ before: snap, after: scored }, ...advancements]);
 
     tx.update(ref, {
       homeCollegeId,
