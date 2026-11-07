@@ -9,11 +9,12 @@ import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
+import { placeholderId } from "@/lib/netid";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
   email: true, name: true, nameSource: true, netid: true, username: true,
-  roles: true, claimedAt: true, createdBy: true,
+  roles: true, claimedAt: true, createdBy: true, directory: true,
 };
 
 /**
@@ -35,6 +36,7 @@ export function readUser(data: DocumentData): UserDoc {
     roles: user.roles ?? [],
     claimedAt: user.claimedAt ?? null,
     createdBy: user.createdBy ?? null,
+    directory: user.directory ?? null,
   };
 }
 
@@ -88,18 +90,30 @@ export async function getEmails(userIds: string[]): Promise<Map<string, string>>
   return new Map([...users].flatMap(([id, user]) => (user.email ? [[id, user.email] as const] : [])));
 }
 
-/** The one user with this NetID recorded; null when none (or, a conflict for an admin, more than one). */
-export async function findUserByNetid(netid: string): Promise<WithId<UserDoc> | null> {
-  const { docs } = await usersByNetidQuery(netid).get();
-  return docs.length === 1 ? { id: docs[0].id, ...readUser(docs[0].data()) } : null;
+/**
+ * The users with this NetID recorded: normally one (an older, email-keyed
+ * account, or users/netid-<netid>); a person signed in once while the
+ * directory was down can have both until they are merged.
+ */
+export function usersByNetidQuery(netid: string) {
+  return adminDb.collection(paths.users).where("netid", "==", netid).limit(3);
 }
 
 /**
- * The users with this NetID recorded: normally one or none; two
- * would be a conflict for an admin (services/accounts resolveAccount refuses it).
+ * Which of the users with this NetID recorded is its account: the one older
+ * (email-keyed) account, else users/netid-<netid>. "conflict" for two older
+ * ones (for an admin to sort out); null for none.
  */
-export function usersByNetidQuery(netid: string) {
-  return adminDb.collection(paths.users).where("netid", "==", netid).limit(2);
+export function holderOfNetid<T extends { id: string }>(holders: T[], netid: string): T | "conflict" | null {
+  const older = holders.filter((d) => d.id !== placeholderId(netid));
+  if (older.length > 1) return "conflict";
+  return older[0] ?? holders[0] ?? null;
+}
+
+/** The account with this NetID recorded (holderOfNetid); null when none, or a conflict. */
+export async function findUserByNetid(netid: string): Promise<WithId<UserDoc> | null> {
+  const holder = holderOfNetid((await usersByNetidQuery(netid).get()).docs, netid);
+  return holder && holder !== "conflict" ? { id: holder.id, ...readUser(holder.data()) } : null;
 }
 
 /** Users holding a global role. */

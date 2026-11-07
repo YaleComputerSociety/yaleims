@@ -1,7 +1,7 @@
 // The session API: who is signed in (GET /api/auth/session) and signing out
 // (POST /api/auth/logout). Signing in is a page navigation to
 // /api/auth/login?from=<page> (Yale CAS), not a call.
-import type { GlobalRole, SeasonRole } from "@/types/firestore";
+import type { DirectoryOutcome, GlobalRole, SeasonRole } from "@/types/firestore";
 import { request } from "./core";
 
 /**
@@ -31,6 +31,10 @@ export interface SessionViewer {
   email: string | null;
   /** Their name, or their username when none is known. */
   name: string;
+  /** They may set their name: the directory has given none (and no admin has set one). */
+  canEditName: boolean;
+  /** Their last directory lookup and when "Check Yalies again" opens; null: none recorded. */
+  directory: { outcome: DirectoryOutcome | null; checkedAt: string | null; retryAt: string } | null;
   username: string;
   /** Their college this season; null: none (or not a player). */
   collegeId: string | null;

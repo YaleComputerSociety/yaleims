@@ -49,7 +49,10 @@ describe("GET /api/auth/session", () => {
     expect(name).not.toBe("Test User"); // the cookie's
     expect(player.body).toEqual({
       signedIn: true,
-      viewer: { userId: id, email: id, name, username, collegeId: COLLEGES[2].id, roles: [], captainOf: [], can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false } },
+      viewer: {
+        userId: id, email: id, name, canEditName: false, directory: null, username, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
+        can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false },
+      },
     });
     const rep = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.student(2, 0), []) });
     expect(rep.body.viewer.roles).toEqual(["college_rep"]);

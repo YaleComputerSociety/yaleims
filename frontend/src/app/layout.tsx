@@ -15,6 +15,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { SeasonProvider } from "@/context/SeasonContext";
 import { NavbarProvider, useNavbar } from "@/context/NavbarContext";
 import AnalyticsListener from "@/components/layout/AnalyticsListener";
+import AffiliationNotice from "@/components/layout/AffiliationNotice";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -36,7 +37,10 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
         <NavBar />
       </div>
       <div className="transition-all duration-200">
-        <SeasonProvider>{children}</SeasonProvider>
+        <SeasonProvider>
+          {children}
+          <AffiliationNotice />
+        </SeasonProvider>
         <Footer />
       </div>    
       <ToastContainer />      

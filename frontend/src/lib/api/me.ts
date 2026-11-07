@@ -1,20 +1,40 @@
-// The caller's own things: their username (PATCH /api/me) and the games
-// they're signed up for (GET /api/me/matches).
+// The caller's own things: their username and name (PATCH /api/me), a new
+// directory lookup (POST /api/me/directory) and the games they're signed up
+// for (GET /api/me/matches).
 import { z } from "zod";
-import type { RosterEntryDoc } from "@/types/firestore";
+import type { DirectoryOutcome, RosterEntryDoc } from "@/types/firestore";
 import { request } from "./core";
 import type { Match } from "./matches";
 
-/** PATCH /api/me: a new username (3–20 letters, digits or underscores; unique). */
-export const meChangeSchema = z.strictObject({
-  username: z
-    .string()
-    .trim()
-    .min(3, "Username must be between 3 and 20 characters long")
-    .max(20, "Username must be between 3 and 20 characters long")
-    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores, and no spaces"),
-});
+/**
+ * PATCH /api/me: a new username (3–20 letters, digits or underscores;
+ * unique) or name (only while the directory has given none: the session's
+ * canEditName).
+ */
+export const meChangeSchema = z.union([
+  z.strictObject({
+    username: z
+      .string()
+      .trim()
+      .min(3, "Username must be between 3 and 20 characters long")
+      .max(20, "Username must be between 3 and 20 characters long")
+      .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores, and no spaces"),
+  }),
+  z.strictObject({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Enter your name.")
+      .max(60, "That name is too long (60 characters at most).")
+      .regex(/^[^\p{C}<>]+$/u, "A name can't contain < > or control characters."),
+  }),
+]);
 export type MeChange = z.infer<typeof meChangeSchema>;
+
+/** POST /api/me/directory: what the new lookup found (the session shows the result). */
+export interface DirectoryRefresh {
+  outcome: DirectoryOutcome;
+}
 
 /** One of the caller's games, with where their own entry stands: the captain's call and attendance. */
 export type MyMatch = Match & { mine: Pick<RosterEntryDoc, "captainStatus" | "present"> };
@@ -34,6 +54,9 @@ export const myMatchesQuerySchema = z.strictObject({
 export type MyMatchesQuery = { seasonId: string; upcoming?: boolean };
 
 export const changeMe = (change: MeChange) => request<void>("PATCH", "/api/me", { body: change });
+
+/** Looks the caller up in the Yale directory again (429 within the cooldown: details.retryAt). */
+export const refreshDirectory = () => request<DirectoryRefresh>("POST", "/api/me/directory");
 
 export const fetchMyMatches = (query: MyMatchesQuery) => request<MyMatchList>("GET", "/api/me/matches", { query });
 

@@ -14,7 +14,7 @@ const hash = (value: string) => createHash("sha256").update(value).digest("hex")
 const attempts: string[] = [];
 const saved = new Map<string, DocumentData | undefined>();
 // The fake directory's people have no account yet: a first login makes users/netid-<netid>.
-const accounts = ["netid-zz901", "netid-zz903"];
+const accounts = ["netid-zz901", "netid-zz903", "netid-zz909"];
 let current: string;
 beforeAll(async () => { ({ current } = await seasons()); });
 afterEach(async () => {
@@ -210,12 +210,12 @@ describe("CAS browser binding", () => {
     expect(response.location).toBe(`${BASE}/games`);
   });
 
-  it.each(["invalid-ticket", "wrong-service", "no-profile", "unavailable", "malformed"])("consumes/clears a bound attempt on %s while preserving the existing session and account data", async (mode) => {
+  it.each(["invalid-ticket", "wrong-service", "unavailable", "malformed"])("consumes/clears a bound attempt on %s while preserving the existing session and account data", async (mode) => {
     const before = await accountState();
     const attempt = await start();
     const id = mode === "invalid-ticket" ? "ST-not-issued" : await ticket(
       mode === "wrong-service" ? `${attempt.service}-different` : attempt.service,
-      mode === "no-profile" ? "zz909" : "zz901",
+      "zz901",
       mode === "unavailable" || mode === "malformed" ? mode : undefined,
     );
     const response = await raw(callback(attempt.service, id), withVictim(attempt.cookie));
@@ -232,7 +232,6 @@ describe("CAS browser binding", () => {
   it.each([
     ["invalid-ticket", "refused"],
     ["wrong-service", "refused"],
-    ["no-profile", "no-profile"],
     ["unavailable", "unavailable"],
     ["malformed", "unavailable"],
   ])("explains %s to a browser without a session (%s)", async (mode, problem) => {
@@ -240,12 +239,27 @@ describe("CAS browser binding", () => {
     const attempt = await start();
     const id = mode === "invalid-ticket" ? "ST-not-issued" : await ticket(
       mode === "wrong-service" ? `${attempt.service}-different` : attempt.service,
-      mode === "no-profile" ? "zz909" : "zz901",
+      "zz901",
       mode === "unavailable" || mode === "malformed" ? mode : undefined,
     );
     const response = await raw(callback(attempt.service, id), attempt.cookie);
     refused(response, failedPage(problem));
     cleared(response);
+  });
+
+  it("signs in with CAS alone when the directory doesn't know the NetID: an account without name or email, no college", async () => {
+    await accountState();
+    const attempt = await start("/hub");
+    const response = await raw(callback(attempt.service, await ticket(attempt.service, "zz909")), attempt.cookie);
+    expect(response.location).toBe(`${BASE}/hub`);
+    const token = response.cookies.find((cookie) => cookie.startsWith("token="))!.split(";")[0].slice(6);
+    expect(jwt.verify(token, SECRET)).toMatchObject({ v: 2, userId: "netid-zz909", netid: "zz909" });
+    expect((await db.doc(paths.user("netid-zz909")).get()).data()).toMatchObject({
+      email: null, name: null, nameSource: "none", netid: "zz909", directory: { outcome: "not-found" },
+    });
+    const session = await api("GET", "/api/auth/session", undefined, { session: token });
+    expect(session.body.viewer).toMatchObject({ userId: "netid-zz909", email: null, collegeId: null, canEditName: true });
+    expect(session.body.viewer.name).toBe((await db.doc(paths.user("netid-zz909")).get()).data()!.username);
   });
 
   it("explains the problem on its page", async () => {

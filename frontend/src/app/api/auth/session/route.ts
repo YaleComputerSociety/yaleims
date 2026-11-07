@@ -5,7 +5,7 @@ import { getCurrentSeasonId } from "@/server/data/seasons";
 import { ok, route } from "@/server/http";
 import { placeholderId } from "@/lib/netid";
 import { getPlayer } from "@/server/data/players";
-import { claimPlaceholders, joinSeasonFromDirectory, recordNetid } from "@/server/services/accounts";
+import { claimPlaceholders, joinSeasonOnVisit, recordNetid } from "@/server/services/accounts";
 import { clearSessionCookie, getSessionToken } from "@/server/session";
 
 /**
@@ -13,8 +13,9 @@ import { clearSessionCookie, getSessionToken } from "@/server/session";
  * they may do this season (read from Firestore, not the cookie). Records a
  * user's NetID when it isn't stored yet, and claims what was added under it.
  * A returning student joins the current season here, as at login (D30),
- * with the college Yalies gives now: a GET that may create their player
- * doc, on purpose. An invalid session cookie is cleared.
+ * with the college the directory gives now: a GET that may look them up and
+ * create their player doc, on purpose (at most once per cooldown). An
+ * invalid session cookie is cleared.
  */
 export const GET = route(async () => {
   const viewer = await getViewer();
@@ -24,8 +25,8 @@ export const GET = route(async () => {
     return res;
   }
   const seasonId = await getCurrentSeasonId();
+  if (seasonId) await joinSeasonOnVisit(seasonId, viewer.userId, viewer.netid);
   const name = await viewer.name();
-  if (seasonId) await joinSeasonFromDirectory(seasonId, viewer.userId, viewer.netid, name);
   const [user, player, captainOf, editSchedule, score, takeAttendance, setChampion, manageRoles] = await Promise.all([
     viewer.user(),
     viewer.player(),
@@ -47,6 +48,14 @@ export const GET = route(async () => {
       userId: viewer.userId,
       email: user?.email ?? null,
       name,
+      canEditName: !!user && (user.nameSource === "none" || user.nameSource === "self"),
+      directory: user?.directory
+        ? {
+            outcome: user.directory.outcome,
+            checkedAt: user.directory.checkedAt?.toDate().toISOString() ?? null,
+            retryAt: user.directory.nextAt.toDate().toISOString(),
+          }
+        : null,
       username: user?.username ?? "Anonymous",
       collegeId: player?.collegeId ?? null,
       roles: [...(user?.roles ?? []), ...(player?.roles ?? [])],

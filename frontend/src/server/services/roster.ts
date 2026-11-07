@@ -17,8 +17,8 @@ import { playerRef } from "../data/players";
 import { rosterEntryRef } from "../data/roster";
 import { findUserByNetid } from "../data/users";
 import { runTransaction } from "../data/util";
-import { yaliesProfile } from "../yaleLogin";
-import { claimPlaceholders, ensureAccount, joinSeason, type YaliesProfile } from "./accounts";
+import { lookUpNetid } from "../directory";
+import { claimPlaceholders, ensureAccount, joinSeason } from "./accounts";
 
 /** Who acts: a supervisor (any time, may take attendance) or a captain (until the start). */
 export interface SheetEditor {
@@ -161,20 +161,16 @@ export async function addByNetid(
 ): Promise<NetidAddResult> {
   const via = by.supervisor ? "supervisor" : "captain";
   const colleges = await listColleges(seasonId);
-  let profile: YaliesProfile | null = null;
-  try {
-    profile = await yaliesProfile(netid);
-  } catch {
-    // Yalies can't be reached: the account we know, or a placeholder.
-  }
+  // The directory down or not knowing them: the account we know, or a placeholder.
+  const found = await lookUpNetid(netid);
 
   let playerId: string;
   let verified = true;
-  if (profile) {
-    const yaliesCollege = collegeIdOfName(colleges, profile.college);
-    if (yaliesCollege !== collegeId) return { status: "other-college", collegeId: yaliesCollege };
-    const fullName = `${profile.first_name} ${profile.last_name}`.trim();
-    playerId = await ensureAccount(profile, netid, by.actor, seasonId);
+  if (found.person) {
+    const directoryCollege = collegeIdOfName(colleges, found.person.college);
+    if (directoryCollege !== collegeId) return { status: "other-college", collegeId: directoryCollege };
+    const fullName = found.person.name ?? name ?? netid;
+    playerId = await ensureAccount(found, netid, by.actor, seasonId);
     await claimPlaceholders(netid, playerId, fullName);
     await joinSeason(seasonId, playerId, fullName, collegeId, via);
   } else {

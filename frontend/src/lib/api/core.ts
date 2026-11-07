@@ -14,6 +14,8 @@ const STATUS_OF = {
   forbidden: 403,
   "not-found": 404,
   conflict: 409,
+  /** Too soon: details.retryAt says when (also the Retry-After header). */
+  "rate-limited": 429,
   internal: 500,
 } as const;
 

@@ -5,7 +5,7 @@ import { listColleges } from "@/server/data/colleges";
 import { getCurrentSeasonId } from "@/server/data/seasons";
 import { ok, readParams, route } from "@/server/http";
 import { collegeIdOfName } from "@/lib/colleges";
-import { yaliesProfile } from "@/server/yaleLogin";
+import { lookUpNetid } from "@/server/directory";
 
 /**
  * Who a NetID is, before adding them to a game (captains and supervisors):
@@ -17,20 +17,10 @@ export const GET = route<{ netid: string }>(async (req, { params }) => {
   const { netid } = await readParams(params, directoryNetidSchema);
   const seasonId = await getCurrentSeasonId();
   const colleges = seasonId ? await listColleges(seasonId) : [];
-  let entry: DirectoryEntry;
-  try {
-    const profile = await yaliesProfile(netid);
-    entry = profile
-      ? {
-          status: "found",
-          netid,
-          name: `${profile.first_name} ${profile.last_name}`.trim(),
-          collegeId: collegeIdOfName(colleges, profile.college),
-        }
-      : { status: "not-found", netid };
-  } catch {
-    entry = { status: "unavailable", netid };
-  }
+  const found = await lookUpNetid(netid);
+  let entry: DirectoryEntry = found.person
+    ? { status: "found", netid, name: found.person.name ?? netid, collegeId: collegeIdOfName(colleges, found.person.college) }
+    : { status: found.outcome, netid };
   if (entry.status !== "found") {
     const user = await findUserByNetid(netid);
     if (user) entry = { status: "found", netid, name: displayName(user), collegeId: null };

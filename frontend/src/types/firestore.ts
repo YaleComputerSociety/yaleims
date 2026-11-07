@@ -48,6 +48,18 @@ export type GlobalRole = "admin" | "dev";
 /** Where a user's name comes from: Yalies' names are locked, an admin's override everything. */
 export type NameSource = "none" | "self" | "yalies" | "admin";
 
+/** A directory lookup's result (server/directory.ts). */
+export type DirectoryOutcome = "found" | "partial" | "not-found" | "unavailable";
+
+/** users/{id}.directory: the last directory lookup of their NetID, and when the next may run. */
+export interface DirectoryState {
+  /** null while the first lookup runs. */
+  outcome: DirectoryOutcome | null;
+  checkedAt: StoredTimestamp | null;
+  /** No new lookup before this (a running one claims the slot first). */
+  nextAt: StoredTimestamp;
+}
+
 /**
  * users/{userId}: identity across seasons. userId = an email (accounts from
  * before November 2026) or "netid-<netid>" (newer ones, the same id as the
@@ -69,6 +81,8 @@ export interface UserDoc {
   claimedAt: StoredTimestamp | null;
   /** Who created the account for them (U10); null = they did, by logging in. */
   createdBy: string | null;
+  /** null: never looked up since November 2026. */
+  directory: DirectoryState | null;
 }
 
 /** usernames/{username}: who holds the username. */
@@ -173,6 +187,16 @@ export interface MvpDoc {
 }
 
 export type SeasonRole = "supervisor" | "college_rep";
+
+/** Who assigned a season college: the Yale directory, or an admin. */
+export type CollegeSource = "yalies" | "admin";
+
+/** One college assignment of a season player (account plan 4c); collegeId null: an admin cleared it. */
+export interface CollegeAssignment {
+  collegeId: string | null;
+  source: CollegeSource;
+  since: StoredTimestamp;
+}
 export type JoinedVia = "login" | "captain" | "supervisor" | "migration";
 
 /**
@@ -183,8 +207,13 @@ export type JoinedVia = "login" | "captain" | "supervisor" | "migration";
  */
 export interface PlayerDoc {
   seasonId: string;
-  /** Fixed for the season (from Yalies when created); null if Yalies has none. */
+  /** The current college (from Yalies, or an admin); null: unassigned. Never carried over from another season. */
   collegeId: string | null;
+  /**
+   * Every assignment, oldest first. Absent on docs from before November
+   * 2026: their college counts as assigned (verified) when they joined.
+   */
+  collegeHistory?: CollegeAssignment[];
   name: string;
   /** null for a guest. */
   userId: string | null;

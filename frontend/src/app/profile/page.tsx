@@ -6,6 +6,7 @@ import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import ListView from "@/components/profile/ListView";
+import CollegeAffiliation from "@/components/profile/CollegeAffiliation";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/lib/images";
@@ -113,15 +114,17 @@ const Profile = () => {
               <h2 className="text-lg sm:text-2xl font-semibold text-center">
                 Your 2025 Stats Box!
               </h2>
-              <div className="flex justify-center items-center space-x-4">
-                <Image
-                  src={getCollegeFlag(collegeName(viewer.collegeId) ?? "")}
-                  alt={collegeName(viewer.collegeId) ?? ""}
-                  width={100}
-                  height={100}
-                  className="rounded-md object-contain"
-                />
-              </div>
+              {viewer.collegeId && (
+                <div className="flex justify-center items-center space-x-4">
+                  <Image
+                    src={getCollegeFlag(collegeName(viewer.collegeId) ?? "")}
+                    alt={collegeName(viewer.collegeId) ?? ""}
+                    width={100}
+                    height={100}
+                    className="rounded-md object-contain"
+                  />
+                </div>
+              )}
               <div className="flex items-center flex-col">
                 <p className="text-md font-bold flex items-center mb-3">
                   Username: {newUsername || "Anonymous"}
@@ -135,6 +138,8 @@ const Profile = () => {
                 </p>
               </div>
             </div>
+
+            <CollegeAffiliation />
 
             <div className="hidden sm:block">
               <button

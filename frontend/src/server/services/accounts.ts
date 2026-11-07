@@ -2,24 +2,28 @@
 // NetID resolves to one account (resolveAccount): an account from before
 // November 2026 (keyed by email) when one has it, else users/netid-<netid>,
 // created at the first login or, unclaimed, when a captain or supervisor
-// adds the person (U10). The first visit of a season creates the season's
-// player doc (D30) with the college Yalies gives. A NetID added without a
+// adds the person (U10). Sign-in and staff adds look the NetID up in the
+// directory (server/directory.ts); the Profile's retry and a season's first
+// visit do too, at most once per cooldown (users/{id}.directory, which every
+// lookup sets). Each field the directory gives is applied on its own. The
+// first visit of a season creates the season's player doc (D30) with the
+// college the directory gives, never last season's. A NetID added without a
 // directory match is a placeholder player "netid-<netid>": the same id as
 // the account that NetID gets, or moved onto an older account (claimPlaceholders).
 import "server-only";
-import { FieldValue, type DocumentSnapshot } from "firebase-admin/firestore";
+import { FieldValue, Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
 import { collegeIdOfName } from "@/lib/colleges";
 import { ApiError } from "@/lib/api/core";
 import { placeholderId, placeholderNetid } from "@/lib/netid";
-import type { JoinedVia, PlayerDoc, RosterEntryDoc, UserDoc } from "@/types/firestore";
+import type { CollegeAssignment, DirectoryOutcome, JoinedVia, PlayerDoc, RosterEntryDoc, UserDoc } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
 import { getPlayer, playerRef } from "../data/players";
 import { listPlayerEntries, rosterEntryRef } from "../data/roster";
 import { listSeasons } from "../data/seasons";
-import { readUser, userRef, usernameCounterRef, usernameRef, usersByNetidQuery } from "../data/users";
+import { displayName, holderOfNetid, readUser, userRef, usernameCounterRef, usernameRef, usersByNetidQuery } from "../data/users";
 import { runTransaction } from "../data/util";
-import { yaliesProfile } from "../yaleLogin";
+import { lookUpNetid, type DirectoryResult } from "../directory";
 
 // Generated usernames: adjective + noun + the username counter, e.g.
 // "NobleFalcon1042". Some nouns repeat; kept as they were.
@@ -49,74 +53,60 @@ function generateUsername(n: number): string {
   return `${pick(ADJECTIVES)}${pick(NOUNS)}${n}`;
 }
 
-/** The profile fields the app reads from Yalies. */
-export interface YaliesProfile {
-  email: string;
-  netid?: string | null;
-  first_name: string;
-  last_name: string;
-  college?: string | null;
-}
-
 /**
- * Signs a Yale user in: their account (resolveAccount; created on the first
+ * Signs a Yale user in once CAS has vouched for `netid`: looks the NetID up
+ * in the directory, then their account (resolveAccount: created on the first
  * login, or claimed when a captain made it for them, U10), their membership
- * of the season and what was added under their NetID. Returns their user id.
- * Throws for a non-Yale email.
+ * of the season (none without one) and what was added under their NetID.
+ * Nothing the directory lacks stops the sign-in. Returns their user id.
  */
-export async function signIn(profile: YaliesProfile, netid: string, seasonId: string): Promise<string> {
-  if (!profile.email || !profile.email.endsWith("@yale.edu")) {
-    throw new Error("You must use a Yale email to sign in.");
-  }
-  const userId = await resolveAccount(netid, profile, null);
-  const name = fullName(profile);
-  await joinSeason(seasonId, userId, name, profile.college);
+export async function signIn(netid: string, seasonId: string | null): Promise<string> {
+  const found = await lookUpNetid(netid);
+  const { userId, name } = await resolveAccount(netid, found, null);
+  if (seasonId) await enterSeason(seasonId, userId, found);
   await claimPlaceholders(netid, userId, name);
   return userId;
 }
 
 /**
  * The account of someone a captain or supervisor adds by NetID (U10), whom
- * Yalies knows: created unclaimed (`createdBy`) when they have none; it is
- * theirs when they first sign in. Returns its user id.
+ * the directory knows: created unclaimed (`createdBy`) when they have none;
+ * it is theirs when they first sign in. Returns its user id.
  */
-export async function ensureAccount(profile: YaliesProfile, netid: string, by: Actor, seasonId: string): Promise<string> {
-  return resolveAccount(netid, profile, { by, seasonId });
+export async function ensureAccount(found: DirectoryResult, netid: string, by: Actor, seasonId: string): Promise<string> {
+  return (await resolveAccount(netid, found, { by, seasonId })).userId;
 }
-
-const fullName = (profile: YaliesProfile) => `${profile.first_name} ${profile.last_name}`.trim();
 
 /**
  * The account of the person with this NetID, in this order, so an account
  * made for a NetID never takes over an older one (Execution brief):
- * 1. the one account with this NetID recorded;
- * 2. the account of the email Yalies gives for it (accounts from before
- *    November 2026 are keyed by email; its NetID is recorded now);
+ * 1. the one older (email-keyed) account with this NetID recorded;
+ * 2. the older account of the email the directory gives (its NetID is recorded now);
  * 3. users/netid-<netid>;
  * 4. none: users/netid-<netid> is created (tx.create: a concurrent creator retries and finds it).
- * Two accounts with the NetID, or an email account recorded with another
- * NetID, are refused (409) for an admin to sort out. Read and written in one
- * transaction with the username counter.
- *
- * A sign-in (`createdFor` null) claims the account and takes the name from
- * Yalies unless an admin set one; someone else's add only records a missing NetID.
+ * Two older accounts with the NetID, or one recorded with another NetID, are
+ * refused (409) for an admin to sort out. The directory's fields are applied
+ * (directoryChanges) and a sign-in (`createdFor` null) claims the account.
+ * Read and written in one transaction with the username counter. Returns the
+ * account's id and display name.
  */
 async function resolveAccount(
   netid: string,
-  profile: YaliesProfile | null,
+  found: DirectoryResult,
   /** Someone else making the account (logged in this season); null: their own sign-in. */
   createdFor: { by: Actor; seasonId: string } | null
-): Promise<string> {
+): Promise<{ userId: string; name: string }> {
   const signingIn = createdFor === null;
-  const name = profile ? fullName(profile) || null : null;
+  const email = found.person?.email ?? null;
   return runTransaction(async (tx) => {
-    const holders = (await tx.get(usersByNetidQuery(netid))).docs;
-    if (holders.length > 1) throw new ApiError("conflict", "More than one account has this NetID. Ask an admin to fix it.");
-    let snap: DocumentSnapshot | null = holders[0] ?? null;
-    if (!snap && profile?.email) {
-      const byEmail = await tx.get(userRef(profile.email));
+    const holder = holderOfNetid((await tx.get(usersByNetidQuery(netid))).docs, netid);
+    if (holder === "conflict") throw new ApiError("conflict", "More than one account has this NetID. Ask an admin to fix it.");
+    let snap: DocumentSnapshot | null = holder?.id === placeholderId(netid) ? null : holder;
+    if (!snap && email) {
+      const byEmail = await tx.get(userRef(email));
       if (byEmail.exists) snap = byEmail;
     }
+    snap ??= holder;
     if (!snap) {
       const own = await tx.get(userRef(placeholderId(netid)));
       if (own.exists) snap = own;
@@ -127,18 +117,11 @@ async function resolveAccount(
       if (user.netid && user.netid !== netid) {
         throw new ApiError("conflict", "This person's account has another NetID. Ask an admin to fix it.");
       }
-      const changes: Partial<Record<keyof UserDoc, unknown>> = {};
+      const changes = directoryChanges(user, found);
       if (!user.netid) changes.netid = netid;
-      if (signingIn) {
-        if (!user.claimedAt) changes.claimedAt = FieldValue.serverTimestamp();
-        if (name && user.nameSource !== "admin" && (user.name !== name || user.nameSource !== "yalies")) {
-          changes.name = name;
-          changes.nameSource = "yalies";
-        }
-        if (profile?.email && !user.email) changes.email = profile.email;
-      }
-      if (Object.keys(changes).length) tx.update(snap.ref, changes);
-      return snap.id;
+      if (signingIn && !user.claimedAt) changes.claimedAt = FieldValue.serverTimestamp();
+      tx.update(snap.ref, changes);
+      return { userId: snap.id, name: displayName({ ...user, ...(changes as Partial<UserDoc>) }) };
     }
 
     const userId = placeholderId(netid);
@@ -150,8 +133,9 @@ async function resolveAccount(
 
     tx.set(usernameCounterRef(), { count: n }, { merge: true });
     if (!taken) tx.set(usernameRef(username), { userId });
+    const name = found.person?.name ?? null;
     tx.create(ref, {
-      email: profile?.email ?? null,
+      email,
       name,
       nameSource: name ? "yalies" : "none",
       netid,
@@ -159,6 +143,7 @@ async function resolveAccount(
       roles: [],
       claimedAt: signingIn ? FieldValue.serverTimestamp() : null,
       createdBy: createdFor?.by.userId ?? null,
+      directory: directoryState(found),
     } satisfies Record<keyof UserDoc, unknown>);
     if (createdFor) {
       logAction(tx, createdFor.seasonId, {
@@ -169,7 +154,147 @@ async function resolveAccount(
         created: [ref],
       });
     }
-    return userId;
+    return { userId, name: name ?? username };
+  });
+}
+
+/** How long until the next lookup: soon after a complete answer or an outage, longer after an incomplete one. */
+const COOLDOWN_MS: Record<DirectoryOutcome, number> = {
+  found: 60_000,
+  unavailable: 60_000,
+  partial: 15 * 60_000,
+  "not-found": 15 * 60_000,
+};
+
+/** users/{id}.directory after a lookup: its outcome, and the cooldown that starts now. */
+function directoryState(found: DirectoryResult) {
+  const now = Date.now();
+  return { outcome: found.outcome, checkedAt: Timestamp.fromMillis(now), nextAt: Timestamp.fromMillis(now + COOLDOWN_MS[found.outcome]) };
+}
+
+/**
+ * What a directory lookup changes on a user: the lookup's state; the name,
+ * unless an admin set it (Yalies' name replaces one they typed, and locks
+ * it); the email when none is known. Each field on its own: a missing one
+ * changes nothing.
+ */
+function directoryChanges(user: UserDoc, found: DirectoryResult): Record<string, unknown> {
+  const changes: Record<string, unknown> = { directory: directoryState(found) };
+  const { name, email } = found.person ?? {};
+  if (name && user.nameSource !== "admin" && (user.name !== name || user.nameSource !== "yalies")) {
+    changes.name = name;
+    changes.nameSource = "yalies";
+  }
+  if (email && !user.email) changes.email = email;
+  return changes;
+}
+
+/**
+ * Looks the user's NetID up again (Profile → "Check Yalies again") and
+ * applies what it finds, college included. At most once per cooldown: the
+ * slot is claimed in a transaction before the call, so a double click or a
+ * second tab makes one call; an early retry is refused (429, with retryAt).
+ */
+export async function refreshFromDirectory(userId: string, netid: string, seasonId: string | null): Promise<DirectoryOutcome> {
+  const result = await lookUpAgain(userId, netid, seasonId);
+  if (!result) throw new ApiError("not-found", "No account for this login yet.");
+  if ("retryAt" in result) {
+    const minutes = Math.max(1, Math.ceil((result.retryAt.getTime() - Date.now()) / 60_000));
+    throw new ApiError("rate-limited", `Yalies was checked moments ago. Try again in ${minutes} minute${minutes > 1 ? "s" : ""}.`, {
+      retryAt: result.retryAt.toISOString(),
+    });
+  }
+  return result.outcome;
+}
+
+/**
+ * A signed-in student's membership of a season they haven't joined yet
+ * (D30), with the college the directory gives now: a college is never
+ * carried over from an earlier season (account plan, decision 5). Within the
+ * cooldown, or with the directory down, they join at a later visit.
+ */
+export async function joinSeasonOnVisit(seasonId: string, userId: string, netid: string): Promise<void> {
+  if (await getPlayer(seasonId, userId)) return;
+  await lookUpAgain(userId, netid, seasonId);
+}
+
+/**
+ * Claims the user's lookup slot, looks up, applies; or, within the
+ * cooldown, when the next may run; null without an account.
+ */
+async function lookUpAgain(
+  userId: string,
+  netid: string,
+  seasonId: string | null
+): Promise<{ outcome: DirectoryOutcome } | { retryAt: Date } | null> {
+  const ref = userRef(userId);
+  const claim = await runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return "no-account";
+    const { directory } = readUser(snap.data()!);
+    if (directory && directory.nextAt.toMillis() > Date.now()) return directory.nextAt.toDate();
+    // The slot: held as if the directory were down, until the answer sets the real cooldown.
+    const nextAt = Timestamp.fromMillis(Date.now() + COOLDOWN_MS.unavailable);
+    tx.update(ref, { directory: { outcome: directory?.outcome ?? null, checkedAt: directory?.checkedAt ?? null, nextAt } });
+    return "claimed";
+  });
+  if (claim === "no-account") return null;
+  if (claim !== "claimed") return { retryAt: claim };
+  const found = await lookUpNetid(netid);
+  await runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists) tx.update(ref, directoryChanges(readUser(snap.data()!), found));
+  });
+  if (seasonId) await enterSeason(seasonId, userId, found);
+  return { outcome: found.outcome };
+}
+
+/**
+ * The person's membership of the season with the college the directory
+ * gives (D30): created on their first visit (unassigned when the directory
+ * names no college of the season); an unassigned one gets the college once
+ * the directory gives it, unless an admin cleared it. A college other than
+ * the assigned one changes nothing (an admin's call). With the directory
+ * down, nothing changes.
+ */
+async function enterSeason(seasonId: string, userId: string, found: DirectoryResult): Promise<void> {
+  if (found.outcome === "unavailable") return;
+  const collegeId = collegeIdOfName(await listColleges(seasonId), found.person?.college);
+  const ref = playerRef(seasonId, userId);
+  await runTransaction(async (tx) => {
+    const [playerSnap, userSnap] = await tx.getAll(ref, userRef(userId));
+    const player = playerSnap.data() as PlayerDoc | undefined;
+    const assignment: CollegeAssignment = { collegeId, source: "yalies", since: Timestamp.now() };
+    if (!player) {
+      tx.create(ref, {
+        seasonId,
+        collegeId,
+        collegeHistory: collegeId ? [assignment] : [],
+        name: userSnap.exists ? displayName(readUser(userSnap.data()!)) : userId,
+        userId,
+        roles: [],
+        joinedAt: FieldValue.serverTimestamp(),
+        joinedVia: "login",
+      });
+    } else if (!player.collegeId && collegeId && player.collegeHistory?.at(-1)?.source !== "admin") {
+      tx.update(ref, { collegeId, collegeHistory: FieldValue.arrayUnion(assignment) });
+    }
+  });
+}
+
+/**
+ * Sets the name the user typed, while it may be theirs to set: no name yet,
+ * or one they typed (the directory's and an admin's are locked). The
+ * season's player doc, which copies it, changes with it.
+ */
+export async function changeName(userId: string, name: string, seasonId: string | null): Promise<"ok" | "locked" | "no-user"> {
+  return runTransaction(async (tx) => {
+    const [userSnap, playerSnap] = await tx.getAll(userRef(userId), ...(seasonId ? [playerRef(seasonId, userId)] : []));
+    if (!userSnap.exists) return "no-user";
+    if (!["none", "self"].includes(readUser(userSnap.data()!).nameSource)) return "locked";
+    tx.update(userSnap.ref, { name, nameSource: "self" });
+    if (playerSnap?.exists) tx.update(playerSnap.ref, { name });
+    return "ok";
   });
 }
 
@@ -179,9 +304,8 @@ export async function recordNetid(userId: string, netid: string): Promise<void> 
 }
 
 /**
- * The person's membership of the season, created on their first visit of it
- * (D30) with the college named `collegeName` (from Yalies; null if it names
- * none of the season's colleges). A placeholder ("netid-<netid>") gets the
+ * A membership made for someone a captain or supervisor adds (U10), with
+ * the college named `collegeName`. A placeholder ("netid-<netid>") gets the
  * account of that id as its user when one exists; while another account
  * holds the NetID, making one is refused (a stale add must retry with it).
  */
@@ -190,7 +314,7 @@ export async function joinSeason(
   playerId: string,
   name: string,
   collegeName: unknown,
-  joinedVia: JoinedVia = "login"
+  joinedVia: JoinedVia
 ): Promise<Pick<PlayerDoc, "collegeId" | "roles">> {
   const colleges = await listColleges(seasonId);
   const ref = playerRef(seasonId, playerId);
@@ -218,23 +342,6 @@ export async function joinSeason(
     });
     return { collegeId, roles: [] };
   });
-}
-
-/**
- * A signed-in student's membership of a season they haven't joined yet
- * (D30), with the college Yalies gives now: a college is never carried over
- * from an earlier season (account plan, decision 5). Yalies not knowing them
- * joins them without a college; Yalies unreachable leaves it for a later visit.
- */
-export async function joinSeasonFromDirectory(seasonId: string, userId: string, netid: string, name: string): Promise<void> {
-  if (await getPlayer(seasonId, userId)) return;
-  let profile: YaliesProfile | null;
-  try {
-    profile = await yaliesProfile(netid);
-  } catch {
-    return;
-  }
-  await joinSeason(seasonId, userId, name, profile?.college ?? null);
 }
 
 /**

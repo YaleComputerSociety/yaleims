@@ -165,7 +165,7 @@ async function writeLeague(): Promise<void> {
       // NetIDs like Yale's (initials + digits); the dev and the supervisor have none
       // recorded yet, as users from before NetIDs were kept.
       netid: p === dev || p === supervisor ? null : `${p.firstname[0]}${p.lastname[0]}${100 + i}`.toLowerCase(),
-      roles: p === dev ? ["admin", "dev"] : [], claimedAt: now, createdBy: null,
+      roles: p === dev ? ["admin", "dev"] : [], claimedAt: now, createdBy: null, directory: null,
     };
     docs.push([paths.user(p.email), user], [paths.username(username), { userId: p.email }]);
   });
