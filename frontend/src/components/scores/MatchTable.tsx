@@ -1,19 +1,19 @@
-import { useSportOf } from "@/context/SeasonContext";
 import { useTournamentNames } from "@/hooks/useTournamentNames";
 import type { Match } from "@/lib/api/matches";
+import type { Sport } from "@/lib/api/seasons";
 import { groupByDay } from "@/lib/format";
 import TableRow from "./TableRow";
 
 interface MatchesTableProps {
-  /** Played games, from any seasons, in the order to show. */
+  /** Played games in the selected season, in the order to show. */
   filteredMatches: Match[];
+  sports: Sport[];
   handleCollegeClick: (collegeId: string) => void;
   handleSportClick: (sportName: string) => void;
 }
 
 /** The games grouped by day, one table per day. */
-const MatchesTable: React.FC<MatchesTableProps> = ({ filteredMatches, handleCollegeClick, handleSportClick }) => {
-  const sportOf = useSportOf(filteredMatches);
+const MatchesTable: React.FC<MatchesTableProps> = ({ filteredMatches, sports, handleCollegeClick, handleSportClick }) => {
   const tournamentOf = useTournamentNames(filteredMatches);
 
   return (
@@ -35,7 +35,7 @@ const MatchesTable: React.FC<MatchesTableProps> = ({ filteredMatches, handleColl
               <TableRow
                 key={`${match.seasonId}/${match.id}`}
                 match={match}
-                sport={sportOf(match)}
+                sport={sports.find((sport) => sport.id === match.sportId)}
                 tournament={tournamentOf(match)}
                 isFirst={index === 0}
                 isLast={index === items.length - 1}

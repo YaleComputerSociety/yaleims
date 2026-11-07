@@ -7,7 +7,7 @@ import {
   type ScheduleUploadResult,
 } from "@/lib/api/matches";
 import { authorize, can } from "@/server/auth";
-import { countSeasonMatches, listSeasonMatches } from "@/server/data/matches";
+import { listSeasonMatches, listSeasonMatchPage } from "@/server/data/matches";
 import { created, ok, readBody, readQuery, route } from "@/server/http";
 import { addSchedule } from "@/server/services/schedule";
 
@@ -30,12 +30,10 @@ export const GET = route<Params>(async (req, { params }) => {
     const games = await listSeasonMatches(seasonId, filter, query.order);
     return ok({ items: games.map(toMatch), total: games.length } satisfies MatchList);
   }
-  const page = { offset: (query.page - 1) * query.pageSize, limit: query.pageSize };
-  const [games, total] = await Promise.all([
-    listSeasonMatches(seasonId, filter, query.order, page),
-    countSeasonMatches(seasonId, filter, query.order),
-  ]);
-  return ok({ items: games.map(toMatch), total } satisfies MatchList);
+  const { items, total } = await listSeasonMatchPage(seasonId, filter, query.order, {
+    page: query.page, pageSize: query.pageSize,
+  });
+  return ok({ items: items.map(toMatch), total } satisfies MatchList);
 });
 
 /** Adds a sport's regular-season games, all or none (supervisors; audit-logged). */

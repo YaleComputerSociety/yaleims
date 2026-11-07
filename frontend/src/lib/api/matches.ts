@@ -1,6 +1,5 @@
 // The matches API: a season's games (/api/seasons/{seasonId}/matches), one
-// game's details and result, and the played games of every season
-// (/api/matches, the scores page).
+// game's details and result, and one season's played games (/api/matches).
 import { z } from "zod";
 import type { MatchDoc, WithId } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
@@ -46,9 +45,10 @@ export const seasonMatchesQuerySchema = z.strictObject({
 });
 export type SeasonMatchesQuery = z.input<typeof seasonMatchesQuerySchema>;
 
-/** GET /api/matches (signed in): played games of every season, newest first, always paged. */
+/** GET /api/matches (signed in): played games in the selected or current season. */
 export const playedMatchesQuerySchema = z.strictObject({
   ...filters,
+  seasonId: z.string().regex(/^\d{4}-\d{4}$/, "Choose a season in YYYY-YYYY format").optional(),
   order: z.enum(["asc", "desc"]).default("desc"),
   page: page.default(1),
   pageSize,
