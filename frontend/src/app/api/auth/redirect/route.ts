@@ -31,17 +31,16 @@ async function finishLogin(params: URLSearchParams): Promise<NextResponse> {
   const state = params.get("state")!;
   const from = await consumeLogin(state);
 
-  const netid = await validateTicket(ticket, state);
+  const netid = (await validateTicket(ticket, state))?.toLowerCase();
   if (!netid) throw new LoginFailure("refused");
   const profile = await yaliesProfile(netid);
   if (!profile || !profile.email.endsWith("@yale.edu")) throw new LoginFailure("no-profile");
   const seasonId = await getCurrentSeasonId();
   if (!seasonId) throw new Error("config/app has no current season");
 
-  await signIn(profile, netid, seasonId);
+  const userId = await signIn(profile, netid, seasonId);
   const res = NextResponse.redirect(siteUrl(from));
-  const name = `${profile.first_name} ${profile.last_name}`;
-  setSessionCookie(res, { email: profile.email, netid, name, college: profile.college ?? null });
+  setSessionCookie(res, { userId, netid });
   return res;
 }
 

@@ -23,7 +23,7 @@ export const paths = {
   appConfig: "config/app",
 
   users: "users",
-  user: (email: string) => `users/${seg(email)}`,
+  user: (userId: string) => `users/${seg(userId)}`,
   /** Taken usernames: usernames/{username} = { userId }. */
   username: (username: string) => `usernames/${seg(username)}`,
   /** { count }: how many usernames have been generated (the number in them). */

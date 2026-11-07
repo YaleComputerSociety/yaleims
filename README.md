@@ -101,8 +101,8 @@ Run application commands from `frontend/`; there is no root package.json.
 | `npm run emulator` / `npm run seed` | Start local Firestore / reset synthetic data |
 | `npm run dev:emulator` | Interactive Next website and API on port 3000 |
 | `npm run dev` | Plain Next dev; follows the environment configuration |
-| `npm run dev:token -- EMAIL` | Generate a seeded user's local session cookie |
-| `npm run make-admin -- EMAIL` | Grant admin/dev to an existing emulator account |
+| `npm run dev:token -- USER_ID` | Generate a seeded user's local session cookie (the seed's ids are emails) |
+| `npm run make-admin -- NETID` | Grant admin/dev to an existing emulator account (NetID or user id) |
 | `npm run check` | Typecheck, lint, and unit tests, stopping on failure |
 | `npm run typecheck` / `npm run lint` / `npm test` | Run an individual check |
 | `npm run test:watch` | Unit tests in watch mode |

@@ -15,7 +15,7 @@ export const GET = route(async (req) => {
   const viewer = await requireViewer();
   const { seasonId, upcoming } = readQuery(req, myMatchesQuerySchema);
   const now = Date.now();
-  const entries = (await listPlayerEntries(seasonId, viewer.email)).filter(
+  const entries = (await listPlayerEntries(seasonId, viewer.userId)).filter(
     (e) => e.captainStatus !== "removed" && (!upcoming || e.startsAt.toMillis() > now)
   );
   const games = await getMatches(seasonId, entries.map((e) => e.matchId));

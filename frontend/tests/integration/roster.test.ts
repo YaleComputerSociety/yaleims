@@ -64,16 +64,18 @@ describe("PUT and DELETE …/matches/{m}/roster/me", () => {
     expect((await api("PUT", path, undefined, { session: sessionFor(removed.playerId) })).status).toBe(403);
     expect((await api("DELETE", path, undefined, { session: sessionFor(removed.playerId) })).status).toBe(409);
   });
-  it("lets a returning student join the season with their login's college, then signs them up", async () => {
-    // An alum (one per college, played last season only) of a college with an upcoming game.
-    const game = (await db.collection(`seasons/${current}/matches`).where("stage", "==", "regular").where("startsAt", ">", new Date()).limit(1).get()).docs[0];
-    const index = COLLEGES.findIndex((c) => c.id === game.data().homeCollegeId);
-    const alum = `alum${String(index + 1).padStart(2, "0")}@example.edu`;
+  it("lets a returning student join the season with the college Yalies gives, then signs them up", async () => {
+    // Benjamin Franklin's alum (played last season only) and an upcoming BF game; the fake
+    // directory places zz903 in BF. The cookie's college is ignored (decision 5).
+    const game = (await db.collection(`seasons/${current}/matches`).where("stage", "==", "regular").where("startsAt", ">", new Date()).get())
+      .docs.find((d) => d.data().collegeIds.includes("BF"))!;
+    const alum = "alum01@example.edu";
     expect((await db.doc(`seasons/${current}/players/${alum}`).get()).exists).toBe(false);
-    const login = { name: "Al Um", college: COLLEGES[index].name };
+    const login = { netid: "zz903", college: "Morse" };
     const r = await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(alum, [], login) });
     expect(r.status).toBe(204);
-    expect((await db.doc(`seasons/${current}/players/${alum}`).get()).data()).toMatchObject({ collegeId: COLLEGES[index].id, name: "Al Um", joinedVia: "login" });
+    const { name } = (await db.doc(`users/${alum}`).get()).data()!;
+    expect((await db.doc(`seasons/${current}/players/${alum}`).get()).data()).toMatchObject({ collegeId: "BF", name, joinedVia: "login" });
   });
 });
 
@@ -89,18 +91,19 @@ describe("score reports", () => {
     const r = await api("POST", path, { reason: " Flipped " }, { session: sessionFor(people.student(4, 6)) });
     expect(r.status).toBe(201);
     const doc = (await db.doc(`seasons/${current}/matches/${game.id}/scoreReports/${r.body.id}`).get()).data()!;
+    const { name } = (await db.doc(`users/${people.student(4, 6)}`).get()).data()!;
     expect(doc).toMatchObject({
-      reason: "Flipped", reportedBy: people.student(4, 6), reporterName: "Test User", status: "open",
+      reason: "Flipped", reportedBy: people.student(4, 6), reporterName: name, status: "open",
       scoreAtReport: { home: game.data().result.homeScore, away: game.data().result.awayScore },
     });
   });
-  it("show reporters' emails to admins only", async () => {
+  it("show reporters' ids to supervisors and admins only", async () => {
     const game = await played();
     const path = `/api/seasons/${current}/matches/${game.id}/reports`;
     const asPlayer = await api("GET", path, undefined, { session: sessionFor(people.student(4, 6)) });
     expect(asPlayer.body.total).toBeGreaterThan(0);
     expect(asPlayer.body.items[0]).not.toHaveProperty("reportedBy");
-    expect(asPlayer.body.items[0].reporterName).toBe("Test User");
+    expect(asPlayer.body.items[0].reporterName).toBe((await db.doc(`users/${people.student(4, 6)}`).get()).data()!.name);
     const asAdmin = await api("GET", path, undefined, { session: admin() });
     expect(asAdmin.body.items[0].reportedBy).toBe(people.student(4, 6));
   });

@@ -8,7 +8,10 @@
 // global are accounts, usernames, configuration, counters and short-lived login
 // attempts. References are ids:
 // collegeId = the college's abbreviation ("MY"), sportId = the sports doc id,
-// userId / playerId = an email (a guest player has "guest-<random>"). A field
+// userId / playerId = the account's id: an email for accounts made before
+// November 2026, "netid-<netid>" for newer ones (a guest player has
+// "guest-<random>"). Ids are opaque: an email to contact someone is
+// users/{id}.email, never the id. A field
 // whose value is unknown or doesn't apply is stored as null, not left out.
 
 /**
@@ -42,14 +45,22 @@ export interface AppConfigDoc {
 /** Roles that hold across seasons. Season roles are on the player (SeasonRole). */
 export type GlobalRole = "admin" | "dev";
 
+/** Where a user's name comes from: Yalies' names are locked, an admin's override everything. */
+export type NameSource = "none" | "self" | "yalies" | "admin";
+
 /**
- * users/{email}: identity across seasons. Old docs also hold frozen fields
- * (mRoles, college, role, sportsCaptainOf, betting totals), not read or written.
+ * users/{userId}: identity across seasons. userId = an email (accounts from
+ * before November 2026) or "netid-<netid>" (newer ones, the same id as the
+ * placeholder player the NetID may already have). Old docs also hold frozen
+ * fields (mRoles, college, role, sportsCaptainOf, betting totals) and
+ * firstname/lastname, read only through server/data/users.ts readUser.
  */
 export interface UserDoc {
-  email: string;
-  firstname: string;
-  lastname: string;
+  /** Contact address; null: none known yet. */
+  email: string | null;
+  /** The full name; null: none known (shown as the username). */
+  name: string | null;
+  nameSource: NameSource;
   /** Their Yale NetID, recorded at login since Phase 3A (null: not seen since; guests have no user). */
   netid: string | null;
   username: string;
@@ -167,7 +178,8 @@ export type JoinedVia = "login" | "captain" | "supervisor" | "migration";
 /**
  * seasons/{s}/players/{playerId}: a person's membership in the season (D30),
  * created on their first login of the season or when a captain/supervisor
- * adds them. playerId = their email, or "guest-<random>".
+ * adds them. playerId = their user id, a NetID no account has yet
+ * ("netid-<netid>", a placeholder; userId null) or "guest-<random>".
  */
 export interface PlayerDoc {
   seasonId: string;
@@ -268,7 +280,7 @@ export interface ScoreReportDoc {
   seasonId: string;
   matchId: string;
   reason: string;
-  /** The reporter's email. */
+  /** The reporter's user id. */
   reportedBy: string;
   reporterName: string;
   reportedAt: StoredTimestamp;

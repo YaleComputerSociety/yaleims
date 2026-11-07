@@ -8,7 +8,7 @@ import { noContent, readBody, route } from "@/server/http";
 export const PATCH = route(async (req) => {
   const viewer = await requireViewer();
   const { username } = await readBody(req, meChangeSchema);
-  const result = await changeUsername(viewer.email, username);
+  const result = await changeUsername(viewer.userId, username);
   if (result === "taken") throw new ApiError("conflict", "Username is already taken");
   if (result === "no-user") throw new ApiError("not-found", "No account for this login yet.");
   return noContent();

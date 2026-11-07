@@ -1,6 +1,7 @@
 // The login session: the app's own HS256 JWT in the `token` cookie, minted by
 // /api/auth/redirect after Yale CAS for 7 days. It is not a Firebase ID token.
-// It says only who is signed in (Identity); what they may do is read from
+// It says only who is signed in (Identity: account id and NetID); everything
+// else about them, and what they may do, is read from
 // Firestore on each request (server/auth.ts). Every server route reads it
 // through this module.
 import "server-only";
@@ -39,62 +40,50 @@ export async function getSessionToken(): Promise<string | undefined> {
  * The verified token's payload, or null when the cookie is missing, expired,
  * forged or malformed. Throws only when JWT_SECRET is unset (a server
  * misconfiguration).
- *
- * Only netid and email are required: jwt.sign drops undefined values, so a
- * token can lack the rest. Tokens from before Phase 2D also carry roles
- * (mRoles …); they are never read.
  */
-type Payload = Record<string, unknown> & { email: string; netid: string };
-
-async function verifiedPayload(): Promise<Payload | null> {
+async function verifiedPayload(): Promise<Record<string, unknown> | null> {
   const token = await getSessionToken();
   if (!token) {
     return null;
   }
   const secret = jwtSecret();
-  let decoded: unknown;
   try {
-    decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, secret);
+    return decoded && typeof decoded === "object" ? (decoded as Record<string, unknown>) : null;
   } catch {
     return null;
   }
-  const payload = decoded as Partial<Payload> | string;
-  if (!payload || typeof payload !== "object" || typeof payload.netid !== "string" || typeof payload.email !== "string") {
-    return null;
-  }
-  return payload as Payload;
 }
 
-/** Who is signed in, as the Yale login said. */
+/**
+ * Who is signed in, as the Yale login said: their account and the NetID
+ * CAS vouched for. Name, college and roles are read from Firestore, never
+ * from the cookie.
+ */
 export interface Identity {
-  email: string;
+  /** users/{userId}: an email for accounts from before November 2026, "netid-<netid>" for newer ones. */
+  userId: string;
   netid: string;
-  /** "" in old tokens without a name. */
-  name: string;
-  /**
-   * The college the session was issued with (from Yalies at login). Joining
-   * a new season places a returning student by it (D30); null: none.
-   */
-  college: string | null;
 }
 
-/** The signed-in identity, or null (see verifiedPayload). Any other field of the token is ignored. */
+/**
+ * The signed-in identity, or null (see verifiedPayload). Cookies since
+ * November 2026 carry { v: 2, userId, netid }. Older ones carry the email,
+ * which was the account's id: { email, netid, name, college } (and roles
+ * before Phase 2D); only email and netid are read.
+ */
 export async function getIdentity(): Promise<Identity | null> {
   const payload = await verifiedPayload();
-  if (!payload) {
+  if (!payload || typeof payload.netid !== "string" || payload.netid === "") {
     return null;
   }
-  return {
-    email: payload.email,
-    netid: payload.netid,
-    name: typeof payload.name === "string" ? payload.name : "",
-    college: typeof payload.college === "string" && payload.college !== "" ? payload.college : null,
-  };
+  const userId = payload.v === 2 ? payload.userId : payload.email;
+  return typeof userId === "string" && userId !== "" ? { userId, netid: payload.netid } : null;
 }
 
 /** Signs `identity` and sets it as the session cookie on `res`. */
 export function setSessionCookie(res: NextResponse, identity: Identity): void {
-  const token = jwt.sign({ ...identity }, jwtSecret(), { expiresIn: "7d" });
+  const token = jwt.sign({ v: 2, userId: identity.userId, netid: identity.netid }, jwtSecret(), { expiresIn: "7d" });
   res.cookies.set(SESSION_COOKIE, token, {
     secure: secureCookies,
     httpOnly: true,

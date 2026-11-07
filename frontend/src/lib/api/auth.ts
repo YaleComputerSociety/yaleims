@@ -25,7 +25,11 @@ export interface ViewerPermissions {
 
 /** The signed-in person, with what they are this season. */
 export interface SessionViewer {
-  email: string;
+  /** Their account's id (an email for accounts from before November 2026, else "netid-<netid>"). */
+  userId: string;
+  /** Contact address; null: none known yet. */
+  email: string | null;
+  /** Their name, or their username when none is known. */
   name: string;
   username: string;
   /** Their college this season; null: none (or not a player). */

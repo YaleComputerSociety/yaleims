@@ -1,6 +1,6 @@
 import { directoryNetidSchema, type DirectoryEntry } from "@/lib/api/directory";
 import { authorize, can } from "@/server/auth";
-import { findUserByNetid, getUser } from "@/server/data/users";
+import { displayName, findUserByNetid } from "@/server/data/users";
 import { listColleges } from "@/server/data/colleges";
 import { getCurrentSeasonId } from "@/server/data/seasons";
 import { ok, readParams, route } from "@/server/http";
@@ -32,9 +32,8 @@ export const GET = route<{ netid: string }>(async (req, { params }) => {
     entry = { status: "unavailable", netid };
   }
   if (entry.status !== "found") {
-    const known = await findUserByNetid(netid);
-    const user = known ? await getUser(known) : null;
-    if (user) entry = { status: "found", netid, name: `${user.firstname} ${user.lastname}`.trim(), collegeId: null };
+    const user = await findUserByNetid(netid);
+    if (user) entry = { status: "found", netid, name: displayName(user), collegeId: null };
   }
   return ok(entry);
 });

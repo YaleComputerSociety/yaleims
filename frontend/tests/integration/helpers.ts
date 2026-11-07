@@ -15,12 +15,17 @@ if (!SECRET) throw new Error("Run through `npm run test:integration` (it starts 
 export const db = adminDb;
 
 /**
- * A session cookie for `email`, with roles in it as cookies from before Phase
+ * A session cookie for `email` as logins before November 2026 issued it (the
+ * email was the account's id), with roles in it as cookies from before Phase
  * 2D carried them (the API ignores them: only Firestore counts) and any other
- * cookie fields (e.g. the login's college).
+ * cookie fields (e.g. the login's college, also ignored).
  */
 export const sessionFor = (email: string, mRoles: string[] = ["user"], fields: object = {}) =>
   jwt.sign({ name: "Test User", netid: email.split("@")[0], email, mRoles, ...fields }, SECRET, { expiresIn: "1h" });
+
+/** A session cookie as logins since November 2026 issue it: the account's id and the NetID. */
+export const sessionOf = (userId: string, netid: string) =>
+  jwt.sign({ v: 2, userId, netid }, SECRET, { expiresIn: "1h" });
 
 /** People of the seed (scripts/seed.mts): 8 students per college; the first is the rep, the next two captains. */
 export const people = {

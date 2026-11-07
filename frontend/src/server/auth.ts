@@ -4,7 +4,7 @@
 // once, not when a 7-day token runs out. Every permission is a named rule in
 // `can` below: the one place to read or change who may do what.
 //
-// Roles live in three places (REDESIGN §4): users/{email}.roles (admin, dev),
+// Roles live in three places (REDESIGN §4): users/{userId}.roles (admin, dev),
 // the current season's player doc (college_rep, supervisor; its college) and
 // the teams the player captains this season.
 import "server-only";
@@ -14,7 +14,7 @@ import type { Actor } from "./data/auditLog";
 import { getPlayer } from "./data/players";
 import { getCurrentSeasonId } from "./data/seasons";
 import { listCaptainTeams } from "./data/teams";
-import { getUser } from "./data/users";
+import { displayName, getUser } from "./data/users";
 import { getIdentity, type Identity } from "./session";
 
 // ── The viewer ─────────────────────────────────────────────────────────────
@@ -25,15 +25,17 @@ import { getIdentity, type Identity } from "./session";
  * answer after that, so a route never reads one twice.
  */
 export interface Viewer extends Identity {
-  /** Their users/{email} doc (null: none yet). */
+  /** Their users/{userId} doc (null: none yet). */
   user(): Promise<UserDoc | null>;
-  /** users/{email}.roles. */
+  /** The name to show for them (their username when no name is known). */
+  name(): Promise<string>;
+  /** users/{userId}.roles. */
   globalRoles(): Promise<GlobalRole[]>;
   /** Their player doc in the current season (college, season roles); null if they aren't a player. */
   player(): Promise<PlayerDoc | null>;
   /** The sport ids of the teams they captain this season. */
   captainOf(): Promise<string[]>;
-  /** Who they are in the audit log (D32): email and every role they hold. */
+  /** Who they are in the audit log (D32): user id and every role they hold. */
   actor(): Promise<Actor>;
 }
 
@@ -45,18 +47,22 @@ export async function getViewer(): Promise<Viewer | null> {
 
 function viewerOf(identity: Identity): Viewer {
   const seasonId = once(getCurrentSeasonId);
-  const user = once((): Promise<UserDoc | null> => getUser(identity.email));
+  const user = once((): Promise<UserDoc | null> => getUser(identity.userId));
   const player = once(async () => {
     const season = await seasonId();
-    return season ? getPlayer(season, identity.email) : null;
+    return season ? getPlayer(season, identity.userId) : null;
   });
   const captainOf = once(async () => {
     const season = await seasonId();
-    return season ? (await listCaptainTeams(season, identity.email)).map((team) => team.sportId) : [];
+    return season ? (await listCaptainTeams(season, identity.userId)).map((team) => team.sportId) : [];
   });
   return {
     ...identity,
     user,
+    name: async () => {
+      const u = await user();
+      return u ? displayName(u) : "";
+    },
     globalRoles: async () => (await user())?.roles ?? [],
     player,
     captainOf,
@@ -64,7 +70,7 @@ function viewerOf(identity: Identity): Viewer {
       const [u, p, teams] = await Promise.all([user(), player(), captainOf()]);
       const roles: string[] = ["user", ...(u?.roles ?? []), ...(p?.roles ?? [])];
       if (teams.length > 0) roles.push("captain");
-      return { userId: identity.email, roles };
+      return { userId: identity.userId, roles };
     },
   };
 }
@@ -161,6 +167,6 @@ export const can = {
   /** See and name a college's weekly MVPs. */
   nameMvps: async (viewer: Viewer, collegeId: string) =>
     (await isAdmin(viewer)) || isRepOf(viewer, collegeId),
-  /** See a college's reps (with emails) and captains: its own players. */
+  /** See a college's reps (with their emails) and captains: its own players. */
   seeLeaders: async (viewer: Viewer, collegeId: string) => (await viewer.player())?.collegeId === collegeId,
 };

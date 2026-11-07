@@ -150,15 +150,19 @@ describe("adding by NetID (U10; a fake Yale directory: tests/integration/fakeYal
   it("adds the directory's person: an unclaimed account with their NetID, the season, the roster", async () => {
     const { game, path } = await bfGame();
     const r = await api("POST", `${path}/netid`, { netid: "zz901", collegeId: "BF" }, { session: supervisor() });
-    expect(r).toMatchObject({ status: 201, body: { playerId: "zoe.zane@yale.edu", verified: true } });
-    expect((await db.doc("users/zoe.zane@yale.edu").get()).data()).toMatchObject({ netid: "zz901", firstname: "Zoe", claimedAt: null, createdBy: people.supervisor });
-    expect((await db.doc(`seasons/${current}/players/zoe.zane@yale.edu`).get()).data()).toMatchObject({ collegeId: "BF", name: "Zoe Zane", joinedVia: "supervisor" });
-    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/zoe.zane@yale.edu`).get()).data()).toMatchObject({ collegeId: "BF", present: true });
+    // No account had the NetID, so it gets users/netid-zz901: the id it will have at their first login.
+    const id = "netid-zz901";
+    expect(r).toMatchObject({ status: 201, body: { playerId: id, verified: true } });
+    expect((await db.doc(`users/${id}`).get()).data()).toMatchObject({
+      netid: "zz901", email: "zoe.zane@yale.edu", name: "Zoe Zane", nameSource: "yalies", claimedAt: null, createdBy: people.supervisor,
+    });
+    expect((await db.doc(`seasons/${current}/players/${id}`).get()).data()).toMatchObject({ collegeId: "BF", name: "Zoe Zane", userId: id, joinedVia: "supervisor" });
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${id}`).get()).data()).toMatchObject({ collegeId: "BF", present: true });
     const logs = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "createAccountFor").get()).docs.map((d) => d.data().params);
-    expect(logs).toContainEqual({ email: "zoe.zane@yale.edu", netid: "zz901" });
-    // Their account carries the NetID, so it's found by it on the sheet.
+    expect(logs).toContainEqual({ userId: id, netid: "zz901" });
+    // Their account carries the NetID, so the sheet shows it, not "unverified".
     const sheet = await api("GET", `${path}/sheet`, undefined, { session: supervisor() });
-    expect(sheet.body.items.find((e: { playerId: string }) => e.playerId === "zoe.zane@yale.edu").netid).toBe("zz901");
+    expect(sheet.body.items.find((e: { playerId: string }) => e.playerId === id).netid).toBe("zz901");
   });
 
   it("refuses the directory's person of another college", async () => {
@@ -185,7 +189,7 @@ describe("adding by NetID (U10; a fake Yale directory: tests/integration/fakeYal
     expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/netid-zz950`).get()).exists).toBe(false);
     expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${email}`).get()).data()).toMatchObject({ playerId: email, collegeId: "BF", present: true });
     const claims = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "claimPlaceholder").get()).docs.map((d) => d.data().params);
-    expect(claims).toContainEqual({ netid: "zz950", email });
+    expect(claims).toContainEqual({ netid: "zz950", userId: email });
   });
 
   it("finds an account by its stored NetID when the directory doesn't know it", async () => {

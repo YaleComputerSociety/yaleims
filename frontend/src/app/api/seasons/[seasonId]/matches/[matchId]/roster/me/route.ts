@@ -2,7 +2,7 @@ import { ApiError } from "@/lib/api/core";
 import { requireViewer } from "@/server/auth";
 import { getCurrentSeasonId } from "@/server/data/seasons";
 import { noContent, route } from "@/server/http";
-import { joinSeason } from "@/server/services/accounts";
+import { joinSeasonFromDirectory } from "@/server/services/accounts";
 import { signUp, withdraw, type SignUpResult, type WithdrawResult } from "@/server/services/signups";
 
 type Params = { seasonId: string; matchId: string };
@@ -19,15 +19,15 @@ const SIGN_UP_REFUSALS: Record<Exclude<SignUpResult, "ok" | "already-signed-up">
 /**
  * Signs the caller up for the game, on their college's side, until it starts
  * (D34); already signed up is fine. A student who hasn't joined the current
- * season yet joins it first, with their login's college (D30).
+ * season yet joins it first, with the college Yalies gives (D30).
  */
 export const PUT = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();
-  let result = await signUp(seasonId, matchId, viewer.email);
+  let result = await signUp(seasonId, matchId, viewer.userId);
   if (result === "not-in-season" && seasonId === (await getCurrentSeasonId())) {
-    await joinSeason(seasonId, viewer.email, viewer.name, viewer.college);
-    result = await signUp(seasonId, matchId, viewer.email);
+    await joinSeasonFromDirectory(seasonId, viewer.userId, viewer.netid, await viewer.name());
+    result = await signUp(seasonId, matchId, viewer.userId);
   }
   if (result !== "ok" && result !== "already-signed-up") throw SIGN_UP_REFUSALS[result];
   return noContent();
@@ -43,7 +43,7 @@ const WITHDRAW_REFUSALS: Record<Exclude<WithdrawResult, "ok" | "not-signed-up">,
 export const DELETE = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();
-  const result = await withdraw(seasonId, matchId, viewer.email);
+  const result = await withdraw(seasonId, matchId, viewer.userId);
   if (result !== "ok" && result !== "not-signed-up") throw WITHDRAW_REFUSALS[result];
   return noContent();
 });

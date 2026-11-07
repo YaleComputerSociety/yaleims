@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/server/session", () => ({ getIdentity: async () => ({ email: "player001@example.edu" }) }));
+vi.mock("@/server/session", () => ({ getIdentity: async () => ({ userId: "player001@example.edu", netid: "p001" }) }));
 
 const { ApiError } = await import("@/lib/api/core");
 const { noContent, ok, readBody, readQuery, route } = await import("@/server/http");

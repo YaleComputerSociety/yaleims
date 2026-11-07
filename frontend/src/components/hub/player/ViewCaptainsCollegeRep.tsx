@@ -4,7 +4,7 @@ import { useSession } from "@/context/SessionContext";
 import { fetchCollegeLeaders } from "@/lib/api/colleges";
 
 type CaptainRow = { sport: string; name: string };
-type RepRow = { name: string; email: string };
+type RepRow = { name: string; email: string | null };
 
 /** The user's college this season: its captains (by sport) and its college reps. */
 export default function ViewCaptainsCollegeRep() {
@@ -23,7 +23,7 @@ export default function ViewCaptainsCollegeRep() {
       ({ reps, captains }) => {
         if (!live) return;
         const sportName = new Map(currentSeason.sports.map((sport) => [sport.id, sport.name]));
-        setRepRows(reps.map((rep) => ({ name: rep.name, email: rep.playerId })));
+        setRepRows(reps.map((rep) => ({ name: rep.name, email: rep.email })));
         setCaptainRows(captains.map((c) => ({ sport: sportName.get(c.sportId) ?? c.sportId, name: c.name })));
       },
       (e: Error) => {
@@ -82,12 +82,14 @@ export default function ViewCaptainsCollegeRep() {
             {repRows.map((r, i) => (
               <li key={`${r.name}-${i}`} className="flex items-center justify-between py-2">
                 <span className="font-medium text-gray-900 dark:text-white">{r.name}</span>
-                <a
-                  href={`mailto:${r.email}`}
-                  className="text-xs text-gray-600 dark:text-gray-300 underline underline-offset-4 hover:text-black dark:hover:text-white transition"
-                >
-                  {r.email}
-                </a>
+                {r.email && (
+                  <a
+                    href={`mailto:${r.email}`}
+                    className="text-xs text-gray-600 dark:text-gray-300 underline underline-offset-4 hover:text-black dark:hover:text-white transition"
+                  >
+                    {r.email}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

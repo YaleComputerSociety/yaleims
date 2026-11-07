@@ -28,12 +28,13 @@ type SheetEntry = Sheet["items"][number];
 
 /**
  * What tells same-named players apart, shown in brackets after the name: the
- * NetID ("unverified" for a NetID not yet matched to anyone), or the email of
- * someone whose NetID isn't recorded yet (it is at their next visit).
+ * account's NetID; a NetID no account has yet ("unverified"); or the id
+ * (an email) of someone whose NetID isn't recorded yet (it is at their next visit).
  */
 function who(player: { playerId: string; netid: string | null }): string {
+  if (player.netid) return player.netid;
   const pending = placeholderNetid(player.playerId);
-  return pending ? `${pending} · unverified` : (player.netid ?? player.playerId);
+  return pending ? `${pending} · unverified` : player.playerId;
 }
 
 /** How an entry got on the roster, for the row's small print; supervisors also see the captain's confirmation. */

@@ -8,7 +8,7 @@ import type { PlayerDoc, UserDoc } from "@/types/firestore";
 
 vi.mock("server-only", () => ({}));
 
-// The session cookie, and the docs Firestore holds (by email).
+// The session cookie, and the docs Firestore holds (by user id).
 const SECRET = "test-secret";
 let cookie: string | undefined;
 let users: Record<string, Partial<UserDoc>> = {};
@@ -54,21 +54,27 @@ describe("the identity", () => {
     signIn({ name: "No Email" });
     expect(await getIdentity()).toBeNull();
   });
-  it("takes only who they are from an old cookie, never its roles", async () => {
+  it("takes only the account and NetID from an old cookie (email as the id), never its roles or college", async () => {
     signIn({ name: "Ada L", netid: "al1", email: "al1@yale.edu", college: "Morse", mRoles: ["user", "admin"], role: "admin" });
-    expect(await getIdentity()).toEqual({ email: "al1@yale.edu", netid: "al1", name: "Ada L", college: "Morse" });
+    expect(await getIdentity()).toEqual({ userId: "al1@yale.edu", netid: "al1" });
   });
-  it("is all a login's cookie carries", () => {
+  it("reads a new cookie's account id, which need not be an email", async () => {
+    signIn({ v: 2, userId: "netid-al1", netid: "al1" });
+    expect(await getIdentity()).toEqual({ userId: "netid-al1", netid: "al1" });
+    signIn({ v: 2, email: "al1@yale.edu", netid: "al1" });
+    expect(await getIdentity()).toBeNull();
+    signIn({ v: 2, userId: "netid-al1" });
+    expect(await getIdentity()).toBeNull();
+  });
+  it("is all a login's cookie carries", async () => {
     const res = new NextResponse(null);
-    const identity = { email: "al1@yale.edu", netid: "al1", name: "Ada L", college: "Morse" };
-    setSessionCookie(res, identity);
-    const { iat, exp, ...payload } = jwt.verify(res.cookies.get("token")!.value, SECRET) as Record<string, unknown>;
-    expect(payload).toEqual(identity);
+    setSessionCookie(res, { userId: "netid-al1", netid: "al1" });
+    const token = res.cookies.get("token")!.value;
+    const { iat, exp, ...payload } = jwt.verify(token, SECRET) as Record<string, unknown>;
+    expect(payload).toEqual({ v: 2, userId: "netid-al1", netid: "al1" });
     expect(Number(exp) - Number(iat)).toBe(7 * 24 * 60 * 60);
-  });
-  it("has no college when the cookie names none", async () => {
-    signIn({ netid: "al1", email: "al1@yale.edu", college: "" });
-    expect(await getIdentity()).toEqual({ email: "al1@yale.edu", netid: "al1", name: "", college: null });
+    cookie = token;
+    expect(await getIdentity()).toEqual({ userId: "netid-al1", netid: "al1" });
   });
 });
 
@@ -90,7 +96,7 @@ describe("the viewer", () => {
     signIn({ netid: "p1", email: "p1@yale.edu" });
     await expect(authorize(can.score)).rejects.toMatchObject({ code: "forbidden", status: 403 });
     users["p1@yale.edu"] = { roles: ["admin"] };
-    expect((await authorize(can.score)).email).toBe("p1@yale.edu");
+    expect((await authorize(can.score)).userId).toBe("p1@yale.edu");
   });
 });
 

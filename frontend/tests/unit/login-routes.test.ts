@@ -41,7 +41,7 @@ describe("browser-bound login callbacks", () => {
     `ticket=ST-attacker&state=${"A".repeat(43)}&state=${"B".repeat(43)}`,
   ])("sends a signed-in browser home from an unsolicited callback, before CAS or account changes: %s", async (query) => {
     const existing = new NextResponse(null);
-    setSessionCookie(existing, { email: "victim@yale.edu", netid: "victim1", name: "Existing User", college: "Morse" });
+    setSessionCookie(existing, { userId: "victim@yale.edu", netid: "victim1" });
     cookieValues.set("token", existing.cookies.get("token")!.value);
     const response = await GET(new Request(`https://yaleims.com/api/auth/redirect?${query}`), { params: Promise.resolve({}) });
     expect(response.status).toBe(307);

@@ -13,15 +13,16 @@ const proofName = "yims_login"; // The integration app runs in development mode.
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const attempts: string[] = [];
 const saved = new Map<string, DocumentData | undefined>();
-const accounts = ["zoe.zane@yale.edu", "zia.zorn@yale.edu"];
+// The fake directory's people have no account yet: a first login makes users/netid-<netid>.
+const accounts = ["netid-zz901", "netid-zz903"];
 let current: string;
 beforeAll(async () => { ({ current } = await seasons()); });
 afterEach(async () => {
   for (const state of attempts.splice(0)) await db.doc(paths.loginAttempt(hash(state))).delete();
-  for (const email of accounts) {
-    const before = saved.get(paths.user(email));
-    const after = (await db.doc(paths.user(email)).get()).data();
-    if (saved.has(paths.user(email)) && !before && after?.username) await db.doc(paths.username(after.username)).delete();
+  for (const userId of accounts) {
+    const before = saved.get(paths.user(userId));
+    const after = (await db.doc(paths.user(userId)).get()).data();
+    if (saved.has(paths.user(userId)) && !before && after?.username) await db.doc(paths.username(after.username)).delete();
   }
   for (const [path, data] of saved) {
     if (data) await db.doc(path).set(data);
@@ -31,7 +32,7 @@ afterEach(async () => {
 });
 
 async function accountState() {
-  const refs = accounts.flatMap((email) => [db.doc(paths.user(email)), db.doc(paths.player(current, email))]);
+  const refs = accounts.flatMap((userId) => [db.doc(paths.user(userId)), db.doc(paths.player(current, userId))]);
   const docs = await db.getAll(...refs, db.doc(paths.usernameCounter));
   for (const doc of docs.slice(0, -1)) if (!saved.has(doc.ref.path)) saved.set(doc.ref.path, doc.data());
   return {
@@ -120,9 +121,11 @@ describe("CAS browser binding", () => {
     privateResponse(response);
     const token = response.cookies.find((cookie) => cookie.startsWith("token="))!.split(";")[0].slice(6);
     expect(token).not.toBe(attempt.cookie.slice(proofName.length + 1));
-    expect(jwt.verify(token, SECRET)).toMatchObject({ email: "zoe.zane@yale.edu", netid: "zz901", name: "Zoe Zane" });
+    const { iat, exp, ...payload } = jwt.verify(token, SECRET) as Record<string, unknown>;
+    expect(payload).toEqual({ v: 2, userId: "netid-zz901", netid: "zz901" });
+    expect(Number(exp) - Number(iat)).toBe(7 * 24 * 60 * 60);
     const session = await api("GET", "/api/auth/session", undefined, { session: token });
-    expect(session.body.viewer).toMatchObject({ email: "zoe.zane@yale.edu", collegeId: "BF" });
+    expect(session.body.viewer).toMatchObject({ userId: "netid-zz901", email: "zoe.zane@yale.edu", name: "Zoe Zane", collegeId: "BF" });
   });
 
   it.each(["missing-cookie", "another-browser", "state-as-cookie"])("refuses %s without consuming either browser's attempt or changing the current session", async (mode) => {

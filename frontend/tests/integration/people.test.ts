@@ -46,15 +46,16 @@ describe("GET …/colleges/{c}/leaders", () => {
     expect((await api("GET", path, undefined, { session: player() })).status).toBe(403);
     const r = await api("GET", path, undefined, { session: sessionFor(people.student(BK, 6)) });
     expect(r.status).toBe(200);
-    expect(r.body.reps).toEqual([{ playerId: people.student(BK, 0), name: expect.any(String) }]);
+    // The contact address is the user's email field (the seed's ids happen to be emails too).
+    expect(r.body.reps).toEqual([{ playerId: people.student(BK, 0), name: expect.any(String), email: people.student(BK, 0) }]);
     expect(r.body.captains).toHaveLength(2);
     expect(r.body.captains[0]).toEqual({ sportId: expect.any(String), name: expect.any(String) });
   });
 });
 
-describe("PUT and DELETE …/colleges/{c}/teams/{sportId}/captains/{email}", () => {
-  const path = (college: string, email: string, sport = "1", season = current) =>
-    `/api/seasons/${season}/colleges/${college}/teams/${sport}/captains/${encodeURIComponent(email)}`;
+describe("PUT and DELETE …/colleges/{c}/teams/{sportId}/captains/{userId}", () => {
+  const path = (college: string, userId: string, sport = "1", season = current) =>
+    `/api/seasons/${season}/colleges/${college}/teams/${sport}/captains/${encodeURIComponent(userId)}`;
   const captains = async (college: string, sport = "1") =>
     (await db.doc(`seasons/${current}/colleges/${college}/teams/${sport}`).get()).data()?.captainIds ?? [];
 
@@ -66,7 +67,7 @@ describe("PUT and DELETE …/colleges/{c}/teams/{sportId}/captains/{email}", () 
     expect((await api("DELETE", path("BF", target), undefined, { session: rep() })).status).toBe(204);
     expect(await captains("BF")).not.toContain(target);
     const log = await db.collection(`seasons/${current}/auditLog`).where("action", "==", "assignCaptain").where("actor.userId", "==", people.student(BF, 0)).get();
-    expect(log.docs.some((d) => d.data().params.email === target)).toBe(true);
+    expect(log.docs.some((d) => d.data().params.userId === target)).toBe(true);
   });
   it("refuses players, other colleges' reps and other colleges' players", async () => {
     expect((await api("PUT", path("BF", people.student(BF, 5)))).status).toBe(401);

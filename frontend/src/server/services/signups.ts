@@ -23,14 +23,14 @@ export type SignUpResult =
 export async function signUp(
   seasonId: string,
   matchId: string,
-  email: string,
+  playerId: string,
   now = new Date()
 ): Promise<SignUpResult> {
-  const entryRef = rosterEntryRef(seasonId, matchId, email);
+  const entryRef = rosterEntryRef(seasonId, matchId, playerId);
   return runTransaction(async (tx) => {
     const [matchSnap, playerSnap, entrySnap] = await Promise.all([
       tx.get(matchRef(seasonId, matchId)),
-      tx.get(playerRef(seasonId, email)),
+      tx.get(playerRef(seasonId, playerId)),
       tx.get(entryRef),
     ]);
     const match = matchSnap.data();
@@ -48,11 +48,11 @@ export async function signUp(
       matchId,
       sportId: match.sportId,
       collegeId: player.collegeId,
-      playerId: email,
+      playerId,
       name: player.name,
       startsAt: match.startsAt,
       addedBy: "self",
-      addedByUser: email,
+      addedByUser: playerId,
       signedUpAt: FieldValue.serverTimestamp(),
       captainStatus: null,
       captainBy: null,
@@ -71,10 +71,10 @@ export type WithdrawResult = "ok" | "no-match" | "started" | "not-signed-up" | "
 export async function withdraw(
   seasonId: string,
   matchId: string,
-  email: string,
+  playerId: string,
   now = new Date()
 ): Promise<WithdrawResult> {
-  const entryRef = rosterEntryRef(seasonId, matchId, email);
+  const entryRef = rosterEntryRef(seasonId, matchId, playerId);
   return runTransaction(async (tx) => {
     const [matchSnap, entrySnap] = await Promise.all([tx.get(matchRef(seasonId, matchId)), tx.get(entryRef)]);
     const match = matchSnap.data();

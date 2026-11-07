@@ -161,7 +161,7 @@ async function writeLeague(): Promise<void> {
   everyone.forEach((p, i) => {
     const username = `${p.firstname}${p.lastname}${i + 1}`;
     const user: UserDoc = {
-      email: p.email, firstname: p.firstname, lastname: p.lastname, username,
+      email: p.email, name: fullName(p), nameSource: "yalies", username,
       // NetIDs like Yale's (initials + digits); the dev and the supervisor have none
       // recorded yet, as users from before NetIDs were kept.
       netid: p === dev || p === supervisor ? null : `${p.firstname[0]}${p.lastname[0]}${100 + i}`.toLowerCase(),

@@ -15,7 +15,7 @@ import { listColleges } from "../data/colleges";
 import { matchRef } from "../data/matches";
 import { playerRef } from "../data/players";
 import { rosterEntryRef } from "../data/roster";
-import { findUserByNetid, getUser } from "../data/users";
+import { findUserByNetid } from "../data/users";
 import { runTransaction } from "../data/util";
 import { yaliesProfile } from "../yaleLogin";
 import { claimPlaceholders, ensureAccount, joinSeason, type YaliesProfile } from "./accounts";
@@ -169,27 +169,27 @@ export async function addByNetid(
   }
 
   let playerId: string;
+  let verified = true;
   if (profile) {
     const yaliesCollege = collegeIdOfName(colleges, profile.college);
     if (yaliesCollege !== collegeId) return { status: "other-college", collegeId: yaliesCollege };
     const fullName = `${profile.first_name} ${profile.last_name}`.trim();
-    await ensureAccount(profile, netid, by.actor, seasonId);
-    await claimPlaceholders(netid, profile.email, fullName);
-    await joinSeason(seasonId, profile.email, fullName, collegeId, via);
-    playerId = profile.email;
+    playerId = await ensureAccount(profile, netid, by.actor, seasonId);
+    await claimPlaceholders(netid, playerId, fullName);
+    await joinSeason(seasonId, playerId, fullName, collegeId, via);
   } else {
     const known = await findUserByNetid(netid);
     if (known) {
-      const user = await getUser(known);
-      await joinSeason(seasonId, known, `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim() || netid, collegeId, via);
-      playerId = known;
+      await joinSeason(seasonId, known.id, known.name ?? netid, collegeId, via);
+      playerId = known.id;
     } else {
       playerId = placeholderId(netid);
+      verified = false;
       await joinSeason(seasonId, playerId, name || netid, collegeId, via);
     }
   }
   const result = await addPlayer(seasonId, matchId, playerId, by, now);
-  if (result === "ok") return { status: "added", playerId, verified: !!profile || !playerId.startsWith("netid-") };
+  if (result === "ok") return { status: "added", playerId, verified };
   if (result === "other-college") return { status: "other-college", collegeId: null };
   return { status: result };
 }

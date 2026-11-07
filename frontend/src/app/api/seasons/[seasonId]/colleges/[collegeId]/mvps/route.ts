@@ -6,7 +6,7 @@ import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; collegeId: string };
 
-/** The college's MVPs of the season by week, with the winners' emails (the college's rep, admins/devs). */
+/** The college's MVPs of the season by week, with the winners' player ids (the college's rep, admins/devs). */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, collegeId } = await params;
   await authorize(can.nameMvps, collegeId);

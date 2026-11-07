@@ -10,8 +10,8 @@ export const FAKE_PEOPLE = [
   { netid: "zz903", email: "zia.zorn@yale.edu", first_name: "Zia", last_name: "Zorn", college: "Benjamin Franklin College" },
 ];
 
-/** A NetID the directory "can't be reached" for: it answers 503. */
-export const UNREACHABLE_NETID = "zz999";
+/** NetIDs the directory "can't be reached" for: it answers 503 (zz999, zz998, …). */
+const unreachable = (netid: unknown) => typeof netid === "string" && netid.startsWith("zz99");
 
 /** Serves POST /people like Yalies: exact-match filters (a list matches any value), people with those values. */
 export function serveFakeYalies(port: number): Promise<Server> {
@@ -20,7 +20,7 @@ export function serveFakeYalies(port: number): Promise<Server> {
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
       const { filters = {} } = JSON.parse(body || "{}") as { filters?: Record<string, string | string[]> };
-      if (filters.netid === UNREACHABLE_NETID) {
+      if (unreachable(filters.netid)) {
         res.writeHead(503).end();
         return;
       }

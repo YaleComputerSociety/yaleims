@@ -23,7 +23,7 @@ export const GET = route<Params>(async (req, { params }) => {
     listCollegeTeams(seasonId, collegeId),
   ]);
   const netids = await getNetids(players.map((p) => p.id));
-  const captainOf = (email: string) => teams.filter((t) => t.captainIds.includes(email)).map((t) => t.sportId);
+  const captainOf = (playerId: string) => teams.filter((t) => t.captainIds.includes(playerId)).map((t) => t.sportId);
   const items = players
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((p) => ({ ...toJson(p), netid: netids.get(p.id) ?? null, captainOf: captainOf(p.id) }));

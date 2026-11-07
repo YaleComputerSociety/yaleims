@@ -38,7 +38,7 @@ export async function logFailure(req: Request, error: unknown): Promise<void> {
     JSON.stringify({
       severity: "ERROR",
       message: `${req.method} ${new URL(req.url).pathname} failed`,
-      viewer: viewer?.email ?? null,
+      viewer: viewer?.userId ?? null,
       error: error instanceof Error ? error.stack : String(error),
     })
   );
