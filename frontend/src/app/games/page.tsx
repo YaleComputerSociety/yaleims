@@ -20,6 +20,7 @@ import { FaCalendarAlt, FaCalendarDay } from "react-icons/fa";
 import { MdSportsScore, MdSchedule, MdErrorOutline } from "react-icons/md";
 import { BsCollection } from "react-icons/bs";
 import GlassDropdown from "@/components/ui/GlassDropdown";
+import { signInUrl } from "@/lib/api/auth";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 interface TabConfig {
@@ -344,7 +345,7 @@ const GamesPage: React.FC = () => {
               Sign in to sign up for games and report score issues.
             </p>
             <Link
-              href="/api/auth/login?from=%2Fgames"
+              href={signInUrl("/games")}
               prefetch={false}
               className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
             >

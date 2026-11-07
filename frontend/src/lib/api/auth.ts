@@ -4,6 +4,13 @@
 import type { GlobalRole, SeasonRole } from "@/types/firestore";
 import { request } from "./core";
 
+/**
+ * A "Sign in" link: Yale CAS, then back to `from`, a page of this site (the
+ * current one, usually); from the failed sign-in page, back home.
+ */
+export const signInUrl = (from: string) =>
+  `/api/auth/login?from=${encodeURIComponent(from === "/sign-in-failed" ? "/" : from)}`;
+
 /** What the viewer may do anywhere (server/auth.ts `can`); per-college and per-team rights are checked by each call. */
 export interface ViewerPermissions {
   /** Create, edit, cancel and delete games, brackets and tournaments. */

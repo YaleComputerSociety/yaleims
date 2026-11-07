@@ -12,6 +12,7 @@ import { GrSchedules } from "react-icons/gr";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { VscFeedback } from "react-icons/vsc";
 import { usePathname } from "next/navigation";
+import { signInUrl } from "@/lib/api/auth";
 import { useNavbar } from "@/context/NavbarContext";
 import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
 import { MdOutlineKeyboardArrowRight } from "react-icons/md";
@@ -177,7 +178,7 @@ const NavBar: React.FC = () => {
                       ? "border-black hover:border-gray-400 hover:text-gray-400"
                       : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
                   }`}
-                  href='/api/auth/login'
+                  href={signInUrl(pathname)}
                   prefetch={false}
                 >
                   Sign In
@@ -216,7 +217,7 @@ const NavBar: React.FC = () => {
             ) : (
               <Link
                 className="block w-full bg-white items-cente text-center dark:bg-yellow-500 text-blue-700 dark:text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-yellow-600 transition duration-200"
-                href='/api/auth/login'
+                href={signInUrl(pathname)}
                 prefetch={false}
               >
                 Sign In
