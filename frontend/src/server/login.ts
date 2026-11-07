@@ -16,7 +16,15 @@ const TOKEN = /^[A-Za-z0-9_-]{43}$/; // 32 random bytes, base64url
 const cookieOptions = { httpOnly: true, secure: production, sameSite: "lax" as const, path: "/" };
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
-export const invalidLogin = () => new ApiError("unauthenticated", "This sign-in attempt is missing, expired or already used. Start sign-in again.");
+/** Why a sign-in didn't finish; the /sign-in-failed page explains each one. */
+export type LoginProblem = "expired" | "refused" | "no-profile" | "unavailable";
+
+/** A sign-in that ended for a known reason; the callback turns it into a page, never an API error. */
+export class LoginFailure extends Error {
+  constructor(readonly problem: LoginProblem) {
+    super(`Sign-in failed: ${problem}`);
+  }
+}
 
 /** Replaces the browser's pending proof; old attempts expire without being usable. */
 export async function startLogin(from: string | null): Promise<NextResponse> {
@@ -37,11 +45,11 @@ export async function startLogin(from: string | null): Promise<NextResponse> {
 export async function consumeLogin(state: string | null): Promise<string> {
   const store = await cookies();
   const proof = store.get(COOKIE)?.value;
-  if (!state || !TOKEN.test(state) || !proof || !TOKEN.test(proof)) throw invalidLogin();
+  if (!state || !TOKEN.test(state) || !proof || !TOKEN.test(proof)) throw new LoginFailure("expired");
   const attempt = await takeLoginAttempt(hash(state), hash(proof));
-  if (!attempt) throw invalidLogin();
+  if (!attempt) throw new LoginFailure("expired");
   // Next carries this deletion on both normal responses and route() error responses.
   store.set(COOKIE, "", { ...cookieOptions, maxAge: 0 });
-  if (attempt.expired) throw invalidLogin();
+  if (attempt.expired) throw new LoginFailure("expired");
   return attempt.from;
 }

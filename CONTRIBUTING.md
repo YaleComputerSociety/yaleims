@@ -73,6 +73,9 @@ state and HttpOnly proof are independent; only their hashes and the local return
 path live in private `loginAttempts` records. Consume the attempt transactionally
 before CAS validation or account writes. Expiry is checked synchronously; TTL
 only cleans abandoned attempts. A new login replaces the pending browser proof.
+A failed callback never shows an API error: a browser with a session goes home,
+any other gets `/sign-in-failed` with a "Sign in again" button (no automatic
+restart, which would loop when cookies are blocked).
 
 ## Adding or changing behavior
 
@@ -248,7 +251,7 @@ See Firebase's [rollout and rollback documentation](https://firebase.google.com/
    For login changes, verify `loginAttempts.expiresAt` TTL is enabled and the
    CAS service registration accepts `/api/auth/redirect?state=...`; the local
    fixtures cannot establish either production setting. Old pending callbacks
-   without a matching attempt must restart sign-in; existing sessions stay valid.
+   without a matching attempt land on `/sign-in-failed`; existing sessions stay valid.
 4. Run the pinned rollout:
    `npx -y firebase-tools@14 apphosting:rollouts:create yaleims-1 -g FULL_COMMIT_SHA --project yims-125a2`.
 5. Check rollout/build logs, the live site signed out and in, relevant roles,

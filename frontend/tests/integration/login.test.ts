@@ -75,11 +75,14 @@ function privateResponse(response: Awaited<ReturnType<typeof raw>>) {
   expect(response.cache?.split(/,\s*/)).toContain("no-store");
   expect(response.referrer).toBe("no-referrer");
 }
-function refused(response: Awaited<ReturnType<typeof raw>>, status = 401) {
-  expect(response.status).toBe(status);
+/** No session was issued; the browser went home (it had one) or to the explanation page. */
+function refused(response: Awaited<ReturnType<typeof raw>>, location = "/") {
+  expect(response.status).toBe(307);
+  expect(response.location).toBe(`${BASE}${location}`);
   expect(response.cookies.some((cookie) => cookie.startsWith("token="))).toBe(false);
   privateResponse(response);
 }
+const failedPage = (problem: string) => `/sign-in-failed?problem=${problem}`;
 function cleared(response: Awaited<ReturnType<typeof raw>>) {
   expect(response.cookies).toContainEqual(expect.stringMatching(/^yims_login=;.*Max-Age=0/i));
 }
@@ -184,7 +187,7 @@ describe("CAS browser binding", () => {
     const attempt = await start();
     const ids = await Promise.all([ticket(attempt.service, "zz903"), ticket(attempt.service, "zz903")]);
     const responses = await Promise.all(ids.map((id) => raw(callback(attempt.service, id), attempt.cookie)));
-    expect(responses.map((response) => response.status).sort()).toEqual([307, 401]);
+    expect(responses.map((response) => response.location).sort()).toEqual([`${BASE}/hub`, `${BASE}${failedPage("expired")}`]);
     expect((await Promise.all(ids.map(calls))).flat()).toHaveLength(1);
     expect((await attempt.ref.get()).exists).toBe(false);
     for (const response of responses) privateResponse(response);
@@ -195,7 +198,7 @@ describe("CAS browser binding", () => {
     const older = await start("/scores");
     const newer = await start("/games");
     const oldTicket = await ticket(older.service);
-    refused(await raw(callback(older.service, oldTicket), newer.cookie));
+    refused(await raw(callback(older.service, oldTicket), newer.cookie), failedPage("expired"));
     expect(await calls(oldTicket)).toHaveLength(0);
     expect((await newer.ref.get()).exists).toBe(true);
     const newTicket = await ticket(newer.service);
@@ -213,13 +216,39 @@ describe("CAS browser binding", () => {
       mode === "unavailable" || mode === "malformed" ? mode : undefined,
     );
     const response = await raw(callback(attempt.service, id), withVictim(attempt.cookie));
-    refused(response, mode === "no-profile" ? 403 : mode === "unavailable" || mode === "malformed" ? 500 : 401);
+    refused(response);
     cleared(response);
     expect((await attempt.ref.get()).exists).toBe(false);
     const callCount = (await calls(id)).length;
     expect(callCount).toBeGreaterThan(0);
-    refused(await raw(callback(attempt.service, id), attempt.cookie));
+    refused(await raw(callback(attempt.service, id), attempt.cookie), failedPage("expired"));
     expect(await calls(id)).toHaveLength(callCount);
     expect(await accountState()).toEqual(before);
+  });
+
+  it.each([
+    ["invalid-ticket", "refused"],
+    ["wrong-service", "refused"],
+    ["no-profile", "no-profile"],
+    ["unavailable", "unavailable"],
+    ["malformed", "unavailable"],
+  ])("explains %s to a browser without a session (%s)", async (mode, problem) => {
+    await accountState();
+    const attempt = await start();
+    const id = mode === "invalid-ticket" ? "ST-not-issued" : await ticket(
+      mode === "wrong-service" ? `${attempt.service}-different` : attempt.service,
+      mode === "no-profile" ? "zz909" : "zz901",
+      mode === "unavailable" || mode === "malformed" ? mode : undefined,
+    );
+    const response = await raw(callback(attempt.service, id), attempt.cookie);
+    refused(response, failedPage(problem));
+    cleared(response);
+  });
+
+  it("explains the problem on its page", async () => {
+    const page = await raw(failedPage("expired"));
+    expect(page.status).toBe(200);
+    expect(page.body).toContain("Sign in again");
+    expect(page.body).toContain("finished in another tab");
   });
 });

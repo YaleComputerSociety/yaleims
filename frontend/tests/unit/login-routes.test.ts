@@ -39,19 +39,24 @@ describe("browser-bound login callbacks", () => {
     `ticket=ST-attacker&state=${"A".repeat(43)}`,
     "ticket=ST-attacker&state=malformed",
     `ticket=ST-attacker&state=${"A".repeat(43)}&state=${"B".repeat(43)}`,
-  ])("refuses an unsolicited callback before CAS or account changes: %s", async (query) => {
+  ])("sends a signed-in browser home from an unsolicited callback, before CAS or account changes: %s", async (query) => {
     const existing = new NextResponse(null);
     setSessionCookie(existing, { email: "victim@yale.edu", netid: "victim1", name: "Existing User", college: "Morse" });
     cookieValues.set("token", existing.cookies.get("token")!.value);
     const response = await GET(new Request(`https://yaleims.com/api/auth/redirect?${query}`), { params: Promise.resolve({}) });
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://yaleims.com/");
     expect(validateTicket).not.toHaveBeenCalled();
     expect(profile).not.toHaveBeenCalled();
     expect(signIn).not.toHaveBeenCalled();
     expect(response.headers.get("set-cookie") ?? "").not.toContain("token=");
   });
 
-  it.each(["no-profile", "non-Yale-profile", "account-failure"])("never issues a session after %s, and destroys the pre-session", async (failure) => {
+  it.each([
+    ["no-profile", "no-profile"],
+    ["non-Yale-profile", "no-profile"],
+    ["account-failure", "unavailable"],
+  ])("never issues a session after %s, destroys the pre-session and explains it (%s)", async (failure, problem) => {
     cookieValues.set("yims_login", "A".repeat(43));
     if (failure === "no-profile") profile.mockResolvedValue(null);
     if (failure === "non-Yale-profile") profile.mockResolvedValue({ email: "person@elsewhere.edu" });
@@ -59,7 +64,9 @@ describe("browser-bound login callbacks", () => {
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
     try {
       const response = await GET(new Request(`https://yaleims.com/api/auth/redirect?state=${"B".repeat(43)}&ticket=ST-test`), { params: Promise.resolve({}) });
-      expect(response.status).toBe(failure === "account-failure" ? 500 : 403);
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(`https://yaleims.com/sign-in-failed?problem=${problem}`);
+      expect(errorLog).toHaveBeenCalledTimes(failure === "account-failure" ? 1 : 0);
       expect(response.headers.get("set-cookie") ?? "").not.toContain("token=");
       expect(cookieValues.get("yims_login")).toBe("");
       expect(take).toHaveBeenCalledOnce();

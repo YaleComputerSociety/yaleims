@@ -32,7 +32,7 @@ export function route<Params = Record<string, never>>(handler: Handler<Params>):
 }
 
 /** One structured line per failure (Cloud Logging parses JSON lines): route, viewer, error. */
-async function logFailure(req: Request, error: unknown): Promise<void> {
+export async function logFailure(req: Request, error: unknown): Promise<void> {
   const viewer = await getIdentity().catch(() => null);
   console.error(
     JSON.stringify({

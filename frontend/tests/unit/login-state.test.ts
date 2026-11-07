@@ -57,7 +57,7 @@ describe("anonymous login state", () => {
     const { consumeLogin } = await login(false);
     values.set("yims_login", "A".repeat(43));
     take.mockResolvedValue(null);
-    await expect(consumeLogin("B".repeat(43))).rejects.toMatchObject({ status: 401 });
+    await expect(consumeLogin("B".repeat(43))).rejects.toMatchObject({ problem: "expired" });
     expect(setCookie).not.toHaveBeenCalled();
   });
 
@@ -65,7 +65,7 @@ describe("anonymous login state", () => {
     const { consumeLogin } = await login(false);
     values.set("yims_login", "A".repeat(43));
     take.mockResolvedValue({ from: "/hub", expired: true });
-    await expect(consumeLogin("B".repeat(43))).rejects.toMatchObject({ status: 401 });
+    await expect(consumeLogin("B".repeat(43))).rejects.toMatchObject({ problem: "expired" });
     expect(setCookie).toHaveBeenCalledWith("yims_login", "", expect.objectContaining({ maxAge: 0 }));
   });
 
