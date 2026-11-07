@@ -59,6 +59,8 @@ const resultPath = (f: Fixture, slot: number) => `/api/${matchPath(f, slot)}/res
 const score = (f: Fixture, slot: number, homeScore = 2, awayScore = 0) =>
   api("PUT", resultPath(f, slot), { homeScore, awayScore, homeForfeit: false, awayForfeit: false }, admin());
 const undo = (f: Fixture, slot: number) => api("DELETE", resultPath(f, slot), undefined, admin());
+const correct = (f: Fixture, slot: number, homeScore: number, awayScore: number) =>
+  api("PATCH", resultPath(f, slot), { homeScore, awayScore, homeForfeit: false, awayForfeit: false }, admin());
 const game = async (f: Fixture, slot: number) => (await db.doc(matchPath(f, slot)).get()).data() as MatchDoc;
 
 /** Snapshot every document the operation could change, including the number of audit entries. */
@@ -94,6 +96,31 @@ function expectBlocked(response: Awaited<ReturnType<typeof api>>, matchIds: stri
 }
 
 describe("bracket result corrections", () => {
+  it("corrects a feeder's score in one step while the next game is scored, when the winner stays", async () => {
+    const f = await createFixture();
+    expect((await score(f, 2)).status).toBe(204);
+    expect((await score(f, 5)).status).toBe(204);
+    const [next, points] = [await game(f, 5), await totals()];
+    const team = async (college: string) => (await db.doc(`seasons/${current}/colleges/${college}/teams/11`).get()).data()!;
+    const [winnerBefore, loserBefore] = [await team("BK"), await team("BR")];
+
+    expect((await correct(f, 2, 3, 1)).status).toBe(204);
+    expect((await game(f, 2)).result).toEqual({ homeScore: 3, awayScore: 1, outcome: "home", forfeit: false });
+    expect(await game(f, 5)).toEqual(next);
+    expect(await totals()).toEqual(points);
+    expect(await team("BK")).toMatchObject({ wins: winnerBefore.wins, pointsFor: winnerBefore.pointsFor + 1, pointsAgainst: winnerBefore.pointsAgainst + 1 });
+    expect(await team("BR")).toMatchObject({ losses: loserBefore.losses, pointsFor: loserBefore.pointsFor + 1, pointsAgainst: loserBefore.pointsAgainst + 1 });
+  });
+
+  it("refuses a correction that changes a bracket game's winner, without changing any data", async () => {
+    const f = await createFixture();
+    expect((await score(f, 2)).status).toBe(204);
+    const before = await snapshot(f);
+
+    expect(await correct(f, 2, 0, 2)).toMatchObject({ status: 409, body: { error: { code: "conflict" } } });
+    expect(await snapshot(f)).toEqual(before);
+  });
+
   it("refuses to undo a feeder of a scored game without changing any data", async () => {
     const f = await createFixture();
     expect((await score(f, 2)).status).toBe(204);

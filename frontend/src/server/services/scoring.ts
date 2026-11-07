@@ -1,11 +1,13 @@
-// Scoring a game and undoing it. One transaction each: the game's result,
-// both colleges' standings and teams' records, the bracket (winner moves on,
-// placement bonuses) and the audit entry. Then the season is re-ranked.
-// A result is locked while a game it feeds has a score: undo later rounds first.
+// Scoring a game, correcting its score and undoing it. One transaction each:
+// the game's result, both colleges' standings and teams' records, the bracket
+// (winner moves on, placement bonuses) and the audit entry. Then the season is
+// re-ranked. A correction that keeps the winner leaves the bracket alone; a
+// bracket game's winner changes only by undoing it, later rounds first.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { ApiError } from "@/lib/api/core";
 import { matchTeamsProblem, scoreStateProblem } from "@/lib/matchRules";
+import { winnerId } from "@/lib/results";
 import type { MatchDoc, MatchResult, Outcome } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
 import { collegeRef, recalculateRanks } from "../data/colleges";
@@ -36,6 +38,15 @@ function outcomeOf(input: ScoreInput): Outcome {
   return input.homeScore > input.awayScore ? "home" : "away";
 }
 
+function resultOf(input: ScoreInput): MatchResult {
+  return {
+    homeScore: input.homeScore,
+    awayScore: input.awayScore,
+    outcome: outcomeOf(input),
+    forfeit: input.homeForfeit || input.awayForfeit,
+  };
+}
+
 export async function scoreMatch(
   input: ScoreInput,
   actor: Actor
@@ -52,12 +63,7 @@ export async function scoreMatch(
     const awayCollegeId = match.awayCollegeId ?? input.awayCollegeId ?? null;
     if (!homeCollegeId || !awayCollegeId) return "incomplete" as const;
 
-    const result: MatchResult = {
-      homeScore: input.homeScore,
-      awayScore: input.awayScore,
-      outcome: outcomeOf(input),
-      forfeit: input.homeForfeit || input.awayForfeit,
-    };
+    const result = resultOf(input);
     const scored: MatchDoc = {
       ...match,
       homeCollegeId,
@@ -100,6 +106,45 @@ export async function scoreMatch(
     return "scored" as const;
   });
   if (outcome === "scored") await recalculateRanks(seasonId);
+  return outcome;
+}
+
+/**
+ * Replaces a scored game's result: this game's points and records are taken
+ * back and given again. With the same winner (and so the same loser) nothing
+ * in the bracket changes, even when later rounds are scored. A bracket game
+ * whose winner changes is "winner-changes": undo it instead (later rounds
+ * first), so advancement moves the right college. A regular game's winner
+ * can change here. "incomplete": the game has no result.
+ */
+export async function correctScore(
+  input: Omit<ScoreInput, "homeCollegeId" | "awayCollegeId">,
+  actor: Actor
+): Promise<"corrected" | "not-found" | "incomplete" | "winner-changes"> {
+  const { seasonId } = input;
+  const ref = matchRef(seasonId, input.matchId);
+  const outcome = await runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const match = snap.data();
+    if (!match) return "not-found" as const;
+    if (!isScoredGame(match)) return "incomplete" as const;
+    const corrected = { ...match, result: resultOf(input) };
+    const winnerOf = (game: typeof match) => winnerId(game.homeCollegeId, game.awayCollegeId, game.result);
+    if (match.bracketId && winnerOf(corrected) !== winnerOf(match)) return "winner-changes" as const;
+    const standingDocs = await readStandingDocs(tx, seasonId, [match]);
+
+    tx.update(ref, {
+      result: corrected.result,
+      scoredBy: actor.userId,
+      scoredAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    applyResult(tx, seasonId, match, -1, standingDocs);
+    applyResult(tx, seasonId, corrected, 1, standingDocs);
+    logAction(tx, seasonId, { actor, action: "correctScore", params: input, changed: [snap, ...standingDocs] });
+    return "corrected" as const;
+  });
+  if (outcome === "corrected") await recalculateRanks(seasonId);
   return outcome;
 }
 

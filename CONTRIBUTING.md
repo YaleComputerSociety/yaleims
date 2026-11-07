@@ -94,7 +94,9 @@ restart, which would loop when cookies are blocked).
 
 Scoring, undo, bracket advancement, standings, team records, and audit history
 are related operations. Preserve their invariants together, including rejection
-of a correction that would overwrite an already scored downstream game.
+of a change that would overwrite an already scored downstream game. A score
+correction (`PATCH …/result`) that keeps the winner touches only that game and
+its standings; a bracket game's winner changes only through undo.
 The sport is fixed when a game is created. A college replacement clears its
 entire roster, including attendance; the incoming college starts blank, and
 the remaining college's entries stay. Schedule edits and bracket advancement

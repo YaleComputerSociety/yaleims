@@ -67,6 +67,22 @@ const slot = (n: number, home: string | null, away: string | null = null) => ({
 });
 
 describe("server match invariants", () => {
+  it("corrects a regular game's winner in one step, and an undo afterwards restores the standings", async () => {
+    const id = await createGame();
+    const before = await snapshot();
+    expect((await score(id)).status).toBe(204);
+    expect(await api("PATCH", `${gameUrl(id)}/result`, { homeScore: 0, awayScore: 3, homeForfeit: false, awayForfeit: false }, admin()))
+      .toMatchObject({ status: 204 });
+    expect((await snapshot(id)).game?.result).toEqual({ homeScore: 0, awayScore: 3, outcome: "away", forfeit: false });
+    expect((await api("DELETE", `${gameUrl(id)}/result`, undefined, admin())).status).toBe(204);
+    expect((await snapshot()).standings).toEqual(before.standings);
+  });
+
+  it("refuses to correct a game that has no result", async () => {
+    const id = await createGame();
+    expect((await api("PATCH", `${gameUrl(id)}/result`, result, admin())).status).toBe(409);
+  });
+
   it("rejects a whole schedule containing a college playing itself", async () => {
     const before = await snapshot();
     const count = (await db.collection(paths.matches(current)).count().get()).data().count;

@@ -122,6 +122,13 @@ export const matchResultSchema = z.strictObject({
 });
 export type MatchResultInput = z.infer<typeof matchResultSchema>;
 
+/**
+ * PATCH …/result: corrects a scored game's result in one step. A bracket
+ * game must keep its winner (409 otherwise: undo it, later rounds first).
+ */
+export const matchCorrectionSchema = matchResultSchema.omit({ homeCollegeId: true, awayCollegeId: true });
+export type MatchCorrection = z.infer<typeof matchCorrectionSchema>;
+
 export const uploadSchedule = (seasonId: string, upload: ScheduleUpload) =>
   request<ScheduleUploadResult>("POST", url`/api/seasons/${seasonId}/matches`, { body: upload });
 
@@ -134,6 +141,9 @@ export const deleteMatch = (seasonId: string, matchId: string) =>
 
 export const scoreMatch = (seasonId: string, matchId: string, result: MatchResultInput) =>
   request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/result`, { body: result });
+
+export const correctScore = (seasonId: string, matchId: string, correction: MatchCorrection) =>
+  request<void>("PATCH", url`/api/seasons/${seasonId}/matches/${matchId}/result`, { body: correction });
 
 export const undoScore = (seasonId: string, matchId: string) =>
   request<void>("DELETE", url`/api/seasons/${seasonId}/matches/${matchId}/result`);
