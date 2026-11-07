@@ -16,10 +16,8 @@ migration-report*.json
 * 2.*
 * 2/
 
-# Repository documentation: top-level guides and directory README.md files only.
-*.[mM][dD]
-!README.md
-!/CONTRIBUTING.md
+# Written by `next dev` when an AI agent runs it (a pointer to Next's docs).
+frontend/AGENTS.md
 
 # Runtime/debug logs are local artifacts.
 *.log
