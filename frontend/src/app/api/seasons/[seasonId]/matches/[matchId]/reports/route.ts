@@ -8,15 +8,15 @@ type Params = { seasonId: string; matchId: string };
 
 /**
  * The game's score reports, newest first, with the resolver's name (signed
- * in; the emails for admins and devs only).
+ * in; who reported and resolved it, by user id, for supervisors only).
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();
-  const [reports, withEmails] = await Promise.all([listMatchScoreReports(seasonId, matchId), can.score(viewer)]);
+  const [reports, withIds] = await Promise.all([listMatchScoreReports(seasonId, matchId), can.score(viewer)]);
   const resolvers = await getUserNames(reports.flatMap((r) => (r.resolvedBy ? [r.resolvedBy] : [])));
   return ok({
-    items: reports.map((r) => toMatchScoreReport(r, withEmails, (r.resolvedBy && resolvers.get(r.resolvedBy)) || null)),
+    items: reports.map((r) => toMatchScoreReport(r, withIds, (r.resolvedBy && resolvers.get(r.resolvedBy)) || null)),
     total: reports.length,
   } satisfies ScoreReportList<MatchScoreReport>);
 });
@@ -28,8 +28,8 @@ export const POST = route<Params>(async (req, { params }) => {
   const { reason } = await readBody(req, newReportSchema);
   const id = await addScoreReport(seasonId, matchId, {
     reason,
-    reportedBy: viewer.email,
-    reporterName: viewer.name || (await viewer.user())?.username || "Unknown",
+    reportedBy: viewer.userId,
+    reporterName: (await viewer.name()) || "Unknown",
   });
   return created({ id });
 });

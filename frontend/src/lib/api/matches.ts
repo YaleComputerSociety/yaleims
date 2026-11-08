@@ -5,7 +5,7 @@ import type { MatchDoc, WithId } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
 import { request, toJson, url, type Json } from "./core";
 
-/** A game as the API sends it: the stored doc without who scored it (an email, §3.1 of the plan). */
+/** A game as the API sends it: the stored doc without who scored it (a user id, §3.1 of the plan). */
 export type Match = Json<WithId<Omit<MatchDoc, "scoredBy">>>;
 
 export function toMatch({ scoredBy: _scoredBy, ...match }: WithId<MatchDoc>): Match {

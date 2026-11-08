@@ -42,11 +42,17 @@ describe("GET /api/auth/session", () => {
     expect(forged.status).toBe(200);
     expect(forged.setCookie).toMatch(/^token=;/);
   });
-  it("reads roles, college and captaincies from Firestore, not the cookie", async () => {
-    const player = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.student(2, 6), ["user", "admin", "dev"]) });
+  it("reads the name, roles, college and captaincies from Firestore, not the cookie", async () => {
+    const id = people.student(2, 6);
+    const player = await api("GET", "/api/auth/session", undefined, { session: sessionFor(id, ["user", "admin", "dev"]) });
+    const { name, username } = (await db.doc(`users/${id}`).get()).data()!;
+    expect(name).not.toBe("Test User"); // the cookie's
     expect(player.body).toEqual({
       signedIn: true,
-      viewer: { email: people.student(2, 6), name: "Test User", username: expect.any(String), collegeId: COLLEGES[2].id, roles: [], captainOf: [], can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false } },
+      viewer: {
+        userId: id, email: id, name, canEditName: false, directory: null, username, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
+        can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false, managePeople: false },
+      },
     });
     const rep = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.student(2, 0), []) });
     expect(rep.body.viewer.roles).toEqual(["college_rep"]);
@@ -55,13 +61,24 @@ describe("GET /api/auth/session", () => {
     const admin = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.admin) });
     expect(admin.body.viewer.roles).toEqual(["admin", "dev"]);
   });
-  it("joins a returning student to the current season with their login's college (D30)", async () => {
-    const alum = "alum05@example.edu";
-    expect((await db.doc(`seasons/${current}/players/${alum}`).get()).exists).toBe(false);
-    const r = await api("GET", "/api/auth/session", undefined, { session: sessionFor(alum, [], { name: "Re Turner", college: `${COLLEGES[4].name} College` }) });
-    expect(r.body.viewer.collegeId).toBe(COLLEGES[4].id);
-    expect((await db.doc(`seasons/${current}/players/${alum}`).get()).data()).toMatchObject({ collegeId: COLLEGES[4].id, joinedVia: "login" });
-    expect((await db.doc(`seasons/${previous}/players/${alum}`).get()).exists).toBe(true); // last season's stays
+  it("joins a returning student to the current season with the college Yalies gives now, never last season's or the cookie's (D30, decision 5)", async () => {
+    const [known, unknown, unreachable] = ["alum05@example.edu", "alum06@example.edu", "alum07@example.edu"];
+    const visit = (alum: string, netid: string) =>
+      api("GET", "/api/auth/session", undefined, { session: sessionFor(alum, [], { netid, college: "Saybrook College" }) });
+    const playerDoc = (season: string, alum: string) => db.doc(`seasons/${season}/players/${alum}`);
+    try {
+      for (const alum of [known, unknown, unreachable]) expect((await playerDoc(current, alum).get()).exists).toBe(false);
+      // The fake directory's zz902 is in Morse; zz909 isn't in it; it can't answer for zz998.
+      expect((await visit(known, "zz902")).body.viewer.collegeId).toBe("MC");
+      expect((await playerDoc(current, known).get()).data()).toMatchObject({ collegeId: "MC", joinedVia: "login" });
+      expect((await playerDoc(previous, known).get()).exists).toBe(true); // last season's stays
+      expect((await visit(unknown, "zz909")).body.viewer.collegeId).toBeNull();
+      expect((await playerDoc(current, unknown).get()).data()).toMatchObject({ collegeId: null, joinedVia: "login" });
+      expect((await visit(unreachable, "zz998")).body.signedIn).toBe(true);
+      expect((await playerDoc(current, unreachable).get()).exists).toBe(false); // joins at a later visit
+    } finally {
+      for (const alum of [known, unknown, unreachable]) await playerDoc(current, alum).delete();
+    }
   });
 });
 

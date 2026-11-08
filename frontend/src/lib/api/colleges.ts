@@ -24,7 +24,8 @@ export interface CollegePlayerList {
 
 /** GET …/colleges/{c}/leaders (the college's own players): its reps (the college's contacts) and captains. */
 export interface CollegeLeaders {
-  reps: { playerId: string; name: string }[];
+  /** email: their contact address (null: none known). */
+  reps: { playerId: string; name: string; email: string | null }[];
   captains: { sportId: string; name: string }[];
 }
 
@@ -36,16 +37,16 @@ export const fetchCollegeLeaders = (seasonId: string, collegeId: string) =>
 
 // ── Captains (the college's rep, admins; current season) ───────────────────
 
-const captainPath = (seasonId: string, collegeId: string, sportId: string, email: string) =>
-  url`/api/seasons/${seasonId}/colleges/${collegeId}/teams/${sportId}/captains/${email}`;
+const captainPath = (seasonId: string, collegeId: string, sportId: string, playerId: string) =>
+  url`/api/seasons/${seasonId}/colleges/${collegeId}/teams/${sportId}/captains/${playerId}`;
 
 /** PUT: makes the college's player captain of its team in the sport. */
-export const assignCaptain = (seasonId: string, collegeId: string, sportId: string, email: string) =>
-  request<void>("PUT", captainPath(seasonId, collegeId, sportId, email));
+export const assignCaptain = (seasonId: string, collegeId: string, sportId: string, playerId: string) =>
+  request<void>("PUT", captainPath(seasonId, collegeId, sportId, playerId));
 
 /** DELETE: makes them not captain (not one: fine). */
-export const removeCaptain = (seasonId: string, collegeId: string, sportId: string, email: string) =>
-  request<void>("DELETE", captainPath(seasonId, collegeId, sportId, email));
+export const removeCaptain = (seasonId: string, collegeId: string, sportId: string, playerId: string) =>
+  request<void>("DELETE", captainPath(seasonId, collegeId, sportId, playerId));
 
 // ── Weekly MVPs (the college's rep, admins) ────────────────────────────────
 

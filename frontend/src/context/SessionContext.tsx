@@ -1,7 +1,7 @@
 "use client";
 // Who is signed in, for the pages: GET /api/auth/session once per visit (the
 // server reads the roles from Firestore each time, so a role change shows on
-// the next visit). Signing in is a navigation to /api/auth/login?from=<page>;
+// the next visit), and again after the viewer changes their profile (refresh). Signing in is a navigation to /api/auth/login?from=<page>;
 // signing out is POST /api/auth/logout.
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { fetchSession, logout, type SessionViewer } from "@/lib/api/auth";
@@ -14,6 +14,8 @@ interface SessionState {
   signOut: () => Promise<void>;
   /** Updates the viewer in place (the profile's new username). */
   setViewer: (update: (viewer: SessionViewer) => SessionViewer) => void;
+  /** Reads the session again (after a name change or a directory lookup); keeps the viewer when that fails. */
+  refresh: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionState>({
@@ -21,19 +23,25 @@ const SessionContext = createContext<SessionState>({
   loading: true,
   signOut: async () => {},
   setViewer: () => {},
+  refresh: async () => {},
 });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [viewer, setViewerState] = useState<SessionViewer | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refresh = useCallback(
+    () =>
+      fetchSession()
+        .then((session) => setViewerState(session.signedIn ? session.viewer : null))
+        // The server couldn't answer (e.g. Firestore is down): keep the state we have.
+        .catch((err) => console.error("Couldn't read the session:", err)),
+    []
+  );
+
   useEffect(() => {
-    fetchSession()
-      .then((session) => setViewerState(session.signedIn ? session.viewer : null))
-      // The server couldn't answer (e.g. Firestore is down): keep the state we have.
-      .catch((err) => console.error("Couldn't read the session:", err))
-      .finally(() => setLoading(false));
-  }, []);
+    refresh().finally(() => setLoading(false));
+  }, [refresh]);
 
   const signOut = useCallback(async () => {
     try {
@@ -53,7 +61,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <SessionContext.Provider value={{ viewer, loading, signOut, setViewer }}>{children}</SessionContext.Provider>
+    <SessionContext.Provider value={{ viewer, loading, signOut, setViewer, refresh }}>{children}</SessionContext.Provider>
   );
 }
 

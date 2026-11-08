@@ -5,7 +5,8 @@
 // (Seeded people need none of this: dev@example.edu is already an admin, and
 // `npm run dev:token` signs in as anyone.)
 //
-//   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run make-admin -- <email>
+//   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run make-admin -- <netid or user id>
+// (a first sign-in makes users/netid-<netid>; an older local account is users/<email>)
 //
 // Refuses to run unless FIRESTORE_EMULATOR_HOST is set: it can never change
 // roles in production.
@@ -18,21 +19,25 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error("Refusing to run: FIRESTORE_EMULATOR_HOST is not set (this script only writes to the emulator).");
   process.exit(1);
 }
-const email = process.argv[2];
-if (!email?.includes("@")) {
-  console.error("Usage: FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run make-admin -- <email>");
+const who = process.argv[2];
+if (!who) {
+  console.error("Usage: FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run make-admin -- <netid or user id>");
   process.exit(1);
 }
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-yims";
 const db = getFirestore(getApps()[0] ?? initializeApp({ projectId }));
-const ref = db.doc(`users/${email}`);
-const snap = await ref.get();
+let ref = db.doc(`users/${who}`);
+let snap = await ref.get();
 if (!snap.exists) {
-  console.error(`No user ${email} in the emulator. Sign in locally once (that creates the account), then run this again.`);
+  ref = db.doc(`users/netid-${who.toLowerCase()}`);
+  snap = await ref.get();
+}
+if (!snap.exists) {
+  console.error(`No user ${who} in the emulator. Sign in locally once (that creates the account), then run this again.`);
   process.exit(1);
 }
 const current: string[] = Array.isArray(snap.data()?.roles) ? snap.data()!.roles : [];
 const roles = [...new Set([...current, ...ROLES])];
 await ref.update({ roles });
-console.log(`${email}: roles ${JSON.stringify(current)} → ${JSON.stringify(roles)}. Reload the page.`);
+console.log(`${ref.id}: roles ${JSON.stringify(current)} → ${JSON.stringify(roles)}. Reload the page.`);

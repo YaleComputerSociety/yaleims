@@ -17,7 +17,7 @@ const cookieOptions = { httpOnly: true, secure: production, sameSite: "lax" as c
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
 /** Why a sign-in didn't finish; the /sign-in-failed page explains each one. */
-export type LoginProblem = "expired" | "refused" | "no-profile" | "unavailable";
+export type LoginProblem = "expired" | "refused" | "unavailable";
 
 /** A sign-in that ended for a known reason; the callback turns it into a page, never an API error. */
 export class LoginFailure extends Error {

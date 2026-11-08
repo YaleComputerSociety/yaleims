@@ -3,7 +3,7 @@ export default function PrivacyPage() {
     <div className="pt-10 sm:pt-20 bg-primary_lightest dark:bg-transparent">
       <div className="flex flex-col justify-center mx-auto max-w-7xl px-5 sm:px-20">
         <h2 className="text-xl sm:text-4xl">Privacy Policy</h2>
-        <p className="text-sm sm:text-md">Last Updated: January 10, 2024</p>
+        <p className="text-sm sm:text-md">Last Updated: November 7, 2026</p>
         <br></br>
 
         <section>
@@ -20,8 +20,8 @@ export default function PrivacyPage() {
           <h3 className="text-md sm:text-lg underline">Data We Collect</h3>
           <ul className="list-disc list-inside text-sm sm:text-md">
             <li className="pl-10">
-              <strong>Google Sign-In:</strong> Used for account creation and
-              login, providing us with your name and email address.
+              <strong>Yale sign-in (CAS):</strong> Used for account creation and
+              login, providing us with your NetID.
             </li>
             <li className="pl-10">
               <a
@@ -30,8 +30,15 @@ export default function PrivacyPage() {
               >
                 Yalies API:
               </a>{" "}
-              We fetch your college affiliation to assign you to the correct
-              residential college team.
+              We look up your name, email address and residential college to
+              assign you to the correct residential college team. If the lookup
+              finds no name, you may enter one yourself.
+            </li>
+            <li className="pl-10">
+              <strong>Game records:</strong> The games you are signed up for or
+              added to, whether a supervisor recorded you as present, and any
+              correction requests you send, which only you and the YaleIMs
+              admins can see.
             </li>
             <li className="pl-10">
               <strong>Cookies:</strong> Used for login and session management.

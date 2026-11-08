@@ -20,7 +20,7 @@ const ENTRY_BYTES = 256 * 1024;
 /** Request parameters beyond this are not copied (a large schedule upload, say). */
 const PARAMS_BYTES = 64 * 1024;
 
-/** Who did it: their email and their roles at the time. */
+/** Who did it: their user id and their roles at the time. */
 export type Actor = AuditLogDoc["actor"];
 
 /** A doc as read in the transaction (a snapshot of any type fits). */

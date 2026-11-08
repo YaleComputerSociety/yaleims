@@ -3,7 +3,8 @@ import type { RosterSheet } from "@/lib/api/roster";
 import { can, requireViewer } from "@/server/auth";
 import { getMatch } from "@/server/data/matches";
 import { listRoster } from "@/server/data/roster";
-import { getNetids } from "@/server/data/users";
+import { getPlayers } from "@/server/data/players";
+import { getUsers } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string };
@@ -11,7 +12,8 @@ type Params = { seasonId: string; matchId: string };
 /**
  * The sheet captains and supervisors work on: every entry on the sides the
  * caller manages (both for a supervisor; a captain's own college), taken-off
- * players too, with their ids and NetIDs.
+ * players too, with their ids, NetIDs, and whether they have signed in and
+ * have a college this season.
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -24,7 +26,11 @@ export const GET = route<Params>(async (req, { params }) => {
   if (collegeIds.length === 0) throw new ApiError("forbidden", "You don't have permission to do this.");
 
   const entries = (await listRoster(seasonId, matchId)).filter((e) => collegeIds.includes(e.collegeId));
-  const netids = await getNetids(entries.map((e) => e.playerId));
-  const items = entries.map((e) => ({ ...toJson(e), netid: netids.get(e.playerId) ?? null }));
+  const ids = entries.map((e) => e.playerId);
+  const [users, players] = await Promise.all([getUsers(ids), getPlayers(seasonId, ids)]);
+  const items = entries.map((e) => {
+    const user = users.get(e.playerId);
+    return { ...toJson(e), netid: user?.netid ?? null, signedIn: !!user?.claimedAt, collegeAssigned: !!players.get(e.playerId)?.collegeId };
+  });
   return ok({ collegeIds, supervisor, items, total: items.length } satisfies RosterSheet);
 });

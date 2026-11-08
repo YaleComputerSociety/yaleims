@@ -8,7 +8,10 @@
 // global are accounts, usernames, configuration, counters and short-lived login
 // attempts. References are ids:
 // collegeId = the college's abbreviation ("MY"), sportId = the sports doc id,
-// userId / playerId = an email (a guest player has "guest-<random>"). A field
+// userId / playerId = the account's id: an email for accounts made before
+// November 2026, "netid-<netid>" for newer ones (a guest player has
+// "guest-<random>"). Ids are opaque: an email to contact someone is
+// users/{id}.email, never the id. A field
 // whose value is unknown or doesn't apply is stored as null, not left out.
 
 /**
@@ -42,14 +45,34 @@ export interface AppConfigDoc {
 /** Roles that hold across seasons. Season roles are on the player (SeasonRole). */
 export type GlobalRole = "admin" | "dev";
 
+/** Where a user's name comes from: Yalies' names are locked, an admin's override everything. */
+export type NameSource = "none" | "self" | "yalies" | "admin";
+
+/** A directory lookup's result (server/directory.ts). */
+export type DirectoryOutcome = "found" | "partial" | "not-found" | "unavailable";
+
+/** users/{id}.directory: the last directory lookup of their NetID, and when the next may run. */
+export interface DirectoryState {
+  /** null while the first lookup runs. */
+  outcome: DirectoryOutcome | null;
+  checkedAt: StoredTimestamp | null;
+  /** No new lookup before this (a running one claims the slot first). */
+  nextAt: StoredTimestamp;
+}
+
 /**
- * users/{email}: identity across seasons. Old docs also hold frozen fields
- * (mRoles, college, role, sportsCaptainOf, betting totals), not read or written.
+ * users/{userId}: identity across seasons. userId = an email (accounts from
+ * before November 2026) or "netid-<netid>" (newer ones, the same id as the
+ * placeholder player the NetID may already have). Old docs also hold frozen
+ * fields (mRoles, college, role, sportsCaptainOf, betting totals) and
+ * firstname/lastname, read only through server/data/users.ts readUser.
  */
 export interface UserDoc {
-  email: string;
-  firstname: string;
-  lastname: string;
+  /** Contact address; null: none known yet. */
+  email: string | null;
+  /** The full name; null: none known (shown as the username). */
+  name: string | null;
+  nameSource: NameSource;
   /** Their Yale NetID, recorded at login since Phase 3A (null: not seen since; guests have no user). */
   netid: string | null;
   username: string;
@@ -58,6 +81,8 @@ export interface UserDoc {
   claimedAt: StoredTimestamp | null;
   /** Who created the account for them (U10); null = they did, by logging in. */
   createdBy: string | null;
+  /** null: never looked up since November 2026. */
+  directory: DirectoryState | null;
 }
 
 /** usernames/{username}: who holds the username. */
@@ -162,17 +187,33 @@ export interface MvpDoc {
 }
 
 export type SeasonRole = "supervisor" | "college_rep";
-export type JoinedVia = "login" | "captain" | "supervisor" | "migration";
+
+/** Who assigned a season college: the Yale directory, an admin, or the site before November 2026 (verified). */
+export type CollegeSource = "yalies" | "admin" | "legacy";
+
+/** One college assignment of a season player (account plan 4c); collegeId null: an admin cleared it. */
+export interface CollegeAssignment {
+  collegeId: string | null;
+  source: CollegeSource;
+  since: StoredTimestamp;
+}
+export type JoinedVia = "login" | "captain" | "supervisor" | "admin" | "migration";
 
 /**
  * seasons/{s}/players/{playerId}: a person's membership in the season (D30),
  * created on their first login of the season or when a captain/supervisor
- * adds them. playerId = their email, or "guest-<random>".
+ * adds them. playerId = their user id, a NetID no account has yet
+ * ("netid-<netid>", a placeholder; userId null) or "guest-<random>".
  */
 export interface PlayerDoc {
   seasonId: string;
-  /** Fixed for the season (from Yalies when created); null if Yalies has none. */
+  /** The current college (from Yalies, or an admin); null: unassigned. Never carried over from another season. */
   collegeId: string | null;
+  /**
+   * Every assignment, oldest first. Absent on docs from before November
+   * 2026: their college counts as assigned (verified) when they joined.
+   */
+  collegeHistory?: CollegeAssignment[];
   name: string;
   /** null for a guest. */
   userId: string | null;
@@ -255,10 +296,12 @@ export interface RosterEntryDoc {
   captainStatus: CaptainStatus | null;
   captainBy: string | null;
   captainAt: StoredTimestamp | null;
-  /** true = marked present; false = not marked; null = never recorded (legacy). */
+  /** true = marked present (by a supervisor: the only attendance that counts); false = not marked; null = never recorded (legacy). */
   present: boolean | null;
   presentBy: string | null;
   presentAt: StoredTimestamp | null;
+  /** The admin who confirmed this attendance though lib/attendance.ts puts it under review; absent: none. */
+  attendanceConfirmedBy?: string | null;
 }
 
 export type ScoreReportStatus = "open" | "resolved";
@@ -268,7 +311,7 @@ export interface ScoreReportDoc {
   seasonId: string;
   matchId: string;
   reason: string;
-  /** The reporter's email. */
+  /** The reporter's user id. */
   reportedBy: string;
   reporterName: string;
   reportedAt: StoredTimestamp;
@@ -347,4 +390,33 @@ export interface AuditLogDoc {
    * Absent on entries from before November 2026.
    */
   truncated?: { copies: number; paths: number } | null;
+}
+
+// ── reviewRequests/{requestId} ─────────────────────────────────────────────
+
+/** What a review request is about: their college, a game's attendance (missing too), their name. */
+export type ReviewKind = "affiliation" | "attendance" | "profile";
+export type ReviewStatus = "open" | "resolved" | "dismissed";
+
+/**
+ * A person asks an admin to look at something about themselves (account
+ * plan, step 9); only admins resolve it (decision 3d). Server-only, like
+ * the audit log.
+ */
+export interface ReviewRequestDoc {
+  kind: ReviewKind;
+  subjectUserId: string;
+  seasonId: string;
+  /** The game (attendance requests); null otherwise. */
+  matchId: string | null;
+  /** The person's explanation (and, for a name, the right one). */
+  message: string;
+  status: ReviewStatus;
+  /** subject + kind + season + game while open, so a second open request for the same thing is refused; null once closed. */
+  openKey: string | null;
+  /** The admin's answer, shown to the person. */
+  resolution: string | null;
+  resolvedBy: string | null;
+  createdAt: StoredTimestamp;
+  closedAt: StoredTimestamp | null;
 }

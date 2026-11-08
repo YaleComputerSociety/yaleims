@@ -28,12 +28,18 @@ type SheetEntry = Sheet["items"][number];
 
 /**
  * What tells same-named players apart, shown in brackets after the name: the
- * NetID ("unverified" for a NetID not yet matched to anyone), or the email of
- * someone whose NetID isn't recorded yet (it is at their next visit).
+ * account's NetID; a NetID no account has yet ("unverified"); or the id
+ * (an email) of someone whose NetID isn't recorded yet (it is at their next visit).
  */
 function who(player: { playerId: string; netid: string | null }): string {
+  if (player.netid) return player.netid;
   const pending = placeholderNetid(player.playerId);
-  return pending ? `${pending} · unverified` : (player.netid ?? player.playerId);
+  return pending ? `${pending} · unverified` : player.playerId;
+}
+
+/** The small print on a sheet row about the person: not signed in yet (an account made for them), no college this season. */
+function standing(entry: SheetEntry): string[] {
+  return [...(entry.signedIn ? [] : ["not signed in yet"]), ...(entry.collegeAssigned ? [] : ["college unassigned"])];
 }
 
 /** How an entry got on the roster, for the row's small print; supervisors also see the captain's confirmation. */
@@ -185,7 +191,9 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
               <div className="truncate font-medium">
                 {entry.name} <span className="font-normal text-gray-500 dark:text-gray-400">({who(entry)})</span>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{origin(entry, supervisor)}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {[origin(entry, supervisor), ...standing(entry)].join(" · ")}
+              </div>
             </div>
             {!locked && !supervisor && entry.captainStatus !== "confirmed" && (
               <button
@@ -317,7 +325,7 @@ function AddPlayer({ match, collegeId, onRoster, busy, run }: AddPlayerProps) {
     setLookup(null);
     setLabel("");
   };
-  const add = (playerId: string) => run(playerId, () => addRosterPlayer(match.seasonId, match.id, playerId)).then(reset);
+  const add = (playerId: string) => run(playerId, () => addRosterPlayer(match.seasonId, match.id, playerId, { collegeId })).then(reset);
   const addNetid = () =>
     run(`netid-${q}`, async () => {
       const added = await addByNetid(match.seasonId, match.id, { netid: q, collegeId, name: label.trim() || null });
@@ -378,6 +386,11 @@ function AddPlayer({ match, collegeId, onRoster, busy, run }: AddPlayerProps) {
             {lookup.collegeId && lookup.collegeId !== collegeId && (
               <span className="block text-xs text-red-600 dark:text-red-400">
                 In {collegeName(lookup.collegeId)}, not {collegeName(collegeId)}.
+              </span>
+            )}
+            {!lookup.collegeId && (
+              <span className="block text-xs text-amber-700 dark:text-amber-300">
+                College unassigned. This adds the player to this game only.
               </span>
             )}
           </span>

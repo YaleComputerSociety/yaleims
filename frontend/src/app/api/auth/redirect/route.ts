@@ -4,13 +4,14 @@ import { logFailure, route } from "@/server/http";
 import { consumeLogin, LoginFailure, startLogin } from "@/server/login";
 import { signIn } from "@/server/services/accounts";
 import { getIdentity, setSessionCookie } from "@/server/session";
-import { siteUrl, validateTicket, yaliesProfile } from "@/server/yaleLogin";
+import { siteUrl, validateTicket } from "@/server/yaleLogin";
 
 /**
  * Where Yale CAS sends people back (the URL registered with CAS). With a
  * browser-bound, single-use attempt and valid ticket: signs them in (the first
- * login creates the account and season player doc, D30), sets the session cookie and
- * returns them to the stored local path. A bare callback starts a fresh attempt.
+ * login creates the account, and the season player doc when there is a
+ * current season, D30), whatever the directory knows of them; sets the
+ * session cookie and returns them to the stored local path. A bare callback starts a fresh attempt.
  * A failed sign-in ends on a page, never on an API error (failedLogin).
  */
 export const GET = route(async (req) => {
@@ -31,17 +32,11 @@ async function finishLogin(params: URLSearchParams): Promise<NextResponse> {
   const state = params.get("state")!;
   const from = await consumeLogin(state);
 
-  const netid = await validateTicket(ticket, state);
+  const netid = (await validateTicket(ticket, state))?.toLowerCase();
   if (!netid) throw new LoginFailure("refused");
-  const profile = await yaliesProfile(netid);
-  if (!profile || !profile.email.endsWith("@yale.edu")) throw new LoginFailure("no-profile");
-  const seasonId = await getCurrentSeasonId();
-  if (!seasonId) throw new Error("config/app has no current season");
-
-  await signIn(profile, netid, seasonId);
+  const userId = await signIn(netid, await getCurrentSeasonId());
   const res = NextResponse.redirect(siteUrl(from));
-  const name = `${profile.first_name} ${profile.last_name}`;
-  setSessionCookie(res, { email: profile.email, netid, name, college: profile.college ?? null });
+  setSessionCookie(res, { userId, netid });
   return res;
 }
 

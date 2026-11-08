@@ -5,16 +5,17 @@ import { getCurrentSeasonId } from "@/server/data/seasons";
 import { ok, route } from "@/server/http";
 import { placeholderId } from "@/lib/netid";
 import { getPlayer } from "@/server/data/players";
-import { claimPlaceholders, joinSeason, recordNetid } from "@/server/services/accounts";
+import { claimPlaceholders, joinSeasonOnVisit, recordNetid } from "@/server/services/accounts";
 import { clearSessionCookie, getSessionToken } from "@/server/session";
 
 /**
- * Who is signed in, with their roles, college, captaincies and what they may
- * do this season (read from Firestore, not the cookie). Records a user's
- * NetID when it isn't stored yet, and claims what was added under it. A returning student joins the
- * current season here, as at login (D30), with the college of their login:
- * a GET that may create their player doc, on purpose. An invalid session
- * cookie is cleared.
+ * Who is signed in, with their name, roles, college, captaincies and what
+ * they may do this season (read from Firestore, not the cookie). Records a
+ * user's NetID when it isn't stored yet, and claims what was added under it.
+ * A returning student joins the current season here, as at login (D30),
+ * with the college the directory gives now: a GET that may look them up and
+ * create their player doc, on purpose (at most once per cooldown). An
+ * invalid session cookie is cleared.
  */
 export const GET = route(async () => {
   const viewer = await getViewer();
@@ -24,8 +25,9 @@ export const GET = route(async () => {
     return res;
   }
   const seasonId = await getCurrentSeasonId();
-  if (seasonId) await joinSeason(seasonId, viewer.email, viewer.name, viewer.college);
-  const [user, player, captainOf, editSchedule, score, takeAttendance, setChampion, manageRoles] = await Promise.all([
+  if (seasonId) await joinSeasonOnVisit(seasonId, viewer.userId, viewer.netid);
+  const name = await viewer.name();
+  const [user, player, captainOf, editSchedule, score, takeAttendance, setChampion, manageRoles, managePeople] = await Promise.all([
     viewer.user(),
     viewer.player(),
     viewer.captainOf(),
@@ -34,23 +36,32 @@ export const GET = route(async () => {
     can.takeAttendance(viewer),
     can.setChampion(viewer),
     can.manageRoles(viewer),
+    can.managePeople(viewer),
   ]);
   // Users from before NetIDs were kept get theirs on their next visit (the cookie carries it),
   // and a NetID someone added for them unverified becomes theirs (one read when there is none).
-  if (user && !user.netid && viewer.netid) await recordNetid(viewer.email, viewer.netid);
-  if (seasonId && viewer.netid && (await getPlayer(seasonId, placeholderId(viewer.netid)))) {
-    await claimPlaceholders(viewer.netid, viewer.email, viewer.name);
-  }
+  if (user && !user.netid) await recordNetid(viewer.userId, viewer.netid);
+  const placeholder = seasonId ? await getPlayer(seasonId, placeholderId(viewer.netid)) : null;
+  if (placeholder && placeholder.userId !== viewer.userId) await claimPlaceholders(viewer.netid, viewer.userId, name);
   return ok({
     signedIn: true,
     viewer: {
-      email: viewer.email,
-      name: viewer.name,
+      userId: viewer.userId,
+      email: user?.email ?? null,
+      name,
+      canEditName: !!user && (user.nameSource === "none" || user.nameSource === "self"),
+      directory: user?.directory
+        ? {
+            outcome: user.directory.outcome,
+            checkedAt: user.directory.checkedAt?.toDate().toISOString() ?? null,
+            retryAt: user.directory.nextAt.toDate().toISOString(),
+          }
+        : null,
       username: user?.username ?? "Anonymous",
       collegeId: player?.collegeId ?? null,
       roles: [...(user?.roles ?? []), ...(player?.roles ?? [])],
-      captainOf,
-      can: { editSchedule, score, takeAttendance, setChampion, manageRoles },
+      captainOf: captainOf.map((team) => team.sportId),
+      can: { editSchedule, score, takeAttendance, setChampion, manageRoles, managePeople },
     },
   } satisfies SessionState);
 });

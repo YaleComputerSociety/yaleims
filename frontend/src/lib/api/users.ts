@@ -1,6 +1,6 @@
 // The users API (admins): who holds a role (/api/users?role: admin and dev
 // are global, supervisor is this season's) and setting a user's roles
-// (/api/users/{email}/roles, current season).
+// (/api/users/{userId}/roles, current season).
 import { z } from "zod";
 import type { PlayerDoc, UserDoc, WithId } from "@/types/firestore";
 import { request, url, type Json } from "./core";
@@ -17,8 +17,9 @@ export const roleHoldersQuerySchema = z.strictObject({ role: z.enum(["admin", "d
 export type RoleHoldersQuery = z.infer<typeof roleHoldersQuerySchema>;
 
 /**
- * PUT /api/users/{email}/roles: every role they should hold. Season roles
- * and captaincies need them to be a player this season, in a college.
+ * PUT /api/users/{userId}/roles: every role they should hold. Season roles
+ * and captaincies need them to be a player this season; a rep and a captain
+ * also need a college, a supervisor doesn't (decision 3e).
  */
 export const userRolesSchema = z.strictObject({
   roles: z.array(z.enum(["admin", "dev", "college_rep", "supervisor"])).max(4),
@@ -29,5 +30,5 @@ export type UserRoles = z.infer<typeof userRolesSchema>;
 
 export const fetchRoleHolders = (query: RoleHoldersQuery) => request<RoleHolderList>("GET", "/api/users", { query });
 
-export const setUserRoles = (email: string, roles: UserRoles) =>
-  request<void>("PUT", url`/api/users/${email}/roles`, { body: roles });
+export const setUserRoles = (userId: string, roles: UserRoles) =>
+  request<void>("PUT", url`/api/users/${userId}/roles`, { body: roles });

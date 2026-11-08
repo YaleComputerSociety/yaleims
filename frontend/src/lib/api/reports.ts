@@ -15,7 +15,7 @@ interface Resolver {
 
 /**
  * GET …/matches/{m}/reports: everyone signed in sees reports without the
- * emails; admins whole.
+ * reporter's and resolver's user ids; supervisors whole.
  */
 export type MatchScoreReport = Json<WithId<Omit<ScoreReportDoc, "reportedBy" | "resolvedBy">>> &
   Partial<Pick<ScoreReport, "reportedBy" | "resolvedBy">> &
@@ -23,11 +23,11 @@ export type MatchScoreReport = Json<WithId<Omit<ScoreReportDoc, "reportedBy" | "
 
 export function toMatchScoreReport(
   report: WithId<ScoreReportDoc>,
-  withEmails: boolean,
+  withIds: boolean,
   resolverName: string | null
 ): MatchScoreReport {
   const { reportedBy, resolvedBy, ...rest } = report;
-  return { ...toJson(withEmails ? { ...rest, reportedBy, resolvedBy } : rest), resolverName };
+  return { ...toJson(withIds ? { ...rest, reportedBy, resolvedBy } : rest), resolverName };
 }
 
 /** GET /api/seasons/{s}/reports (admins): each report with its game and the resolver's name. */

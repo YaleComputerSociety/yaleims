@@ -7,8 +7,7 @@ const EXPLANATIONS: Record<LoginProblem, string> = {
   expired:
     "This sign-in timed out or was finished in another tab. A sign-in works once, in the browser that started it, within 10 minutes.",
   refused: "Yale didn't confirm this sign-in.",
-  "no-profile": "We couldn't find your profile in the Yale directory, so we can't sign you in yet.",
-  unavailable: "Yale's sign-in or directory isn't responding right now. Please try again in a minute.",
+  unavailable: "Yale's sign-in isn't responding right now. Please try again in a minute.",
 };
 
 export default async function SignInFailed({ searchParams }: { searchParams: Promise<{ problem?: string }> }) {

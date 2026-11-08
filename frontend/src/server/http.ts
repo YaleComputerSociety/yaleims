@@ -21,7 +21,7 @@ export function route<Params = Record<string, never>>(handler: Handler<Params>):
       return await handler(req, ctx);
     } catch (error) {
       if (error instanceof ApiError) {
-        return Response.json(error.toBody(), { status: error.status });
+        return Response.json(error.toBody(), { status: error.status, headers: retryAfter(error) });
       }
       await logFailure(req, error);
       return Response.json(new ApiError("internal", "Something went wrong. Please try again.").toBody(), {
@@ -31,6 +31,13 @@ export function route<Params = Record<string, never>>(handler: Handler<Params>):
   };
 }
 
+/** A rate-limited error's Retry-After header (seconds), from its details.retryAt. */
+function retryAfter(error: ApiError): Record<string, string> | undefined {
+  const retryAt = (error.details as { retryAt?: unknown } | undefined)?.retryAt;
+  if (error.code !== "rate-limited" || typeof retryAt !== "string") return undefined;
+  return { "Retry-After": String(Math.max(1, Math.ceil((Date.parse(retryAt) - Date.now()) / 1000))) };
+}
+
 /** One structured line per failure (Cloud Logging parses JSON lines): route, viewer, error. */
 export async function logFailure(req: Request, error: unknown): Promise<void> {
   const viewer = await getIdentity().catch(() => null);
@@ -38,7 +45,7 @@ export async function logFailure(req: Request, error: unknown): Promise<void> {
     JSON.stringify({
       severity: "ERROR",
       message: `${req.method} ${new URL(req.url).pathname} failed`,
-      viewer: viewer?.email ?? null,
+      viewer: viewer?.userId ?? null,
       error: error instanceof Error ? error.stack : String(error),
     })
   );

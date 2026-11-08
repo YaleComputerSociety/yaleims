@@ -245,6 +245,22 @@ const Dashboard: React.FC = () => {
               when: can.manageRoles,
             },
             {
+              title: "People",
+              link: "/hub/people",
+              icon: "🔎",
+              description: "Find anyone by NetID; fix a college, name or attendance",
+              gradient: "from-sky-500/10 to-blue-500/10",
+              when: can.managePeople,
+            },
+            {
+              title: "Review Requests",
+              link: "/hub/reviews",
+              icon: "📨",
+              description: "Answer what people asked to have checked",
+              gradient: "from-rose-500/10 to-orange-500/10",
+              when: can.managePeople,
+            },
+            {
               title: "Champion Celebration",
               popup: ChampionControls,
               icon: "🏆",

@@ -1,6 +1,7 @@
 // Season membership (D30): seasons/{seasonId}/players/{playerId}, created on
 // a person's first login of the season (services/accounts) or when a captain
-// or supervisor adds them. playerId = the email (a guest: "guest-<random>").
+// or supervisor adds them. playerId = the account's user id, or a NetID not yet
+// matched to an account ("netid-<netid>", a placeholder), or a guest ("guest-<random>").
 import "server-only";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";

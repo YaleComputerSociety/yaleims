@@ -6,23 +6,26 @@ import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useSeason } from "@/context/SeasonContext";
 import { fetchCollegePlayers } from "@/lib/api/colleges";
-import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder } from "@/lib/api/users";
+import { findPeople } from "@/lib/api/people";
+import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder, type RoleHolderList } from "@/lib/api/users";
 import { COLLEGES, collegeName } from "@/lib/colleges";
-import { placeholderNetid } from "@/lib/netid";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "supervisor", "college_rep", "captain", "user"];
 
-/** The groups listing everyone holding a role; any other group is a college. */
+/** The groups listing everyone holding a role; any other group is a college, or the players without one. */
 const ROLE_GROUPS: Record<string, "admin" | "dev" | "supervisor"> = { Admin: "admin", Dev: "dev", Supervisor: "supervisor" };
+const UNASSIGNED = "Unassigned";
 
-/** The roles PUT /api/users/{email}/roles stores ("user" and "captain" aren't stored roles). */
+/** The roles PUT /api/users/{userId}/roles stores ("user" and "captain" aren't stored roles). */
 const STORED_ROLES = userRolesSchema.shape.roles.element.options;
 type StoredRole = (typeof STORED_ROLES)[number];
 
 /** Someone listed: their roles as one list ("user", global, this season's, "captain") and their captaincies (sport ids). */
 interface Person {
-  email: string;
+  /** Their user id. */
+  id: string;
+  netid: string | null;
   name: string;
   college: string | null;
   roles: string[];
@@ -37,8 +40,9 @@ const rolesOf = (globalRoles: string[], seasonRoles: string[], captainOf: string
 ];
 
 const personOf = (holder: RoleHolder): Person => ({
-  email: holder.id,
-  name: `${holder.firstname} ${holder.lastname}`,
+  id: holder.id,
+  netid: holder.netid,
+  name: holder.name ?? holder.username,
   college: collegeName(holder.player?.collegeId),
   roles: rolesOf(holder.roles, holder.player?.roles ?? [], holder.captainOf),
   captainOf: holder.captainOf,
@@ -46,7 +50,8 @@ const personOf = (holder: RoleHolder): Person => ({
 
 /**
  * The people of a group: a role group lists everyone holding that role; a
- * college name lists all the college's players this season (the page shows
+ * college name lists all the college's players this season, and
+ * "Unassigned" this season's players without a college (the page shows
  * those with a role, and finds the others to give one).
  */
 async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
@@ -54,26 +59,59 @@ async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
     return (await fetchRoleHolders({ role: ROLE_GROUPS[group] })).items.map(personOf);
   }
   const collegeId = COLLEGES.find((c) => c.name === group)?.id;
-  if (!collegeId) return [];
-  // A college's players carry their season roles; the global ones come from the role lists.
+  if (collegeId) return loadCollege(seasonId, collegeId);
+  return group === UNASSIGNED ? loadUnassigned() : [];
+}
+
+/** Whether the user is in a role list. */
+const holds = (list: RoleHolderList, userId: string) => list.items.some((u) => u.id === userId);
+
+/** The global roles a user holds, from the admin and dev lists. */
+const globalRolesOf = (admins: RoleHolderList, devs: RoleHolderList, userId: string) => [
+  ...(holds(admins, userId) ? ["admin"] : []),
+  ...(holds(devs, userId) ? ["dev"] : []),
+];
+
+/** A college's players: they carry their season roles; the global ones come from the role lists. */
+async function loadCollege(seasonId: string, collegeId: string): Promise<Person[]> {
   const [players, admins, devs] = await Promise.all([
     fetchCollegePlayers(seasonId, collegeId),
     fetchRoleHolders({ role: "admin" }),
     fetchRoleHolders({ role: "dev" }),
   ]);
-  const globalRoles = (email: string) => [
-    ...(admins.items.some((u) => u.id === email) ? ["admin"] : []),
-    ...(devs.items.some((u) => u.id === email) ? ["dev"] : []),
-  ];
+  // Only players with an account can hold a role (not a NetID nobody has claimed, nor a guest).
   return players.items
-    .filter((p) => !placeholderNetid(p.id))
+    .filter((p) => p.userId)
     .map((p) => ({
-      email: p.id,
+      id: p.id,
+      netid: p.netid,
       name: p.name,
       college: collegeName(p.collegeId),
-      roles: rolesOf(globalRoles(p.id), p.roles, p.captainOf),
+      roles: rolesOf(globalRolesOf(admins, devs, p.id), p.roles, p.captainOf),
       captainOf: p.captainOf,
     }));
+}
+
+/**
+ * This season's players without a college (the People list): a supervisor
+ * needs none (decision 3e), a rep and a captain do, so the role lists give
+ * all the roles they can hold.
+ */
+async function loadUnassigned(): Promise<Person[]> {
+  const [people, admins, devs, supervisors] = await Promise.all([
+    findPeople({ list: "unassigned" }),
+    fetchRoleHolders({ role: "admin" }),
+    fetchRoleHolders({ role: "dev" }),
+    fetchRoleHolders({ role: "supervisor" }),
+  ]);
+  return people.items.map((p) => ({
+    id: p.userId,
+    netid: p.netid,
+    name: p.name,
+    college: null,
+    roles: rolesOf(globalRolesOf(admins, devs, p.userId), holds(supervisors, p.userId) ? ["supervisor"] : [], []),
+    captainOf: [],
+  }));
 }
 
 // Skeleton loader component
@@ -140,7 +178,7 @@ const ManageUserRolesPage = () => {
   const { currentSeason } = useSeason();
   const sports = currentSeason?.sports ?? [];
   const collegeNames = COLLEGES.map((college) => college.name);
-  const dropdownOptions = [...Object.keys(ROLE_GROUPS), ...collegeNames];
+  const dropdownOptions = [...Object.keys(ROLE_GROUPS), ...collegeNames, UNASSIGNED];
 
   const [selectedCollege, setSelectedCollege] = useState<string>(
     dropdownOptions[0] || ""
@@ -222,7 +260,7 @@ const ManageUserRolesPage = () => {
     // Update local state optimistically
     setSpecialRoleUsers((prev) =>
       prev.map((user) =>
-        user.email === userId
+        user.id === userId
           ? {
               ...user,
               roles: editingRoles,
@@ -284,7 +322,7 @@ const ManageUserRolesPage = () => {
                   Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Email
+                  NetID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   College
@@ -303,20 +341,20 @@ const ManageUserRolesPage = () => {
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {users.map((user) => (
                 <tr
-                  key={user.email}
+                  key={user.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {user.name || "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {user.email}
+                    {user.netid ?? user.id}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {user.college || "N/A"}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {editingUser === user.email ? (
+                    {editingUser === user.id ? (
                       <div className="flex flex-wrap gap-2">
                         {ALL_ROLES.map((r) => (
                           <button
@@ -346,7 +384,7 @@ const ManageUserRolesPage = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {editingUser === user.email ? (
+                    {editingUser === user.id ? (
                       editingRoles.includes("captain") ? (
                         <div className="space-y-2">
                           <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -398,10 +436,10 @@ const ManageUserRolesPage = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {editingUser === user.email ? (
+                    {editingUser === user.id ? (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => saveRoleChanges(user.email)}
+                          onClick={() => saveRoleChanges(user.id)}
                           className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 font-medium"
                         >
                           Done
@@ -416,7 +454,7 @@ const ManageUserRolesPage = () => {
                     ) : (
                       <button
                         onClick={() =>
-                          startEditing(user.email, user.roles, user.captainOf)
+                          startEditing(user.id, user.roles, user.captainOf)
                         }
                         className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                       >
@@ -472,7 +510,7 @@ const ManageUserRolesPage = () => {
             ) : ROLE_GROUPS[selectedCollege] ? (
               specialRoleUsers.length === 0 ? (
                 <p className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  Nobody is {ROLE_GROUPS[selectedCollege]} yet. Pick their college to give them the role.
+                  Nobody is {ROLE_GROUPS[selectedCollege]} yet. Pick their college (or Unassigned) to give them the role.
                 </p>
               ) : (
                 <RoleTable role={ROLE_GROUPS[selectedCollege]} users={specialRoleUsers} />
@@ -481,36 +519,36 @@ const ManageUserRolesPage = () => {
               <div>
                 <div className="mb-8 max-w-md">
                   <label htmlFor="find-player" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Give someone in {selectedCollege} a role
+                    Give someone {selectedCollege === UNASSIGNED ? "without a college" : `in ${selectedCollege}`} a role
                   </label>
                   <input
                     id="find-player"
                     type="search"
-                    placeholder="Name or email"
+                    placeholder="Name or NetID"
                     className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   {search.trim() &&
                     specialRoleUsers
-                      .filter((p) => !added.includes(p.email))
-                      .filter((p) => `${p.name} ${p.email}`.toLowerCase().includes(search.trim().toLowerCase()))
+                      .filter((p) => !added.includes(p.id))
+                      .filter((p) => `${p.name} ${p.netid ?? ""}`.toLowerCase().includes(search.trim().toLowerCase()))
                       .slice(0, 6)
                       .map((p) => (
                         <button
-                          key={p.email}
+                          key={p.id}
                           className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
                           onClick={() => {
-                            setAdded((a) => [...a, p.email]);
+                            setAdded((a) => [...a, p.id]);
                             setSearch("");
-                            startEditing(p.email, p.roles, p.captainOf);
+                            startEditing(p.id, p.roles, p.captainOf);
                           }}
                         >
-                          {p.name} <span className="text-xs text-gray-500">{p.email}</span>
+                          {p.name} <span className="text-xs text-gray-500">{p.netid ?? p.id}</span>
                         </button>
                       ))}
                 </div>
-                <RoleTable role="New roles" users={specialRoleUsers.filter((p) => added.includes(p.email))} />
+                <RoleTable role="New roles" users={specialRoleUsers.filter((p) => added.includes(p.id))} />
                 <RoleTable role="admin" users={usersByRole.admin} />
                 <RoleTable role="dev" users={usersByRole.dev} />
                 <RoleTable role="supervisor" users={usersByRole.supervisor} />

@@ -12,7 +12,7 @@ export const GET = route<Params>(async (req, { params }) => {
   const viewer = await requireViewer();
   const roster = await listRoster(seasonId, matchId);
   const playing = roster.filter((e) => e.captainStatus !== "removed");
-  const mine = roster.find((e) => e.playerId === viewer.email);
+  const mine = roster.find((e) => e.playerId === viewer.userId);
   return ok({
     items: playing.map(toPublicEntry),
     total: playing.length,

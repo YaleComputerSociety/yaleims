@@ -15,7 +15,7 @@ export const PUT = route<Params>(async (req, { params }) => {
   const { seasonId, collegeId, week } = await readParams(params, mvpParamsSchema);
   const viewer = await authorize(can.nameMvps, collegeId);
   const { playerId } = await readBody(req, mvpAwardSchema);
-  if (!(await setMvp(seasonId, collegeId, { week, playerId, awardedBy: viewer.email }))) {
+  if (!(await setMvp(seasonId, collegeId, { week, playerId, awardedBy: viewer.userId }))) {
     throw new ApiError("bad-request", "They aren't a player of this college that season.");
   }
   return noContent();

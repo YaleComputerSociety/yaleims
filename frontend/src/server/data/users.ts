@@ -1,31 +1,50 @@
-// Users: users/{email} (identity across seasons, global roles) and
-// usernames/{username} (who holds a username). Old user docs also hold frozen
-// pre-v3 fields (mRoles, college, sportsCaptainOf, betting totals); reads
-// return only the v3 fields (D25).
+// Users: users/{userId} (identity across seasons, global roles) and
+// usernames/{username} (who holds a username). userId is an email for
+// accounts from before November 2026, "netid-<netid>" for newer ones. Old
+// user docs also hold frozen pre-v3 fields (mRoles, college,
+// sportsCaptainOf, betting totals) and the name as firstname/lastname;
+// reads return only the current fields (D25).
 import "server-only";
 import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
-import { placeholderNetid } from "@/lib/netid";
+import { placeholderId } from "@/lib/netid";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
-  email: true, firstname: true, lastname: true, netid: true, username: true,
-  roles: true, claimedAt: true, createdBy: true,
+  email: true, name: true, nameSource: true, netid: true, username: true,
+  roles: true, claimedAt: true, createdBy: true, directory: true,
 };
 
 /**
- * A stored user's v3 fields. A doc the migration hasn't reached yet (made by
- * the old code during the cutover) has no roles and counts as claimed.
+ * A stored user's current fields. Docs from before November 2026 have no
+ * `name`: theirs is firstname + lastname, from Yalies at their first login.
+ * A doc the migration hasn't reached yet (made by the old code during the
+ * cutover) has no roles and counts as claimed.
  */
 export function readUser(data: DocumentData): UserDoc {
   const user = pickFields<UserDoc>(data, USER_FIELDS);
-  return { ...user, netid: user.netid ?? null, roles: user.roles ?? [], claimedAt: user.claimedAt ?? null, createdBy: user.createdBy ?? null };
+  const oldName = `${data.firstname ?? ""} ${data.lastname ?? ""}`.trim() || null;
+  const name = user.name !== undefined ? user.name : oldName;
+  return {
+    ...user,
+    email: user.email ?? null,
+    name,
+    nameSource: user.nameSource ?? (name ? "yalies" : "none"),
+    netid: user.netid ?? null,
+    roles: user.roles ?? [],
+    claimedAt: user.claimedAt ?? null,
+    createdBy: user.createdBy ?? null,
+    directory: user.directory ?? null,
+  };
 }
 
-export function userRef(email: string): DocumentReference {
-  return adminDb.doc(paths.user(email));
+/** The name to show for a user: their name, else their username. */
+export const displayName = (user: UserDoc) => user.name ?? user.username;
+
+export function userRef(userId: string): DocumentReference {
+  return adminDb.doc(paths.user(userId));
 }
 
 export function usernameRef(username: string): DocumentReference {
@@ -37,39 +56,64 @@ export function usernameCounterRef(): DocumentReference {
   return adminDb.doc(paths.usernameCounter);
 }
 
-export async function getUser(email: string): Promise<UserDoc | null> {
-  const snap = await userRef(email).get();
+export async function getUser(userId: string): Promise<UserDoc | null> {
+  const snap = await userRef(userId).get();
   return snap.exists ? readUser(snap.data()!) : null;
 }
 
-/** The users with these emails (missing ones left out), by email. */
-export async function getUsers(emails: string[]): Promise<Map<string, UserDoc>> {
-  if (emails.length === 0) return new Map();
-  const snaps = await adminDb.getAll(...emails.map(userRef));
+/** The users with these ids (missing ones left out), by id. */
+export async function getUsers(userIds: string[]): Promise<Map<string, UserDoc>> {
+  const ids = [...new Set(userIds)];
+  if (ids.length === 0) return new Map();
+  const snaps = await adminDb.getAll(...ids.map(userRef));
   return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
 }
 
-/** The NetIDs of the users with these emails that have one recorded, by email. */
-export async function getNetids(emails: string[]): Promise<Map<string, string>> {
-  const users = await getUsers([...new Set(emails)].filter((e) => !placeholderNetid(e)));
-  return new Map([...users].flatMap(([email, user]) => (user.netid ? [[email, user.netid] as const] : [])));
+/**
+ * The NetID of each of these players that has one, by player id: the
+ * account's recorded NetID; a placeholder (a NetID no account has yet) has none.
+ */
+export async function getNetids(playerIds: string[]): Promise<Map<string, string>> {
+  const users = await getUsers(playerIds);
+  return new Map([...users].flatMap(([id, user]) => (user.netid ? [[id, user.netid] as const] : [])));
 }
 
-/** "First Last" of the users with these emails (missing ones left out), by email. */
-export async function getUserNames(emails: string[]): Promise<Map<string, string>> {
-  const users = await getUsers([...new Set(emails)]);
-  return new Map([...users].map(([email, user]) => [email, `${user.firstname} ${user.lastname}`]));
+/** The display names of the users with these ids (missing ones left out), by id. */
+export async function getUserNames(userIds: string[]): Promise<Map<string, string>> {
+  const users = await getUsers(userIds);
+  return new Map([...users].map(([id, user]) => [id, displayName(user)]));
 }
 
-/** The email of the user with this NetID recorded; null if none. */
-export async function findUserByNetid(netid: string): Promise<string | null> {
-  const snap = await usersByNetidQuery(netid).get();
-  return snap.empty ? null : snap.docs[0].id;
+/** The emails of the users with these ids that have one, by id (contact links). */
+export async function getEmails(userIds: string[]): Promise<Map<string, string>> {
+  const users = await getUsers(userIds);
+  return new Map([...users].flatMap(([id, user]) => (user.email ? [[id, user.email] as const] : [])));
 }
 
-/** Also read transactionally before creating an unverified placeholder. */
+/**
+ * The users with this NetID recorded: normally one (an older, email-keyed
+ * account, or users/netid-<netid>); a person signed in once while the
+ * directory was down can have both until they are merged.
+ */
 export function usersByNetidQuery(netid: string) {
-  return adminDb.collection(paths.users).where("netid", "==", netid).limit(1);
+  return adminDb.collection(paths.users).where("netid", "==", netid).limit(3);
+}
+
+/**
+ * Which of the users with this NetID recorded is its account: the one older
+ * (email-keyed) account, else users/netid-<netid>. "conflict" for two older
+ * ones (for an admin to sort out); null for none.
+ */
+export function holderOfNetid<T extends { id: string }>(holders: T[], netid: string): T | "conflict" | null {
+  const older = holders.filter((d) => d.id !== placeholderId(netid));
+  if (older.length > 1) return "conflict";
+  return older[0] ?? holders[0] ?? null;
+}
+
+/** The account with this NetID recorded (holderOfNetid); null when none, or a conflict. */
+export async function findUserByNetid(netid: string): Promise<WithId<UserDoc> | null> {
+  const holder = holderOfNetid((await usersByNetidQuery(netid).get()).docs, netid);
+  return holder && holder !== "conflict" ? { id: holder.id, ...readUser(holder.data()) } : null;
 }
 
 /** Users holding a global role. */
@@ -83,17 +127,17 @@ export async function listUsersWithRole(role: GlobalRole): Promise<WithId<UserDo
  * already holds it. Checked and written in one transaction.
  */
 export async function changeUsername(
-  email: string,
+  userId: string,
   username: string
 ): Promise<"ok" | "taken" | "no-user"> {
   return adminDb.runTransaction(async (tx) => {
-    const [usernameSnap, userSnap] = await tx.getAll(usernameRef(username), userRef(email));
+    const [usernameSnap, userSnap] = await tx.getAll(usernameRef(username), userRef(userId));
     if (usernameSnap.exists) return "taken";
     if (!userSnap.exists) return "no-user";
 
     const oldUsername = readUser(userSnap.data()!).username;
-    tx.set(usernameRef(username), { userId: email });
-    tx.update(userRef(email), { username });
+    tx.set(usernameRef(username), { userId });
+    tx.update(userRef(userId), { username });
     if (oldUsername) tx.delete(usernameRef(oldUsername));
     return "ok";
   });

@@ -192,7 +192,7 @@ const GamesPage: React.FC = () => {
   const handleSignUpStatusChange = useCallback((matchId: string, signed: boolean) => {
     setMyEntries((prev) => {
       const next = new Map(prev);
-      if (signed) next.set(matchId, { captainStatus: null, present: false });
+      if (signed) next.set(matchId, { captainStatus: null, present: false, underReview: false });
       else next.delete(matchId);
       return next;
     });

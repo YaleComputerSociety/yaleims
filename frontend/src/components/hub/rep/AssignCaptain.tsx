@@ -42,7 +42,7 @@ export default function AssignCaptain() {
   const filteredUsers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
-    return players.filter((p) => p.name.toLowerCase().includes(term) || p.id.toLowerCase().includes(term));
+    return players.filter((p) => [p.name, p.netid ?? p.id].some((field) => field.toLowerCase().includes(term)));
   }, [searchTerm, players]);
 
   const currentCaptains = players.filter((p) => p.captainOf.length > 0);
@@ -167,7 +167,7 @@ export default function AssignCaptain() {
           <input
             type="search"
             autoComplete="off"
-            placeholder="Search by name or email…"
+            placeholder="Search by name or NetID…"
             className="w-full rounded-md px-3 py-2 text-sm bg-white dark:bg-black
                        ring-1 ring-black/10 focus:ring-2 focus:ring-black/20
                        dark:ring-white/10 dark:focus:ring-white/20"
@@ -189,7 +189,7 @@ export default function AssignCaptain() {
                     }}
                   >
                     {u.name || u.id}{" "}
-                    <span className="text-xs text-gray-500">({u.id})</span>
+                    <span className="text-xs text-gray-500">({u.netid ?? u.id})</span>
                   </li>
                 ))
               )}
@@ -242,9 +242,9 @@ export default function AssignCaptain() {
                         key={`${sport.id}-${c.id}`}
                         className="inline-flex items-center rounded-full px-2 py-0.5 text-xs
                                    bg-neutral-100 shadow-sm dark:bg-neutral-800 dark:shadow-black/20"
-                        title={c.id}
+                        title={c.netid ?? c.id}
                       >
-                        {c.id}
+                        {c.name || c.netid || c.id}
                       </span>
                     ))}
                     {(captainsBySport[sport.id] ?? []).length === 0 && (

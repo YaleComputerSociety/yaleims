@@ -23,11 +23,15 @@ export const paths = {
   appConfig: "config/app",
 
   users: "users",
-  user: (email: string) => `users/${seg(email)}`,
+  user: (userId: string) => `users/${seg(userId)}`,
   /** Taken usernames: usernames/{username} = { userId }. */
   username: (username: string) => `usernames/${seg(username)}`,
   /** { count }: how many usernames have been generated (the number in them). */
   usernameCounter: "counters/usernames",
+
+  /** Private requests for an admin's review (server-only). */
+  reviewRequests: "reviewRequests",
+  reviewRequest: (requestId: string) => `reviewRequests/${seg(requestId)}`,
 
   /** Private, expiring pre-login records; the ID is a hash of the random state. */
   loginAttempts: "loginAttempts",
