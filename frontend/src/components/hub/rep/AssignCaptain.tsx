@@ -2,6 +2,7 @@ import { useSeason } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import PersonName from "@/components/ui/PersonName";
 import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
 import { isSportInTerm } from "@/lib/sports";
 
@@ -188,8 +189,7 @@ export default function AssignCaptain() {
                       setSearchTerm("");
                     }}
                   >
-                    {u.name || u.id}{" "}
-                    <span className="text-xs text-gray-500">({u.netid ?? u.id})</span>
+                    <PersonName person={u} />
                   </li>
                 ))
               )}

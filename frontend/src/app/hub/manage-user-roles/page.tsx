@@ -7,7 +7,8 @@ import { toast } from "react-toastify";
 import { useSeason } from "@/context/SeasonContext";
 import { fetchCollegePlayers } from "@/lib/api/colleges";
 import { findPeople } from "@/lib/api/people";
-import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder, type RoleHolderList } from "@/lib/api/users";
+import { fetchRoleHolders, setUserRoles, userRolesSchema, type Identity, type RoleHolder, type RoleHolderList } from "@/lib/api/users";
+import PersonName from "@/components/ui/PersonName";
 import { COLLEGES, collegeName } from "@/lib/colleges";
 
 // Available roles for the multi-select dropdown
@@ -21,12 +22,10 @@ const UNASSIGNED = "Unassigned";
 const STORED_ROLES = userRolesSchema.shape.roles.element.options;
 type StoredRole = (typeof STORED_ROLES)[number];
 
-/** Someone listed: their roles as one list ("user", global, this season's, "captain") and their captaincies (sport ids). */
-interface Person {
+/** Someone listed (name, NetID, email): their roles as one list ("user", global, this season's, "captain") and their captaincies (sport ids). */
+interface Person extends Identity {
   /** Their user id. */
   id: string;
-  netid: string | null;
-  name: string;
   college: string | null;
   roles: string[];
   captainOf: string[];
@@ -43,6 +42,7 @@ const personOf = (holder: RoleHolder): Person => ({
   id: holder.id,
   netid: holder.netid,
   name: holder.name ?? holder.netid ?? holder.id,
+  email: holder.email,
   college: collegeName(holder.player?.collegeId),
   roles: rolesOf(holder.roles, holder.player?.roles ?? [], holder.captainOf),
   captainOf: holder.captainOf,
@@ -86,6 +86,7 @@ async function loadCollege(seasonId: string, collegeId: string): Promise<Person[
       id: p.id,
       netid: p.netid,
       name: p.name,
+      email: p.email,
       college: collegeName(p.collegeId),
       roles: rolesOf(globalRolesOf(admins, devs, p.id), p.roles, p.captainOf),
       captainOf: p.captainOf,
@@ -108,6 +109,7 @@ async function loadUnassigned(): Promise<Person[]> {
     id: p.userId,
     netid: p.netid,
     name: p.name,
+    email: p.email,
     college: null,
     roles: rolesOf(globalRolesOf(admins, devs, p.userId), holds(supervisors, p.userId) ? ["supervisor"] : [], []),
     captainOf: [],
@@ -322,7 +324,7 @@ const ManageUserRolesPage = () => {
                   Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  NetID
+                  NetID · email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   College
@@ -348,7 +350,8 @@ const ManageUserRolesPage = () => {
                     {user.name || "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {user.netid ?? user.id}
+                    {user.netid ?? "no NetID"}
+                    {user.email && <span className="block text-xs">{user.email}</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {user.college || "N/A"}
@@ -544,7 +547,7 @@ const ManageUserRolesPage = () => {
                             startEditing(p.id, p.roles, p.captainOf);
                           }}
                         >
-                          {p.name} <span className="text-xs text-gray-500">{p.netid ?? p.id}</span>
+                          <PersonName person={p} />
                         </button>
                       ))}
                 </div>

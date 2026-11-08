@@ -9,6 +9,7 @@ import "server-only";
 import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
+import type { Identity } from "@/lib/api/users";
 import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
 import { placeholderId } from "@/lib/netid";
 import { pickFields } from "./util";
@@ -68,6 +69,11 @@ export async function getUsers(userIds: string[]): Promise<Map<string, UserDoc>>
 export async function getUserNames(userIds: string[]): Promise<Map<string, string>> {
   const users = await getUsers(userIds);
   return new Map([...users].map(([id, user]) => [id, displayName(user)]));
+}
+
+/** A person's identity for an API (lib/api/users Identity): `copy` names someone without an account; the email only `withEmail`. */
+export function identityOf(user: UserDoc | undefined, copy: string, withEmail: boolean): Identity {
+  return { name: user ? displayName(user) : copy, netid: user?.netid ?? null, ...(withEmail ? { email: user?.email ?? null } : {}) };
 }
 
 /**

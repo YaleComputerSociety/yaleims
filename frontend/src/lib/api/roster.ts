@@ -7,6 +7,7 @@ import type { RosterEntryDoc } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
 import { NETID_PATTERN } from "../netid";
 import { request, toJson, url, type Json } from "./core";
+import type { Identity } from "./users";
 
 /** The caller's own entry, whole. */
 export type RosterEntry = Json<RosterEntryDoc>;
@@ -61,12 +62,13 @@ export interface RosterSheet {
   /** A supervisor: takes attendance, any time; otherwise a captain, until the start. */
   supervisor: boolean;
   /**
-   * Each entry with the player's NetID, to tell same-named players apart
-   * (null: none recorded yet, or a placeholder "netid-<netid>", whose id
-   * holds it); whether they have signed in (an account made for them stays
-   * unclaimed until then); whether they have a college this season.
+   * Each entry with the player's identity (their NetID tells same-named
+   * players apart; null: none recorded yet, or a placeholder "netid-<netid>",
+   * whose id holds it; emails for admins); whether they have signed in (an
+   * account made for them stays unclaimed until then); whether they have a
+   * college this season.
    */
-  items: (RosterEntry & { netid: string | null; signedIn: boolean; collegeAssigned: boolean })[];
+  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean })[];
   total: number;
 }
 

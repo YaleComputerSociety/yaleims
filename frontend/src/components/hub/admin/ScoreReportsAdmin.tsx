@@ -5,6 +5,7 @@ import { FaSpinner, FaCheck } from "react-icons/fa";
 import { useSeason } from "@/context/SeasonContext";
 import { toast } from "react-toastify";
 import { fetchSeasonReports, resolveReport, type SeasonScoreReport } from "@/lib/api/reports";
+import PersonName from "@/components/ui/PersonName";
 
 /** The season's score reports (admins and devs): open ones to resolve, then the resolved. */
 const ScoreReportsAdmin: React.FC = () => {
@@ -97,7 +98,7 @@ const ScoreReportsAdmin: React.FC = () => {
                           : ""}
                       </span>
                       {sportName(r.match?.sportId) && <span>• {sportName(r.match?.sportId)}</span>}
-                      <span>• by {r.reporterName} ({new Date(r.reportedAt).toLocaleString()})</span>
+                      <span>• by <PersonName person={r.reporter} /> ({new Date(r.reportedAt).toLocaleString()})</span>
                     </div>
                     <button
                       type="button"

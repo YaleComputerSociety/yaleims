@@ -59,6 +59,7 @@ function summary(user: WithId<UserDoc>, player: PlayerDoc | undefined): PersonSu
     userId: user.id,
     netid: user.netid,
     name: displayName(user),
+    email: user.email,
     claimed: !!user.claimedAt,
     collegeId: player?.collegeId ?? null,
     inSeason: !!player,
@@ -84,7 +85,6 @@ export async function personView(userId: string, seasonId: string): Promise<Pers
   const review = underReview(player, entries);
   return {
     ...summary(user, player),
-    email: user.email,
     nameSource: user.nameSource,
     createdBy: user.createdBy,
     roles: user.roles,

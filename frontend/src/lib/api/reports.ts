@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { ScoreReportDoc, WithId } from "@/types/firestore";
 import { request, toJson, url, type Json } from "./core";
 import type { Match } from "./matches";
+import type { Identity } from "./users";
 
 export type ScoreReport = Json<WithId<ScoreReportDoc>>;
 
@@ -15,23 +16,27 @@ interface Resolver {
 
 /**
  * GET …/matches/{m}/reports: everyone signed in sees reports without the
- * reporter's and resolver's user ids; supervisors whole.
+ * reporter's and resolver's user ids; supervisors whole, with the
+ * reporter's identity.
  */
 export type MatchScoreReport = Json<WithId<Omit<ScoreReportDoc, "reportedBy" | "resolvedBy">>> &
   Partial<Pick<ScoreReport, "reportedBy" | "resolvedBy">> &
-  Resolver;
+  Resolver & { reporter?: Identity };
 
+/** A report as GET …/matches/{m}/reports shows it; `reporter` (null for a non-supervisor) keeps the ids in. */
 export function toMatchScoreReport(
   report: WithId<ScoreReportDoc>,
-  withIds: boolean,
-  resolverName: string | null
+  resolverName: string | null,
+  reporter: Identity | null
 ): MatchScoreReport {
   const { reportedBy, resolvedBy, ...rest } = report;
-  return { ...toJson(withIds ? { ...rest, reportedBy, resolvedBy } : rest), resolverName };
+  return reporter
+    ? { ...toJson({ ...rest, reportedBy, resolvedBy }), resolverName, reporter }
+    : { ...toJson(rest), resolverName };
 }
 
-/** GET /api/seasons/{s}/reports (admins): each report with its game and the resolver's name. */
-export type SeasonScoreReport = ScoreReport & { match: Match | null } & Resolver;
+/** GET /api/seasons/{s}/reports (supervisors): each report with its game, the reporter's identity and the resolver's name. */
+export type SeasonScoreReport = ScoreReport & { match: Match | null; reporter: Identity } & Resolver;
 
 export interface ScoreReportList<T> {
   items: T[];

@@ -107,7 +107,7 @@ describe("People", () => {
   it("finds a person by NetID and lists those without a college", async () => {
     const p = await person();
     expect((await api("GET", `/api/people?netid=${p.netid.toUpperCase()}`, undefined, { session: admin() })).body.items).toEqual([
-      { userId: p.id, netid: p.netid, name: "Rev Person", claimed: true, collegeId: null, inSeason: true },
+      { userId: p.id, netid: p.netid, name: "Rev Person", email: null, claimed: true, collegeId: null, inSeason: true },
     ]);
     const unassigned = await api("GET", "/api/people?list=unassigned", undefined, { session: admin() });
     expect(unassigned.body.items.map((x: { userId: string }) => x.userId)).toContain(p.id);

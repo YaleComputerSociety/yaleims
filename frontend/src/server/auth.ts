@@ -161,6 +161,8 @@ export const can = {
   manageRoles: isAdmin,
   /** Find anyone (People), correct their name, email, college and attendance, and answer review requests (decision 3d). */
   managePeople: isAdmin,
+  /** See the email of anyone they act on, next to their name and NetID (lib/api/users Identity). */
+  seeEmails: isAdmin,
   /** A college's players this season (the captain, MVP and roster pickers, the roles page). */
   listPlayers: async (viewer: Viewer, collegeId: string) =>
     (await isSupervisor(viewer)) || (await isRepOf(viewer, collegeId)) || isCaptainOf(viewer, collegeId),

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import PageHeading from "@/components/layout/PageHeading";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import PersonName from "@/components/ui/PersonName";
 import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import { useSeason } from "@/context/SeasonContext";
 import {
@@ -90,7 +91,7 @@ function PeoplePage() {
             {results?.map((p) => (
               <li key={p.userId} className="flex items-center justify-between py-2 text-sm">
                 <span>
-                  {p.name} <span className="text-gray-500">({p.netid ?? p.userId})</span>
+                  <PersonName person={p} />
                   <span className="block text-xs text-gray-500">
                     {[p.claimed ? null : "not signed in yet", p.inSeason ? (collegeName(p.collegeId) ?? "college unassigned") : "not a player this season"]
                       .filter(Boolean)

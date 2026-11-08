@@ -59,6 +59,10 @@ describe("GET …/roster/sheet", () => {
     const all = await api("GET", `${path}/sheet`, undefined, { session: supervisor() });
     expect(all.body.supervisor).toBe(true);
     expect([...all.body.collegeIds].sort()).toEqual([collegeId, other].sort());
+    // Names and NetIDs for every editor; emails for admins only.
+    for (const e of all.body.items) expect(e).not.toHaveProperty("email");
+    const asAdmin = await api("GET", `${path}/sheet`, undefined, { session: sessionFor(people.admin) });
+    for (const e of asAdmin.body.items) expect(e).toMatchObject({ name: expect.any(String), email: e.playerId.includes("@") ? e.playerId : null });
   });
 });
 

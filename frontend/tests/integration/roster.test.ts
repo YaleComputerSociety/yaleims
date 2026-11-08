@@ -104,8 +104,12 @@ describe("score reports", () => {
     expect(asPlayer.body.total).toBeGreaterThan(0);
     expect(asPlayer.body.items[0]).not.toHaveProperty("reportedBy");
     expect(asPlayer.body.items[0].reporterName).toBe((await db.doc(`users/${people.student(4, 6)}`).get()).data()!.name);
+    expect(asPlayer.body.items[0]).not.toHaveProperty("reporter");
+    const asSupervisor = await api("GET", path, undefined, { session: sessionFor(people.supervisor) });
+    expect(asSupervisor.body.items[0].reporter).toEqual({ name: asPlayer.body.items[0].reporterName, netid: expect.any(String) });
     const asAdmin = await api("GET", path, undefined, { session: admin() });
     expect(asAdmin.body.items[0].reportedBy).toBe(people.student(4, 6));
+    expect(asAdmin.body.items[0].reporter).toMatchObject({ email: people.student(4, 6) });
   });
   it("are resolved by admins, and listed for the season with their game", async () => {
     const game = await played();

@@ -28,6 +28,7 @@ export interface PersonSummary {
   userId: string;
   netid: string | null;
   name: string;
+  email: string | null;
   /** Signed in at least once (an account made by a captain or supervisor isn't, until then). */
   claimed: boolean;
   /** This season's college; null: unassigned, or not a player this season (`inSeason`). */
@@ -61,7 +62,6 @@ export interface PersonGame {
 
 /** GET /api/people/{userId}?seasonId: everything an admin needs about a person in a season. */
 export interface Person extends PersonSummary {
-  email: string | null;
   nameSource: NameSource;
   createdBy: string | null;
   roles: GlobalRole[];

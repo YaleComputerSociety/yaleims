@@ -7,6 +7,7 @@ import { useSession } from "@/context/SessionContext";
 import { signInUrl } from "@/lib/api/auth";
 import type { Match } from "@/lib/api/matches";
 import { fetchMatchReports, reportScore, resolveReport, type MatchScoreReport } from "@/lib/api/reports";
+import PersonName from "@/components/ui/PersonName";
 import { toast } from "react-toastify";
 
 interface ReportScoreButtonProps {
@@ -167,7 +168,7 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, s
                     >
                       <p className="text-gray-800 dark:text-gray-200">{r.reason}</p>
                       <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        — {r.reporterName} ({new Date(r.reportedAt).toLocaleString()})
+                        — {r.reporter ? <PersonName person={r.reporter} /> : r.reporterName} ({new Date(r.reportedAt).toLocaleString()})
                         {r.status === "resolved" && (
                           <span className="ml-2 text-green-600 dark:text-green-400">
                             ✓ Resolved{r.resolverName ? ` by ${r.resolverName}` : ""}

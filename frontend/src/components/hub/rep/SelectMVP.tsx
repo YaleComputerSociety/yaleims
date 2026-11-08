@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import PersonName from "@/components/ui/PersonName";
 import { useSession } from "@/context/SessionContext";
 import { fetchCollegePlayers, fetchMvps, nameMvp, type CollegePlayer, type Mvp } from "@/lib/api/colleges";
 
@@ -179,7 +180,7 @@ export default function SelectMVP() {
             <p className="mb-2 font-semibold">Already selected for this week:</p>
             {weekMvps.map((mvp) => (
               <p key={mvp.id}>
-                • {mvp.name} <span className="text-xs text-gray-500">({mvp.playerId})</span>
+                • <PersonName person={mvp} />
               </p>
             ))}
           </div>
@@ -218,8 +219,7 @@ export default function SelectMVP() {
                       setSearchTerm("");
                     }}
                   >
-                    {u.name || u.id}{" "}
-                    <span className="text-xs text-gray-500">({u.netid ?? u.id})</span>
+                    <PersonName person={u} />
                   </li>
                 ))
               )}

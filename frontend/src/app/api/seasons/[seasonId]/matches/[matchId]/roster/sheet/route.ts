@@ -4,7 +4,7 @@ import { can, requireViewer } from "@/server/auth";
 import { getMatch } from "@/server/data/matches";
 import { listRoster } from "@/server/data/roster";
 import { getPlayers } from "@/server/data/players";
-import { displayName, getUsers } from "@/server/data/users";
+import { getUsers, identityOf } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string };
@@ -12,8 +12,8 @@ type Params = { seasonId: string; matchId: string };
 /**
  * The sheet captains and supervisors work on: every entry on the sides the
  * caller manages (both for a supervisor; a captain's own college), taken-off
- * players too, with their ids, NetIDs, and whether they have signed in and
- * have a college this season.
+ * players too, with their ids and identities (emails for admins), and
+ * whether they have signed in and have a college this season.
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -27,10 +27,10 @@ export const GET = route<Params>(async (req, { params }) => {
 
   const entries = (await listRoster(seasonId, matchId)).filter((e) => collegeIds.includes(e.collegeId));
   const ids = entries.map((e) => e.playerId);
-  const [users, players] = await Promise.all([getUsers(ids), getPlayers(seasonId, ids)]);
+  const [users, players, withEmail] = await Promise.all([getUsers(ids), getPlayers(seasonId, ids), can.seeEmails(viewer)]);
   const items = entries.map((e) => {
     const user = users.get(e.playerId);
-    return { ...toJson(e), name: user ? displayName(user) : e.name, netid: user?.netid ?? null, signedIn: !!user?.claimedAt, collegeAssigned: !!players.get(e.playerId)?.collegeId };
+    return { ...toJson(e), ...identityOf(user, e.name, withEmail), signedIn: !!user?.claimedAt, collegeAssigned: !!players.get(e.playerId)?.collegeId };
   });
   return ok({ collegeIds, supervisor, items, total: items.length } satisfies RosterSheet);
 });
