@@ -59,7 +59,7 @@ export const GET = route(async () => {
       username: user?.username ?? "Anonymous",
       collegeId: player?.collegeId ?? null,
       roles: [...(user?.roles ?? []), ...(player?.roles ?? [])],
-      captainOf,
+      captainOf: captainOf.map((team) => team.sportId),
       can: { editSchedule, score, takeAttendance, setChampion, manageRoles },
     },
   } satisfies SessionState);

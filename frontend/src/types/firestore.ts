@@ -188,8 +188,8 @@ export interface MvpDoc {
 
 export type SeasonRole = "supervisor" | "college_rep";
 
-/** Who assigned a season college: the Yale directory, or an admin. */
-export type CollegeSource = "yalies" | "admin";
+/** Who assigned a season college: the Yale directory, an admin, or the site before November 2026 (verified). */
+export type CollegeSource = "yalies" | "admin" | "legacy";
 
 /** One college assignment of a season player (account plan 4c); collegeId null: an admin cleared it. */
 export interface CollegeAssignment {
@@ -296,10 +296,12 @@ export interface RosterEntryDoc {
   captainStatus: CaptainStatus | null;
   captainBy: string | null;
   captainAt: StoredTimestamp | null;
-  /** true = marked present; false = not marked; null = never recorded (legacy). */
+  /** true = marked present (by a supervisor: the only attendance that counts); false = not marked; null = never recorded (legacy). */
   present: boolean | null;
   presentBy: string | null;
   presentAt: StoredTimestamp | null;
+  /** The admin who confirmed this attendance though lib/attendance.ts puts it under review; absent: none. */
+  attendanceConfirmedBy?: string | null;
 }
 
 export type ScoreReportStatus = "open" | "resolved";

@@ -3,7 +3,7 @@
 // Each entry also stores the season, game, sport and start (derived), so
 // "a player's games" is one collection-group query.
 import "server-only";
-import type { CollectionReference, DocumentReference } from "firebase-admin/firestore";
+import type { CollectionReference, DocumentReference, Query } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { collectionGroups, paths } from "@/lib/paths";
 import type { RosterEntryDoc } from "@/types/firestore";
@@ -37,14 +37,15 @@ export async function listRoster(seasonId: string, matchId: string): Promise<Ros
   return snap.docs.map((d) => d.data()).sort(bySignup);
 }
 
-/** A player's roster entries in a season, by the game's start. */
-export async function listPlayerEntries(seasonId: string, playerId: string): Promise<RosterEntryDoc[]> {
-  const snap = await adminDb
+/** A player's roster entries in a season, by the game's start (one collection-group index). */
+export function playerEntriesQuery(seasonId: string, playerId: string): Query<RosterEntryDoc> {
+  return adminDb
     .collectionGroup(collectionGroups.roster)
+    .where("seasonId", "==", seasonId)
     .where("playerId", "==", playerId)
-    .get();
-  return snap.docs
-    .map((d) => d.data() as RosterEntryDoc)
-    .filter((e) => e.seasonId === seasonId)
-    .sort((a, b) => a.startsAt.toMillis() - b.startsAt.toMillis());
+    .orderBy("startsAt") as Query<RosterEntryDoc>;
+}
+
+export async function listPlayerEntries(seasonId: string, playerId: string): Promise<RosterEntryDoc[]> {
+  return (await playerEntriesQuery(seasonId, playerId).get()).docs.map((d) => d.data());
 }

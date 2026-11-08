@@ -1,9 +1,13 @@
-// Game sign-ups (D34): a player signs up for a game of their own college,
-// until it starts; withdrawing (same deadline) deletes their roster entry. A
-// captain's removal stays on the roster ("removed"), and the player can't
-// sign up again; only a captain or supervisor can add them back.
+// Game sign-ups (D34): a player with a college this season signs up for its
+// games, until they start; withdrawing (same deadline; their own entry,
+// whatever their college) deletes their roster entry. A captain's removal
+// stays on the roster ("removed"), and the player can't sign up again; only
+// a captain or supervisor can add them back. An entry on the other side
+// (placed there while they were unassigned, or before an admin changed their
+// college) moves to their college's side at sign-up (Execution brief "History").
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
+import { logAction } from "../data/auditLog";
 import { matchRef } from "../data/matches";
 import { playerRef } from "../data/players";
 import { rosterEntryRef } from "../data/roster";
@@ -13,13 +17,14 @@ export type SignUpResult =
   | "ok"
   | "no-match"
   | "not-in-season" // no player doc this season
+  | "unassigned" // no college this season (account plan: signing yourself up needs one)
   | "other-college" // the player's college plays neither side
   | "started"
   | "cancelled"
   | "removed" // the captain took them off
   | "already-signed-up";
 
-/** Puts the player on the game's roster, on their college's side. */
+/** Puts the player on the game's roster, on their college's side (an entry on the other side moves there). */
 export async function signUp(
   seasonId: string,
   matchId: string,
@@ -37,13 +42,23 @@ export async function signUp(
     const player = playerSnap.data();
     if (!match) return "no-match";
     if (!player) return "not-in-season";
-    if (!player.collegeId || !match.collegeIds.includes(player.collegeId)) return "other-college";
+    if (!player.collegeId) return "unassigned";
+    if (!match.collegeIds.includes(player.collegeId)) return "other-college";
     if (match.startsAt.toMillis() <= now.getTime()) return "started";
     if (match.status === "cancelled") return "cancelled";
     const entry = entrySnap.data();
-    if (entry) return entry.captainStatus === "removed" ? "removed" : "already-signed-up";
+    if (entry?.collegeId === player.collegeId) return entry.captainStatus === "removed" ? "removed" : "already-signed-up";
+    if (entry) {
+      // One entry per player and game: rewritten, logged as it was.
+      logAction(tx, seasonId, {
+        actor: { userId: playerId, roles: ["user"] },
+        action: "signUpOnOwnSide",
+        params: { matchId, playerId, from: entry.collegeId, to: player.collegeId },
+        changed: [entrySnap],
+      });
+    }
 
-    tx.create(entryRef, {
+    tx.set(entryRef, {
       seasonId,
       matchId,
       sportId: match.sportId,

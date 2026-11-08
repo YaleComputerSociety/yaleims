@@ -10,6 +10,7 @@ type Params = { seasonId: string; matchId: string };
 const SIGN_UP_REFUSALS: Record<Exclude<SignUpResult, "ok" | "already-signed-up">, ApiError> = {
   "no-match": new ApiError("not-found", "No such game this season."),
   "not-in-season": new ApiError("forbidden", "You weren't a player that season."),
+  unassigned: new ApiError("forbidden", "Signing yourself up needs a verified residential college: see Profile → College affiliation."),
   "other-college": new ApiError("forbidden", "You can only sign up for your college's games."),
   started: new ApiError("conflict", "Sign-up is closed: the game has started."),
   cancelled: new ApiError("conflict", "This game is cancelled."),
@@ -39,7 +40,7 @@ const WITHDRAW_REFUSALS: Record<Exclude<WithdrawResult, "ok" | "not-signed-up">,
   removed: new ApiError("conflict", "Your captain already took you off this game."),
 };
 
-/** Takes the caller off the game until it starts (D34); not on it is fine. */
+/** Takes the caller off the game until it starts (D34), whatever their college; not on it is fine. */
 export const DELETE = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();

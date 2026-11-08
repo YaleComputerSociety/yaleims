@@ -85,6 +85,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
   const isUserTeam =
     !!viewer?.collegeId &&
     (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
+  // Withdrawing is open to whoever is on it, whatever their college.
+  const canChange = isUserTeam || isSignedUp;
 
   const homeName = collegeName(match.homeCollegeId) ?? "";
   const awayName = collegeName(match.awayCollegeId) ?? "";
@@ -150,17 +152,17 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 className={`ml-5 w-20 sm:w-36 text-xs sm:text-sm h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
-                  isLoading || !isUserTeam
+                  isLoading || !canChange
                     ? "bg-gray-400 cursor-not-allowed"
                     : isSignedUp
                     ? "bg-green-600 hover:bg-red-600"
                     : "bg-blue-600 hover:scale-110"
                 }`}
-                disabled={isLoading || !isUserTeam}
+                disabled={isLoading || !canChange}
               >
                 {isLoading
                   ? "Loading..."
-                  : !isUserTeam
+                  : !canChange
                   ? "Not Your College"
                   : isSignedUp
                   ? isHovered

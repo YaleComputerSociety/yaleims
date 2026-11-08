@@ -2,23 +2,27 @@
 // captain prepares their college's side (confirm, remove, add players, by
 // NetID too) until it starts; a supervisor marks who came and adds walk-ins,
 // at any time. Who may act on which side is the route's check (server/auth.ts
-// can.manageRoster, can.takeAttendance); the deadlines are here. A
+// can.manageRoster, can.takeAttendance), read again in an add's transaction
+// (rosterRoleIn); the deadlines are here. A
 // supervisor's change after the game's day (Eastern) is audit-logged (R5).
 import "server-only";
 import { FieldValue, type Transaction, type WithFieldValue } from "firebase-admin/firestore";
-import { collegeIdOfName } from "@/lib/colleges";
+import { ApiError } from "@/lib/api/core";
+import { collegeIdOfName, collegeName } from "@/lib/colleges";
 import { easternDate } from "@/lib/dates";
 import { placeholderId } from "@/lib/netid";
 import type { CaptainStatus, MatchDoc, RosterEntryDoc } from "@/types/firestore";
+import { rosterRoleIn } from "../auth";
 import { logAction, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
-import { matchRef } from "../data/matches";
+import { getMatch, matchRef } from "../data/matches";
 import { playerRef } from "../data/players";
 import { rosterEntryRef } from "../data/roster";
-import { findUserByNetid } from "../data/users";
+import { getCurrentSeasonId } from "../data/seasons";
+import { displayName, getUser } from "../data/users";
 import { runTransaction } from "../data/util";
 import { lookUpNetid } from "../directory";
-import { claimPlaceholders, ensureAccount, joinSeason } from "./accounts";
+import { claimPlaceholders, collegeAfterLookup, readAccount, writeAccount, writeSeasonPlayer } from "./accounts";
 
 /** Who acts: a supervisor (any time, may take attendance) or a captain (until the start). */
 export interface SheetEditor {
@@ -87,107 +91,123 @@ export async function changeEntry(
 
 // ── Adding players ─────────────────────────────────────────────────────────
 
-export type AddResult = "ok" | "no-match" | "not-in-season" | "other-college" | "started";
+/** Whom to add: a season player by id, or a person by NetID (U10; `name` labels one the directory can't name). */
+export type Addee = { playerId: string } | { netid: string; name: string | null };
+
+export type AddResult =
+  /** verified: the directory knows them, or they have an account. */
+  | { status: "added"; playerId: string; verified: boolean }
+  | { status: "no-match" | "not-in-game" | "not-in-season" | "forbidden" | "cancelled" | "started" }
+  /** Their college (this season's, or the directory's) isn't the side's. */
+  | { status: "other-college"; collegeId: string };
 
 /**
- * Puts a season player on the game, on their college's side: a captain's
- * addition counts as confirmed, a supervisor's as present (a walk-in). A
+ * Puts someone on `side` (a college) of a game: a captain's addition counts
+ * as confirmed (until the start), a supervisor's as present (a walk-in). A
  * player already on it (or taken off) is put back the same way.
+ *
+ * Rule 4a: a person with a college this season (or whose college the
+ * directory names) goes on that college's side only; an unassigned one on
+ * any side the caller manages, for this game only: a side never sets a
+ * college.
+ *
+ * R06: the cheap checks first, then (by NetID) the directory lookup, then
+ * one transaction that reads the game, the caller's role, the time and the
+ * person again, and only then writes the person's account (readAccount:
+ * made unclaimed when they have none), season player doc and entry
+ * together. A refused add writes nothing. When the directory has linked
+ * the NetID to an older account, a leftover netid- account is folded into
+ * it after (claimPlaceholders).
  */
-export async function addPlayer(
+export async function addToGame(
   seasonId: string,
   matchId: string,
-  playerId: string,
-  by: SheetEditor,
-  now = new Date()
+  side: string,
+  who: Addee,
+  actor: Actor
 ): Promise<AddResult> {
-  const entryRef = rosterEntryRef(seasonId, matchId, playerId);
-  return runTransaction(async (tx) => {
-    const [matchSnap, playerSnap, entrySnap] = await Promise.all([
-      tx.get(matchRef(seasonId, matchId)),
-      tx.get(playerRef(seasonId, playerId)),
-      tx.get(entryRef),
-    ]);
-    const match = matchSnap.data();
-    const player = playerSnap.data();
-    if (!match) return "no-match";
-    if (!player) return "not-in-season";
-    if (!player.collegeId || !match.collegeIds.includes(player.collegeId)) return "other-college";
-    if (!by.supervisor && started(match, now)) return "started";
+  const match = await getMatch(seasonId, matchId);
+  if (!match) return { status: "no-match" };
+  if (!match.collegeIds.includes(side)) return { status: "not-in-game" };
+  const [colleges, currentSeasonId] = await Promise.all([listColleges(seasonId), getCurrentSeasonId()]);
+  const byNetid = "netid" in who ? { ...who, found: await lookUpNetid(who.netid) } : null;
+  const directoryCollege = collegeIdOfName(colleges, byNetid?.found.person?.college);
 
+  const result = await runTransaction(async (tx): Promise<AddResult> => {
+    const now = new Date();
+    const game = (await tx.get(matchRef(seasonId, matchId))).data();
+    if (!game) return { status: "no-match" };
+    if (!game.collegeIds.includes(side)) return { status: "not-in-game" };
+    const role = await rosterRoleIn(tx, currentSeasonId, actor.userId, { seasonId, collegeId: side, sportId: game.sportId });
+    if (!role) return { status: "forbidden" };
+    if (game.status === "cancelled") return { status: "cancelled" };
+    if (role === "captain" && started(game, now)) return { status: "started" };
+
+    const account = byNetid && (await readAccount(tx, byNetid.netid, byNetid.found));
+    const playerId = byNetid ? (account?.existing?.id ?? placeholderId(byNetid.netid)) : (who as { playerId: string }).playerId;
+    const entryRef = rosterEntryRef(seasonId, matchId, playerId);
+    const [playerSnap, entrySnap] = await Promise.all([tx.get(playerRef(seasonId, playerId)), tx.get(entryRef)]);
+    const player = playerSnap.data();
+    if (!byNetid && !player) return { status: "not-in-season" };
+    const collegeId = byNetid ? collegeAfterLookup(player, directoryCollege) : player!.collegeId;
+    if (collegeId && collegeId !== side) return { status: "other-college", collegeId };
+
+    let name = player?.name ?? "";
+    if (byNetid && account) {
+      const written = writeAccount(tx, account, byNetid.found, { by: actor, seasonId });
+      // A label typed for someone the directory can't name stays on the game, never their account.
+      name = byNetid.found.person?.name ?? (account.existing ? written.name : byNetid.name || byNetid.netid);
+      writeSeasonPlayer(tx, seasonId, playerId, player, directoryCollege, { name, joinedVia: role });
+    }
+    const by: SheetEditor = { supervisor: role === "supervisor", actor };
     const call = by.supervisor
-      ? { present: true, presentBy: by.actor.userId, presentAt: FieldValue.serverTimestamp() }
-      : { captainStatus: "confirmed" as const, captainBy: by.actor.userId, captainAt: FieldValue.serverTimestamp() };
+      ? { present: true, presentBy: actor.userId, presentAt: FieldValue.serverTimestamp() }
+      : { captainStatus: "confirmed" as const, captainBy: actor.userId, captainAt: FieldValue.serverTimestamp() };
     const entry = entrySnap.data();
     if (entry) {
       // Taken off before: the supervisor's or captain's addition overrides that.
       tx.update(entryRef, { ...(entry.captainStatus === "removed" ? { captainStatus: null } : {}), ...call });
     } else {
-      tx.create(entryRef, { ...newEntry(match, matchId, playerId, player.collegeId, player.name, by), ...call });
+      tx.create(entryRef, { ...newEntry(game, matchId, playerId, side, name, by), ...call });
     }
-    logIfLate(tx, by, match, now, {
-      actor: by.actor,
+    logIfLate(tx, by, game, now, {
+      actor,
       action: "addRosterPlayer",
-      params: { matchId, playerId },
+      params: { matchId, playerId, side },
       changed: entry ? [entrySnap] : [],
       created: entry ? [] : [entryRef],
     });
-    return "ok";
+    return { status: "added", playerId, verified: !byNetid || !!byNetid.found.person || !!account?.existing };
   });
+  // The directory now links the NetID to an older account: what a leftover netid- account holds moves onto it.
+  if (byNetid && result.status === "added" && result.playerId !== placeholderId(byNetid.netid)) {
+    const leftover = await getUser(placeholderId(byNetid.netid));
+    const user = leftover && (await getUser(result.playerId));
+    if (user) await claimPlaceholders(byNetid.netid, result.playerId, displayName(user));
+  }
+  return result;
 }
 
-export type NetidAddResult =
-  | { status: "added"; playerId: string; verified: boolean }
-  | { status: "no-match" | "not-in-season" | "started" }
-  /** Their college (Yalies, or their player doc this season) isn't the side's. */
-  | { status: "other-college"; collegeId: string | null };
-
-/**
- * Adds someone by NetID to `collegeId`'s side of a game (U10): the account
- * that has this NetID; else the person Yalies knows by it, whose account is
- * created for them (unclaimed) when they have none, if their college is the
- * side's; else, when Yalies doesn't know the NetID or can't be reached, a
- * placeholder player "netid-<netid>" on that side, matched to the real
- * account at that person's sign-in or a later lookup that finds them.
- */
-export async function addByNetid(
-  seasonId: string,
-  matchId: string,
-  collegeId: string,
-  netid: string,
-  name: string | null,
-  by: SheetEditor,
-  now = new Date()
-): Promise<NetidAddResult> {
-  const via = by.supervisor ? "supervisor" : "captain";
-  const colleges = await listColleges(seasonId);
-  // The directory down or not knowing them: the account we know, or a placeholder.
-  const found = await lookUpNetid(netid);
-
-  let playerId: string;
-  let verified = true;
-  if (found.person) {
-    const directoryCollege = collegeIdOfName(colleges, found.person.college);
-    if (directoryCollege !== collegeId) return { status: "other-college", collegeId: directoryCollege };
-    const fullName = found.person.name ?? name ?? netid;
-    playerId = await ensureAccount(found, netid, by.actor, seasonId);
-    await claimPlaceholders(netid, playerId, fullName);
-    await joinSeason(seasonId, playerId, fullName, collegeId, via);
-  } else {
-    const known = await findUserByNetid(netid);
-    if (known) {
-      await joinSeason(seasonId, known.id, known.name ?? netid, collegeId, via);
-      playerId = known.id;
-    } else {
-      playerId = placeholderId(netid);
-      verified = false;
-      await joinSeason(seasonId, playerId, name || netid, collegeId, via);
-    }
+/** A refused add as the API's error (one wording for both add routes); an added one as is. */
+export function throwIfRefused(result: AddResult): Extract<AddResult, { status: "added" }> {
+  switch (result.status) {
+    case "added":
+      return result;
+    case "no-match":
+      throw new ApiError("not-found", "No such game this season.");
+    case "not-in-game":
+      throw new ApiError("conflict", "That college doesn't play in this game.");
+    case "not-in-season":
+      throw new ApiError("not-found", "They aren't a player this season.");
+    case "forbidden":
+      throw new ApiError("forbidden", "You don't have permission to do this.");
+    case "cancelled":
+      throw new ApiError("conflict", "This game is cancelled.");
+    case "started":
+      throw new ApiError("conflict", "The game has started: only a supervisor can change its roster now.");
+    case "other-college":
+      throw new ApiError("conflict", `They're in ${collegeName(result.collegeId)} this season, not on this side.`);
   }
-  const result = await addPlayer(seasonId, matchId, playerId, by, now);
-  if (result === "ok") return { status: "added", playerId, verified };
-  if (result === "other-college") return { status: "other-college", collegeId: null };
-  return { status: result };
 }
 
 /** A roster entry added by a captain or supervisor, before their call. */

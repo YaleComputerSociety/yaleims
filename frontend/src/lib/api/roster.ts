@@ -12,13 +12,16 @@ import { request, toJson, url, type Json } from "./core";
 export type RosterEntry = Json<RosterEntryDoc>;
 
 /** An entry as everyone signed in sees it: names, college and status, no emails (§3.1 of the plan). */
-export type PublicRosterEntry = Json<Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "presentBy">>;
+export type PublicRosterEntry = Json<
+  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "presentBy" | "attendanceConfirmedBy">
+>;
 
 export function toPublicEntry({
   playerId: _playerId,
   addedByUser: _addedByUser,
   captainBy: _captainBy,
   presentBy: _presentBy,
+  attendanceConfirmedBy: _attendanceConfirmedBy,
   ...entry
 }: RosterEntryDoc): PublicRosterEntry {
   return toJson(entry);
@@ -57,8 +60,13 @@ export interface RosterSheet {
   collegeIds: string[];
   /** A supervisor: takes attendance, any time; otherwise a captain, until the start. */
   supervisor: boolean;
-  /** Each entry with the player's NetID, to tell same-named players apart (null: none recorded yet, or a placeholder "netid-<netid>", whose id holds it). */
-  items: (RosterEntry & { netid: string | null })[];
+  /**
+   * Each entry with the player's NetID, to tell same-named players apart
+   * (null: none recorded yet, or a placeholder "netid-<netid>", whose id
+   * holds it); whether they have signed in (an account made for them stays
+   * unclaimed until then); whether they have a college this season.
+   */
+  items: (RosterEntry & { netid: string | null; signedIn: boolean; collegeAssigned: boolean })[];
   total: number;
 }
 
@@ -70,6 +78,10 @@ export const rosterChangeSchema = z
   })
   .refine((c) => c.captainStatus !== undefined || c.present !== undefined, "Send captainStatus or present.");
 export type RosterChange = z.infer<typeof rosterChangeSchema>;
+
+/** PUT …/roster/{playerId}: the side (a college of the game); without it, the player's college this season. */
+export const rosterAddSchema = z.strictObject({ collegeId: collegeIdSchema.optional() });
+export type RosterAdd = z.infer<typeof rosterAddSchema>;
 
 /** POST …/roster/netid: someone by NetID, on a side the caller manages (U10). `name` only labels an unverified NetID. */
 export const netidAddSchema = z.strictObject({
@@ -91,9 +103,9 @@ export const fetchRosterSheet = (seasonId: string, matchId: string) =>
 export const changeRosterEntry = (seasonId: string, matchId: string, playerId: string, change: RosterChange) =>
   request<void>("PATCH", url`/api/seasons/${seasonId}/matches/${matchId}/roster/${playerId}`, { body: change });
 
-/** PUT …/roster/{playerId}: puts a season player of either side on the game (a captain: confirmed; a supervisor: present). */
-export const addRosterPlayer = (seasonId: string, matchId: string, playerId: string) =>
-  request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/${playerId}`);
+/** PUT …/roster/{playerId}: puts a season player on a side of the game (a captain: confirmed; a supervisor: present). */
+export const addRosterPlayer = (seasonId: string, matchId: string, playerId: string, add: RosterAdd = {}) =>
+  request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/${playerId}`, { body: add });
 
 export const addByNetid = (seasonId: string, matchId: string, add: NetidAdd) =>
   request<NetidAddResult>("POST", url`/api/seasons/${seasonId}/matches/${matchId}/roster/netid`, { body: add });

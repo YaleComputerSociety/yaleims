@@ -9,8 +9,8 @@ import { collegeName } from "@/lib/colleges";
 export default function HeroStats() {
   const { viewer } = useSession();
   const { currentSeason } = useSeason();
-  // How many games the user signed up for this season that have started (U12).
-  const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);
+  // The games a supervisor recorded the user at this season (decision 3c), and how many of those are under review.
+  const [played, setPlayed] = useState<{ counted: number; underReview: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,11 @@ export default function HeroStats() {
     setLoading(true);
     fetchMyMatches({ seasonId: currentSeason.id })
       .then(
-        ({ items }) => live && setGamesPlayed(items.filter((m) => new Date(m.startsAt).getTime() <= Date.now()).length),
+        ({ items }) => {
+          const attended = items.filter((m) => m.mine.present === true);
+          const underReview = attended.filter((m) => m.mine.underReview).length;
+          if (live) setPlayed({ counted: attended.length - underReview, underReview });
+        },
         (error) => console.error("Failed to fetch stats:", error)
       )
       .finally(() => live && setLoading(false));
@@ -32,8 +36,8 @@ export default function HeroStats() {
 
   const stats = [
     {
-      label: "Games Played",
-      value: loading ? "..." : gamesPlayed || "0",
+      label: played?.underReview ? `Games Played (${played.underReview} under review)` : "Games Played",
+      value: loading ? "..." : played?.counted ?? 0,
       icon: "🎮",
       gradient: "from-blue-500/20 to-cyan-500/20",
       border: "border-blue-500/30",

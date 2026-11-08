@@ -36,8 +36,12 @@ export interface DirectoryRefresh {
   outcome: DirectoryOutcome;
 }
 
-/** One of the caller's games, with where their own entry stands: the captain's call and attendance. */
-export type MyMatch = Match & { mine: Pick<RosterEntryDoc, "captainStatus" | "present"> };
+/**
+ * One of the caller's games, with where their own entry stands: the
+ * captain's call, attendance, and whether that attendance is under review
+ * (lib/attendance.ts: it doesn't count until an admin confirms it).
+ */
+export type MyMatch = Match & { mine: Pick<RosterEntryDoc, "captainStatus" | "present"> & { underReview: boolean } };
 
 export interface MyMatchList {
   items: MyMatch[];

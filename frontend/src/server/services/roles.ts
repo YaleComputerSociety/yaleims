@@ -15,7 +15,7 @@ import { runTransaction } from "../data/util";
 const GLOBAL_ROLES: GlobalRole[] = ["admin", "dev"];
 const SEASON_ROLES: SeasonRole[] = ["college_rep", "supervisor"];
 
-/** Season roles and captaincies need the person's player doc and its college. */
+/** Season roles and captaincies need the person's player doc; a rep's and a captain's, its college. */
 export type Refusal = "no-user" | "not-in-season" | "no-college" | "unknown-sport";
 
 /**
@@ -41,10 +41,9 @@ export async function setUserRoles(
     if (!userSnap.exists) return "no-user";
     const player = playerSnap.data() as PlayerDoc | undefined;
     const collegeId = player?.collegeId ?? null;
-    if (seasonRoles.length > 0 || captainSportIds.length > 0) {
-      if (!player) return "not-in-season";
-      if (!collegeId) return "no-college";
-    }
+    if ((seasonRoles.length > 0 || captainSportIds.length > 0) && !player) return "not-in-season";
+    // A rep and a captain act for their college; a supervisor for every game, whatever their own (decision 3e).
+    if ((seasonRoles.includes("college_rep") || captainSportIds.length > 0) && !collegeId) return "no-college";
     const teams = collegeId ? (await tx.get(collegeTeamsRef(seasonId, collegeId))).docs : [];
 
     const changed: DocumentSnapshot[] = [userSnap];

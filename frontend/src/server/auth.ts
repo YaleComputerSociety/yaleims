@@ -9,12 +9,13 @@
 // the teams the player captains this season.
 import "server-only";
 import { ApiError } from "@/lib/api/core";
-import type { GlobalRole, PlayerDoc, UserDoc } from "@/types/firestore";
+import type { Transaction } from "firebase-admin/firestore";
+import type { GlobalRole, PlayerDoc, TeamDoc, UserDoc } from "@/types/firestore";
 import type { Actor } from "./data/auditLog";
-import { getPlayer } from "./data/players";
+import { getPlayer, playerRef } from "./data/players";
 import { getCurrentSeasonId } from "./data/seasons";
-import { listCaptainTeams } from "./data/teams";
-import { displayName, getUser } from "./data/users";
+import { listCaptainTeams, teamRef } from "./data/teams";
+import { displayName, getUser, readUser, userRef } from "./data/users";
 import { getIdentity, type Identity } from "./session";
 
 // ── The viewer ─────────────────────────────────────────────────────────────
@@ -33,8 +34,8 @@ export interface Viewer extends Identity {
   globalRoles(): Promise<GlobalRole[]>;
   /** Their player doc in the current season (college, season roles); null if they aren't a player. */
   player(): Promise<PlayerDoc | null>;
-  /** The sport ids of the teams they captain this season. */
-  captainOf(): Promise<string[]>;
+  /** The teams they captain this season (college and sport). */
+  captainOf(): Promise<Pick<TeamDoc, "collegeId" | "sportId">[]>;
   /** Who they are in the audit log (D32): user id and every role they hold. */
   actor(): Promise<Actor>;
 }
@@ -54,7 +55,7 @@ function viewerOf(identity: Identity): Viewer {
   });
   const captainOf = once(async () => {
     const season = await seasonId();
-    return season ? (await listCaptainTeams(season, identity.userId)).map((team) => team.sportId) : [];
+    return season ? (await listCaptainTeams(season, identity.userId)).map(({ collegeId, sportId }) => ({ collegeId, sportId })) : [];
   });
   return {
     ...identity,
@@ -137,9 +138,9 @@ async function isRepOf(viewer: Viewer, collegeId: string): Promise<boolean> {
   return !!player && player.roles.includes("college_rep") && player.collegeId === collegeId;
 }
 
+/** Captain of the college's team in `sportId` (any of its teams without one): the team itself says. */
 async function isCaptainOf(viewer: Viewer, collegeId: string, sportId?: string): Promise<boolean> {
-  const [player, sports] = await Promise.all([viewer.player(), viewer.captainOf()]);
-  return player?.collegeId === collegeId && (sportId === undefined ? sports.length > 0 : sports.includes(sportId));
+  return (await viewer.captainOf()).some((t) => t.collegeId === collegeId && (sportId === undefined || t.sportId === sportId));
 }
 
 export const can = {
@@ -170,3 +171,28 @@ export const can = {
   /** See a college's reps (with their emails) and captains: its own players. */
   seeLeaders: async (viewer: Viewer, collegeId: string) => (await viewer.player())?.collegeId === collegeId,
 };
+
+/**
+ * can.manageRoster and can.takeAttendance, read again inside a transaction
+ * (services/roster.ts), so a role taken away while an add waited on the
+ * directory counts: "supervisor" (an admin, or the current season's
+ * supervisor), "captain" (of the side's team in the sport, in the current
+ * season), or null.
+ */
+export async function rosterRoleIn(
+  tx: Transaction,
+  currentSeasonId: string | null,
+  userId: string,
+  side: { seasonId: string; collegeId: string; sportId: string }
+): Promise<"supervisor" | "captain" | null> {
+  const userSnap = await tx.get(userRef(userId));
+  const roles = userSnap.exists ? readUser(userSnap.data()!).roles : [];
+  if (roles.includes("admin") || roles.includes("dev")) return "supervisor";
+  if (!currentSeasonId) return null;
+  const [playerSnap, teamSnap] = await Promise.all([
+    tx.get(playerRef(currentSeasonId, userId)),
+    tx.get(teamRef(side.seasonId, side.collegeId, side.sportId)),
+  ]);
+  if (playerSnap.data()?.roles.includes("supervisor")) return "supervisor";
+  return side.seasonId === currentSeasonId && teamSnap.data()?.captainIds.includes(userId) ? "captain" : null;
+}

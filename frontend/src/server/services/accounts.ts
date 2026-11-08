@@ -1,17 +1,18 @@
 // Accounts: the user behind a Yale login and their season membership. A
-// NetID resolves to one account (resolveAccount): an account from before
+// NetID resolves to one account (readAccount): an account from before
 // November 2026 (keyed by email) when one has it, else users/netid-<netid>,
 // created at the first login or, unclaimed, when a captain or supervisor
-// adds the person (U10). Sign-in and staff adds look the NetID up in the
-// directory (server/directory.ts); the Profile's retry and a season's first
-// visit do too, at most once per cooldown (users/{id}.directory, which every
-// lookup sets). Each field the directory gives is applied on its own. The
-// first visit of a season creates the season's player doc (D30) with the
-// college the directory gives, never last season's. A NetID added without a
-// directory match is a placeholder player "netid-<netid>": the same id as
-// the account that NetID gets, or moved onto an older account (claimPlaceholders).
+// adds the person (U10, services/roster.ts, in the add's own transaction).
+// Sign-in and staff adds look the NetID up in the directory
+// (server/directory.ts); the Profile's retry and a season's first visit do
+// too, at most once per cooldown (users/{id}.directory, which every lookup
+// sets). Each field the directory gives is applied on its own. A season's
+// player doc (D30) takes its college from the directory, never from last
+// season or a game side. When the directory later links a NetID to an older
+// account, what was made under "netid-<netid>" moves onto it (claimPlaceholders).
 import "server-only";
-import { FieldValue, Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
+import { FieldValue, Timestamp, type DocumentSnapshot, type Query, type Transaction } from "firebase-admin/firestore";
+import { assignmentsOf } from "@/lib/attendance";
 import { collegeIdOfName } from "@/lib/colleges";
 import { ApiError } from "@/lib/api/core";
 import { placeholderId, placeholderNetid } from "@/lib/netid";
@@ -19,8 +20,10 @@ import type { CollegeAssignment, DirectoryOutcome, JoinedVia, PlayerDoc, RosterE
 import { logAction, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
 import { getPlayer, playerRef } from "../data/players";
-import { listPlayerEntries, rosterEntryRef } from "../data/roster";
-import { listSeasons } from "../data/seasons";
+import { mvpsRef } from "../data/mvps";
+import { playerEntriesQuery, rosterEntryRef } from "../data/roster";
+import { getCurrentSeasonId, listSeasons } from "../data/seasons";
+import { collegeTeamsRef } from "../data/teams";
 import { displayName, holderOfNetid, readUser, userRef, usernameCounterRef, usernameRef, usersByNetidQuery } from "../data/users";
 import { runTransaction } from "../data/util";
 import { lookUpNetid, type DirectoryResult } from "../directory";
@@ -55,107 +58,116 @@ function generateUsername(n: number): string {
 
 /**
  * Signs a Yale user in once CAS has vouched for `netid`: looks the NetID up
- * in the directory, then their account (resolveAccount: created on the first
+ * in the directory, then their account (readAccount: created on the first
  * login, or claimed when a captain made it for them, U10), their membership
  * of the season (none without one) and what was added under their NetID.
  * Nothing the directory lacks stops the sign-in. Returns their user id.
  */
 export async function signIn(netid: string, seasonId: string | null): Promise<string> {
   const found = await lookUpNetid(netid);
-  const { userId, name } = await resolveAccount(netid, found, null);
+  const { userId, name } = await runTransaction(async (tx) =>
+    writeAccount(tx, await readAccount(tx, netid, found), found, null)
+  );
   if (seasonId) await enterSeason(seasonId, userId, found);
   await claimPlaceholders(netid, userId, name);
   return userId;
 }
 
+/** What readAccount found: the person's account, or what a new one needs. */
+export type AccountRead =
+  | { netid: string; existing: DocumentSnapshot }
+  | { netid: string; existing: null; counter: number; username: string; usernameTaken: boolean };
+
 /**
- * The account of someone a captain or supervisor adds by NetID (U10), whom
- * the directory knows: created unclaimed (`createdBy`) when they have none;
- * it is theirs when they first sign in. Returns its user id.
+ * Reads, in `tx`, the account of the person with this NetID, in this order,
+ * so an account made for a NetID never takes over an older one (Execution
+ * brief):
+ * 1. the one older (email-keyed) account with this NetID recorded;
+ * 2. the older account of the email the directory gives (its NetID is recorded by writeAccount);
+ * 3. users/netid-<netid>;
+ * 4. none: what writeAccount needs to create users/netid-<netid> (tx.create:
+ *    a concurrent creator retries and finds it), with a generated username.
+ * Two older accounts with the NetID, or one recorded with another NetID, are
+ * refused (409) for an admin to sort out. Reads only, so a caller can read
+ * everything else it needs before any write (services/roster.ts).
  */
-export async function ensureAccount(found: DirectoryResult, netid: string, by: Actor, seasonId: string): Promise<string> {
-  return (await resolveAccount(netid, found, { by, seasonId })).userId;
+export async function readAccount(tx: Transaction, netid: string, found: DirectoryResult): Promise<AccountRead> {
+  const holder = holderOfNetid((await tx.get(usersByNetidQuery(netid))).docs, netid);
+  if (holder === "conflict") throw new ApiError("conflict", "More than one account has this NetID. Ask an admin to fix it.");
+  let snap: DocumentSnapshot | null = holder?.id === placeholderId(netid) ? null : holder;
+  const email = found.person?.email;
+  if (!snap && email) {
+    const byEmail = await tx.get(userRef(email));
+    if (byEmail.exists) snap = byEmail;
+  }
+  snap ??= holder;
+  if (!snap) {
+    const own = await tx.get(userRef(placeholderId(netid)));
+    if (own.exists) snap = own;
+  }
+  if (snap) {
+    const recorded = readUser(snap.data()!).netid;
+    if (recorded && recorded !== netid) {
+      throw new ApiError("conflict", "This person's account has another NetID. Ask an admin to fix it.");
+    }
+    return { netid, existing: snap };
+  }
+  const counter = ((await tx.get(usernameCounterRef())).data()?.count || 0) + 1;
+  const username = generateUsername(counter);
+  const usernameTaken = (await tx.get(usernameRef(username))).exists;
+  return { netid, existing: null, counter, username, usernameTaken };
 }
 
 /**
- * The account of the person with this NetID, in this order, so an account
- * made for a NetID never takes over an older one (Execution brief):
- * 1. the one older (email-keyed) account with this NetID recorded;
- * 2. the older account of the email the directory gives (its NetID is recorded now);
- * 3. users/netid-<netid>;
- * 4. none: users/netid-<netid> is created (tx.create: a concurrent creator retries and finds it).
- * Two older accounts with the NetID, or one recorded with another NetID, are
- * refused (409) for an admin to sort out. The directory's fields are applied
- * (directoryChanges) and a sign-in (`createdFor` null) claims the account.
- * Read and written in one transaction with the username counter. Returns the
- * account's id and display name.
+ * Writes what readAccount found: the directory's fields on the account
+ * (directoryChanges) and its NetID; a sign-in (`createdFor` null) claims it.
+ * A new account is created unclaimed when someone else makes it (logged in
+ * their season). Returns the account's id and display name.
  */
-async function resolveAccount(
-  netid: string,
+export function writeAccount(
+  tx: Transaction,
+  read: AccountRead,
   found: DirectoryResult,
   /** Someone else making the account (logged in this season); null: their own sign-in. */
   createdFor: { by: Actor; seasonId: string } | null
-): Promise<{ userId: string; name: string }> {
+): { userId: string; name: string } {
   const signingIn = createdFor === null;
-  const email = found.person?.email ?? null;
-  return runTransaction(async (tx) => {
-    const holder = holderOfNetid((await tx.get(usersByNetidQuery(netid))).docs, netid);
-    if (holder === "conflict") throw new ApiError("conflict", "More than one account has this NetID. Ask an admin to fix it.");
-    let snap: DocumentSnapshot | null = holder?.id === placeholderId(netid) ? null : holder;
-    if (!snap && email) {
-      const byEmail = await tx.get(userRef(email));
-      if (byEmail.exists) snap = byEmail;
-    }
-    snap ??= holder;
-    if (!snap) {
-      const own = await tx.get(userRef(placeholderId(netid)));
-      if (own.exists) snap = own;
-    }
+  if (read.existing) {
+    const user = readUser(read.existing.data()!);
+    const changes = directoryChanges(user, found);
+    if (!user.netid) changes.netid = read.netid;
+    if (signingIn && !user.claimedAt) changes.claimedAt = FieldValue.serverTimestamp();
+    tx.update(read.existing.ref, changes);
+    return { userId: read.existing.id, name: displayName({ ...user, ...(changes as Partial<UserDoc>) }) };
+  }
 
-    if (snap) {
-      const user = readUser(snap.data()!);
-      if (user.netid && user.netid !== netid) {
-        throw new ApiError("conflict", "This person's account has another NetID. Ask an admin to fix it.");
-      }
-      const changes = directoryChanges(user, found);
-      if (!user.netid) changes.netid = netid;
-      if (signingIn && !user.claimedAt) changes.claimedAt = FieldValue.serverTimestamp();
-      tx.update(snap.ref, changes);
-      return { userId: snap.id, name: displayName({ ...user, ...(changes as Partial<UserDoc>) }) };
-    }
-
-    const userId = placeholderId(netid);
-    const ref = userRef(userId);
-    const n = ((await tx.get(usernameCounterRef())).data()?.count || 0) + 1;
-    let username = generateUsername(n);
-    const taken = (await tx.get(usernameRef(username))).exists;
-    if (taken) username = "Anonymous";
-
-    tx.set(usernameCounterRef(), { count: n }, { merge: true });
-    if (!taken) tx.set(usernameRef(username), { userId });
-    const name = found.person?.name ?? null;
-    tx.create(ref, {
-      email,
-      name,
-      nameSource: name ? "yalies" : "none",
-      netid,
-      username,
-      roles: [],
-      claimedAt: signingIn ? FieldValue.serverTimestamp() : null,
-      createdBy: createdFor?.by.userId ?? null,
-      directory: directoryState(found),
-    } satisfies Record<keyof UserDoc, unknown>);
-    if (createdFor) {
-      logAction(tx, createdFor.seasonId, {
-        actor: createdFor.by,
-        action: "createAccountFor",
-        params: { userId, netid },
-        changed: [],
-        created: [ref],
-      });
-    }
-    return { userId, name: name ?? username };
-  });
+  const userId = placeholderId(read.netid);
+  const ref = userRef(userId);
+  const username = read.usernameTaken ? "Anonymous" : read.username;
+  tx.set(usernameCounterRef(), { count: read.counter }, { merge: true });
+  if (!read.usernameTaken) tx.set(usernameRef(username), { userId });
+  const name = found.person?.name ?? null;
+  tx.create(ref, {
+    email: found.person?.email ?? null,
+    name,
+    nameSource: name ? "yalies" : "none",
+    netid: read.netid,
+    username,
+    roles: [],
+    claimedAt: signingIn ? FieldValue.serverTimestamp() : null,
+    createdBy: createdFor?.by.userId ?? null,
+    directory: directoryState(found),
+  } satisfies Record<keyof UserDoc, unknown>);
+  if (createdFor) {
+    logAction(tx, createdFor.seasonId, {
+      actor: createdFor.by,
+      action: "createAccountFor",
+      params: { userId, netid: read.netid },
+      changed: [],
+      created: [ref],
+    });
+  }
+  return { userId, name: name ?? username };
 }
 
 /** How long until the next lookup: soon after a complete answer or an outage, longer after an incomplete one. */
@@ -251,35 +263,66 @@ async function lookUpAgain(
 
 /**
  * The person's membership of the season with the college the directory
- * gives (D30): created on their first visit (unassigned when the directory
- * names no college of the season); an unassigned one gets the college once
- * the directory gives it, unless an admin cleared it. A college other than
- * the assigned one changes nothing (an admin's call). With the directory
- * down, nothing changes.
+ * gives (D30), on a visit: see writeSeasonPlayer. With the directory down,
+ * nothing changes.
  */
 async function enterSeason(seasonId: string, userId: string, found: DirectoryResult): Promise<void> {
   if (found.outcome === "unavailable") return;
-  const collegeId = collegeIdOfName(await listColleges(seasonId), found.person?.college);
+  const directoryCollege = collegeIdOfName(await listColleges(seasonId), found.person?.college);
   const ref = playerRef(seasonId, userId);
   await runTransaction(async (tx) => {
     const [playerSnap, userSnap] = await tx.getAll(ref, userRef(userId));
-    const player = playerSnap.data() as PlayerDoc | undefined;
-    const assignment: CollegeAssignment = { collegeId, source: "yalies", since: Timestamp.now() };
-    if (!player) {
-      tx.create(ref, {
-        seasonId,
-        collegeId,
-        collegeHistory: collegeId ? [assignment] : [],
-        name: userSnap.exists ? displayName(readUser(userSnap.data()!)) : userId,
-        userId,
-        roles: [],
-        joinedAt: FieldValue.serverTimestamp(),
-        joinedVia: "login",
-      });
-    } else if (!player.collegeId && collegeId && player.collegeHistory?.at(-1)?.source !== "admin") {
-      tx.update(ref, { collegeId, collegeHistory: FieldValue.arrayUnion(assignment) });
-    }
+    const name = userSnap.exists ? displayName(readUser(userSnap.data()!)) : userId;
+    writeSeasonPlayer(tx, seasonId, userId, playerSnap.data() as PlayerDoc | undefined, directoryCollege, { name, joinedVia: "login" });
   });
+}
+
+/**
+ * A season player's college once the directory names `directoryCollege`
+ * (null: none of the season's): an assigned college stays (only an admin
+ * changes it, services/affiliation.ts); an unassigned one takes the
+ * directory's, unless an admin cleared it. A game side never sets one.
+ */
+export function collegeAfterLookup(player: PlayerDoc | undefined, directoryCollege: string | null): string | null {
+  if (player?.collegeId) return player.collegeId;
+  if (player?.collegeHistory?.at(-1)?.source === "admin") return null;
+  return directoryCollege;
+}
+
+/**
+ * Writes `userId`'s membership of the season after a lookup: created when
+ * they have none (D30; unassigned when the directory names no college);
+ * given the directory's college per collegeAfterLookup; a placeholder
+ * player ("netid-<netid>", userId null) gets its account as its user.
+ */
+export function writeSeasonPlayer(
+  tx: Transaction,
+  seasonId: string,
+  userId: string,
+  player: PlayerDoc | undefined,
+  directoryCollege: string | null,
+  joining: { name: string; joinedVia: JoinedVia }
+): void {
+  const ref = playerRef(seasonId, userId);
+  const collegeId = collegeAfterLookup(player, directoryCollege);
+  const assignment: CollegeAssignment = { collegeId, source: "yalies", since: Timestamp.now() };
+  if (!player) {
+    tx.create(ref, {
+      seasonId,
+      collegeId,
+      collegeHistory: collegeId ? [assignment] : [],
+      name: joining.name,
+      userId,
+      roles: [],
+      joinedAt: FieldValue.serverTimestamp(),
+      joinedVia: joining.joinedVia,
+    });
+    return;
+  }
+  const changes: Record<string, unknown> = {};
+  if (collegeId !== player.collegeId) Object.assign(changes, { collegeId, collegeHistory: FieldValue.arrayUnion(assignment) });
+  if (player.userId !== userId) Object.assign(changes, { userId, name: joining.name });
+  if (Object.keys(changes).length > 0) tx.update(ref, changes);
 }
 
 /**
@@ -304,54 +347,17 @@ export async function recordNetid(userId: string, netid: string): Promise<void> 
 }
 
 /**
- * A membership made for someone a captain or supervisor adds (U10), with
- * the college named `collegeName`. A placeholder ("netid-<netid>") gets the
- * account of that id as its user when one exists; while another account
- * holds the NetID, making one is refused (a stale add must retry with it).
- */
-export async function joinSeason(
-  seasonId: string,
-  playerId: string,
-  name: string,
-  collegeName: unknown,
-  joinedVia: JoinedVia
-): Promise<Pick<PlayerDoc, "collegeId" | "roles">> {
-  const colleges = await listColleges(seasonId);
-  const ref = playerRef(seasonId, playerId);
-  return runTransaction(async (tx) => {
-    const existing = (await tx.get(ref)).data();
-    if (existing) return existing;
-    let userId: string | null = playerId;
-    const netid = placeholderNetid(playerId);
-    if (netid) {
-      const [holders, account] = await Promise.all([tx.get(usersByNetidQuery(netid)), tx.get(userRef(playerId))]);
-      if (holders.docs.some((d) => d.id !== playerId)) {
-        throw new ApiError("conflict", "This NetID now has a verified account. Retry adding the player.");
-      }
-      userId = account.exists ? playerId : null;
-    }
-    const collegeId = collegeIdOfName(colleges, collegeName);
-    tx.create(ref, {
-      seasonId,
-      collegeId,
-      name,
-      userId,
-      roles: [],
-      joinedAt: FieldValue.serverTimestamp(),
-      joinedVia,
-    });
-    return { collegeId, roles: [] };
-  });
-}
-
-/**
- * The placeholder players of `netid` (one per season at most, made when the
- * NetID was added without a directory match) become the account `userId`'s.
- * An account with the placeholder's own id ("netid-<netid>") simply becomes
- * the player's user. Any other account (from before November 2026) takes
- * over its roster entries (merged with an entry it already has on the same
- * game: present if either was), the season's player doc when it has none,
- * and the placeholder goes. Audit-logged. Returns how many entries moved.
+ * Folds what was made under `netid` before its owner's account was known
+ * into the account `userId`. "netid-<netid>" is the id of the account a
+ * NetID gets when no older account has it, and of a placeholder player (a
+ * NetID added without an account, before November 2026):
+ * - `userId` is that id: its player docs get it as their user;
+ * - `userId` is an older (email-keyed) account the directory has now linked
+ *   to the NetID, after a sign-in or staff add made users/netid-<netid>
+ *   while it couldn't (Execution brief "Identity"): per season, in one
+ *   transaction (foldSeason), the older account takes over everything under
+ *   the other id; then that account goes (foldAccount).
+ * Safe to repeat. Returns how many roster entries moved.
  */
 export async function claimPlaceholders(netid: string, userId: string, name: string): Promise<number> {
   const placeholder = placeholderId(netid);
@@ -366,42 +372,98 @@ export async function claimPlaceholders(netid: string, userId: string, name: str
       continue;
     }
     if (!(await placeholderRef.get()).exists) continue;
-    const entries = await listPlayerEntries(seasonId, placeholder);
-    moved += await runTransaction(async (tx) => {
-      const sources = entries.map((e) => rosterEntryRef(seasonId, e.matchId, placeholder));
-      const targets = entries.map((e) => rosterEntryRef(seasonId, e.matchId, userId));
-      const [placeholderSnap, playerSnap] = await tx.getAll(placeholderRef, playerRef(seasonId, userId));
-      const snaps = entries.length ? await tx.getAll(...sources, ...targets) : [];
-      if (!placeholderSnap.exists) return 0;
-      const sourceSnaps = snaps.slice(0, entries.length);
-      const targetSnaps = snaps.slice(entries.length);
-      sourceSnaps.forEach((snap, i) => {
-        const entry = snap.data() as RosterEntryDoc | undefined;
-        if (!entry) return;
-        const existing = targetSnaps[i].data() as RosterEntryDoc | undefined;
-        tx.set(targets[i], {
-          ...(existing ?? entry),
-          playerId: userId,
-          name,
-          present: !!(existing?.present || entry.present),
-          captainStatus: existing?.captainStatus ?? entry.captainStatus,
-        });
-        tx.delete(sources[i]);
-      });
-      if (!playerSnap.exists) {
-        tx.create(playerRef(seasonId, userId), { ...(placeholderSnap.data() as PlayerDoc), name, userId });
-      }
-      tx.delete(placeholderRef);
-      const actor: Actor = { userId, roles: ["user"] };
-      logAction(tx, seasonId, {
-        actor,
-        action: "claimPlaceholder",
-        params: { netid, userId },
-        changed: [placeholderSnap, ...sourceSnaps, ...targetSnaps.filter((s) => s.exists)],
-        created: [...targets.filter((_, i) => !targetSnaps[i].exists), ...(playerSnap.exists ? [] : [playerRef(seasonId, userId)])],
-      });
-      return sourceSnaps.filter((s) => s.exists).length;
-    });
+    moved += await runTransaction((tx) => foldSeason(tx, seasonId, placeholder, userId, name));
   }
+  if (placeholder !== userId) await foldAccount(placeholder, userId);
   return moved;
+}
+
+/**
+ * Moves a season's player `from` onto `to` (R05): the roster entries
+ * (mergeEntries with an entry `to` has on the same game), the captaincies,
+ * the MVP awards (one per college and week: a duplicate goes, decision 4b)
+ * and the player doc when `to` has none (else `to`'s college stands).
+ * Audit-logged. Returns how many entries moved.
+ */
+async function foldSeason(tx: Transaction, seasonId: string, from: string, to: string, name: string): Promise<number> {
+  const [fromSnap, toSnap] = await tx.getAll(playerRef(seasonId, from), playerRef(seasonId, to));
+  const source = fromSnap.data() as PlayerDoc | undefined;
+  if (!source) return 0;
+  const entries = (await tx.get(playerEntriesQuery(seasonId, from))).docs;
+  const targets = entries.map((e) => rosterEntryRef(seasonId, e.data().matchId, to));
+  const targetSnaps = targets.length ? await tx.getAll(...targets) : [];
+  // Captaincies and awards are given in the player's college of the time.
+  const colleges = [...new Set([source.collegeId, ...assignmentsOf(source).map((a) => a.collegeId)])].filter((c) => c !== null);
+  const each = async <T>(query: (collegeId: string) => Query<T>) =>
+    (await Promise.all(colleges.map((c) => tx.get(query(c))))).flatMap((q) => q.docs);
+  const teams = await each((c) => collegeTeamsRef(seasonId, c).where("captainIds", "array-contains", from));
+  const awards = await each((c) => mvpsRef(seasonId, c).where("playerId", "==", from));
+  const ownAwards = await each((c) => mvpsRef(seasonId, c).where("playerId", "==", to));
+
+  entries.forEach((snap, i) => {
+    const existing = targetSnaps[i].data() as RosterEntryDoc | undefined;
+    tx.set(targets[i], { ...mergeEntries(existing, snap.data()), playerId: to, name });
+    tx.delete(snap.ref);
+  });
+  for (const team of teams) {
+    const captainIds = team.data().captainIds.filter((id) => id !== from);
+    tx.update(team.ref, { captainIds: captainIds.includes(to) ? captainIds : [...captainIds, to] });
+  }
+  for (const award of awards) {
+    const { collegeId, week } = award.data();
+    const duplicate = ownAwards.some((a) => a.data().collegeId === collegeId && a.data().week === week);
+    if (duplicate) tx.delete(award.ref);
+    else tx.update(award.ref, { playerId: to, name });
+  }
+  if (!toSnap.exists) tx.create(playerRef(seasonId, to), { ...source, name, userId: to });
+  tx.delete(fromSnap.ref);
+  logAction(tx, seasonId, {
+    actor: { userId: to, roles: ["user"] },
+    action: "claimPlaceholder",
+    params: { netid: placeholderNetid(from), userId: to },
+    changed: [fromSnap, ...entries, ...targetSnaps.filter((s) => s.exists), ...teams, ...awards],
+    created: [...targets.filter((_, i) => !targetSnaps[i].exists), ...(toSnap.exists ? [] : [playerRef(seasonId, to)])],
+  });
+  return entries.length;
+}
+
+/**
+ * One person's two entries on a game, as one: the kept entry (when there
+ * is one), with the moved entry's presence when only it was marked present
+ * and its captain's call when the kept one has none.
+ */
+function mergeEntries(kept: RosterEntryDoc | undefined, moved: RosterEntryDoc): RosterEntryDoc {
+  if (!kept) return moved;
+  const { present, presentBy, presentAt, captainStatus, captainBy, captainAt } = moved;
+  return {
+    ...kept,
+    ...(present && !kept.present ? { present, presentBy, presentAt } : {}),
+    ...(kept.captainStatus === null ? { captainStatus, captainBy, captainAt } : {}),
+  };
+}
+
+/**
+ * Deletes the account `accountId`, folded into `intoId`, with its username;
+ * one that holds a global role stays (an admin's call). Logged in the
+ * current season.
+ */
+async function foldAccount(accountId: string, intoId: string): Promise<void> {
+  const seasonId = await getCurrentSeasonId();
+  await runTransaction(async (tx) => {
+    const snap = await tx.get(userRef(accountId));
+    if (!snap.exists) return;
+    const account = readUser(snap.data()!);
+    if (account.roles.length > 0) return;
+    const usernameSnap = account.username ? await tx.get(usernameRef(account.username)) : null;
+    tx.delete(snap.ref);
+    if (usernameSnap?.data()?.userId === accountId) tx.delete(usernameSnap.ref);
+    if (seasonId) {
+      logAction(tx, seasonId, {
+        actor: { userId: intoId, roles: ["user"] },
+        action: "foldAccount",
+        params: { userId: accountId, into: intoId },
+        changed: [snap, ...(usernameSnap?.exists ? [usernameSnap] : [])],
+      });
+    }
+  });
 }

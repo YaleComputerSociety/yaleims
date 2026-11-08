@@ -10,7 +10,8 @@ import { Timestamp, type DocumentData } from "firebase-admin/firestore";
 import { paths } from "@/lib/paths";
 import { api, db, people, seasons, sessionFor, sessionOf } from "./helpers";
 
-const { signIn, ensureAccount } = await import("@/server/services/accounts");
+const { signIn } = await import("@/server/services/accounts");
+const { addToGame } = await import("@/server/services/roster");
 
 let current: string;
 beforeAll(async () => { ({ current } = await seasons()); });
@@ -116,8 +117,10 @@ describe("resolving a NetID to an account", () => {
       seasonId: current, collegeId: "BF", name: "Walk In", userId: null, roles: [], joinedAt: Timestamp.fromMillis(1000), joinedVia: "supervisor",
     });
     const actor = { userId: people.supervisor, roles: ["user", "supervisor"] };
-    const found = { outcome: "found" as const, person: { netid: p.netid, name: "Ann Lee", email: p.email, college: "Benjamin Franklin College" } };
-    expect(await ensureAccount(found, p.netid, actor, current)).toBe(p.id);
+    const games = await db.collection(paths.matches(current)).where("collegeIds", "array-contains", "BF").where("startsAt", ">", new Date()).orderBy("startsAt").limit(1).get();
+    const entry = paths.rosterEntry(current, games.docs[0].id, p.id);
+    saved.set(entry, (await db.doc(entry).get()).data());
+    expect(await addToGame(current, games.docs[0].id, "BF", { netid: p.netid, name: null }, actor)).toMatchObject({ status: "added", playerId: p.id });
     expect(await user(p.id)).toMatchObject({ claimedAt: null, createdBy: people.supervisor });
 
     expect(await signIn(p.netid, current)).toBe(p.id);

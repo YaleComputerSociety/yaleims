@@ -7,7 +7,6 @@ import { placeholderId } from "@/lib/netid";
 import { db, people, seasons } from "./helpers";
 
 const { setMvp } = await import("@/server/services/mvps");
-const { joinSeason } = await import("@/server/services/accounts");
 
 let current: string;
 let sequence = 0;
@@ -88,26 +87,5 @@ describe("placeholder reference writers", () => {
     expect(awards.docs.map((doc) => doc.data())).toEqual([expect.objectContaining({
       name: "Corrected Name", awardedBy: people.student(0, 0), awardedAt: expect.any(Timestamp),
     })]);
-  });
-
-  it("does not recreate an unverified placeholder after its account is known", async () => {
-    const person = await identity();
-    const user = await remember(db.doc(paths.user(person.email)));
-    await user.set({ netid: person.netid });
-    await person.source.delete();
-    await expect(joinSeason(current, person.placeholder, "Stale lookup", "BF", "captain"))
-      .rejects.toMatchObject({ code: "conflict", status: 409 });
-    expect((await person.source.get()).exists).toBe(false);
-  });
-
-  it("still creates and reuses a placeholder while its NetID is unverified", async () => {
-    const person = await identity();
-    await person.source.delete();
-    expect(await joinSeason(current, person.placeholder, "Unknown Player", "BF", "captain"))
-      .toEqual({ collegeId: "BF", roles: [] });
-    const original = (await person.source.get()).data();
-    await joinSeason(current, person.placeholder, "Other name", "BK", "supervisor");
-    expect((await person.source.get()).data()).toEqual(original);
-    expect(original).toMatchObject({ collegeId: "BF", name: "Unknown Player", userId: null, joinedVia: "captain" });
   });
 });

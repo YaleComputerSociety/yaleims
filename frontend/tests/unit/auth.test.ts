@@ -27,7 +27,9 @@ vi.mock("@/server/data/players", () => ({
   getPlayer: async (_season: string, email: string) => (reads.player++, players[email] ?? null),
 }));
 vi.mock("@/server/data/teams", () => ({
-  listCaptainTeams: async (_season: string, email: string) => (reads.teams++, (captains[email] ?? []).map((sportId) => ({ sportId }))),
+  // Teams of the player's college (captains holds their sport ids).
+  listCaptainTeams: async (_season: string, email: string) =>
+    (reads.teams++, (captains[email] ?? []).map((sportId) => ({ sportId, collegeId: players[email]?.collegeId }))),
 }));
 
 const { getIdentity, setSessionCookie } = await import("@/server/session");
@@ -87,7 +89,7 @@ describe("the viewer", () => {
     const viewer = (await getViewer())!;
     await Promise.all([viewer.globalRoles(), viewer.player(), viewer.captainOf(), viewer.actor(), viewer.globalRoles()]);
     expect(await viewer.actor()).toEqual({ userId: "al1@yale.edu", roles: ["user", "dev", "college_rep", "captain"] });
-    expect(await viewer.captainOf()).toEqual(["1"]);
+    expect(await viewer.captainOf()).toEqual([{ collegeId: "MC", sportId: "1" }]);
     expect(reads).toEqual({ user: 1, player: 1, teams: 1 });
   });
   it("is 401 when signed out, 403 when the rule says no", async () => {

@@ -15,41 +15,44 @@ import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
 import { changeMe, fetchMyMatches } from "@/lib/api/me";
 import { collegeName } from "@/lib/colleges";
 
-/** How many of the college's next games the profile lists. */
+/** How many of the college's next games the profile offers to sign up for. */
 const UPCOMING_LIMIT = 6;
 
 const Profile = () => {
   const { viewer, loading, signOut, setViewer } = useSession();
   const { currentSeason } = useSeason();
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [myMatchIds, setMyMatchIds] = useState<Set<string>>(new Set());
+  const [myMatches, setMyMatches] = useState<Match[]>([]);
+  const [collegeMatches, setCollegeMatches] = useState<Match[]>([]);
   const [fetching, setFetching] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState(viewer?.username || "");
   const [error, setError] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
-  // The college's next games this season, and which of them the user plays.
+  // The user's upcoming games, whatever their college; and their college's next ones, to sign up for.
+  const signedIn = !!viewer;
   const collegeId = viewer?.collegeId ?? null;
   useEffect(() => {
-    if (!collegeId || !currentSeason) return;
+    if (!signedIn || !currentSeason) return;
     let live = true;
     setFetching(true);
     Promise.all([
-      fetchSeasonMatches(currentSeason.id, {
-        collegeId,
-        status: "scheduled",
-        from: new Date().toISOString(),
-        page: 1,
-        pageSize: UPCOMING_LIMIT,
-      }),
       fetchMyMatches({ seasonId: currentSeason.id, upcoming: true }),
+      collegeId
+        ? fetchSeasonMatches(currentSeason.id, {
+            collegeId,
+            status: "scheduled",
+            from: new Date().toISOString(),
+            page: 1,
+            pageSize: UPCOMING_LIMIT,
+          })
+        : { items: [] },
     ])
       .then(
-        ([college, mine]) => {
+        ([mine, college]) => {
           if (!live) return;
-          setMatches(college.items);
-          setMyMatchIds(new Set(mine.items.map((m) => m.id)));
+          setMyMatches(mine.items);
+          setCollegeMatches(college.items);
         },
         (err) => console.error("Error fetching user matches:", err)
       )
@@ -57,14 +60,14 @@ const Profile = () => {
     return () => {
       live = false;
     };
-  }, [collegeId, currentSeason]);
+  }, [signedIn, collegeId, currentSeason]);
 
   useEffect(() => {
     if (viewer?.username) setNewUsername(viewer.username);
   }, [viewer?.username]);
 
-  const signedUpMatches = matches.filter((match) => myMatchIds.has(match.id));
-  const availableMatches = matches.filter((match) => !myMatchIds.has(match.id));
+  const signedUpMatches = myMatches;
+  const availableMatches = collegeMatches.filter((match) => !myMatches.some((m) => m.id === match.id));
 
   const handleEditUsername = async () => {
     setEditLoading(true);

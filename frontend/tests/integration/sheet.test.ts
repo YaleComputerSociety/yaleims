@@ -172,12 +172,14 @@ describe("adding by NetID (U10; a fake Yale directory: tests/integration/fakeYal
     expect(r.body.error.message).toContain("Morse");
   });
 
-  it("adds a NetID the directory doesn't know (or can't answer for) unverified; the person's visit claims it", async () => {
+  it("adds a NetID the directory doesn't know (or can't answer for) unverified and unassigned; the person's visit claims it", async () => {
     const { game, path } = await bfGame();
     const captain = people.student(0, 1); // a BF captain (of the game's sport or not: a supervisor adds here)
     const r = await api("POST", `${path}/netid`, { netid: "ZZ950", collegeId: "BF", name: "New Kid" }, { session: supervisor() });
     expect(r).toMatchObject({ status: 201, body: { playerId: "netid-zz950", verified: false } });
-    expect((await db.doc(`seasons/${current}/players/netid-zz950`).get()).data()).toMatchObject({ collegeId: "BF", name: "New Kid", userId: null });
+    // An unclaimed account; the side doesn't give them a college (account plan, 3a).
+    expect((await db.doc(`seasons/${current}/players/netid-zz950`).get()).data()).toMatchObject({ collegeId: null, name: "New Kid", userId: "netid-zz950" });
+    expect((await db.doc("users/netid-zz950").get()).data()).toMatchObject({ netid: "zz950", claimedAt: null, createdBy: people.supervisor });
     const down = await api("POST", `${path}/netid`, { netid: "zz999", collegeId: "BF" }, { session: supervisor() });
     expect(down).toMatchObject({ status: 201, body: { playerId: "netid-zz999", verified: false } });
     expect(captain).toBeTruthy();
@@ -190,6 +192,7 @@ describe("adding by NetID (U10; a fake Yale directory: tests/integration/fakeYal
     expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${email}`).get()).data()).toMatchObject({ playerId: email, collegeId: "BF", present: true });
     const claims = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "claimPlaceholder").get()).docs.map((d) => d.data().params);
     expect(claims).toContainEqual({ netid: "zz950", userId: email });
+    expect((await db.doc("users/netid-zz950").get()).exists).toBe(false);
   });
 
   it("finds an account by its stored NetID when the directory doesn't know it", async () => {
