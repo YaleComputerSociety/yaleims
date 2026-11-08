@@ -3,7 +3,7 @@ export default function PrivacyPage() {
     <div className="pt-10 sm:pt-20 bg-primary_lightest dark:bg-transparent">
       <div className="flex flex-col justify-center mx-auto max-w-7xl px-5 sm:px-20">
         <h2 className="text-xl sm:text-4xl">Privacy Policy</h2>
-        <p className="text-sm sm:text-md">Last Updated: November 7, 2026</p>
+        <p className="text-sm sm:text-md">Last Updated: November 8, 2026</p>
         <br></br>
 
         <section>
@@ -38,7 +38,9 @@ export default function PrivacyPage() {
               <strong>Game records:</strong> The games you are signed up for or
               added to, whether a supervisor recorded you as present, and any
               correction requests you send, which only you and the YaleIMs
-              admins can see.
+              admins can see. Your name and NetID are shown on a game&apos;s
+              participants to its two colleges&apos; players, to others on the
+              game, and to supervisors and admins; admins also see your email.
             </li>
             <li className="pl-10">
               <strong>Cookies:</strong> Used for login and session management.

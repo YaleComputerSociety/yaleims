@@ -4,7 +4,7 @@
 // sportsCaptainOf, betting totals, a username) and the name as
 // firstname/lastname; reads return only the current fields (D25). A user's
 // name is read from here: the copies on player docs, roster entries and MVP
-// awards go stale when it changes (withCurrentNames).
+// awards go stale when it changes (identityOf, displayName).
 import "server-only";
 import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
@@ -65,27 +65,9 @@ export async function getUsers(userIds: string[]): Promise<Map<string, UserDoc>>
   return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
 }
 
-/** The display names of the users with these ids (missing ones left out), by id. */
-export async function getUserNames(userIds: string[]): Promise<Map<string, string>> {
-  const users = await getUsers(userIds);
-  return new Map([...users].map(([id, user]) => [id, displayName(user)]));
-}
-
 /** A person's identity for an API (lib/api/users Identity): `copy` names someone without an account; the email only `withEmail`. */
 export function identityOf(user: UserDoc | undefined, copy: string, withEmail: boolean): Identity {
   return { name: user ? displayName(user) : copy, netid: user?.netid ?? null, ...(withEmail ? { email: user?.email ?? null } : {}) };
-}
-
-/**
- * `items` with the name of their user now, by `userIdOf`; an item without
- * a user (a guest, a deleted account) keeps its copy.
- */
-export async function withCurrentNames<T extends { name: string }>(items: T[], userIdOf: (item: T) => string | null): Promise<T[]> {
-  const names = await getUserNames(items.flatMap((item) => userIdOf(item) ?? []));
-  return items.map((item) => {
-    const name = names.get(userIdOf(item) ?? "");
-    return name ? { ...item, name } : item;
-  });
 }
 
 /**

@@ -12,7 +12,7 @@ import type { Identity } from "./users";
 /** The caller's own entry, whole. */
 export type RosterEntry = Json<RosterEntryDoc>;
 
-/** An entry as everyone signed in sees it: names, college and status, no emails (§3.1 of the plan). */
+/** An entry as the game's participants are shown: college and status, no ids (the name and NetID come with Identity). */
 export type PublicRosterEntry = Json<
   Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "presentBy" | "attendanceConfirmedBy">
 >;
@@ -29,12 +29,16 @@ export function toPublicEntry({
 }
 
 /**
- * GET …/roster (signed in): the game's players in sign-up order (not those
- * a captain took off), and the caller's own entry (a removed one too, so the
- * page can say why they can't sign up).
+ * GET …/roster (signed in): the game's participants, in sign-up order, for
+ * those who may see them (`visible`, lib/participants.ts): until the start
+ * who is on it, from the start (`started`) those recorded present; and the
+ * caller's own entry (a removed one too, so the page can say why they can't
+ * sign up).
  */
 export interface Roster {
-  items: PublicRosterEntry[];
+  visible: boolean;
+  started: boolean;
+  items: (PublicRosterEntry & Identity)[];
   total: number;
   mine: RosterEntry | null;
 }
