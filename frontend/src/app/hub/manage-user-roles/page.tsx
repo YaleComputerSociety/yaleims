@@ -6,14 +6,16 @@ import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useSeason } from "@/context/SeasonContext";
 import { fetchCollegePlayers } from "@/lib/api/colleges";
-import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder } from "@/lib/api/users";
+import { findPeople } from "@/lib/api/people";
+import { fetchRoleHolders, setUserRoles, userRolesSchema, type RoleHolder, type RoleHolderList } from "@/lib/api/users";
 import { COLLEGES, collegeName } from "@/lib/colleges";
 
 // Available roles for the multi-select dropdown
 const ALL_ROLES = ["admin", "dev", "supervisor", "college_rep", "captain", "user"];
 
-/** The groups listing everyone holding a role; any other group is a college. */
+/** The groups listing everyone holding a role; any other group is a college, or the players without one. */
 const ROLE_GROUPS: Record<string, "admin" | "dev" | "supervisor"> = { Admin: "admin", Dev: "dev", Supervisor: "supervisor" };
+const UNASSIGNED = "Unassigned";
 
 /** The roles PUT /api/users/{userId}/roles stores ("user" and "captain" aren't stored roles). */
 const STORED_ROLES = userRolesSchema.shape.roles.element.options;
@@ -48,7 +50,8 @@ const personOf = (holder: RoleHolder): Person => ({
 
 /**
  * The people of a group: a role group lists everyone holding that role; a
- * college name lists all the college's players this season (the page shows
+ * college name lists all the college's players this season, and
+ * "Unassigned" this season's players without a college (the page shows
  * those with a role, and finds the others to give one).
  */
 async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
@@ -56,17 +59,26 @@ async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
     return (await fetchRoleHolders({ role: ROLE_GROUPS[group] })).items.map(personOf);
   }
   const collegeId = COLLEGES.find((c) => c.name === group)?.id;
-  if (!collegeId) return [];
-  // A college's players carry their season roles; the global ones come from the role lists.
+  if (collegeId) return loadCollege(seasonId, collegeId);
+  return group === UNASSIGNED ? loadUnassigned() : [];
+}
+
+/** Whether the user is in a role list. */
+const holds = (list: RoleHolderList, userId: string) => list.items.some((u) => u.id === userId);
+
+/** The global roles a user holds, from the admin and dev lists. */
+const globalRolesOf = (admins: RoleHolderList, devs: RoleHolderList, userId: string) => [
+  ...(holds(admins, userId) ? ["admin"] : []),
+  ...(holds(devs, userId) ? ["dev"] : []),
+];
+
+/** A college's players: they carry their season roles; the global ones come from the role lists. */
+async function loadCollege(seasonId: string, collegeId: string): Promise<Person[]> {
   const [players, admins, devs] = await Promise.all([
     fetchCollegePlayers(seasonId, collegeId),
     fetchRoleHolders({ role: "admin" }),
     fetchRoleHolders({ role: "dev" }),
   ]);
-  const globalRoles = (userId: string) => [
-    ...(admins.items.some((u) => u.id === userId) ? ["admin"] : []),
-    ...(devs.items.some((u) => u.id === userId) ? ["dev"] : []),
-  ];
   // Only players with an account can hold a role (not a NetID nobody has claimed, nor a guest).
   return players.items
     .filter((p) => p.userId)
@@ -75,9 +87,31 @@ async function loadGroup(group: string, seasonId: string): Promise<Person[]> {
       netid: p.netid,
       name: p.name,
       college: collegeName(p.collegeId),
-      roles: rolesOf(globalRoles(p.id), p.roles, p.captainOf),
+      roles: rolesOf(globalRolesOf(admins, devs, p.id), p.roles, p.captainOf),
       captainOf: p.captainOf,
     }));
+}
+
+/**
+ * This season's players without a college (the People list): a supervisor
+ * needs none (decision 3e), a rep and a captain do, so the role lists give
+ * all the roles they can hold.
+ */
+async function loadUnassigned(): Promise<Person[]> {
+  const [people, admins, devs, supervisors] = await Promise.all([
+    findPeople({ list: "unassigned" }),
+    fetchRoleHolders({ role: "admin" }),
+    fetchRoleHolders({ role: "dev" }),
+    fetchRoleHolders({ role: "supervisor" }),
+  ]);
+  return people.items.map((p) => ({
+    id: p.userId,
+    netid: p.netid,
+    name: p.name,
+    college: null,
+    roles: rolesOf(globalRolesOf(admins, devs, p.userId), holds(supervisors, p.userId) ? ["supervisor"] : [], []),
+    captainOf: [],
+  }));
 }
 
 // Skeleton loader component
@@ -144,7 +178,7 @@ const ManageUserRolesPage = () => {
   const { currentSeason } = useSeason();
   const sports = currentSeason?.sports ?? [];
   const collegeNames = COLLEGES.map((college) => college.name);
-  const dropdownOptions = [...Object.keys(ROLE_GROUPS), ...collegeNames];
+  const dropdownOptions = [...Object.keys(ROLE_GROUPS), ...collegeNames, UNASSIGNED];
 
   const [selectedCollege, setSelectedCollege] = useState<string>(
     dropdownOptions[0] || ""
@@ -476,7 +510,7 @@ const ManageUserRolesPage = () => {
             ) : ROLE_GROUPS[selectedCollege] ? (
               specialRoleUsers.length === 0 ? (
                 <p className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  Nobody is {ROLE_GROUPS[selectedCollege]} yet. Pick their college to give them the role.
+                  Nobody is {ROLE_GROUPS[selectedCollege]} yet. Pick their college (or Unassigned) to give them the role.
                 </p>
               ) : (
                 <RoleTable role={ROLE_GROUPS[selectedCollege]} users={specialRoleUsers} />
@@ -485,7 +519,7 @@ const ManageUserRolesPage = () => {
               <div>
                 <div className="mb-8 max-w-md">
                   <label htmlFor="find-player" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Give someone in {selectedCollege} a role
+                    Give someone {selectedCollege === UNASSIGNED ? "without a college" : `in ${selectedCollege}`} a role
                   </label>
                   <input
                     id="find-player"

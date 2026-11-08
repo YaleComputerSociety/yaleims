@@ -146,7 +146,7 @@ async function isCaptainOf(viewer: Viewer, collegeId: string, sportId?: string):
 export const can = {
   /** Create, edit, cancel and delete games; create and delete brackets and tournaments. */
   editSchedule: isSupervisor,
-  /** Score and undo games; see every score report, with reporters' emails, and resolve them. */
+  /** Score and undo games; see every score report, with reporters' user ids, and resolve them. */
   score: isSupervisor,
   /** Mark who came to a game and add walk-ins, at any time (D34 R4, R5). */
   takeAttendance: isSupervisor,

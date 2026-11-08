@@ -18,7 +18,8 @@ export type RoleHoldersQuery = z.infer<typeof roleHoldersQuerySchema>;
 
 /**
  * PUT /api/users/{userId}/roles: every role they should hold. Season roles
- * and captaincies need them to be a player this season, in a college.
+ * and captaincies need them to be a player this season; a rep and a captain
+ * also need a college, a supervisor doesn't (decision 3e).
  */
 export const userRolesSchema = z.strictObject({
   roles: z.array(z.enum(["admin", "dev", "college_rep", "supervisor"])).max(4),

@@ -46,7 +46,7 @@ export default function Faq() {
         {
           question: "Who can use YaleIMs?",
           answer:
-            "YaleIMs is a publicly accessible app where anyone can view standings. However, to sign up for sports, you must be a current Yale undergraduate with a Yale email address. You can only sign in with a Yale email address.",
+            "Anyone can view schedules, scores and standings. You sign in with your Yale NetID through Yale's sign-in page (CAS). Signing yourself up for games also needs a verified residential college this season.",
         },
         {
           question: "Where can I submit feedback or bugs?",
@@ -73,6 +73,38 @@ export default function Faq() {
           question: "Do you have a privacy policy?",
           answer: "You can find our privacy policy here.",
           links: [{ label: "Privacy Policy", url: "/privacy-policy" }],
+        },
+      ],
+    },
+    {
+      title: "Your Account and Games",
+      faqs: [
+        {
+          question: "Where do my name, email and college come from?",
+          answer:
+            "After you sign in, YaleIMs looks up your NetID in the Yale directory (Yalies). A name found there is used as is; if none is found, you can enter one in your Profile. Your residential college is looked up again each season and is never carried over from a previous one.",
+        },
+        {
+          question: "My Profile says my college is unassigned. What can I do?",
+          answer:
+            "Your sign-in worked, but the directory didn't confirm your college this season. You can still browse everything and see your games. In your Profile, under College affiliation, choose \"Check Yalies again\", or ask an admin to review your affiliation. Until your college is verified, a captain or supervisor can still add you to a game.",
+          links: [{ label: "Profile", url: "/profile" }],
+        },
+        {
+          question: "A captain or supervisor added me to a game before I signed in. Is that on my account?",
+          answer:
+            "Yes. Players can be added by NetID before they ever sign in. When you sign in with that NetID, those games appear in your Profile.",
+        },
+        {
+          question: "Which games count as games I played?",
+          answer:
+            "Only games where a supervisor recorded you as present. A game can show as \"under review\" when your recorded games this season are for more than one college; an admin then confirms or removes it.",
+        },
+        {
+          question: "Something about my name, college or games is wrong. How do I get it fixed?",
+          answer:
+            "In your Profile, use \"Ask an admin to check something\". Only you and the YaleIMs admins see your request, and the admins' answer appears in your Profile.",
+          links: [{ label: "Profile", url: "/profile" }],
         },
       ],
     },
