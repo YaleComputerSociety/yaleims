@@ -29,6 +29,10 @@ export const paths = {
   /** { count }: how many usernames have been generated (the number in them). */
   usernameCounter: "counters/usernames",
 
+  /** Private requests for an admin's review (server-only). */
+  reviewRequests: "reviewRequests",
+  reviewRequest: (requestId: string) => `reviewRequests/${seg(requestId)}`,
+
   /** Private, expiring pre-login records; the ID is a hash of the random state. */
   loginAttempts: "loginAttempts",
   loginAttempt: (stateHash: string) => `loginAttempts/${seg(stateHash)}`,

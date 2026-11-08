@@ -7,6 +7,7 @@ import Image from "next/image";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import ListView from "@/components/profile/ListView";
 import CollegeAffiliation from "@/components/profile/CollegeAffiliation";
+import ReviewRequests from "@/components/profile/ReviewRequests";
 import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/lib/images";
@@ -143,6 +144,7 @@ const Profile = () => {
             </div>
 
             <CollegeAffiliation />
+            <ReviewRequests />
 
             <div className="hidden sm:block">
               <button

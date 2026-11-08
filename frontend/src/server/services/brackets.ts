@@ -35,6 +35,7 @@ import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
 import { readChildren, runTransaction } from "../data/util";
+import { closeGameRequests, readGameRequests } from "./reviews";
 import type { MatchChange } from "./matchRoster";
 import { applyResult, isScoredGame, readStandingDocs } from "./standings";
 
@@ -260,15 +261,17 @@ export async function deleteBracket(
     ]);
     const changed = [bracketSnap, ...gameSnaps.filter((s) => s.exists), ...standingDocs, ...placementDocs];
     const children = await readChildren(tx, gameRefs.flatMap((r) => [rosterRef(seasonId, r.id), scoreReportsRef(seasonId, r.id)]));
+    const requests = await readGameRequests(tx, seasonId, gameRefs.map((r) => r.id));
 
     for (const game of scoredGames) applyResult(tx, seasonId, game, -1, standingDocs);
     takeBackPlacements(tx, seasonId, bracket, ["first", "second", "third"]);
     for (const doc of [...children, ...gameSnaps.filter((s) => s.exists), bracketSnap]) tx.delete(doc.ref);
+    closeGameRequests(tx, requests, actor);
     logAction(tx, seasonId, {
       actor,
       action: bracket.kind === "tournament" ? "deleteTournament" : "deleteBracket",
       params: { bracketId, force },
-      changed: [...changed, ...children],
+      changed: [...changed, ...children, ...requests],
     });
     return { status: "deleted", matchCount: gameRefs.length };
   });

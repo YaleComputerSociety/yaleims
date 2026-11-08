@@ -159,6 +159,8 @@ export const can = {
   setChampion: isAdmin,
   /** See who holds a role, and set anyone's roles. */
   manageRoles: isAdmin,
+  /** Find anyone (People), correct their name, email, college and attendance, and answer review requests (decision 3d). */
+  managePeople: isAdmin,
   /** A college's players this season (the captain, MVP and roster pickers, the roles page). */
   listPlayers: async (viewer: Viewer, collegeId: string) =>
     (await isSupervisor(viewer)) || (await isRepOf(viewer, collegeId)) || isCaptainOf(viewer, collegeId),

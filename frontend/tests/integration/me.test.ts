@@ -51,7 +51,7 @@ describe("GET /api/auth/session", () => {
       signedIn: true,
       viewer: {
         userId: id, email: id, name, canEditName: false, directory: null, username, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
-        can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false },
+        can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false, managePeople: false },
       },
     });
     const rep = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.student(2, 0), []) });

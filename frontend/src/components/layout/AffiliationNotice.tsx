@@ -70,10 +70,13 @@ export default function AffiliationNotice() {
       </p>
       <p className="text-sm">
         If you&apos;re an undergraduate, you can try the Yalies search again later from Profile → College affiliation →
-        Check Yalies again.
+        Check Yalies again, or request manual review of your affiliation.
       </p>
       {viewer?.canEditName && <NameForm />}
       <div className="flex flex-wrap justify-end gap-2 pt-2">
+        <Link href="/profile?review=affiliation#review" onClick={dismiss} className="px-3 py-1.5 text-sm rounded-md bg-gray-200 dark:bg-gray-700">
+          Request affiliation review
+        </Link>
         <Link href="/profile" onClick={dismiss} className="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white">
           Go to Profile
         </Link>

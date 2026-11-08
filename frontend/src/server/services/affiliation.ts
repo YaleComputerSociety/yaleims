@@ -6,7 +6,7 @@
 // played stay: lib/attendance.ts judges each by the college held when it was
 // played, from the history written here. Audit-logged with the admin's reason.
 import "server-only";
-import { Timestamp } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { assignmentsOf } from "@/lib/attendance";
 import type { CollegeAssignment } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
@@ -14,25 +14,42 @@ import { listColleges } from "../data/colleges";
 import { playerRef } from "../data/players";
 import { playerEntriesQuery } from "../data/roster";
 import { collegeTeamsRef } from "../data/teams";
-import { runTransaction } from "../data/util";
+import { displayName, readUser, userRef } from "../data/users";
+import { expectRevision, runTransaction } from "../data/util";
 
-export type CollegeChange = "ok" | "unchanged" | "not-in-season" | "unknown-college";
+export type CollegeChange = "ok" | "unchanged" | "no-user" | "unknown-college";
 
-/** Sets `userId`'s college this season (null: unassigned, which a later directory lookup doesn't fill). */
+/**
+ * Sets `userId`'s college this season (null: unassigned, which a later
+ * directory lookup doesn't fill). Someone not yet a player this season
+ * becomes one. `revision`: the player doc's as the admin saw it (null: none
+ * yet); a changed doc is refused (409). Leaving it out skips the check.
+ */
 export async function setPlayerCollege(
   seasonId: string,
   userId: string,
   collegeId: string | null,
   reason: string,
   actor: Actor,
+  revision?: string | null,
   now = new Date()
 ): Promise<CollegeChange> {
   if (collegeId && !(await listColleges(seasonId)).some((c) => c.id === collegeId)) return "unknown-college";
   const ref = playerRef(seasonId, userId);
   return runTransaction(async (tx) => {
-    const playerSnap = await tx.get(ref);
+    const [playerSnap, userSnap] = await Promise.all([tx.get(ref), tx.get(userRef(userId))]);
+    if (revision !== undefined) expectRevision(playerSnap, revision);
     const player = playerSnap.data();
-    if (!player) return "not-in-season";
+    const assignment: CollegeAssignment = { collegeId, source: "admin", since: Timestamp.fromDate(now) };
+    if (!player) {
+      if (!userSnap.exists) return "no-user";
+      tx.create(ref, {
+        seasonId, collegeId, collegeHistory: [assignment], name: displayName(readUser(userSnap.data()!)), userId, roles: [],
+        joinedAt: FieldValue.serverTimestamp(), joinedVia: "admin",
+      });
+      logAction(tx, seasonId, { actor, action: "setPlayerCollege", params: { userId, from: null, to: collegeId, reason }, changed: [], created: [ref] });
+      return "ok";
+    }
     const old = player.collegeId;
     if (old === collegeId) return "unchanged";
     const teams = old ? (await tx.get(collegeTeamsRef(seasonId, old).where("captainIds", "array-contains", userId))).docs : [];
@@ -46,7 +63,7 @@ export async function setPlayerCollege(
       player.collegeHistory ?? assignmentsOf(player).map((a) => ({ ...a, source: "legacy", since: player.joinedAt }));
     tx.update(ref, {
       collegeId,
-      collegeHistory: [...history, { collegeId, source: "admin", since: Timestamp.fromDate(now) }],
+      collegeHistory: [...history, assignment],
       roles: player.roles.filter((role) => role !== "college_rep"),
     });
     for (const team of teams) tx.update(team.ref, { captainIds: team.data().captainIds.filter((id) => id !== userId) });

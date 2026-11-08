@@ -21,6 +21,8 @@ export interface ViewerPermissions {
   takeAttendance: boolean;
   setChampion: boolean;
   manageRoles: boolean;
+  /** People and review requests (admins). */
+  managePeople: boolean;
 }
 
 /** The signed-in person, with what they are this season. */

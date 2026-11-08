@@ -197,7 +197,7 @@ export interface CollegeAssignment {
   source: CollegeSource;
   since: StoredTimestamp;
 }
-export type JoinedVia = "login" | "captain" | "supervisor" | "migration";
+export type JoinedVia = "login" | "captain" | "supervisor" | "admin" | "migration";
 
 /**
  * seasons/{s}/players/{playerId}: a person's membership in the season (D30),
@@ -390,4 +390,33 @@ export interface AuditLogDoc {
    * Absent on entries from before November 2026.
    */
   truncated?: { copies: number; paths: number } | null;
+}
+
+// ── reviewRequests/{requestId} ─────────────────────────────────────────────
+
+/** What a review request is about: their college, a game's attendance (missing too), their name. */
+export type ReviewKind = "affiliation" | "attendance" | "profile";
+export type ReviewStatus = "open" | "resolved" | "dismissed";
+
+/**
+ * A person asks an admin to look at something about themselves (account
+ * plan, step 9); only admins resolve it (decision 3d). Server-only, like
+ * the audit log.
+ */
+export interface ReviewRequestDoc {
+  kind: ReviewKind;
+  subjectUserId: string;
+  seasonId: string;
+  /** The game (attendance requests); null otherwise. */
+  matchId: string | null;
+  /** The person's explanation (and, for a name, the right one). */
+  message: string;
+  status: ReviewStatus;
+  /** subject + kind + season + game while open, so a second open request for the same thing is refused; null once closed. */
+  openKey: string | null;
+  /** The admin's answer, shown to the person. */
+  resolution: string | null;
+  resolvedBy: string | null;
+  createdAt: StoredTimestamp;
+  closedAt: StoredTimestamp | null;
 }

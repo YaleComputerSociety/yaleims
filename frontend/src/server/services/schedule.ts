@@ -15,6 +15,7 @@ import { rosterRef } from "../data/roster";
 import { scoreReportsRef } from "../data/scoreReports";
 import { getSport } from "../data/sports";
 import { readChildren, runTransaction } from "../data/util";
+import { closeGameRequests, readGameRequests } from "./reviews";
 import { applyRosterChanges, readRosterChanges } from "./matchRoster";
 
 export type AddScheduleResult =
@@ -151,8 +152,8 @@ export type DeleteResult = "ok" | "not-found" | "scored" | "in-bracket";
 
 /**
  * Deletes a game with its roster and score reports: an unscored game outside
- * a bracket (a bracket's games go with the bracket). The log keeps a copy of
- * everything deleted.
+ * a bracket (a bracket's games go with the bracket); open review requests
+ * about it close. The log keeps a copy of everything deleted.
  */
 export async function deleteMatch(seasonId: string, matchId: string, actor: Actor): Promise<DeleteResult> {
   const ref = matchRef(seasonId, matchId);
@@ -163,9 +164,11 @@ export async function deleteMatch(seasonId: string, matchId: string, actor: Acto
     if (match.status === "final") return "scored";
     if (match.bracketId) return "in-bracket";
     const children = await readChildren(tx, [rosterRef(seasonId, matchId), scoreReportsRef(seasonId, matchId)]);
+    const requests = await readGameRequests(tx, seasonId, [matchId]);
     for (const doc of children) tx.delete(doc.ref);
     tx.delete(ref);
-    logAction(tx, seasonId, { actor, action: "deleteMatch", params: { matchId }, changed: [snap, ...children] });
+    closeGameRequests(tx, requests, actor);
+    logAction(tx, seasonId, { actor, action: "deleteMatch", params: { matchId }, changed: [snap, ...children, ...requests] });
     return "ok";
   });
 }

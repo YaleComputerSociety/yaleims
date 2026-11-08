@@ -47,3 +47,20 @@ export function pickFields<T>(data: DocumentData, fields: Record<keyof T, true>)
 export function withId<T>(snap: DocumentSnapshot): WithId<T> {
   return { id: snap.id, ...(snap.data() as T) };
 }
+
+/**
+ * A doc's revision: when it was last written (Firestore's own update time),
+ * to the nanosecond. An admin edit sends the revision it was made on, and
+ * expectRevision refuses it (409) when the doc has changed since, so two
+ * admins can't silently overwrite each other. null: the doc doesn't exist.
+ */
+export function revisionOf(snap: DocumentSnapshot): string | null {
+  const time = snap.updateTime;
+  return time ? `${time.seconds}.${String(time.nanoseconds).padStart(9, "0")}` : null;
+}
+
+export function expectRevision(snap: DocumentSnapshot, revision: string | null): void {
+  if (revisionOf(snap) !== revision) {
+    throw new ApiError("conflict", "Someone changed this in the meantime. Reload and try again.", { revision: revisionOf(snap) });
+  }
+}

@@ -27,7 +27,7 @@ export const GET = route(async () => {
   const seasonId = await getCurrentSeasonId();
   if (seasonId) await joinSeasonOnVisit(seasonId, viewer.userId, viewer.netid);
   const name = await viewer.name();
-  const [user, player, captainOf, editSchedule, score, takeAttendance, setChampion, manageRoles] = await Promise.all([
+  const [user, player, captainOf, editSchedule, score, takeAttendance, setChampion, manageRoles, managePeople] = await Promise.all([
     viewer.user(),
     viewer.player(),
     viewer.captainOf(),
@@ -36,6 +36,7 @@ export const GET = route(async () => {
     can.takeAttendance(viewer),
     can.setChampion(viewer),
     can.manageRoles(viewer),
+    can.managePeople(viewer),
   ]);
   // Users from before NetIDs were kept get theirs on their next visit (the cookie carries it),
   // and a NetID someone added for them unverified becomes theirs (one read when there is none).
@@ -60,7 +61,7 @@ export const GET = route(async () => {
       collegeId: player?.collegeId ?? null,
       roles: [...(user?.roles ?? []), ...(player?.roles ?? [])],
       captainOf: captainOf.map((team) => team.sportId),
-      can: { editSchedule, score, takeAttendance, setChampion, manageRoles },
+      can: { editSchedule, score, takeAttendance, setChampion, manageRoles, managePeople },
     },
   } satisfies SessionState);
 });

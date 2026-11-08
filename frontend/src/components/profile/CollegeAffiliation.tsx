@@ -64,7 +64,7 @@ export default function CollegeAffiliation() {
       ) : (
         <p className="text-sm">
           <strong>Unassigned</strong> for {currentSeason.id}. Signing yourself up for games needs a verified residential
-          college; a captain or supervisor can still add you to a game.
+          college; a captain or supervisor can still add you to a game. You can also ask an admin to check it (below).
         </p>
       )}
       {viewer.directory?.outcome && viewer.directory.checkedAt && (

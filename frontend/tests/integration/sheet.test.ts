@@ -255,9 +255,9 @@ describe("cancelling and deleting games", () => {
 describe("GET /api/auth/session: what the viewer may do", () => {
   it("says it per role", async () => {
     const can = async (email: string) => (await api("GET", "/api/auth/session", undefined, { session: sessionFor(email) })).body.viewer.can;
-    expect(await can(people.supervisor)).toEqual({ editSchedule: true, score: true, takeAttendance: true, setChampion: false, manageRoles: false });
-    expect(await can(people.admin)).toEqual({ editSchedule: true, score: true, takeAttendance: true, setChampion: true, manageRoles: true });
-    expect(await can(player(0, 6))).toEqual({ editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false });
+    expect(await can(people.supervisor)).toEqual({ editSchedule: true, score: true, takeAttendance: true, setChampion: false, manageRoles: false, managePeople: false });
+    expect(await can(people.admin)).toEqual({ editSchedule: true, score: true, takeAttendance: true, setChampion: true, manageRoles: true, managePeople: true });
+    expect(await can(player(0, 6))).toEqual({ editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false, managePeople: false });
   });
 });
 

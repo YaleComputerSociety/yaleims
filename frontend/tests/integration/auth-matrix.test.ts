@@ -69,6 +69,15 @@ const cases: Record<string, Case> = {
   "read past results": { method: "GET", path: () => "/api/matches?page=0", allowed: signedIn },
   "change one's username": { method: "PATCH", path: () => "/api/me", body: { username: "x" }, allowed: signedIn },
   "list one's games": { method: "GET", path: () => "/api/me/matches", allowed: signedIn },
+  "list one's review requests": { method: "GET", path: () => "/api/me/review-requests", allowed: signedIn },
+  "request a review": { method: "POST", path: () => "/api/me/review-requests", body: { kind: "attendance", matchId: "nope", message: "x" }, allowed: signedIn },
+  "read the review queue": { method: "GET", path: () => "/api/review-requests", allowed: adminOrDev },
+  "close a review request": { method: "PATCH", path: () => "/api/review-requests/nope", body: { status: "resolved", resolution: "x", revision: "1" }, allowed: adminOrDev },
+  "find people": { method: "GET", path: () => "/api/people?netid=zz950", allowed: adminOrDev },
+  "read a person": { method: "GET", path: (s) => `/api/people/${nobody}?seasonId=${s}`, allowed: adminOrDev },
+  "correct a profile": { method: "PATCH", path: () => `/api/people/${nobody}`, body: { name: "X", reason: "r", revision: "1" }, allowed: adminOrDev },
+  "set a college": { method: "PUT", path: () => `/api/people/${nobody}/college`, body: { seasonId: "nope", collegeId: "BF", reason: "r", revision: null }, allowed: adminOrDev },
+  "correct attendance": { method: "PATCH", path: () => `/api/people/${nobody}/attendance/nope`, body: { action: "remove", seasonId: "nope", reason: "r", revision: "1" }, allowed: adminOrDev },
 };
 
 describe.each(Object.entries(cases))("%s", (_, c) => {
