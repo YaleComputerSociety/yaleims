@@ -1,8 +1,8 @@
 import type { CollegeLeaders } from "@/lib/api/colleges";
 import { authorize, can } from "@/server/auth";
-import { getPlayers, listCollegeReps } from "@/server/data/players";
+import { listCollegeReps } from "@/server/data/players";
 import { listCollegeTeams } from "@/server/data/teams";
-import { getEmails } from "@/server/data/users";
+import { displayName, getUsers } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; collegeId: string };
@@ -15,14 +15,13 @@ export const GET = route<Params>(async (req, { params }) => {
     listCollegeReps(seasonId, collegeId),
     listCollegeTeams(seasonId, collegeId),
   ]);
-  const [captains, emails] = await Promise.all([
-    getPlayers(seasonId, [...new Set(teams.flatMap((t) => t.captainIds))]),
-    getEmails(reps.map((p) => p.id)),
-  ]);
+  const users = await getUsers([...reps.map((p) => p.id), ...teams.flatMap((t) => t.captainIds)]);
+  const nameOf = (id: string, copy: string) => {
+    const user = users.get(id);
+    return user ? displayName(user) : copy;
+  };
   return ok({
-    reps: reps.map((p) => ({ playerId: p.id, name: p.name, email: emails.get(p.id) ?? null })),
-    captains: teams.flatMap((t) =>
-      t.captainIds.map((id) => ({ sportId: t.sportId, name: captains.get(id)?.name ?? id }))
-    ),
+    reps: reps.map((p) => ({ playerId: p.id, name: nameOf(p.id, p.name), email: users.get(p.id)?.email ?? null })),
+    captains: teams.flatMap((t) => t.captainIds.map((id) => ({ sportId: t.sportId, name: nameOf(id, id) }))),
   } satisfies CollegeLeaders);
 });

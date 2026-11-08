@@ -1,7 +1,7 @@
 // Local sign-in without Yale CAS: prints a session cookie for a user of the
 // local emulator data (npm run seed), signed with your local JWT_SECRET, and
 // the line to paste into the browser console. The app then treats you as
-// that user; their name, roles, college and username come from Firestore on
+// that user; their name, roles, and college come from Firestore on
 // each request, as after a real login.
 //
 //   npm run dev:token -- dev@example.edu   (a user id: the seed's are emails)

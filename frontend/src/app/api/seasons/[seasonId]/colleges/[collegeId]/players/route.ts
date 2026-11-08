@@ -3,7 +3,7 @@ import { toJson } from "@/lib/api/core";
 import { authorize, can, requireCurrentSeason } from "@/server/auth";
 import { listCollegePlayers } from "@/server/data/players";
 import { listCollegeTeams } from "@/server/data/teams";
-import { getNetids } from "@/server/data/users";
+import { displayName, getUsers } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; collegeId: string };
@@ -22,10 +22,13 @@ export const GET = route<Params>(async (req, { params }) => {
     listCollegePlayers(seasonId, collegeId),
     listCollegeTeams(seasonId, collegeId),
   ]);
-  const netids = await getNetids(players.map((p) => p.id));
+  const users = await getUsers(players.map((p) => p.id));
   const captainOf = (playerId: string) => teams.filter((t) => t.captainIds.includes(playerId)).map((t) => t.sportId);
   const items = players
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((p) => ({ ...toJson(p), netid: netids.get(p.id) ?? null, captainOf: captainOf(p.id) }));
+    .map((p) => {
+      const user = users.get(p.id);
+      return { ...toJson(p), name: user ? displayName(user) : p.name, netid: user?.netid ?? null, captainOf: captainOf(p.id) };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
   return ok({ items, total: items.length } satisfies CollegePlayerList);
 });

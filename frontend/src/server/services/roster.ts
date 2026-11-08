@@ -154,9 +154,8 @@ export async function addToGame(
 
     let name = player?.name ?? "";
     if (byNetid && account) {
-      const written = writeAccount(tx, account, byNetid.found, { by: actor, seasonId });
-      // A label typed for someone the directory can't name stays on the game, never their account.
-      name = byNetid.found.person?.name ?? (account.existing ? written.name : byNetid.name || byNetid.netid);
+      // A label typed for someone the directory can't name becomes their unverified name (D-N3).
+      name = writeAccount(tx, account, byNetid.found, { by: actor, seasonId, label: byNetid.name }).name;
       writeSeasonPlayer(tx, seasonId, playerId, player, directoryCollege, { name, joinedVia: role });
     }
     const by: SheetEditor = { supervisor: role === "supervisor", actor };

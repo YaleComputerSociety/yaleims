@@ -86,7 +86,6 @@ export async function personView(userId: string, seasonId: string): Promise<Pers
     ...summary(user, player),
     email: user.email,
     nameSource: user.nameSource,
-    username: user.username,
     createdBy: user.createdBy,
     roles: user.roles,
     revision: revisionOf(userSnap)!,
@@ -134,8 +133,10 @@ function underReview(player: PlayerDoc | undefined, entries: RosterEntryDoc[]): 
 // ── Corrections ────────────────────────────────────────────────────────────
 
 /**
- * An admin's name (locked: the directory no longer replaces it, D3b) and/or
- * email for a person; the current season's (`seasonId`) player doc copies the name.
+ * An admin's name (locked: neither the directory nor the person replaces
+ * it, D3b) and/or email for a person, or an admin-set name given back to
+ * the person to change (D-N4); the current season's (`seasonId`) player doc
+ * copies the name.
  */
 export async function fixProfile(userId: string, fix: ProfileFix, seasonId: string, actor: Actor): Promise<"ok" | "not-found"> {
   return runTransaction(async (tx) => {
@@ -144,6 +145,7 @@ export async function fixProfile(userId: string, fix: ProfileFix, seasonId: stri
     expectRevision(userSnap, fix.revision);
     tx.update(userSnap.ref, {
       ...(fix.name !== undefined ? { name: fix.name, nameSource: "admin" } : {}),
+      ...(fix.unlockName ? { nameSource: readUser(userSnap.data()!).name ? "self" : "none" } : {}),
       ...(fix.email !== undefined ? { email: fix.email } : {}),
     });
     if (fix.name !== undefined && playerSnap.exists) tx.update(playerSnap.ref, { name: fix.name });
@@ -151,7 +153,7 @@ export async function fixProfile(userId: string, fix: ProfileFix, seasonId: stri
     logAction(tx, seasonId, {
       actor,
       action: "fixProfile",
-      params: { userId, name: fix.name, email: fix.email, reason: fix.reason },
+      params: { userId, name: fix.name, email: fix.email, unlockName: fix.unlockName, reason: fix.reason },
       changed: [userSnap, ...(playerSnap.exists ? [playerSnap] : [])],
     });
     return "ok";

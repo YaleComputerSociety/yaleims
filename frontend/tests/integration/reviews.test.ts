@@ -37,7 +37,7 @@ async function person(collegeId: string | null = null) {
   const netid = `zzrev${++sequence}`;
   const id = `netid-${netid}`;
   await remember(paths.user(id), paths.player(current, id));
-  await db.doc(paths.user(id)).set({ email: null, name: "Rev Person", nameSource: "self", netid, username: `U${id}`, roles: [], claimedAt: Timestamp.fromMillis(1000), createdBy: null });
+  await db.doc(paths.user(id)).set({ email: null, name: "Rev Person", nameSource: "self", netid, roles: [], claimedAt: Timestamp.fromMillis(1000), createdBy: null });
   await db.doc(paths.player(current, id)).set({ seasonId: current, collegeId, collegeHistory: [], name: "Rev Person", userId: id, roles: [], joinedAt: Timestamp.fromMillis(1000), joinedVia: "login" });
   filedBy.push(id);
   return { netid, id, session: sessionOf(id, netid) };
@@ -124,6 +124,17 @@ describe("People", () => {
     expect(await data(paths.user(p.id))).toMatchObject({ name: "Right Name", nameSource: "admin" });
     expect((await data(paths.player(current, p.id)))!.name).toBe("Right Name");
     expect((await api("PATCH", "/api/me", { name: "Mine" }, { session: p.session })).status).toBe(403);
+  });
+
+  it("gives an admin-set name back to the person to change (D-N4)", async () => {
+    const p = await person();
+    const revision = async () => (await api("GET", `/api/people/${p.id}?seasonId=${current}`, undefined, { session: admin() })).body.revision;
+    const fix = async (body: object) => api("PATCH", `/api/people/${p.id}`, { ...body, reason: "Checked", revision: await revision() }, { session: admin() });
+    expect((await fix({ name: "Right Name", unlockName: true })).status).toBe(400);
+    expect((await fix({ name: "Right Name" })).status).toBe(204);
+    expect((await fix({ unlockName: true })).status).toBe(204);
+    expect(await data(paths.user(p.id))).toMatchObject({ name: "Right Name", nameSource: "self" });
+    expect((await api("PATCH", "/api/me", { name: "Mine" }, { session: p.session })).status).toBe(204);
   });
 
   it("sets a college with the player doc's revision", async () => {

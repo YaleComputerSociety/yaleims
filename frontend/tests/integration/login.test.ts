@@ -19,11 +19,6 @@ let current: string;
 beforeAll(async () => { ({ current } = await seasons()); });
 afterEach(async () => {
   for (const state of attempts.splice(0)) await db.doc(paths.loginAttempt(hash(state))).delete();
-  for (const userId of accounts) {
-    const before = saved.get(paths.user(userId));
-    const after = (await db.doc(paths.user(userId)).get()).data();
-    if (saved.has(paths.user(userId)) && !before && after?.username) await db.doc(paths.username(after.username)).delete();
-  }
   for (const [path, data] of saved) {
     if (data) await db.doc(path).set(data);
     else await db.doc(path).delete();
@@ -33,8 +28,8 @@ afterEach(async () => {
 
 async function accountState() {
   const refs = accounts.flatMap((userId) => [db.doc(paths.user(userId)), db.doc(paths.player(current, userId))]);
-  const docs = await db.getAll(...refs, db.doc(paths.usernameCounter));
-  for (const doc of docs.slice(0, -1)) if (!saved.has(doc.ref.path)) saved.set(doc.ref.path, doc.data());
+  const docs = await db.getAll(...refs);
+  for (const doc of docs) if (!saved.has(doc.ref.path)) saved.set(doc.ref.path, doc.data());
   return {
     docs: docs.map((doc) => ({ path: doc.ref.path, data: doc.data() })),
     auditCount: (await db.collection(paths.auditLog(current)).count().get()).data().count,
@@ -259,7 +254,7 @@ describe("CAS browser binding", () => {
     });
     const session = await api("GET", "/api/auth/session", undefined, { session: token });
     expect(session.body.viewer).toMatchObject({ userId: "netid-zz909", email: null, collegeId: null, canEditName: true });
-    expect(session.body.viewer.name).toBe((await db.doc(paths.user("netid-zz909")).get()).data()!.username);
+    expect(session.body.viewer.name).toBe("zz909");
   });
 
   it("explains the problem on its page", async () => {

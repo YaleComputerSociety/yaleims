@@ -24,10 +24,6 @@ export const paths = {
 
   users: "users",
   user: (userId: string) => `users/${seg(userId)}`,
-  /** Taken usernames: usernames/{username} = { userId }. */
-  username: (username: string) => `usernames/${seg(username)}`,
-  /** { count }: how many usernames have been generated (the number in them). */
-  usernameCounter: "counters/usernames",
 
   /** Private requests for an admin's review (server-only). */
   reviewRequests: "reviewRequests",

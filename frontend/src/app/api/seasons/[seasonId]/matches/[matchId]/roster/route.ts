@@ -2,6 +2,7 @@ import { toJson } from "@/lib/api/core";
 import { toPublicEntry, type Roster } from "@/lib/api/roster";
 import { requireViewer } from "@/server/auth";
 import { listRoster } from "@/server/data/roster";
+import { withCurrentNames } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string };
@@ -11,7 +12,7 @@ export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();
   const roster = await listRoster(seasonId, matchId);
-  const playing = roster.filter((e) => e.captainStatus !== "removed");
+  const playing = await withCurrentNames(roster.filter((e) => e.captainStatus !== "removed"), (e) => e.playerId);
   const mine = roster.find((e) => e.playerId === viewer.userId);
   return ok({
     items: playing.map(toPublicEntry),

@@ -24,37 +24,9 @@ import { mvpsRef } from "../data/mvps";
 import { playerEntriesQuery, rosterEntryRef } from "../data/roster";
 import { getCurrentSeasonId, listSeasons } from "../data/seasons";
 import { collegeTeamsRef } from "../data/teams";
-import { displayName, holderOfNetid, readUser, userRef, usernameCounterRef, usernameRef, usersByNetidQuery } from "../data/users";
+import { displayName, holderOfNetid, ownsName, readUser, userRef, usersByNetidQuery } from "../data/users";
 import { runTransaction } from "../data/util";
 import { lookUpNetid, type DirectoryResult } from "../directory";
-
-// Generated usernames: adjective + noun + the username counter, e.g.
-// "NobleFalcon1042". Some nouns repeat; kept as they were.
-const ADJECTIVES = [
-  "Swift", "Bold", "Clever", "Happy", "Brave", "Fierce", "Gentle", "Mighty",
-  "Charming", "Lucky", "Fearless", "Noble", "Playful", "Quick", "Witty",
-  "Serene", "Vivid", "Graceful", "Bright", "Silent", "Eager", "Calm",
-  "Dynamic", "Friendly", "Humble", "Jolly", "Keen", "Loyal", "Patient",
-  "Powerful", "Radiant", "Sharp", "Sturdy", "Valiant", "Wise", "Zealous",
-  "Agile", "Cheerful", "Daring", "Elegant", "Fearsome", "Gleeful", "Heroic",
-  "Joyful", "Kind", "Lively", "Modest", "Peaceful", "Resilient", "Spirited",
-  "Strong", "Thoughtful", "Vibrant", "Warm", "Zesty",
-];
-
-const NOUNS = [
-  "Tiger", "Cloud", "Eagle", "Phoenix", "Wave", "Lion", "Bear", "Falcon",
-  "River", "Mountain", "Sky", "Wolf", "Sun", "Moon", "Star", "Forest", "Ocean",
-  "Hawk", "Falcon", "Stream", "Glacier", "Thunder", "Comet", "Dolphin",
-  "Breeze", "Shadow", "Flame", "Blaze", "Meadow", "Canyon", "Galaxy", "Pebble",
-  "Raven", "Snow", "Storm", "Tornado", "Valley", "Whale", "Zephyr", "Aurora",
-  "Brook", "Falcon", "Lynx", "Meteor", "Puma", "Quasar", "Rain", "Sand",
-  "Tide", "Vortex", "Wind", "Zenith", "Orca", "Jaguar", "Dragonfly",
-];
-
-function generateUsername(n: number): string {
-  const pick = (words: string[]) => words[Math.floor(Math.random() * words.length)];
-  return `${pick(ADJECTIVES)}${pick(NOUNS)}${n}`;
-}
 
 /**
  * Signs a Yale user in once CAS has vouched for `netid`: looks the NetID up
@@ -73,10 +45,11 @@ export async function signIn(netid: string, seasonId: string | null): Promise<st
   return userId;
 }
 
-/** What readAccount found: the person's account, or what a new one needs. */
-export type AccountRead =
-  | { netid: string; existing: DocumentSnapshot }
-  | { netid: string; existing: null; counter: number; username: string; usernameTaken: boolean };
+/** What readAccount found: the person's account, or null when they have none yet. */
+export interface AccountRead {
+  netid: string;
+  existing: DocumentSnapshot | null;
+}
 
 /**
  * Reads, in `tx`, the account of the person with this NetID, in this order,
@@ -85,8 +58,8 @@ export type AccountRead =
  * 1. the one older (email-keyed) account with this NetID recorded;
  * 2. the older account of the email the directory gives (its NetID is recorded by writeAccount);
  * 3. users/netid-<netid>;
- * 4. none: what writeAccount needs to create users/netid-<netid> (tx.create:
- *    a concurrent creator retries and finds it), with a generated username.
+ * 4. none: writeAccount creates users/netid-<netid> (tx.create: a
+ *    concurrent creator retries and finds it).
  * Two older accounts with the NetID, or one recorded with another NetID, are
  * refused (409) for an admin to sort out. Reads only, so a caller can read
  * everything else it needs before any write (services/roster.ts).
@@ -110,49 +83,45 @@ export async function readAccount(tx: Transaction, netid: string, found: Directo
     if (recorded && recorded !== netid) {
       throw new ApiError("conflict", "This person's account has another NetID. Ask an admin to fix it.");
     }
-    return { netid, existing: snap };
   }
-  const counter = ((await tx.get(usernameCounterRef())).data()?.count || 0) + 1;
-  const username = generateUsername(counter);
-  const usernameTaken = (await tx.get(usernameRef(username))).exists;
-  return { netid, existing: null, counter, username, usernameTaken };
+  return { netid, existing: snap };
 }
 
 /**
  * Writes what readAccount found: the directory's fields on the account
  * (directoryChanges) and its NetID; a sign-in (`createdFor` null) claims it.
  * A new account is created unclaimed when someone else makes it (logged in
- * their season). Returns the account's id and display name.
+ * their season); their label for the person names an account that has no
+ * name yet, unverified ("staff": the directory, an admin or the person
+ * replace it, D-N3). Returns the account's id and display name.
  */
 export function writeAccount(
   tx: Transaction,
   read: AccountRead,
   found: DirectoryResult,
   /** Someone else making the account (logged in this season); null: their own sign-in. */
-  createdFor: { by: Actor; seasonId: string } | null
+  createdFor: { by: Actor; seasonId: string; label: string | null } | null
 ): { userId: string; name: string } {
   const signingIn = createdFor === null;
+  const label = createdFor?.label ?? null;
   if (read.existing) {
     const user = readUser(read.existing.data()!);
     const changes = directoryChanges(user, found);
     if (!user.netid) changes.netid = read.netid;
     if (signingIn && !user.claimedAt) changes.claimedAt = FieldValue.serverTimestamp();
+    if (label && !user.name && !changes.name) Object.assign(changes, { name: label, nameSource: "staff" });
     tx.update(read.existing.ref, changes);
     return { userId: read.existing.id, name: displayName({ ...user, ...(changes as Partial<UserDoc>) }) };
   }
 
   const userId = placeholderId(read.netid);
   const ref = userRef(userId);
-  const username = read.usernameTaken ? "Anonymous" : read.username;
-  tx.set(usernameCounterRef(), { count: read.counter }, { merge: true });
-  if (!read.usernameTaken) tx.set(usernameRef(username), { userId });
-  const name = found.person?.name ?? null;
+  const name = found.person?.name ?? label;
   tx.create(ref, {
     email: found.person?.email ?? null,
     name,
-    nameSource: name ? "yalies" : "none",
+    nameSource: found.person?.name ? "yalies" : label ? "staff" : "none",
     netid: read.netid,
-    username,
     roles: [],
     claimedAt: signingIn ? FieldValue.serverTimestamp() : null,
     createdBy: createdFor?.by.userId ?? null,
@@ -167,7 +136,7 @@ export function writeAccount(
       created: [ref],
     });
   }
-  return { userId, name: name ?? username };
+  return { userId, name: name ?? read.netid };
 }
 
 /** How long until the next lookup: soon after a complete answer or an outage, longer after an incomplete one. */
@@ -186,8 +155,8 @@ function directoryState(found: DirectoryResult) {
 
 /**
  * What a directory lookup changes on a user: the lookup's state; the name,
- * unless an admin set it (Yalies' name replaces one they typed, and locks
- * it); the email when none is known. Each field on its own: a missing one
+ * unless an admin set it (Yalies' name replaces one they typed or a
+ * captain's label, and locks it); the email when none is known. Each field on its own: a missing one
  * changes nothing.
  */
 function directoryChanges(user: UserDoc, found: DirectoryResult): Record<string, unknown> {
@@ -326,15 +295,15 @@ export function writeSeasonPlayer(
 }
 
 /**
- * Sets the name the user typed, while it may be theirs to set: no name yet,
- * or one they typed (the directory's and an admin's are locked). The
- * season's player doc, which copies it, changes with it.
+ * Sets the name the user typed, while it's theirs to set (ownsName: no
+ * name yet, one they typed, or a captain's label; the directory's and an
+ * admin's are locked). The season's player doc, which copies it, changes with it.
  */
 export async function changeName(userId: string, name: string, seasonId: string | null): Promise<"ok" | "locked" | "no-user"> {
   return runTransaction(async (tx) => {
     const [userSnap, playerSnap] = await tx.getAll(userRef(userId), ...(seasonId ? [playerRef(seasonId, userId)] : []));
     if (!userSnap.exists) return "no-user";
-    if (!["none", "self"].includes(readUser(userSnap.data()!).nameSource)) return "locked";
+    if (!ownsName(readUser(userSnap.data()!))) return "locked";
     tx.update(userSnap.ref, { name, nameSource: "self" });
     if (playerSnap?.exists) tx.update(playerSnap.ref, { name });
     return "ok";
@@ -443,9 +412,8 @@ function mergeEntries(kept: RosterEntryDoc | undefined, moved: RosterEntryDoc): 
 }
 
 /**
- * Deletes the account `accountId`, folded into `intoId`, with its username;
- * one that holds a global role stays (an admin's call). Logged in the
- * current season.
+ * Deletes the account `accountId`, folded into `intoId`; one that holds a
+ * global role stays (an admin's call). Logged in the current season.
  */
 async function foldAccount(accountId: string, intoId: string): Promise<void> {
   const seasonId = await getCurrentSeasonId();
@@ -454,15 +422,13 @@ async function foldAccount(accountId: string, intoId: string): Promise<void> {
     if (!snap.exists) return;
     const account = readUser(snap.data()!);
     if (account.roles.length > 0) return;
-    const usernameSnap = account.username ? await tx.get(usernameRef(account.username)) : null;
     tx.delete(snap.ref);
-    if (usernameSnap?.data()?.userId === accountId) tx.delete(usernameSnap.ref);
     if (seasonId) {
       logAction(tx, seasonId, {
         actor: { userId: intoId, roles: ["user"] },
         action: "foldAccount",
         params: { userId: accountId, into: intoId },
-        changed: [snap, ...(usernameSnap?.exists ? [usernameSnap] : [])],
+        changed: [snap],
       });
     }
   });

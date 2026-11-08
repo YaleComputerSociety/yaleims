@@ -28,7 +28,7 @@ import { getIdentity, type Identity } from "./session";
 export interface Viewer extends Identity {
   /** Their users/{userId} doc (null: none yet). */
   user(): Promise<UserDoc | null>;
-  /** The name to show for them (their username when no name is known). */
+  /** The name to show for them (their NetID when no name is known). */
   name(): Promise<string>;
   /** users/{userId}.roles. */
   globalRoles(): Promise<GlobalRole[]>;

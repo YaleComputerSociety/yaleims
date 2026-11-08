@@ -4,7 +4,7 @@ import { can, requireViewer } from "@/server/auth";
 import { getMatch } from "@/server/data/matches";
 import { listRoster } from "@/server/data/roster";
 import { getPlayers } from "@/server/data/players";
-import { getUsers } from "@/server/data/users";
+import { displayName, getUsers } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string };
@@ -30,7 +30,7 @@ export const GET = route<Params>(async (req, { params }) => {
   const [users, players] = await Promise.all([getUsers(ids), getPlayers(seasonId, ids)]);
   const items = entries.map((e) => {
     const user = users.get(e.playerId);
-    return { ...toJson(e), netid: user?.netid ?? null, signedIn: !!user?.claimedAt, collegeAssigned: !!players.get(e.playerId)?.collegeId };
+    return { ...toJson(e), name: user ? displayName(user) : e.name, netid: user?.netid ?? null, signedIn: !!user?.claimedAt, collegeAssigned: !!players.get(e.playerId)?.collegeId };
   });
   return ok({ collegeIds, supervisor, items, total: items.length } satisfies RosterSheet);
 });

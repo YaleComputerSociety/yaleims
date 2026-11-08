@@ -20,7 +20,7 @@ const { claimPlaceholders } = await import("@/server/services/accounts");
 let current: string;
 beforeAll(async () => { ({ current } = await seasons()); });
 
-// Every doc a test may create or change, restored after it (with the usernames of new accounts).
+// Every doc a test may create or change, restored after it.
 const saved = new Map<string, DocumentData | undefined>();
 async function remember(...docPaths: string[]) {
   for (const path of docPaths) if (!saved.has(path)) saved.set(path, (await db.doc(path).get()).data());
@@ -28,8 +28,6 @@ async function remember(...docPaths: string[]) {
 afterEach(async () => {
   vi.restoreAllMocks();
   for (const [path, before] of saved) {
-    const after = (await db.doc(path).get()).data();
-    if (path.startsWith("users/") && !before && after?.username) await db.doc(paths.username(after.username)).delete();
     if (before) await db.doc(path).set(before);
     else await db.doc(path).delete();
   }
@@ -80,7 +78,8 @@ describe("staff adds (rule 4a)", () => {
     await remember(paths.rosterEntry(current, game.id, p.id));
     const r = await addToGame(current, game.id, game.other, { netid: p.netid, name: "Walk In" }, supervisor);
     expect(r).toEqual({ status: "added", playerId: p.id, verified: false });
-    expect(await data(paths.user(p.id))).toMatchObject({ netid: p.netid, name: null, nameSource: "none", claimedAt: null, createdBy: people.supervisor });
+    // The label names the new account, unverified (D-N3).
+    expect(await data(paths.user(p.id))).toMatchObject({ netid: p.netid, name: "Walk In", nameSource: "staff", claimedAt: null, createdBy: people.supervisor });
     expect(await data(paths.player(current, p.id))).toMatchObject({ collegeId: null, collegeHistory: [], userId: p.id, name: "Walk In", joinedVia: "supervisor" });
     expect(await data(paths.rosterEntry(current, game.id, p.id))).toMatchObject({ collegeId: game.other, name: "Walk In", present: true });
 
@@ -192,7 +191,7 @@ describe("an admin's college change (4c)", () => {
     const team = paths.team(current, game0College, "zz-sport");
     await remember(team, paths.rosterEntry(current, upcoming.id, p.id), paths.rosterEntry(current, pastGame.id, p.id));
     // A player of the college since long ago (a doc from before November 2026: no history), its rep and a captain.
-    await db.doc(paths.user(p.id)).set({ email: null, name: "Old Player", nameSource: "self", netid: p.netid, username: `U${p.id}`, roles: [], claimedAt: Timestamp.fromMillis(1000), createdBy: null });
+    await db.doc(paths.user(p.id)).set({ email: null, name: "Old Player", nameSource: "self", netid: p.netid, roles: [], claimedAt: Timestamp.fromMillis(1000), createdBy: null });
     await db.doc(paths.player(current, p.id)).set({ seasonId: current, collegeId: game0College, name: "Old Player", userId: p.id, roles: ["college_rep", "supervisor"], joinedAt: Timestamp.fromMillis(1000), joinedVia: "migration" });
     await db.doc(team).set({ seasonId: current, collegeId: game0College, sportId: "zz-sport", captainIds: [p.id, "someone-else"], games: 0, wins: 0, losses: 0, ties: 0, forfeits: 0, pointsFor: 0, pointsAgainst: 0 });
     const entry = (matchId: string, match: MatchDoc, present: boolean) => ({
@@ -239,8 +238,7 @@ describe("folding a leftover netid- account into an older one (R05)", () => {
 
     // Added while the directory was down; it's the person with an older account, NetID not recorded.
     await addToGame(current, game.id, "BF", { netid: p.netid, name: "Walk In" }, supervisor);
-    const username = (await data(paths.user(p.id)))!.username;
-    await db.doc(paths.user(older)).set({ email: older, name: "Older Name", nameSource: "yalies", netid: p.netid, username: `U${older}`, roles: [], claimedAt: Timestamp.fromMillis(1000), createdBy: null });
+    await db.doc(paths.user(older)).set({ email: older, name: "Older Name", nameSource: "yalies", netid: p.netid, roles: [], claimedAt: Timestamp.fromMillis(1000), createdBy: null });
     await db.doc(team).set({ seasonId: current, collegeId: "BF", sportId: "zz-sport", captainIds: [p.id], games: 0, wins: 0, losses: 0, ties: 0, forfeits: 0, pointsFor: 0, pointsAgainst: 0 });
     // The placeholder's player doc has no college; captaincies and awards are found in the colleges it held.
     await db.doc(paths.player(current, p.id)).update({ collegeId: "BF", collegeHistory: [{ collegeId: "BF", source: "admin", since: Timestamp.fromMillis(1000) }] });
@@ -259,7 +257,6 @@ describe("folding a leftover netid- account into an older one (R05)", () => {
     expect(await data(paths.player(current, older))).toMatchObject({ userId: older, collegeId: "BF" });
     expect(await data(paths.player(current, p.id))).toBeUndefined();
     expect(await data(paths.user(p.id))).toBeUndefined();
-    expect(await data(paths.username(username))).toBeUndefined();
     // Again: nothing left to fold.
     expect(await claimPlaceholders(p.netid, older, "Older Name")).toBe(0);
   });

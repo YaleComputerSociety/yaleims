@@ -42,7 +42,7 @@ const rolesOf = (globalRoles: string[], seasonRoles: string[], captainOf: string
 const personOf = (holder: RoleHolder): Person => ({
   id: holder.id,
   netid: holder.netid,
-  name: holder.name ?? holder.username,
+  name: holder.name ?? holder.netid ?? holder.id,
   college: collegeName(holder.player?.collegeId),
   roles: rolesOf(holder.roles, holder.player?.roles ?? [], holder.captainOf),
   captainOf: holder.captainOf,

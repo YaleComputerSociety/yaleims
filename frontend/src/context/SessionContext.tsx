@@ -12,8 +12,6 @@ interface SessionState {
   /** True until the first answer. */
   loading: boolean;
   signOut: () => Promise<void>;
-  /** Updates the viewer in place (the profile's new username). */
-  setViewer: (update: (viewer: SessionViewer) => SessionViewer) => void;
   /** Reads the session again (after a name change or a directory lookup); keeps the viewer when that fails. */
   refresh: () => Promise<void>;
 }
@@ -22,7 +20,6 @@ const SessionContext = createContext<SessionState>({
   viewer: null,
   loading: true,
   signOut: async () => {},
-  setViewer: () => {},
   refresh: async () => {},
 });
 
@@ -55,13 +52,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setViewer = useCallback(
-    (update: (viewer: SessionViewer) => SessionViewer) => setViewerState((prev) => prev && update(prev)),
-    []
-  );
-
   return (
-    <SessionContext.Provider value={{ viewer, loading, signOut, setViewer, refresh }}>{children}</SessionContext.Provider>
+    <SessionContext.Provider value={{ viewer, loading, signOut, refresh }}>{children}</SessionContext.Provider>
   );
 }
 

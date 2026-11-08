@@ -25,11 +25,21 @@ import {
 import { REVIEW_KINDS, REVIEW_STATUSES } from "@/lib/api/reviews";
 import { COLLEGES, collegeName } from "@/lib/colleges";
 import { NETID_PATTERN } from "@/lib/netid";
+import type { NameSource } from "@/types/firestore";
 
 const box = "rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-950 p-4 space-y-3";
 const input = "rounded-md px-2 py-1 text-sm bg-white dark:bg-black ring-1 ring-black/10 dark:ring-white/10";
 const button = "px-3 py-1 text-xs font-semibold rounded-full text-white bg-blue-600 disabled:opacity-50";
 const date = (iso: string) => new Date(iso).toLocaleDateString([], { dateStyle: "medium" });
+
+/** Where a name comes from, and who may change it. */
+const NAME_SOURCES: Record<NameSource, string> = {
+  none: "nobody yet (they can set it)",
+  self: "themselves (they can change it)",
+  staff: "a captain or supervisor, unverified (they can change it)",
+  yalies: "the Yale directory (locked)",
+  admin: "an admin (locked)",
+};
 
 function PeoplePage() {
   const [results, setResults] = useState<PersonSummary[] | null>(null);
@@ -142,9 +152,8 @@ function PersonPanel({ userId }: { userId: string }) {
           {person.name} <span className="font-normal text-gray-500">({person.netid ?? "no NetID recorded"})</span>
         </h2>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-          <dt className="text-gray-500">Name from</dt><dd>{person.nameSource}</dd>
+          <dt className="text-gray-500">Name from</dt><dd>{NAME_SOURCES[person.nameSource]}</dd>
           <dt className="text-gray-500">Email</dt><dd>{person.email ?? "none"}</dd>
-          <dt className="text-gray-500">Username</dt><dd>{person.username}</dd>
           <dt className="text-gray-500">Account</dt>
           <dd>{person.claimed ? "signed in" : `made by ${person.createdBy ?? "?"}, not signed in yet`} · id {person.userId}</dd>
           <dt className="text-gray-500">Roles</dt>
@@ -211,7 +220,7 @@ function PersonPanel({ userId }: { userId: string }) {
   );
 }
 
-function ProfileForm({ person, disabled, onSave }: { person: Person; disabled: boolean; onSave: (fix: { name?: string; email?: string | null }) => void }) {
+function ProfileForm({ person, disabled, onSave }: { person: Person; disabled: boolean; onSave: (fix: { name?: string; email?: string | null; unlockName?: true }) => void }) {
   const [name, setName] = useState(person.name);
   const [email, setEmail] = useState(person.email ?? "");
   return (
@@ -220,6 +229,11 @@ function ProfileForm({ person, disabled, onSave }: { person: Person; disabled: b
       <button className={button} disabled={disabled || !name.trim() || name === person.name} onClick={() => onSave({ name: name.trim() })}>
         Set name
       </button>
+      {person.nameSource === "admin" && (
+        <button className={button} disabled={disabled} onClick={() => onSave({ unlockName: true })}>
+          Let them change it
+        </button>
+      )}
       <input className={input} value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" placeholder="netid@yale.edu" />
       <button className={button} disabled={disabled || email === (person.email ?? "")} onClick={() => onSave({ email: email.trim() || null })}>
         Set email

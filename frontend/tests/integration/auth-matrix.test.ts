@@ -67,7 +67,7 @@ const cases: Record<string, Case> = {
   "list role holders": { method: "GET", path: () => "/api/users?role=nope", allowed: adminOrDev },
   "set someone's roles": { method: "PUT", path: () => `/api/users/${nobody}/roles`, body: { roles: [], captainOf: [] }, allowed: adminOrDev },
   "read past results": { method: "GET", path: () => "/api/matches?page=0", allowed: signedIn },
-  "change one's username": { method: "PATCH", path: () => "/api/me", body: { username: "x" }, allowed: signedIn },
+  "change one's name": { method: "PATCH", path: () => "/api/me", body: { name: "" }, allowed: signedIn },
   "list one's games": { method: "GET", path: () => "/api/me/matches", allowed: signedIn },
   "list one's review requests": { method: "GET", path: () => "/api/me/review-requests", allowed: signedIn },
   "request a review": { method: "POST", path: () => "/api/me/review-requests", body: { kind: "attendance", matchId: "nope", message: "x" }, allowed: signedIn },

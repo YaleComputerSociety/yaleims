@@ -1,9 +1,10 @@
-// Users: users/{userId} (identity across seasons, global roles) and
-// usernames/{username} (who holds a username). userId is an email for
-// accounts from before November 2026, "netid-<netid>" for newer ones. Old
-// user docs also hold frozen pre-v3 fields (mRoles, college,
-// sportsCaptainOf, betting totals) and the name as firstname/lastname;
-// reads return only the current fields (D25).
+// Users: users/{userId} (identity across seasons, global roles). userId is
+// an email for accounts from before November 2026, "netid-<netid>" for
+// newer ones. Old user docs also hold frozen pre-v3 fields (mRoles, college,
+// sportsCaptainOf, betting totals, a username) and the name as
+// firstname/lastname; reads return only the current fields (D25). A user's
+// name is read from here: the copies on player docs, roster entries and MVP
+// awards go stale when it changes (withCurrentNames).
 import "server-only";
 import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
@@ -13,7 +14,7 @@ import { placeholderId } from "@/lib/netid";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
-  email: true, name: true, nameSource: true, netid: true, username: true,
+  email: true, name: true, nameSource: true, netid: true,
   roles: true, claimedAt: true, createdBy: true, directory: true,
 };
 
@@ -40,20 +41,14 @@ export function readUser(data: DocumentData): UserDoc {
   };
 }
 
-/** The name to show for a user: their name, else their username. */
-export const displayName = (user: UserDoc) => user.name ?? user.username;
+/** The name to show for a user: their name, else their NetID. */
+export const displayName = (user: UserDoc) => user.name ?? user.netid ?? "Unnamed";
+
+/** Whether the user may set their own name: none yet, one they typed, or a captain's label (D-N3); Yalies' and an admin's are locked. */
+export const ownsName = (user: UserDoc) => user.nameSource === "none" || user.nameSource === "self" || user.nameSource === "staff";
 
 export function userRef(userId: string): DocumentReference {
   return adminDb.doc(paths.user(userId));
-}
-
-export function usernameRef(username: string): DocumentReference {
-  return adminDb.doc(paths.username(username));
-}
-
-/** { count }: how many usernames have been generated. */
-export function usernameCounterRef(): DocumentReference {
-  return adminDb.doc(paths.usernameCounter);
 }
 
 export async function getUser(userId: string): Promise<UserDoc | null> {
@@ -69,25 +64,22 @@ export async function getUsers(userIds: string[]): Promise<Map<string, UserDoc>>
   return new Map(snaps.filter((s) => s.exists).map((s) => [s.id, readUser(s.data()!)]));
 }
 
-/**
- * The NetID of each of these players that has one, by player id: the
- * account's recorded NetID; a placeholder (a NetID no account has yet) has none.
- */
-export async function getNetids(playerIds: string[]): Promise<Map<string, string>> {
-  const users = await getUsers(playerIds);
-  return new Map([...users].flatMap(([id, user]) => (user.netid ? [[id, user.netid] as const] : [])));
-}
-
 /** The display names of the users with these ids (missing ones left out), by id. */
 export async function getUserNames(userIds: string[]): Promise<Map<string, string>> {
   const users = await getUsers(userIds);
   return new Map([...users].map(([id, user]) => [id, displayName(user)]));
 }
 
-/** The emails of the users with these ids that have one, by id (contact links). */
-export async function getEmails(userIds: string[]): Promise<Map<string, string>> {
-  const users = await getUsers(userIds);
-  return new Map([...users].flatMap(([id, user]) => (user.email ? [[id, user.email] as const] : [])));
+/**
+ * `items` with the name of their user now, by `userIdOf`; an item without
+ * a user (a guest, a deleted account) keeps its copy.
+ */
+export async function withCurrentNames<T extends { name: string }>(items: T[], userIdOf: (item: T) => string | null): Promise<T[]> {
+  const names = await getUserNames(items.flatMap((item) => userIdOf(item) ?? []));
+  return items.map((item) => {
+    const name = names.get(userIdOf(item) ?? "");
+    return name ? { ...item, name } : item;
+  });
 }
 
 /**
@@ -120,25 +112,4 @@ export async function findUserByNetid(netid: string): Promise<WithId<UserDoc> | 
 export async function listUsersWithRole(role: GlobalRole): Promise<WithId<UserDoc>[]> {
   const snap = await adminDb.collection(paths.users).where("roles", "array-contains", role).get();
   return snap.docs.map((d) => ({ id: d.id, ...readUser(d.data()) }));
-}
-
-/**
- * Gives the user `username` and frees their old one, unless another user
- * already holds it. Checked and written in one transaction.
- */
-export async function changeUsername(
-  userId: string,
-  username: string
-): Promise<"ok" | "taken" | "no-user"> {
-  return adminDb.runTransaction(async (tx) => {
-    const [usernameSnap, userSnap] = await tx.getAll(usernameRef(username), userRef(userId));
-    if (usernameSnap.exists) return "taken";
-    if (!userSnap.exists) return "no-user";
-
-    const oldUsername = readUser(userSnap.data()!).username;
-    tx.set(usernameRef(username), { userId });
-    tx.update(userRef(userId), { username });
-    if (oldUsername) tx.delete(usernameRef(oldUsername));
-    return "ok";
-  });
 }
