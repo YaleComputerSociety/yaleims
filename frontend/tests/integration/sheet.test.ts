@@ -1,6 +1,7 @@
 // The roster sheet (D34): captains prepare their side until the start,
 // supervisors take attendance at any time; and cancelling and deleting games.
 import { beforeAll, describe, expect, it } from "vitest";
+import { FieldValue } from "firebase-admin/firestore";
 import type { MatchDoc, TeamDoc } from "@/types/firestore";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
@@ -35,11 +36,11 @@ async function captainWithGame() {
   throw new Error("The seed has no captain with an upcoming game");
 }
 
-/** A season player of `collegeId` who isn't on `matchId`'s roster. */
-async function playerNotOn(matchId: string, collegeId: string): Promise<string> {
+/** A season player of `collegeId` who isn't on `matchId`'s roster (nor one of `except`). */
+async function playerNotOn(matchId: string, collegeId: string, except: string[] = []): Promise<string> {
   const players = await db.collection(`seasons/${current}/players`).where("collegeId", "==", collegeId).get();
   for (const p of players.docs) {
-    if (p.id.startsWith("guest-")) continue;
+    if (p.id.startsWith("guest-") || except.includes(p.id)) continue;
     if (!(await db.doc(`seasons/${current}/matches/${matchId}/roster/${p.id}`).get()).exists) return p.id;
   }
   throw new Error(`Everyone of ${collegeId} is on ${matchId}`);
@@ -63,6 +64,30 @@ describe("GET …/roster/sheet", () => {
     for (const e of all.body.items) expect(e).not.toHaveProperty("email");
     const asAdmin = await api("GET", `${path}/sheet`, undefined, { session: sessionFor(people.admin) });
     for (const e of asAdmin.body.items) expect(e).toMatchObject({ name: expect.any(String), email: e.playerId.includes("@") ? e.playerId : null });
+  });
+});
+
+describe("co-captains", () => {
+  it("share one call per player: the last one counts, and the sheet names who made it", async () => {
+    const { captain, collegeId, game, path } = await captainWithGame();
+    const team = db.doc(`seasons/${current}/colleges/${collegeId}/teams/${(game.data() as MatchDoc).sportId}`);
+    const signedUp = await playerNotOn(game.id, collegeId);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    const coCaptain = await playerNotOn(game.id, collegeId, [captain]); // not the one just signed up
+    await team.update({ captainIds: FieldValue.arrayUnion(coCaptain) });
+    const entry = `${path}/${encodeURIComponent(signedUp)}`;
+    const callOf = async (viewer: string) =>
+      (await api("GET", `${path}/sheet`, undefined, { session: sessionFor(viewer) })).body.items.find((e: { playerId: string }) => e.playerId === signedUp);
+    const nameOf = async (id: string) => (await db.doc(`users/${id}`).get()).data()!.name;
+
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: null, captainByName: null });
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: "confirmed", captainByName: await nameOf(captain) });
+    expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: sessionFor(coCaptain) })).status).toBe(204);
+    expect(await callOf(captain)).toMatchObject({ captainStatus: "removed", captainByName: await nameOf(coCaptain) });
+
+    await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).delete();
+    await team.update({ captainIds: FieldValue.arrayRemove(coCaptain) });
   });
 });
 

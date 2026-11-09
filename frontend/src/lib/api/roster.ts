@@ -70,9 +70,10 @@ export interface RosterSheet {
    * players apart; null: none recorded yet, or a placeholder "netid-<netid>",
    * whose id holds it; emails for admins); whether they have signed in (an
    * account made for them stays unclaimed until then); whether they have a
-   * college this season.
+   * college this season; who made the captain's call, by name (co-captains
+   * share one call per player: the last one counts).
    */
-  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean })[];
+  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean; captainByName: string | null })[];
   total: number;
 }
 

@@ -43,14 +43,17 @@ function standing(entry: SheetEntry): string[] {
   return [...(entry.signedIn ? [] : ["not signed in yet"]), ...(entry.collegeAssigned ? [] : ["college unassigned"])];
 }
 
-/** How an entry got on the roster, for the row's small print; supervisors also see the captain's confirmation. */
-function origin(entry: SheetEntry, supervisor: boolean): string {
+/** Who made the captain's call (co-captains share one: the last one counts). */
+const caller = (entry: SheetEntry) => entry.captainByName ?? "a captain";
+
+/** How an entry got on the roster and who confirmed it, for the row's small print. */
+function origin(entry: SheetEntry): string {
   const how = entry.addedBy === "supervisor"
       ? "walk-in"
       : entry.addedBy === "captain"
         ? "added by captain"
         : "signed up";
-  return supervisor && entry.captainStatus === "confirmed" ? `${how} · captain ✓` : how;
+  return entry.captainStatus === "confirmed" ? `${how} · confirmed by ${caller(entry)}` : how;
 }
 
 interface RosterSheetProps {
@@ -193,7 +196,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
                 <PersonName person={entry} tag={who(entry)} />
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {[origin(entry, supervisor), ...standing(entry)].join(" · ")}
+                {[origin(entry), ...standing(entry)].join(" · ")}
               </div>
             </div>
             {!locked && !supervisor && entry.captainStatus !== "confirmed" && (
@@ -235,8 +238,11 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
           <div className="text-xs uppercase tracking-wide text-gray-400 pt-3 pb-1">Taken off</div>
           {removed.map((entry) => (
             <div key={entry.playerId} className="flex items-center justify-between py-1.5 text-sm text-gray-500">
-              <span className="line-through">
-                <PersonName person={entry} tag={who(entry)} />
+              <span>
+                <span className="line-through">
+                  <PersonName person={entry} tag={who(entry)} />
+                </span>
+                <span className="ml-2 text-xs">taken off by {caller(entry)}</span>
               </span>
               {!locked && (
                 <button

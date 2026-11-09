@@ -1,262 +1,198 @@
 import { useSeason } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { FaPlus, FaTimes } from "react-icons/fa";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import PersonName from "@/components/ui/PersonName";
 import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
+import type { Sport } from "@/lib/api/seasons";
 import { isSportInTerm } from "@/lib/sports";
 
-/** The rep's college: make its players captains of its teams this term, or not. */
+/**
+ * The rep's college: who captains each of this term's sports. A sport may
+ * have several captains (any one of them confirms players, D34) and a
+ * player may captain several sports.
+ */
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();
   const { viewer } = useSession();
   const collegeId = viewer?.collegeId ?? null;
-  const [players, setPlayers] = useState<CollegePlayer[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const [selectSport, setSelectSport] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectUser, setSelectUser] = useState<CollegePlayer | null>(null);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [players, setPlayers] = useState<CollegePlayer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null); // the sport being saved
+  const [addingTo, setAddingTo] = useState<string | null>(null); // the sport whose search is open
 
-  const fetchData = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!currentSeason || !collegeId) return;
-    setLoading(true);
-    setError(null);
     try {
       setPlayers((await fetchCollegePlayers(currentSeason.id, collegeId)).items);
     } catch (err) {
       console.error(err);
-      setError("Couldn’t load roster/captains. Try again.");
-    } finally {
-      setLoading(false);
+      setError("Couldn’t load your college’s players. Try again.");
     }
   }, [currentSeason, collegeId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    load();
+  }, [load]);
 
-  const filteredUsers = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return [];
-    return players.filter((p) => [p.name, p.netid ?? p.id].some((field) => field.toLowerCase().includes(term)));
-  }, [searchTerm, players]);
+  if (error) return <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">{error}</p>;
+  if (!currentSeason || !collegeId || !players) return <div className="flex h-full w-full items-center justify-center"><LoadingSpinner /></div>;
 
-  const currentCaptains = players.filter((p) => p.captainOf.length > 0);
   // This term's sports and the miscellaneous sports, in display order.
-  const currentSports = currentSeason
-    ? currentSeason.sports.filter((sport) => isSportInTerm(sport, currentSeason.currentTerm))
-    : [];
-  const captainsBySport = useMemo(() => {
-    const map: Record<string, CollegePlayer[]> = {};
-    for (const p of players) for (const sportId of p.captainOf) (map[sportId] ||= []).push(p);
-    return map;
-  }, [players]);
-  const totalAssignments = currentCaptains.reduce((sum, p) => sum + p.captainOf.length, 0);
+  const sports = currentSeason.sports.filter((sport) => isSportInTerm(sport, currentSeason.currentTerm));
+  const captainsOf = (sportId: string) => players.filter((p) => p.captainOf.includes(sportId));
+  const covered = sports.filter((sport) => captainsOf(sport.id).length > 0).length;
 
-  const userIsCaptainForSelected = !!selectUser && !!selectSport && selectUser.captainOf.includes(selectSport);
-
-  if (loading || !currentSeason) return <div className="h-full w-full justify-center items-center flex"><LoadingSpinner /></div>
-
-  const handleAction = async (assign: boolean) => {
-    setNotice(null);
-    setError(null);
-
-    if (!selectUser) return setError("Pick a user first.");
-    if (!selectSport) return setError("Pick a sport first.");
-    if (assign && userIsCaptainForSelected) return setError("User is already captain for that sport.");
-    if (!assign && !userIsCaptainForSelected) return setError("User isn’t captain for that sport.");
-
-    setIsSubmitting(true);
+  /** Makes `player` captain of `sport`, or not, then reloads the players. */
+  const change = async (sport: Sport, player: CollegePlayer, assign: boolean) => {
+    setBusy(sport.id);
     try {
-      await (assign ? assignCaptain : removeCaptain)(currentSeason.id, collegeId!, selectSport, selectUser.id);
-      setNotice(assign ? "Captain assigned." : "Captain removed.");
-      setSelectUser(null);
-      setSelectSport("");
-    } catch (e) {
-      setError((e as Error).message);
+      await (assign ? assignCaptain : removeCaptain)(currentSeason.id, collegeId, sport.id, player.id);
+      if (assign) setAddingTo(null);
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
-      setIsSubmitting(false);
-      await fetchData();
+      setBusy(null);
     }
   };
 
   return (
-  <div className="space-y-5 py-4">
-    {/* Status banner */}
-    <div className="rounded-lg p-4 shadow-sm bg-neutral-50 dark:bg-neutral-900 dark:shadow-black/30">
-      {currentCaptains.length === 0 ? (
-        <div className="text-sm">
-          <span className="font-semibold">No captains set</span> for {currentSeason.currentTerm} yet. Assign captains below.
-        </div>
-      ) : (
-        <div className="text-sm">
-          <span className="font-semibold">{currentCaptains.length}</span> unique captain
-          {currentCaptains.length > 1 ? "s" : ""} set across{" "}
-          <span className="font-semibold">{totalAssignments}</span> sport
-          {totalAssignments !== 1 ? "s" : ""}.
-        </div>
+    <div className="space-y-4 py-4">
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        <span className="font-semibold">{covered}</span> of {sports.length} sports this {currentSeason.currentTerm} have
+        a captain. A sport can have several captains; any one of them can confirm players.
+      </p>
+
+      <ul className="divide-y divide-black/5 rounded-xl bg-white shadow-md dark:divide-white/5 dark:bg-neutral-900 dark:shadow-black/40">
+        {sports.map((sport) => (
+          <SportRow
+            key={sport.id}
+            sport={sport}
+            captains={captainsOf(sport.id)}
+            players={players}
+            busy={busy === sport.id}
+            adding={addingTo === sport.id}
+            setAdding={(open) => setAddingTo(open ? sport.id : null)}
+            change={(player, assign) => change(sport, player, assign)}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+interface SportRowProps {
+  sport: Sport;
+  captains: CollegePlayer[];
+  players: CollegePlayer[];
+  busy: boolean;
+  adding: boolean;
+  setAdding: (open: boolean) => void;
+  change: (player: CollegePlayer, assign: boolean) => Promise<void>;
+}
+
+/** One sport: its captains (each removable) and a search to add one. */
+function SportRow({ sport, captains, players, busy, adding, setAdding, change }: SportRowProps) {
+  return (
+    <li className="space-y-2 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-auto font-medium">
+          {sport.emoji} {sport.name}
+        </span>
+        {captains.length === 0 && <span className="text-xs text-gray-500">No captain</span>}
+        {captains.map((captain) => (
+          <span
+            key={captain.id}
+            className="inline-flex items-center gap-1 rounded-full bg-neutral-100 py-0.5 pl-2.5 pr-1 text-xs dark:bg-neutral-800"
+            title={captain.netid ?? captain.id}
+          >
+            {captain.name}
+            <button
+              className="rounded-full p-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
+              aria-label={`Remove ${captain.name} as ${sport.name} captain`}
+              disabled={busy}
+              onClick={() => change(captain, false)}
+            >
+              <FaTimes className="h-2.5 w-2.5" />
+            </button>
+          </span>
+        ))}
+        {!adding && (
+          <button
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+            disabled={busy}
+            onClick={() => setAdding(true)}
+          >
+            <FaPlus className="h-2.5 w-2.5" /> Add
+          </button>
+        )}
+      </div>
+      {adding && (
+        <CaptainSearch
+          sport={sport}
+          candidates={players.filter((p) => !p.captainOf.includes(sport.id))}
+          busy={busy}
+          pick={(player) => change(player, true)}
+          close={() => setAdding(false)}
+        />
+      )}
+    </li>
+  );
+}
+
+interface CaptainSearchProps {
+  sport: Sport;
+  candidates: CollegePlayer[];
+  busy: boolean;
+  pick: (player: CollegePlayer) => void;
+  close: () => void;
+}
+
+/** Finds one of the college's players by name or NetID. */
+function CaptainSearch({ sport, candidates, busy, pick, close }: CaptainSearchProps) {
+  const [term, setTerm] = useState("");
+  const query = term.trim().toLowerCase();
+  const matches = query
+    ? candidates.filter((p) => [p.name, p.netid ?? p.id].some((field) => field.toLowerCase().includes(query))).slice(0, 8)
+    : [];
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <input
+          type="search"
+          autoFocus
+          autoComplete="off"
+          aria-label={`Add a ${sport.name} captain`}
+          placeholder="Search your college by name or NetID…"
+          className="w-full rounded-md bg-white px-3 py-2 text-sm ring-1 ring-black/10 focus:ring-2 focus:ring-black/20 dark:bg-black dark:ring-white/10 dark:focus:ring-white/20"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && close()}
+        />
+        <button className="text-xs text-gray-500 underline" onClick={close}>
+          Cancel
+        </button>
+      </div>
+      {query && (
+        <ul className="overflow-hidden rounded-md bg-white shadow-lg dark:bg-gray-900">
+          {matches.length === 0 && <li className="px-3 py-2 text-sm text-gray-500">No matches.</li>}
+          {matches.map((player) => (
+            <li key={player.id}>
+              <button
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 dark:hover:bg-gray-800"
+                disabled={busy}
+                onClick={() => pick(player)}
+              >
+                <PersonName person={player} />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
-
-    {/* Alerts */}
-    {error && (
-      <div
-        className="rounded-md px-3 py-2 text-sm bg-red-50 text-red-700 dark:bg-red-950/30 shadow-sm dark:shadow-black/20"
-        role="alert"
-      >
-        {error}
-      </div>
-    )}
-    {notice && (
-      <div
-        className="rounded-md px-3 py-2 text-sm bg-green-50 text-green-800 dark:bg-green-950/30 shadow-sm dark:shadow-black/20"
-        role="status"
-        aria-live="polite"
-      >
-        {notice}
-      </div>
-    )}
-
-    {/* Main content */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Left panel: actions */}
-      <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40 space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            className="px-3 py-2 text-sm bg-green-600 text-white rounded-md shadow hover:opacity-90 disabled:opacity-50"
-            disabled={isSubmitting || !selectUser || !selectSport || userIsCaptainForSelected}
-            onClick={() => handleAction(true)}
-          >
-            Assign Captain
-          </button>
-          <button
-            className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md shadow hover:opacity-90 disabled:opacity-50"
-            disabled={isSubmitting || !selectUser || !selectSport || !userIsCaptainForSelected}
-            onClick={() => handleAction(false)}
-          >
-            Remove Captain
-          </button>
-
-          <select
-            name="sports"
-            onChange={(e) => setSelectSport(e.target.value)}
-            className="rounded-md px-3 py-2 text-sm bg-white dark:bg-black
-                       ring-1 ring-black/10 focus:ring-2 focus:ring-black/20
-                       dark:ring-white/10 dark:focus:ring-white/20"
-            value={selectSport}
-          >
-            <option value="">— pick a sport —</option>
-            {currentSports.map((sport) => {
-              const count = captainsBySport[sport.id]?.length ?? 0;
-              const label = count ? `${sport.name} • ${count} captain${count > 1 ? "s" : ""}` : sport.name;
-              return (
-                <option key={sport.id} value={sport.id}>
-                  {label}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-
-        {/* Search */}
-        <div className="relative w-full max-w-md">
-          <input
-            type="search"
-            autoComplete="off"
-            placeholder="Search by name or NetID…"
-            className="w-full rounded-md px-3 py-2 text-sm bg-white dark:bg-black
-                       ring-1 ring-black/10 focus:ring-2 focus:ring-black/20
-                       dark:ring-white/10 dark:focus:ring-white/20"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md shadow-lg bg-white dark:bg-gray-900">
-              {filteredUsers.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-gray-500">No matches.</li>
-              ) : (
-                filteredUsers.slice(0, 10).map((u) => (
-                  <li
-                    key={u.id}
-                    className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onClick={() => {
-                      setSelectUser(u);
-                      setSearchTerm("");
-                    }}
-                  >
-                    <PersonName person={u} />
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
-        </div>
-
-        {/* Selected user */}
-        {selectUser && (
-          <div className="flex items-center gap-3">
-            <div className="rounded-md px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 shadow-sm dark:shadow-black/20">
-              Selected: <strong>{selectUser.name || selectUser.id}</strong>
-            </div>
-            <button
-              type="button"
-              className="text-xs underline text-gray-600"
-              onClick={() => setSelectUser(null)}
-            >
-              Clear
-            </button>
-          </div>
-        )}
-
-        <p className="text-xs text-gray-500">
-          {selectUser && selectSport
-            ? userIsCaptainForSelected
-              ? "This user is already captain for this sport."
-              : "Ready to assign."
-            : "Pick a sport and a user to enable actions."}
-        </p>
-      </div>
-
-      {/* Right panel: current captains */}
-      <div className="rounded-xl p-4 shadow-md bg-white dark:bg-neutral-900 dark:shadow-black/40">
-        <h3 className="font-semibold mb-3">Current Captains</h3>
-        {Object.keys(captainsBySport).length === 0 ? (
-          <p className="text-sm text-gray-500">No captains yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {currentSports.map((sport) => (
-              <li
-                key={sport.id}
-                className="rounded-md px-3 py-2 shadow-sm bg-white dark:bg-neutral-900 dark:shadow-black/30"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">{sport.name}</span>
-                  <div className="flex flex-wrap gap-2">
-                    {(captainsBySport[sport.id] ?? []).map((c) => (
-                      <span
-                        key={`${sport.id}-${c.id}`}
-                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs
-                                   bg-neutral-100 shadow-sm dark:bg-neutral-800 dark:shadow-black/20"
-                        title={c.netid ?? c.id}
-                      >
-                        {c.name || c.netid || c.id}
-                      </span>
-                    ))}
-                    {(captainsBySport[sport.id] ?? []).length === 0 && (
-                      <span className="text-xs text-gray-500">No captain</span>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  </div>
-  )}
+  );
+}

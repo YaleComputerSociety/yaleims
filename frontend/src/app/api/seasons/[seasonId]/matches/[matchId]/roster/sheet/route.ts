@@ -4,7 +4,7 @@ import { can, requireViewer } from "@/server/auth";
 import { getMatch } from "@/server/data/matches";
 import { listRoster } from "@/server/data/roster";
 import { getPlayers } from "@/server/data/players";
-import { getUsers, identityOf } from "@/server/data/users";
+import { displayName, getUsers, identityOf } from "@/server/data/users";
 import { ok, route } from "@/server/http";
 
 type Params = { seasonId: string; matchId: string };
@@ -13,7 +13,8 @@ type Params = { seasonId: string; matchId: string };
  * The sheet captains and supervisors work on: every entry on the sides the
  * caller manages (both for a supervisor; a captain's own college), taken-off
  * players too, with their ids and identities (emails for admins), and
- * whether they have signed in and have a college this season.
+ * whether they have signed in and have a college this season, and who
+ * made the captain's call.
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -27,10 +28,18 @@ export const GET = route<Params>(async (req, { params }) => {
 
   const entries = (await listRoster(seasonId, matchId)).filter((e) => collegeIds.includes(e.collegeId));
   const ids = entries.map((e) => e.playerId);
-  const [users, players, withEmail] = await Promise.all([getUsers(ids), getPlayers(seasonId, ids), can.seeEmails(viewer)]);
+  const callers = entries.flatMap((e) => (e.captainStatus && e.captainBy ? [e.captainBy] : []));
+  const [users, players, withEmail] = await Promise.all([getUsers([...ids, ...callers]), getPlayers(seasonId, ids), can.seeEmails(viewer)]);
   const items = entries.map((e) => {
     const user = users.get(e.playerId);
-    return { ...toJson(e), ...identityOf(user, e.name, withEmail), signedIn: !!user?.claimedAt, collegeAssigned: !!players.get(e.playerId)?.collegeId };
+    const caller = e.captainStatus && e.captainBy ? users.get(e.captainBy) : undefined;
+    return {
+      ...toJson(e),
+      ...identityOf(user, e.name, withEmail),
+      signedIn: !!user?.claimedAt,
+      collegeAssigned: !!players.get(e.playerId)?.collegeId,
+      captainByName: caller ? displayName(caller) : null,
+    };
   });
   return ok({ collegeIds, supervisor, items, total: items.length } satisfies RosterSheet);
 });
