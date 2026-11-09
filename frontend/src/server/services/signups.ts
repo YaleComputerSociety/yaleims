@@ -71,6 +71,7 @@ export async function signUp(
       signedUpAt: FieldValue.serverTimestamp(),
       captainStatus: null,
       captainBy: null,
+      captainByRole: null,
       captainAt: null,
       present: false,
       presentBy: null,

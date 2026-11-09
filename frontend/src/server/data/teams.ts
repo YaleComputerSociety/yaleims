@@ -28,6 +28,11 @@ export function newTeam(seasonId: string, collegeId: string, sportId: string): T
   };
 }
 
+/** A college's team in a sport; undefined until its first use. */
+export async function getTeam(seasonId: string, collegeId: string, sportId: string): Promise<TeamDoc | undefined> {
+  return (await teamRef(seasonId, collegeId, sportId).get()).data();
+}
+
 /** A college's teams this season. */
 export async function listCollegeTeams(seasonId: string, collegeId: string): Promise<TeamDoc[]> {
   const snap = await collegeTeamsRef(seasonId, collegeId).get();

@@ -43,8 +43,11 @@ function standing(entry: SheetEntry): string[] {
   return [...(entry.signedIn ? [] : ["not signed in yet"]), ...(entry.collegeAssigned ? [] : ["college unassigned"])];
 }
 
-/** Who made the captain's call (co-captains share one: the last one counts). */
-const caller = (entry: SheetEntry) => entry.captainByName ?? "a captain";
+/** Who made the captain's call (co-captains share one: the last one counts): a captain by name, a supervisor anonymously. */
+function caller({ captainCall: call }: SheetEntry): string {
+  if (call?.by === "supervisor") return "supervisor";
+  return call?.name ? `captain (${call.name})` : "captain";
+}
 
 /** How an entry got on the roster and who confirmed it, for the row's small print. */
 function origin(entry: SheetEntry): string {

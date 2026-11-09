@@ -7,12 +7,11 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import PersonName from "@/components/ui/PersonName";
 import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
 import type { Sport } from "@/lib/api/seasons";
-import { isSportInTerm } from "@/lib/sports";
 
 /**
- * The rep's college: who captains each of this term's sports. A sport may
- * have several captains (any one of them confirms players, D34) and a
- * player may captain several sports.
+ * The rep's college: who captains each of the season's sports (every term's,
+ * for now). A sport may have several captains (any one of them confirms
+ * players, D34) and a player may captain several sports.
  */
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();
@@ -40,8 +39,7 @@ export default function AssignCaptain() {
   if (error) return <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">{error}</p>;
   if (!currentSeason || !collegeId || !players) return <div className="flex h-full w-full items-center justify-center"><LoadingSpinner /></div>;
 
-  // This term's sports and the miscellaneous sports, in display order.
-  const sports = currentSeason.sports.filter((sport) => isSportInTerm(sport, currentSeason.currentTerm));
+  const sports = currentSeason.sports;
   const captainsOf = (sportId: string) => players.filter((p) => p.captainOf.includes(sportId));
   const covered = sports.filter((sport) => captainsOf(sport.id).length > 0).length;
 
@@ -62,8 +60,8 @@ export default function AssignCaptain() {
   return (
     <div className="space-y-4 py-4">
       <p className="text-sm text-gray-600 dark:text-gray-300">
-        <span className="font-semibold">{covered}</span> of {sports.length} sports this {currentSeason.currentTerm} have
-        a captain. A sport can have several captains; any one of them can confirm players.
+        <span className="font-semibold">{covered}</span> of {sports.length} sports this season have a captain. A
+        sport can have several captains; any one of them can confirm players.
       </p>
 
       <ul className="divide-y divide-black/5 rounded-xl bg-white shadow-md dark:divide-white/5 dark:bg-neutral-900 dark:shadow-black/40">

@@ -9,18 +9,26 @@ import { NETID_PATTERN } from "../netid";
 import { request, toJson, url, type Json } from "./core";
 import type { Identity } from "./users";
 
-/** The caller's own entry, whole. */
-export type RosterEntry = Json<RosterEntryDoc>;
+/** An entry for its player or on the sheet: without who made the calls (supervisors stay anonymous; the sheet names captains). */
+export type RosterEntry = Json<Omit<RosterEntryDoc, "captainBy" | "captainByRole" | "presentBy">>;
+
+export function toOwnEntry({ captainBy: _captainBy, captainByRole: _captainByRole, presentBy: _presentBy, ...entry }: RosterEntryDoc): RosterEntry {
+  return toJson(entry);
+}
+
+/** Who made the captain's call on a sheet entry: a captain by name (or NetID; null: unknown), a supervisor anonymously. */
+export type CaptainCall = { by: "captain"; name: string | null } | { by: "supervisor" };
 
 /** An entry as the game's participants are shown: college and status, no ids (the name and NetID come with Identity). */
 export type PublicRosterEntry = Json<
-  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "presentBy" | "attendanceConfirmedBy">
+  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "captainByRole" | "presentBy" | "attendanceConfirmedBy">
 >;
 
 export function toPublicEntry({
   playerId: _playerId,
   addedByUser: _addedByUser,
   captainBy: _captainBy,
+  captainByRole: _captainByRole,
   presentBy: _presentBy,
   attendanceConfirmedBy: _attendanceConfirmedBy,
   ...entry
@@ -70,10 +78,10 @@ export interface RosterSheet {
    * players apart; null: none recorded yet, or a placeholder "netid-<netid>",
    * whose id holds it; emails for admins); whether they have signed in (an
    * account made for them stays unclaimed until then); whether they have a
-   * college this season; who made the captain's call, by name (co-captains
-   * share one call per player: the last one counts).
+   * college this season; who made the captain's call (co-captains share one
+   * call per player: the last one counts; null: no call).
    */
-  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean; captainByName: string | null })[];
+  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean; captainCall: CaptainCall | null })[];
   total: number;
 }
 

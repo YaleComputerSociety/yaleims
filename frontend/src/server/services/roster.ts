@@ -73,7 +73,12 @@ export async function changeEntry(
 
     tx.update(entryRef, {
       ...(change.captainStatus !== undefined
-        ? { captainStatus: change.captainStatus, captainBy: by.actor.userId, captainAt: FieldValue.serverTimestamp() }
+        ? {
+            captainStatus: change.captainStatus,
+            captainBy: by.actor.userId,
+            captainByRole: by.supervisor ? ("supervisor" as const) : ("captain" as const),
+            captainAt: FieldValue.serverTimestamp(),
+          }
         : {}),
       ...(change.present !== undefined
         ? { present: change.present, presentBy: by.actor.userId, presentAt: FieldValue.serverTimestamp() }
@@ -161,7 +166,7 @@ export async function addToGame(
     const by: SheetEditor = { supervisor: role === "supervisor", actor };
     const call = by.supervisor
       ? { present: true, presentBy: actor.userId, presentAt: FieldValue.serverTimestamp() }
-      : { captainStatus: "confirmed" as const, captainBy: actor.userId, captainAt: FieldValue.serverTimestamp() };
+      : { captainStatus: "confirmed" as const, captainBy: actor.userId, captainByRole: "captain" as const, captainAt: FieldValue.serverTimestamp() };
     const entry = entrySnap.data();
     if (entry) {
       // Taken off before: the supervisor's or captain's addition overrides that.
@@ -231,6 +236,7 @@ function newEntry(
     signedUpAt: FieldValue.serverTimestamp(),
     captainStatus: null,
     captainBy: null,
+    captainByRole: null,
     captainAt: null,
     present: false,
     presentBy: null,

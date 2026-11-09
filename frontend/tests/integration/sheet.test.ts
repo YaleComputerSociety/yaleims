@@ -80,11 +80,27 @@ describe("co-captains", () => {
       (await api("GET", `${path}/sheet`, undefined, { session: sessionFor(viewer) })).body.items.find((e: { playerId: string }) => e.playerId === signedUp);
     const nameOf = async (id: string) => (await db.doc(`users/${id}`).get()).data()!.name;
 
-    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: null, captainByName: null });
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: null, captainCall: null });
     expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
-    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: "confirmed", captainByName: await nameOf(captain) });
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: "confirmed", captainCall: { by: "captain", name: await nameOf(captain) } });
     expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: sessionFor(coCaptain) })).status).toBe(204);
-    expect(await callOf(captain)).toMatchObject({ captainStatus: "removed", captainByName: await nameOf(coCaptain) });
+    expect(await callOf(captain)).toMatchObject({ captainStatus: "removed", captainCall: { by: "captain", name: await nameOf(coCaptain) } });
+
+    // A supervisor's call is anonymous: no name, and no caller ids on the sheet or in the player's own entry.
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(204);
+    expect((await api("PATCH", entry, { captainStatus: "removed", present: true }, { session: supervisor() })).status).toBe(204);
+    const call = await callOf(captain);
+    expect(call.captainCall).toEqual({ by: "supervisor" });
+    for (const field of ["captainBy", "captainByRole", "presentBy"]) expect(call).not.toHaveProperty(field);
+    const own = await api("GET", path, undefined, { session: sessionFor(signedUp) });
+    expect(own.body.mine).toMatchObject({ captainStatus: "removed", present: true });
+    for (const field of ["captainBy", "captainByRole", "presentBy"]) expect(own.body.mine).not.toHaveProperty(field);
+    // A call from before the role was stored: a current captain's is theirs, anyone else's a supervisor's.
+    const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
+    await stored.update({ captainByRole: FieldValue.delete(), captainBy: coCaptain });
+    expect((await callOf(captain)).captainCall).toEqual({ by: "captain", name: await nameOf(coCaptain) });
+    await stored.update({ captainBy: people.supervisor });
+    expect((await callOf(captain)).captainCall).toEqual({ by: "supervisor" });
 
     await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).delete();
     await team.update({ captainIds: FieldValue.arrayRemove(coCaptain) });

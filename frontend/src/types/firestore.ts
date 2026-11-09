@@ -295,6 +295,8 @@ export interface RosterEntryDoc {
   signedUpAt: StoredTimestamp | null;
   captainStatus: CaptainStatus | null;
   captainBy: string | null;
+  /** As what `captainBy` made the call; null or absent on calls from before 2026-11-09 (read: a current captain of the team was its captain, anyone else a supervisor). */
+  captainByRole?: "captain" | "supervisor" | null;
   captainAt: StoredTimestamp | null;
   /** true = marked present (by a supervisor: the only attendance that counts); false = not marked; null = never recorded (legacy). */
   present: boolean | null;
