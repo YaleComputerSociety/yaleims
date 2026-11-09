@@ -1,13 +1,11 @@
 "use client";
 // The Profile's college affiliation (account plan, step 6): this season's
-// college or "unassigned", the last Yale directory lookup, "Check Yalies
-// again" once its cooldown has passed, and the name while it is the
-// viewer's to set (the directory has given none). NameForm is also the
-// optional name field of the sign-in notice (layout/AffiliationNotice).
+// college or "unassigned", the last Yale directory lookup, and "Check Yalies
+// again" once its cooldown has passed (it can also bring the name: YourName).
 import { useEffect, useState } from "react";
 import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
-import { changeMe, refreshDirectory } from "@/lib/api/me";
+import { refreshDirectory } from "@/lib/api/me";
 import { collegeName } from "@/lib/colleges";
 import type { DirectoryOutcome } from "@/types/firestore";
 
@@ -83,52 +81,6 @@ export default function CollegeAffiliation() {
         </button>
       )}
       {message && <p role="alert" className="text-sm text-red-600">{message}</p>}
-      {viewer.canEditName && <NameForm />}
     </section>
-  );
-}
-
-/** The viewer's name, while it is theirs to set; saved on request, with the error inline. */
-export function NameForm() {
-  const { viewer, refresh } = useSession();
-  const [name, setName] = useState("");
-  const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
-  const [error, setError] = useState<string | null>(null);
-
-  const save = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setState("saving");
-    setError(null);
-    try {
-      await changeMe({ name });
-      await refresh();
-      setState("saved");
-    } catch (err) {
-      setError((err as Error).message);
-      setState("idle");
-    }
-  };
-
-  return (
-    <form onSubmit={save} className="space-y-1">
-      <label htmlFor="own-name" className="block text-sm font-medium">
-        Your name <span className="font-normal text-gray-500">(optional; others see {viewer?.name} until the directory gives one)</span>
-      </label>
-      <div className="flex gap-2">
-        <input
-          id="own-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={60}
-          autoComplete="name"
-          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-sm dark:bg-black"
-        />
-        <button type="submit" disabled={state === "saving" || !name.trim()} className="px-3 py-1 text-sm rounded-md bg-gray-800 text-white dark:bg-gray-200 dark:text-black disabled:opacity-50">
-          {state === "saving" ? "Saving…" : "Save"}
-        </button>
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {state === "saved" && !error && <p role="status" className="text-sm">Saved.</p>}
-    </form>
   );
 }

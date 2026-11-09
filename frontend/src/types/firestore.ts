@@ -5,7 +5,7 @@
 // is described in git tag v3-migration (src/types/legacy.ts).
 //
 // Everything that belongs to a season lives under seasons/{seasonId} (D29);
-// global are accounts, usernames, configuration, counters and short-lived login
+// global are accounts, configuration and short-lived login
 // attempts. References are ids:
 // collegeId = the college's abbreviation ("MY"), sportId = the sports doc id,
 // userId / playerId = the account's id: an email for accounts made before
@@ -31,7 +31,7 @@ export type WithId<T> = T & { id: string };
 /** A calendar day in Eastern time, "yyyy-mm-dd" (the league's day, D34). */
 export type EasternDate = string;
 
-// ── Global: config/app, users, usernames, loginAttempts ───────────────────
+// ── Global: config/app, users, loginAttempts ──────────────────────────────
 
 /** config/app: the current season and feature switches. */
 export interface AppConfigDoc {
@@ -45,8 +45,14 @@ export interface AppConfigDoc {
 /** Roles that hold across seasons. Season roles are on the player (SeasonRole). */
 export type GlobalRole = "admin" | "dev";
 
-/** Where a user's name comes from: Yalies' names are locked, an admin's override everything. */
-export type NameSource = "none" | "self" | "yalies" | "admin";
+/**
+ * Where a user's name comes from. The person sets it while it's "none",
+ * "self" or "staff" (a captain's or supervisor's label for a NetID the
+ * directory couldn't name: unverified); Yalies' replaces those and is
+ * locked; an admin's overrides everything and is locked until an admin
+ * gives it back.
+ */
+export type NameSource = "none" | "self" | "staff" | "yalies" | "admin";
 
 /** A directory lookup's result (server/directory.ts). */
 export type DirectoryOutcome = "found" | "partial" | "not-found" | "unavailable";
@@ -64,18 +70,17 @@ export interface DirectoryState {
  * users/{userId}: identity across seasons. userId = an email (accounts from
  * before November 2026) or "netid-<netid>" (newer ones, the same id as the
  * placeholder player the NetID may already have). Old docs also hold frozen
- * fields (mRoles, college, role, sportsCaptainOf, betting totals) and
- * firstname/lastname, read only through server/data/users.ts readUser.
+ * fields (mRoles, college, role, sportsCaptainOf, betting totals, username)
+ * and firstname/lastname, read only through server/data/users.ts readUser.
  */
 export interface UserDoc {
   /** Contact address; null: none known yet. */
   email: string | null;
-  /** The full name; null: none known (shown as the username). */
+  /** The full name; null: none known (shown as the NetID). */
   name: string | null;
   nameSource: NameSource;
   /** Their Yale NetID, recorded at login since Phase 3A (null: not seen since; guests have no user). */
   netid: string | null;
-  username: string;
   roles: GlobalRole[];
   /** The user's first own login; null = created for them by a captain/supervisor (U10). */
   claimedAt: StoredTimestamp | null;
@@ -83,11 +88,6 @@ export interface UserDoc {
   createdBy: string | null;
   /** null: never looked up since November 2026. */
   directory: DirectoryState | null;
-}
-
-/** usernames/{username}: who holds the username. */
-export interface UsernameDoc {
-  userId: string;
 }
 
 /** loginAttempts/{stateHash}: private, single-use browser binding before CAS login. */

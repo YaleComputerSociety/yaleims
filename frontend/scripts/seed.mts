@@ -142,7 +142,7 @@ async function wipe(): Promise<void> {
   if (!res.ok) throw new Error(`Could not clear the emulator: ${res.status}`);
 }
 
-/** Config, both seasons, their sports and colleges, users, usernames and players. */
+/** Config, both seasons, their sports and colleges, users and players. */
 async function writeLeague(): Promise<void> {
   const now = Timestamp.now();
   const docs: [string, object][] = [[paths.appConfig, { currentSeasonId: CURRENT, features: { myStats: false } }]];
@@ -159,17 +159,15 @@ async function writeLeague(): Promise<void> {
   }
   const everyone = [...students, ...alumni, dev, supervisor];
   everyone.forEach((p, i) => {
-    const username = `${p.firstname}${p.lastname}${i + 1}`;
     const user: UserDoc = {
-      email: p.email, name: fullName(p), nameSource: "yalies", username,
+      email: p.email, name: fullName(p), nameSource: "yalies",
       // NetIDs like Yale's (initials + digits); the dev and the supervisor have none
       // recorded yet, as users from before NetIDs were kept.
       netid: p === dev || p === supervisor ? null : `${p.firstname[0]}${p.lastname[0]}${100 + i}`.toLowerCase(),
       roles: p === dev ? ["admin", "dev"] : [], claimedAt: now, createdBy: null, directory: null,
     };
-    docs.push([paths.user(p.email), user], [paths.username(username), { userId: p.email }]);
+    docs.push([paths.user(p.email), user]);
   });
-  docs.push([paths.usernameCounter, { count: everyone.length }]);
   const player = (seasonId: string, p: Person, roles: SeasonRole[]): [string, PlayerDoc] => [paths.player(seasonId, p.email), {
     seasonId, collegeId: p.collegeId, name: fullName(p), userId: p.email, roles, joinedAt: now, joinedVia: "login",
   }];

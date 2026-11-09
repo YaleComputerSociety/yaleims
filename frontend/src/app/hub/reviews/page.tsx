@@ -8,6 +8,7 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import PageHeading from "@/components/layout/PageHeading";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import PersonName from "@/components/ui/PersonName";
 import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import { closeReview, fetchReviewQueue, REVIEW_KINDS, REVIEW_STATUSES, type QueuedReview } from "@/lib/api/reviews";
 import type { ReviewStatus } from "@/types/firestore";
@@ -75,8 +76,10 @@ function Request({ request: r, onClosed }: { request: QueuedReview; onClosed: ()
     <article className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-950 p-4 space-y-2 text-sm">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="font-semibold">
-          {REVIEW_KINDS[r.kind]} · <Link href={`/hub/people?user=${encodeURIComponent(r.subject.userId)}`} className="underline">{r.subject.name}</Link>{" "}
-          <span className="font-normal text-gray-500">({r.subject.netid ?? r.subject.userId})</span>
+          {REVIEW_KINDS[r.kind]} ·{" "}
+          <Link href={`/hub/people?user=${encodeURIComponent(r.subject.userId)}`} className="underline">
+            <PersonName person={r.subject} />
+          </Link>
         </span>
         <span className="text-xs text-gray-500">{time(r.createdAt)} · {r.seasonId}{r.matchId ? ` · game ${r.matchId}` : ""}</span>
       </header>

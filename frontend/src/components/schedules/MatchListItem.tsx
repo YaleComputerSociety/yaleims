@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { FaCalendar, FaSpinner } from "react-icons/fa";
+import { FaCalendar } from "react-icons/fa";
 import TournamentBadge from "@/components/ui/TournamentBadge";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import type { Match } from "@/lib/api/matches";
-import { fetchRoster, signUp, withdraw, type PublicRosterEntry } from "@/lib/api/roster";
+import { signUp, withdraw } from "@/lib/api/roster";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { calendarLink, matchTypeLabel } from "@/lib/format";
 import type { SessionViewer } from "@/lib/api/auth";
 import type { MyMatch } from "@/lib/api/me";
 import MyEntryStatus, { CancelledBadge } from "@/components/games/MyEntryStatus";
+import Participants from "@/components/games/Participants";
 
 interface MatchListItemProps {
   match: Match;
@@ -26,35 +27,16 @@ interface MatchListItemProps {
 const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, viewer, isSignedUp, mine, onStatusChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [participantsShow, setParticipantsShow] = useState(false);
-  // The game's roster, read when the participants are first shown.
-  const [roster, setRoster] = useState<PublicRosterEntry[]>([]);
-  const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
-  const homeParticipants = roster.filter((entry) => entry.collegeId === match.homeCollegeId);
-  const awayParticipants = roster.filter((entry) => entry.collegeId === match.awayCollegeId);
 
   const startsAt = new Date(match.startsAt);
   const isPastMatch = startsAt < new Date();
   const sportName = sport?.name ?? "";
-
-  const loadRoster = async () => {
-    setIsLoadingParticipants(true);
-    try {
-      setRoster((await fetchRoster(match.seasonId, match.id)).items);
-    } catch (error) {
-      console.error("Error fetching match participants:", error);
-      setRoster([]);
-    } finally {
-      setIsLoadingParticipants(false);
-    }
-  };
 
   const changeSignUp = async (signed: boolean) => {
     setIsLoading(true);
     try {
       await (signed ? signUp : withdraw)(match.seasonId, match.id);
       onStatusChange(match.id, signed);
-      if (participantsShow) await loadRoster();
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -90,13 +72,6 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
 
   const homeName = collegeName(match.homeCollegeId) ?? "";
   const awayName = collegeName(match.awayCollegeId) ?? "";
-  const names = (entries: PublicRosterEntry[]) =>
-    entries.map((entry, index) => (
-      <span key={index}>
-        {entry.name}
-        {index < entries.length - 1 ? ", " : ""}
-      </span>
-    ));
 
   return (
     <li className="bg-white dark:bg-black shadow-lg p-4 rounded-lg hover:shadow-xl transition duration-300 ease-in-out max-w-4xl mx-auto">
@@ -181,49 +156,8 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
           )}
         </div>
       </div>
-      <div className="text-right text-xs text-gray-500 dark:text-gray-600">
-        <button
-          className="underline"
-          onClick={async () => {
-            if (!participantsShow) await loadRoster();
-            setParticipantsShow(!participantsShow);
-          }}
-        >
-          Participants
-        </button>
-        {isLoadingParticipants ? (
-          <div className="flex flex-row justify-end pt-3 w-full">
-            <FaSpinner className="animate-spin" />{" "}
-          </div>
-        ) : (
-          ""
-        )}
-        <div
-          className={`transition-all duration-300 ${
-            participantsShow ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-          } overflow-hidden`}
-        >
-          <div>
-            <span className="text-black dark:text-gray-400 font-semibold text-animate h-20">
-              {homeName}:
-            </span>{" "}
-            {homeParticipants.length > 0 ? (
-              names(homeParticipants)
-            ) : (
-              <span className="text-gray-500">None</span>
-            )}
-          </div>
-          <div>
-            <span className="text-black dark:text-gray-400 font-semibold">
-              {awayName}:
-            </span>{" "}
-            {awayParticipants.length > 0 ? (
-              names(awayParticipants)
-            ) : (
-              <span className="text-gray-500">None</span>
-            )}
-          </div>
-        </div>
+      <div className="text-right">
+        <Participants match={match} refreshKey={isSignedUp} />
       </div>
     </li>
   );

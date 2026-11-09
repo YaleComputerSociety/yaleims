@@ -7,28 +7,24 @@ import Image from "next/image";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import ListView from "@/components/profile/ListView";
 import CollegeAffiliation from "@/components/profile/CollegeAffiliation";
+import YourName from "@/components/profile/YourName";
 import ReviewRequests from "@/components/profile/ReviewRequests";
-import { MdModeEditOutline } from "react-icons/md";
 import Link from "next/link";
 import { getCollegeFlag } from "@/lib/images";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
-import { changeMe, fetchMyMatches } from "@/lib/api/me";
+import { fetchMyMatches } from "@/lib/api/me";
 import { collegeName } from "@/lib/colleges";
 
 /** How many of the college's next games the profile offers to sign up for. */
 const UPCOMING_LIMIT = 6;
 
 const Profile = () => {
-  const { viewer, loading, signOut, setViewer } = useSession();
+  const { viewer, loading, signOut } = useSession();
   const { currentSeason } = useSeason();
   const [myMatches, setMyMatches] = useState<Match[]>([]);
   const [collegeMatches, setCollegeMatches] = useState<Match[]>([]);
   const [fetching, setFetching] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [newUsername, setNewUsername] = useState(viewer?.username || "");
-  const [error, setError] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
 
   // The user's upcoming games, whatever their college; and their college's next ones, to sign up for.
   const signedIn = !!viewer;
@@ -63,27 +59,8 @@ const Profile = () => {
     };
   }, [signedIn, collegeId, currentSeason]);
 
-  useEffect(() => {
-    if (viewer?.username) setNewUsername(viewer.username);
-  }, [viewer?.username]);
-
   const signedUpMatches = myMatches;
   const availableMatches = collegeMatches.filter((match) => !myMatches.some((m) => m.id === match.id));
-
-  const handleEditUsername = async () => {
-    setEditLoading(true);
-    setError("");
-    try {
-      const username = newUsername.trim();
-      await changeMe({ username });
-      setViewer((v) => ({ ...v, username }));
-      setIsEditing(false);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setEditLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -129,20 +106,9 @@ const Profile = () => {
                   />
                 </div>
               )}
-              <div className="flex items-center flex-col">
-                <p className="text-md font-bold flex items-center mb-3">
-                  Username: {newUsername || "Anonymous"}
-                  <span className="ml-2 flex items-center">
-                    <MdModeEditOutline
-                      style={{ fontSize: "24px" }} // Ensures a fixed size
-                      className="cursor-pointer hover:text-blue-700"
-                      onClick={() => setIsEditing(true)}
-                    />
-                  </span>
-                </p>
-              </div>
             </div>
 
+            <YourName />
             <CollegeAffiliation />
             <ReviewRequests />
 
@@ -204,41 +170,6 @@ const Profile = () => {
           Log Out
         </button>
       </div>
-      {isEditing && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-          <div className="bg-white dark:bg-black p-6 rounded-lg shadow-lg w-80">
-            <h2 className="text-lg font-bold mb-4">Edit Username</h2>
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded-md p-2 mb-4 dark:bg-black"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              placeholder="Enter new username"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleEditUsername(); // Trigger the function on Enter key press
-                }
-              }}
-            />
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-            <div className="flex justify-end space-x-4">
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                onClick={handleEditUsername}
-                disabled={editLoading}
-              >
-                {editLoading ? "Saving..." : "Save"}
-              </button>
-              <button
-                className="bg-gray-300 dark:bg-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <br></br>
       <br></br>
       <br></br>

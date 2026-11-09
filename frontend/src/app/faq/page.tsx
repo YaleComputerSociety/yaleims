@@ -101,6 +101,11 @@ export default function Faq() {
             "Only games where a supervisor recorded you as present. A game can show as \"under review\" when your recorded games this season are for more than one college; an admin then confirms or removes it.",
         },
         {
+          question: "Who can see who is playing in a game?",
+          answer:
+            "Open a game's Participants to see them. You see the participants of every game your college plays in, and of any game you're on, on both sides. Until the game starts it lists who signed up or was added; after the start, only the players a supervisor recorded as present. Supervisors and admins see every game's participants.",
+        },
+        {
           question: "Something about my name, college or games is wrong. How do I get it fixed?",
           answer:
             "In your Profile, use \"Ask an admin to check something\". Only you and the YaleIMs admins see your request, and the admins' answer appears in your Profile.",

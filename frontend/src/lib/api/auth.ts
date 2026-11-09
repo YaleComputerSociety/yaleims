@@ -31,13 +31,12 @@ export interface SessionViewer {
   userId: string;
   /** Contact address; null: none known yet. */
   email: string | null;
-  /** Their name, or their username when none is known. */
+  /** Their name, or their NetID when none is known. */
   name: string;
-  /** They may set their name: the directory has given none (and no admin has set one). */
+  /** They may set their name: none yet, one they typed or a captain's label (not the directory's or an admin's). */
   canEditName: boolean;
   /** Their last directory lookup and when "Check Yalies again" opens; null: none recorded. */
   directory: { outcome: DirectoryOutcome | null; checkedAt: string | null; retryAt: string } | null;
-  username: string;
   /** Their college this season; null: none (or not a player). */
   collegeId: string | null;
   /** Global roles (admin, dev) and this season's (college_rep, supervisor). */

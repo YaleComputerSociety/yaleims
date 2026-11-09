@@ -15,24 +15,80 @@ async function upcomingGameOf(collegeId: string) {
   return games.docs.find((g) => g.data().stage === "regular")!;
 }
 
-describe("GET …/matches/{m}/roster", () => {
-  it("needs a session; lists names without emails, not the removed player", async () => {
-    const removed = (await db.collectionGroup("roster").where("captainStatus", "==", "removed").get()).docs[0].data();
-    const path = `/api/seasons/${current}/matches/${removed.matchId}/roster`;
-    expect((await api("GET", path)).status).toBe(401);
-    const r = await api("GET", path, undefined, { session: sessionFor(people.student(9, 6)) });
-    expect(r.status).toBe(200);
-    expect(r.body.total).toBeGreaterThan(0);
-    expect(r.body.items).toHaveLength(r.body.total);
-    for (const entry of r.body.items) {
-      expect(entry).not.toHaveProperty("playerId");
-      expect(entry).not.toHaveProperty("addedByUser");
-      expect(entry.name).toBeTruthy();
+describe("GET …/matches/{m}/roster (who sees the participants, lib/participants.ts)", () => {
+  const collegeIndex = (id: string) => COLLEGES.findIndex((c) => c.id === id);
+  /** Puts the test's entries on `game` (by player: side, captain's call, presence) instead of its own; restored after. */
+  async function withEntries(game: FirebaseFirestore.QueryDocumentSnapshot, entries: Record<string, { side: string; call?: "confirmed" | "removed"; present?: boolean }>, run: () => Promise<void>) {
+    const roster = db.collection(`seasons/${current}/matches/${game.id}/roster`);
+    const before = (await roster.get()).docs.map((d) => [d.id, d.data()] as const);
+    for (const [id] of before) await roster.doc(id).delete();
+    const match = game.data();
+    for (const [playerId, e] of Object.entries(entries)) {
+      await roster.doc(playerId).set({
+        seasonId: current, matchId: game.id, sportId: match.sportId, collegeId: e.side, playerId, name: "Copy", startsAt: match.startsAt,
+        addedBy: "self", addedByUser: playerId, signedUpAt: match.startsAt, captainStatus: e.call ?? null, captainBy: null, captainAt: null,
+        present: e.present ?? false, presentBy: null, presentAt: null,
+      });
     }
-    expect(r.body.items.map((e: { name: string }) => e.name)).not.toContain(removed.name);
-    expect(r.body.mine).toBeNull();
-    const theirs = await api("GET", path, undefined, { session: sessionFor(removed.playerId) });
-    expect(theirs.body.mine).toMatchObject({ playerId: removed.playerId, captainStatus: "removed" });
+    try {
+      await run();
+    } finally {
+      for (const d of (await roster.get()).docs) await d.ref.delete();
+      for (const [id, data] of before) await roster.doc(id).set(data);
+    }
+  }
+  const get = (game: { id: string }, who?: string) => api("GET", `/api/seasons/${current}/matches/${game.id}/roster`, undefined, who ? { session: sessionFor(who) } : {});
+  const names = (r: { body: { items: { name: string }[] } }) => r.body.items.map((e) => e.name).sort();
+
+  it("before the start: both sides, with status, for the colleges' players, anyone on the game and supervisors; no one else", async () => {
+    const game = await upcomingGameOf("BF");
+    const [a, b] = game.data().collegeIds as string[];
+    const [ai, bi] = [collegeIndex(a), collegeIndex(b)];
+    const outsider = people.student([0, 1, 2, 3].find((i) => ![ai, bi].includes(i))!, 7);
+    const visitor = people.student([4, 5, 6, 7].find((i) => ![ai, bi].includes(i))!, 7); // another college's player, on the game
+    await withEntries(game, {
+      [people.student(ai, 2)]: { side: a },
+      [people.student(bi, 2)]: { side: b, call: "confirmed" },
+      [people.student(bi, 3)]: { side: b, call: "removed" },
+      [visitor]: { side: a },
+    }, async () => {
+      expect((await get(game)).status).toBe(401);
+      const mine = await get(game, people.student(ai, 6));
+      expect(mine.body).toMatchObject({ visible: true, started: false, total: 3 });
+      expect(mine.body.items.map((e: { collegeId: string }) => e.collegeId).sort()).toEqual([a, a, b].sort());
+      for (const e of mine.body.items) {
+        expect(e).toMatchObject({ name: expect.any(String), netid: expect.any(String) });
+        expect(e).not.toHaveProperty("playerId");
+        expect(e).not.toHaveProperty("email");
+      }
+      // The name is the account's, not the entry's copy.
+      expect(names(mine)).not.toContain("Copy");
+      const other = await get(game, people.student(bi, 6));
+      expect(names(other)).toEqual(names(mine));
+
+      expect((await get(game, outsider)).body).toMatchObject({ visible: false, items: [], total: 0 });
+      expect((await get(game, visitor)).body).toMatchObject({ visible: true, total: 3 });
+      expect((await get(game, people.supervisor)).body).toMatchObject({ visible: true, total: 3 });
+      const asAdmin = await get(game, people.admin);
+      expect(asAdmin.body.items[0]).toHaveProperty("email");
+      // The taken-off player sees their own entry, and the game as one of its colleges' players.
+      expect((await get(game, people.student(bi, 3))).body.mine).toMatchObject({ captainStatus: "removed" });
+    });
+  });
+
+  it("from the start: only those a supervisor recorded present", async () => {
+    const game = (await db.collection(`seasons/${current}/matches`).where("status", "==", "final").orderBy("startsAt", "desc").limit(1).get()).docs[0];
+    const [a, b] = game.data().collegeIds as string[];
+    const [ai, bi] = [collegeIndex(a), collegeIndex(b)];
+    await withEntries(game, {
+      [people.student(ai, 2)]: { side: a, present: true },
+      [people.student(ai, 3)]: { side: a, call: "confirmed" },
+      [people.student(bi, 2)]: { side: b, present: true },
+    }, async () => {
+      const r = await get(game, people.student(bi, 6));
+      expect(r.body).toMatchObject({ visible: true, started: true, total: 2 });
+      expect(r.body.items.every((e: { present: boolean }) => e.present)).toBe(true);
+    });
   });
 });
 
@@ -104,8 +160,12 @@ describe("score reports", () => {
     expect(asPlayer.body.total).toBeGreaterThan(0);
     expect(asPlayer.body.items[0]).not.toHaveProperty("reportedBy");
     expect(asPlayer.body.items[0].reporterName).toBe((await db.doc(`users/${people.student(4, 6)}`).get()).data()!.name);
+    expect(asPlayer.body.items[0]).not.toHaveProperty("reporter");
+    const asSupervisor = await api("GET", path, undefined, { session: sessionFor(people.supervisor) });
+    expect(asSupervisor.body.items[0].reporter).toEqual({ name: asPlayer.body.items[0].reporterName, netid: expect.any(String) });
     const asAdmin = await api("GET", path, undefined, { session: admin() });
     expect(asAdmin.body.items[0].reportedBy).toBe(people.student(4, 6));
+    expect(asAdmin.body.items[0].reporter).toMatchObject({ email: people.student(4, 6) });
   });
   it("are resolved by admins, and listed for the season with their game", async () => {
     const game = await played();

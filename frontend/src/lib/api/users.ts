@@ -5,6 +5,17 @@ import { z } from "zod";
 import type { PlayerDoc, UserDoc, WithId } from "@/types/firestore";
 import { request, url, type Json } from "./core";
 
+/**
+ * Who someone is, as an API shows them to the staff acting on them: their
+ * name (their NetID when none is known) and NetID; their email only to
+ * admins (server/auth can.seeEmails).
+ */
+export interface Identity {
+  name: string;
+  netid: string | null;
+  email?: string | null;
+}
+
 /** A user with their player doc this season (null: not a player) and the sports (ids) they captain. */
 export type RoleHolder = Json<WithId<UserDoc>> & { player: Json<PlayerDoc> | null; captainOf: string[] };
 

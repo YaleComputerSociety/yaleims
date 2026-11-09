@@ -9,7 +9,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
-import { NameForm } from "@/components/profile/CollegeAffiliation";
+import { NameForm } from "@/components/profile/YourName";
 
 const RULES = "https://recreation.yale.edu/undergradims/guidelines-policies-sport-rules";
 

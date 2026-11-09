@@ -28,6 +28,7 @@ export interface PersonSummary {
   userId: string;
   netid: string | null;
   name: string;
+  email: string | null;
   /** Signed in at least once (an account made by a captain or supervisor isn't, until then). */
   claimed: boolean;
   /** This season's college; null: unassigned, or not a player this season (`inSeason`). */
@@ -61,9 +62,7 @@ export interface PersonGame {
 
 /** GET /api/people/{userId}?seasonId: everything an admin needs about a person in a season. */
 export interface Person extends PersonSummary {
-  email: string | null;
   nameSource: NameSource;
-  username: string;
   createdBy: string | null;
   roles: GlobalRole[];
   revision: string;
@@ -85,10 +84,13 @@ export const profileFixSchema = z
   .strictObject({
     name: z.string().trim().min(1).max(60).regex(/^[^\p{C}<>]+$/u, "A name can't contain < > or control characters.").optional(),
     email: z.string().trim().toLowerCase().regex(/^[^\s@]+@([a-z0-9-]+\.)*yale\.edu$/, "A Yale email address.").nullable().optional(),
+    /** Gives an admin-set name back to the person to change (D-N4). */
+    unlockName: z.literal(true).optional(),
     reason,
     revision: z.string().min(1),
   })
-  .refine((f) => f.name !== undefined || f.email !== undefined, "Send a name or an email.");
+  .refine((f) => f.name !== undefined || f.email !== undefined || f.unlockName, "Send a name, an email or unlockName.")
+  .refine((f) => !(f.name !== undefined && f.unlockName), "Set a name or unlock it, not both.");
 export type ProfileFix = z.infer<typeof profileFixSchema>;
 
 /** PUT /api/people/{userId}/college: their college in a season (null: unassigned, kept so until an admin changes it). */

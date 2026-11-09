@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCheck, FaTimes, FaUndo } from "react-icons/fa";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import PersonName from "@/components/ui/PersonName";
 import { fetchCollegePlayers, type CollegePlayer } from "@/lib/api/colleges";
 import type { Match } from "@/lib/api/matches";
 import { lookUpNetid, type DirectoryEntry } from "@/lib/api/directory";
@@ -188,8 +189,8 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
               />
             )}
             <div className="flex-1 min-w-0">
-              <div className="truncate font-medium">
-                {entry.name} <span className="font-normal text-gray-500 dark:text-gray-400">({who(entry)})</span>
+              <div className="font-medium break-words">
+                <PersonName person={entry} tag={who(entry)} />
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {[origin(entry, supervisor), ...standing(entry)].join(" · ")}
@@ -235,7 +236,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
           {removed.map((entry) => (
             <div key={entry.playerId} className="flex items-center justify-between py-1.5 text-sm text-gray-500">
               <span className="line-through">
-                {entry.name} ({who(entry)})
+                <PersonName person={entry} tag={who(entry)} />
               </span>
               {!locked && (
                 <button
@@ -359,7 +360,7 @@ function AddPlayer({ match, collegeId, onRoster, busy, run }: AddPlayerProps) {
       {matches.map((p) => (
         <div key={p.id} className="flex items-center justify-between gap-2 text-sm">
           <span>
-            {p.name} <span className="text-xs text-gray-500">({who({ playerId: p.id, netid: p.netid })})</span>
+            <PersonName person={p} tag={who({ playerId: p.id, netid: p.netid })} />
           </span>
           <button className={`${pill} bg-blue-600`} disabled={busy !== null} onClick={() => add(p.id)}>
             Add

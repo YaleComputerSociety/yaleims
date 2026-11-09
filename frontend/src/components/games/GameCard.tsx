@@ -15,6 +15,7 @@ import { getCollegeFlag } from "@/lib/images";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
 import MyEntryStatus, { CancelledBadge } from "@/components/games/MyEntryStatus";
+import Participants from "@/components/games/Participants";
 import type { MyMatch } from "@/lib/api/me";
 
 const LIVE_WINDOW_MS = 1 * 60 * 60 * 1000; // 1 hour
@@ -342,6 +343,9 @@ const GameCard: React.FC<GameCardProps> = ({
             <EditMatchButton match={match} />
             <ReportScoreButton match={match} sportName={sportName} />
           </div>
+        </div>
+        <div className="mt-2">
+          <Participants match={match} refreshKey={isSignedUp} />
         </div>
       </div>
     </div>

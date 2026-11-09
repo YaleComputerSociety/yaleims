@@ -28,7 +28,7 @@ import { getIdentity, type Identity } from "./session";
 export interface Viewer extends Identity {
   /** Their users/{userId} doc (null: none yet). */
   user(): Promise<UserDoc | null>;
-  /** The name to show for them (their username when no name is known). */
+  /** The name to show for them (their NetID when no name is known). */
   name(): Promise<string>;
   /** users/{userId}.roles. */
   globalRoles(): Promise<GlobalRole[]>;
@@ -161,6 +161,8 @@ export const can = {
   manageRoles: isAdmin,
   /** Find anyone (People), correct their name, email, college and attendance, and answer review requests (decision 3d). */
   managePeople: isAdmin,
+  /** See the email of anyone they act on, next to their name and NetID (lib/api/users Identity). */
+  seeEmails: isAdmin,
   /** A college's players this season (the captain, MVP and roster pickers, the roles page). */
   listPlayers: async (viewer: Viewer, collegeId: string) =>
     (await isSupervisor(viewer)) || (await isRepOf(viewer, collegeId)) || isCaptainOf(viewer, collegeId),

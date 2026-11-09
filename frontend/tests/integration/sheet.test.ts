@@ -59,6 +59,10 @@ describe("GET …/roster/sheet", () => {
     const all = await api("GET", `${path}/sheet`, undefined, { session: supervisor() });
     expect(all.body.supervisor).toBe(true);
     expect([...all.body.collegeIds].sort()).toEqual([collegeId, other].sort());
+    // Names and NetIDs for every editor; emails for admins only.
+    for (const e of all.body.items) expect(e).not.toHaveProperty("email");
+    const asAdmin = await api("GET", `${path}/sheet`, undefined, { session: sessionFor(people.admin) });
+    for (const e of asAdmin.body.items) expect(e).toMatchObject({ name: expect.any(String), email: e.playerId.includes("@") ? e.playerId : null });
   });
 });
 
@@ -179,7 +183,9 @@ describe("adding by NetID (U10; a fake Yale directory: tests/integration/fakeYal
     expect(r).toMatchObject({ status: 201, body: { playerId: "netid-zz950", verified: false } });
     // An unclaimed account; the side doesn't give them a college (account plan, 3a).
     expect((await db.doc(`seasons/${current}/players/netid-zz950`).get()).data()).toMatchObject({ collegeId: null, name: "New Kid", userId: "netid-zz950" });
-    expect((await db.doc("users/netid-zz950").get()).data()).toMatchObject({ netid: "zz950", claimedAt: null, createdBy: people.supervisor });
+    expect((await db.doc("users/netid-zz950").get()).data()).toMatchObject({
+      netid: "zz950", name: "New Kid", nameSource: "staff", claimedAt: null, createdBy: people.supervisor,
+    });
     const down = await api("POST", `${path}/netid`, { netid: "zz999", collegeId: "BF" }, { session: supervisor() });
     expect(down).toMatchObject({ status: 201, body: { playerId: "netid-zz999", verified: false } });
     expect(captain).toBeTruthy();

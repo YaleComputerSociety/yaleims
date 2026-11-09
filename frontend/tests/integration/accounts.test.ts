@@ -16,12 +16,10 @@ const { addToGame } = await import("@/server/services/roster");
 let current: string;
 beforeAll(async () => { ({ current } = await seasons()); });
 
-// Every doc a test may create or change, restored after it (with the usernames of new accounts).
+// Every doc a test may create or change, restored after it.
 const saved = new Map<string, DocumentData | undefined>();
 afterEach(async () => {
   for (const [path, before] of saved) {
-    const after = (await db.doc(path).get()).data();
-    if (path.startsWith("users/") && !before && after?.username) await db.doc(paths.username(after.username)).delete();
     if (before) await db.doc(path).set(before);
     else await db.doc(path).delete();
   }
@@ -54,16 +52,15 @@ const accountsWithNetid = async (netid: string) => (await db.collection("users")
 const endCooldown = (id: string) => db.doc(paths.user(id)).update({ "directory.nextAt": Timestamp.fromMillis(Date.now() - 1000) });
 
 describe("resolving a NetID to an account", () => {
-  it("gives a NetID no account has users/netid-<netid>: claimed, with the directory's name and email, its username and season", async () => {
+  it("gives a NetID no account has users/netid-<netid>: claimed, with the directory's name and email, and its season", async () => {
     const p = await person();
     expect(await signIn(p.netid, current)).toBe(p.id);
     const doc = (await user(p.id))!;
     expect(doc).toEqual({
-      email: p.email, name: "Ann Lee", nameSource: "yalies", netid: p.netid, username: expect.any(String),
+      email: p.email, name: "Ann Lee", nameSource: "yalies", netid: p.netid,
       roles: [], claimedAt: expect.any(Timestamp), createdBy: null,
       directory: { outcome: "found", checkedAt: expect.any(Timestamp), nextAt: expect.any(Timestamp) },
     });
-    expect((await db.doc(paths.username(doc.username)).get()).data()).toEqual({ userId: p.id });
     expect(await player(p.id)).toMatchObject({
       collegeId: "BF", userId: p.id, joinedVia: "login", collegeHistory: [{ collegeId: "BF", source: "yalies", since: expect.any(Timestamp) }],
     });
@@ -132,7 +129,7 @@ describe("resolving a NetID to an account", () => {
   it("never replaces a name an admin set", async () => {
     const p = await person();
     await db.doc(paths.user(p.id)).set({
-      email: null, name: "Set By Admin", nameSource: "admin", netid: p.netid, username: `U${p.id}`, roles: [], claimedAt: null, createdBy: null,
+      email: null, name: "Set By Admin", nameSource: "admin", netid: p.netid, roles: [], claimedAt: null, createdBy: null,
     });
     await signIn(p.netid, current);
     expect(await user(p.id)).toMatchObject({ name: "Set By Admin", nameSource: "admin", email: p.email });
@@ -221,6 +218,48 @@ describe("PATCH /api/me (name)", () => {
     await signIn(listed.netid, current);
     expect((await rename(listed.id, listed.netid, "Not Me")).status).toBe(403);
     expect(await user(listed.id)).toMatchObject({ name: "Ann Lee", nameSource: "yalies" });
+  });
+});
+
+describe("a captain's or supervisor's label for a NetID (D-N3)", () => {
+  const actor = { userId: people.supervisor, roles: ["user", "supervisor"] };
+  const rename = (id: string, netid: string, name: string) => api("PATCH", "/api/me", { name }, { session: sessionOf(id, netid) });
+  /** Adds `p` to BF's next game with `name` typed for them; returns the game's id. */
+  const add = async (p: { netid: string; id: string }, name: string) => {
+    const games = await db.collection(paths.matches(current)).where("collegeIds", "array-contains", "BF").where("startsAt", ">", new Date()).orderBy("startsAt").limit(1).get();
+    const game = games.docs[0].id;
+    const entry = paths.rosterEntry(current, game, p.id);
+    if (!saved.has(entry)) saved.set(entry, (await db.doc(entry).get()).data());
+    expect(await addToGame(current, game, "BF", { netid: p.netid, name }, actor)).toMatchObject({ status: "added" });
+    return game;
+  };
+
+  it("names an account the directory can't, unverified: the person may change it, and the game shows the new name", async () => {
+    const p = await person("zzunlisted");
+    const game = await add(p, "Walk In");
+    expect(await user(p.id)).toMatchObject({ name: "Walk In", nameSource: "staff" });
+    expect((await rename(p.id, p.netid, "Sam Typed")).status).toBe(204);
+    expect(await user(p.id)).toMatchObject({ name: "Sam Typed", nameSource: "self" });
+    // The entry's copy still says "Walk In"; the roster reads the account (D-N2).
+    const roster = await api("GET", `/api/seasons/${current}/matches/${game}/roster`, undefined, { session: sessionOf(p.id, p.netid) });
+    const names = roster.body.items.map((e: { name: string }) => e.name);
+    expect(names).toContain("Sam Typed");
+    expect(names).not.toContain("Walk In");
+  });
+
+  it("gives way to the directory's name", async () => {
+    const p = await person(); // the directory knows them
+    await db.doc(paths.user(p.id)).set({ email: null, name: "Walk In", nameSource: "staff", netid: p.netid, roles: [], claimedAt: null, createdBy: people.supervisor });
+    await signIn(p.netid, current);
+    expect(await user(p.id)).toMatchObject({ name: "Ann Lee", nameSource: "yalies" });
+  });
+
+  it("never replaces a name the account has", async () => {
+    const p = await person("zzunlisted");
+    await signIn(p.netid, current);
+    expect((await rename(p.id, p.netid, "Sam Typed")).status).toBe(204);
+    await add(p, "Walk In");
+    expect(await user(p.id)).toMatchObject({ name: "Sam Typed", nameSource: "self" });
   });
 });
 

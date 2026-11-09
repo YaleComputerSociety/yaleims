@@ -5,6 +5,7 @@ import { z } from "zod";
 import { COLLEGES } from "@/lib/colleges";
 import type { MvpDoc, PlayerDoc, WithId } from "@/types/firestore";
 import { request, url, type Json } from "./core";
+import type { Identity } from "./users";
 
 const COLLEGE_IDS: string[] = COLLEGES.map((c) => c.id);
 
@@ -14,7 +15,7 @@ export const collegeIdSchema = z.string().refine((id) => COLLEGE_IDS.includes(id
 // ── Players and leaders ────────────────────────────────────────────────────
 
 /** A college's player this season, with their NetID (null: none recorded, or a guest) and the sports (ids) they captain. */
-export type CollegePlayer = Json<WithId<PlayerDoc>> & { netid: string | null; captainOf: string[] };
+export type CollegePlayer = Json<WithId<PlayerDoc>> & Identity & { captainOf: string[] };
 
 /** GET …/colleges/{c}/players (the college's rep and captains, supervisors; current season): by name. */
 export interface CollegePlayerList {
@@ -50,7 +51,7 @@ export const removeCaptain = (seasonId: string, collegeId: string, sportId: stri
 
 // ── Weekly MVPs (the college's rep, admins) ────────────────────────────────
 
-export type Mvp = Json<WithId<MvpDoc>>;
+export type Mvp = Json<WithId<MvpDoc>> & Identity;
 
 /** GET …/colleges/{c}/mvps: the college's MVPs of the season, by week. */
 export interface MvpList {

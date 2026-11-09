@@ -37,6 +37,14 @@ describe("GET …/colleges/{c}/players", () => {
     expect(captain.captainOf).toHaveLength(1);
     expect(r.body.items.find((p: { id: string }) => p.id === people.student(BF, 0)).roles).toEqual(["college_rep"]);
   });
+  it("shows the NetID to everyone it serves, the email only to admins", async () => {
+    const id = people.student(BF, 2);
+    const asRep = (await list("BF", rep())).body.items.find((p: { id: string }) => p.id === id);
+    expect(asRep.netid).toEqual(expect.any(String));
+    expect(asRep).not.toHaveProperty("email");
+    const asAdmin = (await list("BF", admin())).body.items.find((p: { id: string }) => p.id === id);
+    expect(asAdmin).toMatchObject({ netid: asRep.netid, email: id });
+  });
 });
 
 describe("GET …/colleges/{c}/leaders", () => {

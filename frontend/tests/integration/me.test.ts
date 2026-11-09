@@ -45,12 +45,12 @@ describe("GET /api/auth/session", () => {
   it("reads the name, roles, college and captaincies from Firestore, not the cookie", async () => {
     const id = people.student(2, 6);
     const player = await api("GET", "/api/auth/session", undefined, { session: sessionFor(id, ["user", "admin", "dev"]) });
-    const { name, username } = (await db.doc(`users/${id}`).get()).data()!;
+    const { name } = (await db.doc(`users/${id}`).get()).data()!;
     expect(name).not.toBe("Test User"); // the cookie's
     expect(player.body).toEqual({
       signedIn: true,
       viewer: {
-        userId: id, email: id, name, canEditName: false, directory: null, username, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
+        userId: id, email: id, name, canEditName: false, directory: null, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
         can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false, managePeople: false },
       },
     });
@@ -88,26 +88,6 @@ describe("POST /api/auth/logout", () => {
     expect(r.status).toBe(204);
     expect(r.setCookie).toMatch(/^token=;/);
     expect((await raw("POST", "/api/auth/logout", { origin: "https://evil.example" })).status).toBe(403);
-  });
-});
-
-describe("PATCH /api/me (username)", () => {
-  const rename = (username: unknown, session?: string) => api("PATCH", "/api/me", { username }, { session });
-  it("checks the username's form and that it's free", async () => {
-    const me = sessionFor(people.student(6, 6));
-    expect((await rename("NewName")).status).toBe(401);
-    expect(await rename("ab", me)).toMatchObject({ status: 400, body: { error: { message: "username: Username must be between 3 and 20 characters long" } } });
-    expect((await rename("has space", me)).status).toBe(400);
-    const taken = (await db.doc(`users/${people.student(6, 5)}`).get()).data()!.username;
-    expect((await rename(taken, me)).status).toBe(409);
-  });
-  it("renames, freeing the old username", async () => {
-    const email = people.student(6, 6);
-    const old = (await db.doc(`users/${email}`).get()).data()!.username;
-    expect((await rename(" Fresh_Name_1 ", sessionFor(email))).status).toBe(204);
-    expect((await db.doc(`users/${email}`).get()).data()!.username).toBe("Fresh_Name_1");
-    expect((await db.doc("usernames/Fresh_Name_1").get()).data()).toEqual({ userId: email });
-    expect((await db.doc(`usernames/${old}`).get()).exists).toBe(false);
   });
 });
 

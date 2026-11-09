@@ -6,6 +6,7 @@
 import { z } from "zod";
 import type { ReviewKind, ReviewRequestDoc, ReviewStatus } from "@/types/firestore";
 import { request, toJson, url, type Json } from "./core";
+import type { Identity } from "./users";
 
 const message = z
   .string()
@@ -46,7 +47,7 @@ export interface CreatedReview {
 
 /** A request in the admins' queue: who it is about, and its revision (sent back when answering). */
 export type QueuedReview = OwnReview & {
-  subject: { userId: string; name: string; netid: string | null };
+  subject: { userId: string } & Identity;
   resolvedBy: string | null;
   revision: string;
 };

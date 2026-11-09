@@ -19,7 +19,7 @@ export const GET = route<Params>(async (req, { params }) => {
   return ok(person);
 });
 
-/** An admin's name (locked against the directory from then on) and/or Yale email for the person; audit-logged with the reason. */
+/** An admin's name (locked against the directory and the person from then on, until unlocked) and/or Yale email for the person; audit-logged with the reason. */
 export const PATCH = route<Params>(async (req, { params }) => {
   const { userId } = await params;
   const viewer = await authorize(can.managePeople);
