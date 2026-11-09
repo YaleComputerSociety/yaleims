@@ -121,4 +121,15 @@ describe("the roles page (devs)", () => {
     expect((await db.doc(`users/${target}`).get()).data()!.roles).toEqual([]);
     expect((await db.doc(`seasons/${current}/colleges/BK/teams/1`).get()).data()!.captainIds).not.toContain(target);
   });
+  it("makes one player captain of every sport at once", async () => {
+    const target = people.student(BK, 6);
+    const sportIds = (await db.collection(`seasons/${current}/sports`).get()).docs.map((d) => d.id);
+    expect(sportIds.length).toBeGreaterThan(15); // the old cap refused this
+    const set = (captainOf: string[]) => api("PUT", `/api/users/${encodeURIComponent(target)}/roles`, { roles: [], captainOf }, { session: admin() });
+
+    expect((await set(sportIds)).status).toBe(204);
+    const teams = (await db.collection(`seasons/${current}/colleges/BK/teams`).get()).docs;
+    expect(teams.filter((t) => t.data().captainIds.includes(target)).map((t) => t.id).sort()).toEqual([...sportIds].sort());
+    expect((await set([])).status).toBe(204);
+  });
 });
