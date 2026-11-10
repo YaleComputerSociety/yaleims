@@ -16,7 +16,8 @@ type Params = { seasonId: string; matchId: string };
  * caller manages (both for a supervisor; a captain's own college), taken-off
  * players too, with their ids and identities (emails for admins), and
  * whether they have signed in and have a college this season, and who
- * made the captain's call: a captain by name, a supervisor anonymously.
+ * made the captain's call: a captain by name; a supervisor by name for
+ * staff, by role only for captains (their names mean nothing to students).
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -42,9 +43,8 @@ export const GET = route<Params>(async (req, { params }) => {
     if (!e.captainStatus || !e.captainBy) return null;
     // Stored since 2026-11-09; an older call by a current captain of the team was theirs.
     const role = e.captainByRole ?? (captainIds.has(e.captainBy) ? "captain" : "supervisor");
-    if (role === "supervisor") return { by: "supervisor" };
     const caller = users.get(e.captainBy);
-    return { by: "captain", name: caller ? displayName(caller) : null };
+    return { by: role, name: caller && (role === "captain" || supervisor) ? displayName(caller) : null };
   };
   const items = entries.map((e) => {
     const user = users.get(e.playerId);

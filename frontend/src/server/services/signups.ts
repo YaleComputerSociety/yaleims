@@ -5,12 +5,15 @@
 // a captain or supervisor can add them back. An entry on the other side
 // (placed there while they were unassigned, or before an admin changed their
 // college) moves to their college's side at sign-up (Execution brief "History").
+// A captain signing up for their own team's game is confirmed at once, as
+// when they add themselves from the sheet.
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { logAction } from "../data/auditLog";
 import { matchRef } from "../data/matches";
 import { playerRef } from "../data/players";
 import { rosterEntryRef } from "../data/roster";
+import { teamRef } from "../data/teams";
 import { runTransaction } from "../data/util";
 
 export type SignUpResult =
@@ -46,6 +49,8 @@ export async function signUp(
     if (!match.collegeIds.includes(player.collegeId)) return "other-college";
     if (match.startsAt.toMillis() <= now.getTime()) return "started";
     if (match.status === "cancelled") return "cancelled";
+    const team = (await tx.get(teamRef(seasonId, player.collegeId, match.sportId))).data();
+    const captain = !!team?.captainIds.includes(playerId);
     const entry = entrySnap.data();
     if (entry?.collegeId === player.collegeId) return entry.captainStatus === "removed" ? "removed" : "already-signed-up";
     if (entry) {
@@ -69,10 +74,9 @@ export async function signUp(
       addedBy: "self",
       addedByUser: playerId,
       signedUpAt: FieldValue.serverTimestamp(),
-      captainStatus: null,
-      captainBy: null,
-      captainByRole: null,
-      captainAt: null,
+      ...(captain
+        ? { captainStatus: "confirmed" as const, captainBy: playerId, captainByRole: "captain" as const, captainAt: FieldValue.serverTimestamp() }
+        : { captainStatus: null, captainBy: null, captainByRole: null, captainAt: null }),
       present: false,
       presentBy: null,
       presentAt: null,

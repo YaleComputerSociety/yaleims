@@ -16,8 +16,11 @@ export function toOwnEntry({ captainBy: _captainBy, captainByRole: _captainByRol
   return toJson(entry);
 }
 
-/** Who made the captain's call on a sheet entry: a captain by name (or NetID; null: unknown), a supervisor anonymously. */
-export type CaptainCall = { by: "captain"; name: string | null } | { by: "supervisor" };
+/** Who made the captain's call on a sheet entry, by role, and by name (or NetID) for a captain; a supervisor's name only for staff (null: not shown, or unknown). */
+export interface CaptainCall {
+  by: "captain" | "supervisor";
+  name: string | null;
+}
 
 /** An entry as the game's participants are shown: college and status, no ids (the name and NetID come with Identity). */
 export type PublicRosterEntry = Json<
