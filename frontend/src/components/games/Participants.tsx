@@ -1,10 +1,10 @@
 "use client";
 // A game's participants, behind a "Participants" toggle so the game lists
 // stay short. The server decides who sees them and which (lib/participants.ts):
-// until the start who is on each side, with their status; from the start
-// those a supervisor recorded present. Name first, NetID (and, for admins,
-// the email) in small print. Read when opened, and again when `refreshKey`
-// changes while open (the viewer signed up or withdrew).
+// who is on each side, ✓ when a captain confirmed them; once a supervisor
+// takes attendance on a side, only those recorded present, ✓✓. Name first,
+// NetID (and, for admins, the email) in small print. Read when opened, and
+// again when `refreshKey` changes while open (the viewer signed up or withdrew).
 import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import PersonName from "@/components/ui/PersonName";
@@ -15,8 +15,8 @@ import { collegeName } from "@/lib/colleges";
 
 type Entry = Roster["items"][number];
 
-/** Where an entry stands before the start: the captain confirmed it (or staff added them), or they signed up. */
-const status = (e: Entry) => (e.captainStatus === "confirmed" || e.addedBy !== "self" ? "confirmed" : "signed up");
+/** A player's mark: ✓✓ recorded present by a supervisor, ✓ confirmed by a captain, none: signed up. */
+const mark = (e: Entry) => (e.present ? "✓✓" : e.captainStatus === "confirmed" ? "✓" : "");
 
 export default function Participants({ match, refreshKey }: { match: Match; refreshKey?: unknown }) {
   const { viewer } = useSession();
@@ -53,20 +53,20 @@ export default function Participants({ match, refreshKey }: { match: Match; refr
             <p>Only the two colleges&apos; players, people on this game and supervisors see who&apos;s playing.</p>
           ) : (
             <>
-              {roster.started && <p>Recorded present by a supervisor:</p>}
+              {roster.items.some(mark) && <p>✓ confirmed by a captain · ✓✓ present (recorded by a supervisor)</p>}
               {match.collegeIds.map((collegeId) => {
                 const side = roster.items.filter((e) => e.collegeId === collegeId);
                 return (
                   <div key={collegeId}>
                     <span className="font-semibold text-black dark:text-gray-300">{collegeName(collegeId)}:</span>{" "}
                     {side.length === 0 ? (
-                      <span>{roster.started ? "nobody recorded" : "nobody yet"}</span>
+                      <span>nobody yet</span>
                     ) : (
                       <ul className="inline">
                         {side.map((e, i) => (
                           <li key={i} className="inline text-gray-800 dark:text-gray-300">
                             <PersonName person={e} />
-                            {!roster.started && <span className="text-gray-500"> · {status(e)}</span>}
+                            {mark(e) && <span className="text-emerald-700 dark:text-emerald-400"> {mark(e)}</span>}
                             {i < side.length - 1 && ", "}
                           </li>
                         ))}

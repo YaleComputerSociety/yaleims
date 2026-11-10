@@ -41,10 +41,10 @@ export function toPublicEntry({
 
 /**
  * GET …/roster (signed in): the game's participants, in sign-up order, for
- * those who may see them (`visible`, lib/participants.ts): until the start
- * who is on it, from the start (`started`) those recorded present; and the
- * caller's own entry (a removed one too, so the page can say why they can't
- * sign up).
+ * those who may see them (`visible`, lib/participants.ts): each side's
+ * players, or once a supervisor takes attendance on that side, those
+ * recorded present; whether the game has `started`; and the caller's own
+ * entry (a removed one too, so the page can say why they can't sign up).
  */
 export interface Roster {
   visible: boolean;

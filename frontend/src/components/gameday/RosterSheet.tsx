@@ -175,8 +175,8 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
           {collegeId} · {collegeName(collegeId)}
         </h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {supervisor ? `${present} present · ` : ""}
-          {playing.length} on roster · {confirmed.length} confirmed
+          {playing.length} on roster · {confirmed.length} captain-confirmed
+          {supervisor ? ` · ${present} present` : ""}
         </span>
       </header>
 

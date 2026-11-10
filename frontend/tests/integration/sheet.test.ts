@@ -86,8 +86,14 @@ describe("co-captains", () => {
     expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: sessionFor(coCaptain) })).status).toBe(204);
     expect(await callOf(captain)).toMatchObject({ captainStatus: "removed", captainCall: { by: "captain", name: await nameOf(coCaptain) } });
 
-    // A supervisor's call: by role for captains, by name for staff; no caller ids on the sheet or in the player's own entry.
-    expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(204);
+    // Supervisors take attendance, before the start too, but never confirm (the captains' call), nor take a confirmation back.
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: supervisor() }))).toMatchObject({ status: 403, body: { error: { message: "Only the team's captains confirm players; supervisors take attendance." } } });
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(403);
+    expect((game.data() as MatchDoc).startsAt.toMillis()).toBeGreaterThan(Date.now());
+    expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).get()).data()).toMatchObject({ captainStatus: "confirmed", present: true });
+    // A supervisor's call (taking off; putting back stays theirs too): by role for captains, by name for staff; no caller ids on the sheet or in the player's own entry.
     expect((await api("PATCH", entry, { captainStatus: "removed", present: true }, { session: supervisor() })).status).toBe(204);
     const call = await callOf(captain);
     expect(call.captainCall).toEqual({ by: "supervisor", name: null });

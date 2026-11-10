@@ -20,7 +20,9 @@ async function editorOf(viewer: Viewer, collegeId: string, sportId: string): Pro
 
 /**
  * Changes one player's entry: the captain's call (confirmed, removed, or
- * null to take it back) until the start; attendance (supervisors, any time).
+ * null to take it back) until the start; attendance (supervisors, any time,
+ * before the start too). Supervisors may take a player off or put them back,
+ * not confirm or take back a captain's confirmation.
  */
 export const PATCH = route<Params>(async (req, { params }) => {
   const { seasonId, matchId, playerId } = await params;
@@ -37,6 +39,7 @@ export const PATCH = route<Params>(async (req, { params }) => {
   if (result === "no-match") throw NO_MATCH;
   if (result === "no-entry") throw new ApiError("not-found", "They aren't on this game.");
   if (result === "started") throw STARTED;
+  if (result === "captains-only") throw new ApiError("forbidden", "Only the team's captains confirm players; supervisors take attendance.");
   return noContent();
 });
 

@@ -24,7 +24,11 @@ import { runTransaction } from "../data/util";
 import { lookUpNetid } from "../directory";
 import { claimPlaceholders, collegeAfterLookup, readAccount, writeAccount, writeSeasonPlayer } from "./accounts";
 
-/** Who acts: a supervisor (any time, may take attendance) or a captain (until the start). */
+/**
+ * Who acts: a supervisor (attendance at any time, before the start too; may
+ * take a player off or put them back, never confirm: that is the captains'
+ * call) or a captain (confirm, take off, add, until the start).
+ */
 export interface SheetEditor {
   supervisor: boolean;
   actor: Actor;
@@ -52,7 +56,7 @@ export interface EntryChange {
   present?: boolean;
 }
 
-export type ChangeResult = "ok" | "no-match" | "no-entry" | "started";
+export type ChangeResult = "ok" | "no-match" | "no-entry" | "started" | "captains-only";
 
 /** Changes the captain's call or the attendance of one player on a game. */
 export async function changeEntry(
@@ -70,6 +74,8 @@ export async function changeEntry(
     if (!match) return "no-match";
     if (!entrySnap.exists) return "no-entry";
     if (!by.supervisor && started(match, now)) return "started";
+    const confirming = change.captainStatus === "confirmed" || (change.captainStatus === null && entrySnap.data()!.captainStatus === "confirmed");
+    if (by.supervisor && confirming) return "captains-only";
 
     tx.update(entryRef, {
       ...(change.captainStatus !== undefined

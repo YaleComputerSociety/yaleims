@@ -35,7 +35,7 @@ export default function GameRow({
   const counts = sheet
     ? sheet.supervisor
       ? `Present ${sheet.collegeIds.map((c) => `${c} ${playing.filter((e) => e.collegeId === c && e.present).length}`).join(" · ")}`
-      : `${playing.length} signed up · ✓${playing.filter((e) => e.captainStatus === "confirmed").length}`
+      : `${playing.length} on roster · ${playing.filter((e) => e.captainStatus === "confirmed").length} captain-confirmed`
     : null;
   const state =
     match.status === "cancelled"
