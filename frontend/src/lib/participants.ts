@@ -4,8 +4,9 @@
 // both sides each time. Each side lists who signed up or was put on it (not
 // those taken off) until a supervisor records one of its players present,
 // at any time; from then on only those recorded present, the only attendance
-// that counts (lib/attendance.ts; user, 2026-11-10).
-import type { RosterEntryDoc } from "@/types/firestore";
+// that counts (lib/attendance.ts; user, 2026-11-10). A cancelled game shows
+// nobody (C19).
+import type { MatchDoc, RosterEntryDoc } from "@/types/firestore";
 import { countsAsAttended } from "./attendance";
 
 export interface ParticipantsViewer {
@@ -21,8 +22,14 @@ export function seesParticipants(viewer: ParticipantsViewer, game: { collegeIds:
   return viewer.staff || viewer.onGame || (viewer.collegeId !== null && game.collegeIds.includes(viewer.collegeId));
 }
 
-/** The entries to list, side by side: its players, or once attendance is being taken on that side, those recorded present (never those taken off). */
-export function shownEntries<T extends Pick<RosterEntryDoc, "collegeId" | "captainStatus" | "present">>(entries: T[]): T[] {
-  const taking = new Set(entries.filter(countsAsAttended).map((e) => e.collegeId));
-  return entries.filter((e) => (taking.has(e.collegeId) ? countsAsAttended(e) : e.captainStatus !== "removed"));
+/**
+ * The entries to list, side by side: its players, or once attendance is
+ * being taken on that side, those recorded present (never those taken off);
+ * nobody on a cancelled game (C19).
+ */
+export function shownEntries<T extends Pick<RosterEntryDoc, "collegeId" | "captainStatus" | "present">>(entries: T[], game: Pick<MatchDoc, "status">): T[] {
+  if (game.status === "cancelled") return [];
+  const present = (e: T) => countsAsAttended(e, game);
+  const taking = new Set(entries.filter(present).map((e) => e.collegeId));
+  return entries.filter((e) => (taking.has(e.collegeId) ? present(e) : e.captainStatus !== "removed"));
 }

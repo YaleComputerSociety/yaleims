@@ -273,6 +273,7 @@ function GameRow({ game, sport, disabled, reason, onFix }: { game: PersonGame; s
           {[
             game.present === true ? "present" : game.present === false ? "not marked present" : "attendance never recorded",
             game.captainStatus === "removed" ? "taken off by the captain" : null,
+            game.cancelled ? "game cancelled: doesn't count" : null,
             game.underReview ? "under review" : null,
             game.confirmedByAdmin ? "confirmed by an admin" : null,
           ].filter(Boolean).join(" · ")}

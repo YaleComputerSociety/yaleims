@@ -28,7 +28,7 @@ export const GET = route<Params>(async (req, { params }) => {
   const mine = roster.find((e) => e.playerId === viewer.userId);
   const started = !!match && match.startsAt.toMillis() <= Date.now();
   const visible = !!match && seesParticipants({ staff, collegeId: player?.collegeId ?? null, onGame: !!mine && mine.captainStatus !== "removed" }, match);
-  const shown = visible ? shownEntries(roster) : [];
+  const shown = visible ? shownEntries(roster, match) : [];
   const users = await getUsers(shown.map((e) => e.playerId));
   const items = shown.map((e) => ({ ...toPublicEntry(e), ...identityOf(users.get(e.playerId), e.name, withEmail) }));
   return ok({ visible, started, items, total: items.length, mine: mine ? toOwnEntry(mine) : null } satisfies Roster);

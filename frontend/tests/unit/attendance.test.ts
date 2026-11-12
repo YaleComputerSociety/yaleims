@@ -5,12 +5,14 @@ const at = (ms: number) => ({ seconds: ms / 1000, nanoseconds: 0, toDate: () => 
 const game = (collegeId: string, startsAt: number, adminConfirmed = false): Attended => ({ collegeId, startsAt, adminConfirmed });
 
 describe("countsAsAttended", () => {
-  it("counts a supervisor's presence, not one taken off the game", () => {
-    expect(countsAsAttended({ present: true, captainStatus: null })).toBe(true);
-    expect(countsAsAttended({ present: true, captainStatus: "confirmed" })).toBe(true);
-    expect(countsAsAttended({ present: true, captainStatus: "removed" })).toBe(false);
-    expect(countsAsAttended({ present: false, captainStatus: "confirmed" })).toBe(false);
-    expect(countsAsAttended({ present: null, captainStatus: null })).toBe(false);
+  it("counts a supervisor's presence, not one taken off the game or on a cancelled game", () => {
+    const played = { status: "final" as const };
+    expect(countsAsAttended({ present: true, captainStatus: null }, played)).toBe(true);
+    expect(countsAsAttended({ present: true, captainStatus: "confirmed" }, undefined)).toBe(true);
+    expect(countsAsAttended({ present: true, captainStatus: "removed" }, played)).toBe(false);
+    expect(countsAsAttended({ present: true, captainStatus: null }, { status: "cancelled" })).toBe(false);
+    expect(countsAsAttended({ present: false, captainStatus: "confirmed" }, played)).toBe(false);
+    expect(countsAsAttended({ present: null, captainStatus: null }, played)).toBe(false);
   });
 });
 

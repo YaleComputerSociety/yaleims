@@ -4,11 +4,15 @@
 // when it was played, until an admin confirms it. Computed on read, from the
 // season player's college history and their entries, so nothing stored goes
 // stale: counts, the Profile and the admin views all call `disputed`.
-import type { PlayerDoc, RosterEntryDoc } from "@/types/firestore";
+import type { MatchDoc, PlayerDoc, RosterEntryDoc } from "@/types/firestore";
 
-/** Attendance that counts: recorded present by a supervisor, and not taken off the game (C12). */
-export function countsAsAttended(entry: Pick<RosterEntryDoc, "present" | "captainStatus">): boolean {
-  return entry.present === true && entry.captainStatus !== "removed";
+/**
+ * Attendance that counts: recorded present by a supervisor, not taken off
+ * the game (C12), on a game that isn't cancelled (C19: kept, in case the
+ * cancellation is undone; `game` undefined: gone, its entry left).
+ */
+export function countsAsAttended(entry: Pick<RosterEntryDoc, "present" | "captainStatus">, game: Pick<MatchDoc, "status"> | undefined): boolean {
+  return entry.present === true && entry.captainStatus !== "removed" && game?.status !== "cancelled";
 }
 
 /** One college assignment, in milliseconds; collegeId null: cleared. */

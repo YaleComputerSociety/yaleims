@@ -105,7 +105,8 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
   if (!sheet) return <div className="flex justify-center py-10"><LoadingSpinner /></div>;
 
   const started = new Date(match.startsAt).getTime() <= now;
-  const locked = !sheet.supervisor && started;
+  const cancelled = match.status === "cancelled";
+  const locked = !sheet.supervisor && started && !cancelled;
 
   /** Runs one change (or several), then reloads the sheet. */
   const run = async (key: string, action: () => Promise<unknown>) => {
@@ -129,14 +130,20 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
           The game has started: the supervisor takes attendance from here.
         </p>
       )}
+      {cancelled && (
+        <p className="rounded-lg bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-sm px-3 py-2">
+          This game is cancelled: its roster is kept as it was (in case the game is restored), can&apos;t be changed,
+          and its attendance doesn&apos;t count.
+        </p>
+      )}
       {sheet.collegeIds.map((collegeId) => (
         <Side
           key={collegeId}
           match={match}
           collegeId={collegeId}
           entries={sheet.items.filter((e) => e.collegeId === collegeId)}
-          supervisor={sheet.supervisor}
-          captain={!started && sheet.captainOf.includes(collegeId)}
+          supervisor={sheet.supervisor && !cancelled}
+          captain={!started && !cancelled && sheet.captainOf.includes(collegeId)}
           busy={busy}
           change={change}
           run={run}

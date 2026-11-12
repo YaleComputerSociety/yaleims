@@ -15,6 +15,7 @@ describe("seesParticipants", () => {
 });
 
 describe("shownEntries", () => {
+  const scheduled = { status: "scheduled" as const };
   const side = (collegeId: string) => [
     { id: `${collegeId} signed up`, collegeId, captainStatus: null, present: false },
     { id: `${collegeId} confirmed`, collegeId, captainStatus: "confirmed" as const, present: false },
@@ -23,11 +24,14 @@ describe("shownEntries", () => {
   ];
   it("lists a side's players until a supervisor records one present, then only those present", () => {
     const before = [...side("BF"), ...side("GH")];
-    expect(shownEntries(before).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded", "GH signed up", "GH confirmed", "GH never recorded"]);
+    expect(shownEntries(before, scheduled).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded", "GH signed up", "GH confirmed", "GH never recorded"]);
     const taking = [...side("BF"), { id: "BF present", collegeId: "BF", captainStatus: null, present: true }, ...side("GH")];
-    expect(shownEntries(taking).map((e) => e.id)).toEqual(["BF present", "GH signed up", "GH confirmed", "GH never recorded"]);
+    expect(shownEntries(taking, scheduled).map((e) => e.id)).toEqual(["BF present", "GH signed up", "GH confirmed", "GH never recorded"]);
     // Taken off: never listed, nor does an old presence of theirs start attendance on the side (C12).
     const takenOff = [...side("BF"), { id: "BF off, present", collegeId: "BF", captainStatus: "removed" as const, present: true }];
-    expect(shownEntries(takenOff).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded"]);
+    expect(shownEntries(takenOff, scheduled).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded"]);
+  });
+  it("lists nobody on a cancelled game (C19)", () => {
+    expect(shownEntries([...side("BF"), { id: "BF present", collegeId: "BF", captainStatus: null, present: true }], { status: "cancelled" })).toEqual([]);
   });
 });

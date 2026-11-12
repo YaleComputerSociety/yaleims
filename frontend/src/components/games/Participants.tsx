@@ -36,7 +36,8 @@ export default function Participants({ match, refreshKey }: { match: Match; refr
     };
   }, [open, refreshKey, match.seasonId, match.id]);
 
-  if (!viewer) return null;
+  // A cancelled game shows nobody (C19); its roster is kept in case it is restored.
+  if (!viewer || match.status === "cancelled") return null;
 
   return (
     <div className="text-xs text-gray-500">

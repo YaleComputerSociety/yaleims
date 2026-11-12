@@ -338,6 +338,28 @@ describe("cancelling and deleting games", () => {
     expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(204);
   });
 
+  it("keeps a cancelled game's roster unchanged and its attendance uncounted, and shows nobody (C19)", async () => {
+    const id = await newGame();
+    const path = `/api/seasons/${current}/matches/${id}`;
+    const signedUp = player(0, 6);
+    const entry = `${path}/roster/${encodeURIComponent(signedUp)}`;
+    const mine = async () => (await api("GET", `/api/me/matches?seasonId=${current}`, undefined, { session: sessionFor(signedUp) })).body.items.find((m: { id: string }) => m.id === id).mine;
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
+    expect((await mine()).present).toBe(true);
+
+    expect((await api("PATCH", path, { status: "cancelled" }, { session: supervisor() })).status).toBe(204);
+    expect(await api("PATCH", entry, { present: false }, { session: supervisor() })).toMatchObject({ status: 409, body: { error: { message: "This game is cancelled." } } });
+    expect((await mine()).present).toBe(false);
+    expect((await api("GET", `${path}/roster`, undefined, { session: sessionFor(signedUp) })).body).toMatchObject({ items: [], total: 0 });
+    expect((await db.doc(`seasons/${current}/matches/${id}/roster/${signedUp}`).get()).data()).toMatchObject({ present: true });
+
+    // Restored: the attendance counts again.
+    expect((await api("PATCH", path, { status: "scheduled" }, { session: supervisor() })).status).toBe(204);
+    expect((await mine()).present).toBe(true);
+    expect((await api("DELETE", path, undefined, { session: supervisor() })).status).toBe(204);
+  });
+
   it("deletes an unscored game with its roster; not a scored game or a bracket's", async () => {
     const id = await newGame();
     const path = `/api/seasons/${current}/matches/${id}`;

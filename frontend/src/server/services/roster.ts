@@ -62,11 +62,12 @@ export interface EntryChange {
   present?: boolean;
 }
 
-export type ChangeResult = "ok" | "no-match" | "no-entry" | "started" | "captains-only" | "taken-off";
+export type ChangeResult = "ok" | "no-match" | "no-entry" | "cancelled" | "started" | "captains-only" | "taken-off";
 
 /**
  * Changes the captain's call or the attendance of one player on a game. A
- * player taken off isn't marked present ("taken-off"): put back first.
+ * player taken off isn't marked present ("taken-off"): put back first. A
+ * cancelled game's roster stays as it was, in case it is restored (C19).
  */
 export async function changeEntry(
   seasonId: string,
@@ -83,6 +84,7 @@ export async function changeEntry(
     if (!match) return "no-match";
     const entry = entrySnap.data();
     if (!entry) return "no-entry";
+    if (match.status === "cancelled") return "cancelled";
     if (!by.supervisor && started(match, now)) return "started";
     // Pre-confirming, or taking a pre-confirmation back: the captains', until the start.
     const preConfirming = change.captainStatus === "confirmed" || (change.captainStatus === null && entry.captainStatus === "confirmed");
