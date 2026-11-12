@@ -7,11 +7,13 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import PersonName from "@/components/ui/PersonName";
 import { assignCaptain, fetchCollegePlayers, removeCaptain, type CollegePlayer } from "@/lib/api/colleges";
 import type { Sport } from "@/lib/api/seasons";
+import { isSportInTerm } from "@/lib/sports";
 
 /**
- * The rep's college: who captains each of the season's sports (every term's,
- * for now). A sport may have several captains (any one of them pre-confirms
- * players, D34) and a player may captain several sports.
+ * The rep's college: who captains each of the season's sports, this term's
+ * first (and counted), then the others (C2, C16). A sport may have several
+ * captains (any one of them pre-confirms players, D34) and a player may
+ * captain several sports.
  */
 export default function AssignCaptain() {
   const { currentSeason } = useSeason();
@@ -37,11 +39,19 @@ export default function AssignCaptain() {
   }, [load]);
 
   if (error) return <p className="py-6 text-center text-sm text-red-600 dark:text-red-400">{error}</p>;
+  if (viewer && !collegeId) {
+    return (
+      <p className="py-6 text-center text-sm text-gray-600 dark:text-gray-300">
+        Your college isn&apos;t set this season, so there&apos;s no team to pick captains for. Ask an admin to set it.
+      </p>
+    );
+  }
   if (!currentSeason || !collegeId || !players) return <div className="flex h-full w-full items-center justify-center"><LoadingSpinner /></div>;
 
-  const sports = currentSeason.sports;
+  const thisTerm = currentSeason.sports.filter((sport) => isSportInTerm(sport, currentSeason.currentTerm));
+  const others = currentSeason.sports.filter((sport) => !isSportInTerm(sport, currentSeason.currentTerm));
   const captainsOf = (sportId: string) => players.filter((p) => p.captainOf.includes(sportId));
-  const covered = sports.filter((sport) => captainsOf(sport.id).length > 0).length;
+  const covered = thisTerm.filter((sport) => captainsOf(sport.id).length > 0).length;
 
   /** Makes `player` captain of `sport`, or not, then reloads the players. */
   const change = async (sport: Sport, player: CollegePlayer, assign: boolean) => {
@@ -57,27 +67,36 @@ export default function AssignCaptain() {
     }
   };
 
+  const list = (sports: Sport[]) => (
+    <ul className="divide-y divide-black/5 rounded-xl bg-white shadow-md dark:divide-white/5 dark:bg-neutral-900 dark:shadow-black/40">
+      {sports.map((sport) => (
+        <SportRow
+          key={sport.id}
+          sport={sport}
+          captains={captainsOf(sport.id)}
+          players={players}
+          busy={busy === sport.id}
+          adding={addingTo === sport.id}
+          setAdding={(open) => setAddingTo(open ? sport.id : null)}
+          change={(player, assign) => change(sport, player, assign)}
+        />
+      ))}
+    </ul>
+  );
+
   return (
     <div className="space-y-4 py-4">
       <p className="text-sm text-gray-600 dark:text-gray-300">
-        <span className="font-semibold">{covered}</span> of {sports.length} sports this season have a captain. A
+        <span className="font-semibold">{covered}</span> of {thisTerm.length} sports this term have a captain. A
         sport can have several captains; any one of them can pre-confirm players.
       </p>
-
-      <ul className="divide-y divide-black/5 rounded-xl bg-white shadow-md dark:divide-white/5 dark:bg-neutral-900 dark:shadow-black/40">
-        {sports.map((sport) => (
-          <SportRow
-            key={sport.id}
-            sport={sport}
-            captains={captainsOf(sport.id)}
-            players={players}
-            busy={busy === sport.id}
-            adding={addingTo === sport.id}
-            setAdding={(open) => setAddingTo(open ? sport.id : null)}
-            change={(player, assign) => change(sport, player, assign)}
-          />
-        ))}
-      </ul>
+      {list(thisTerm)}
+      {others.length > 0 && (
+        <>
+          <h3 className="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Other sports this season</h3>
+          {list(others)}
+        </>
+      )}
     </div>
   );
 }
@@ -105,9 +124,10 @@ function SportRow({ sport, captains, players, busy, adding, setAdding, change }:
           <span
             key={captain.id}
             className="inline-flex items-center gap-1 rounded-full bg-neutral-100 py-0.5 pl-2.5 pr-1 text-xs dark:bg-neutral-800"
-            title={captain.netid ?? captain.id}
           >
-            {captain.name}
+            <span>
+              <PersonName person={captain} />
+            </span>
             <button
               className="rounded-full p-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
               aria-label={`Remove ${captain.name} as ${sport.name} captain`}
