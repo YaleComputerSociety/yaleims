@@ -2,9 +2,9 @@
 // A game's roster sheet, for the sides the
 // viewer manages: a captain confirms, removes and adds their college's
 // players until the game starts; a supervisor ticks who came (one tap per
-// player, any time) and adds walk-ins. Both add players by NetID too
-// (U10). The server decides who
-// manages which side (GET …/roster/sheet) and checks every change.
+// player, any time) and adds walk-ins; someone who is both gets both on the
+// sides they captain. Both add players by NetID too (U10). The server
+// decides who manages which side (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCheck, FaTimes, FaUndo } from "react-icons/fa";
@@ -136,7 +136,7 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
           collegeId={collegeId}
           entries={sheet.items.filter((e) => e.collegeId === collegeId)}
           supervisor={sheet.supervisor}
-          locked={locked}
+          captain={!started && sheet.captainOf.includes(collegeId)}
           busy={busy}
           change={change}
           run={run}
@@ -151,22 +151,25 @@ interface SideProps {
   collegeId: string;
   entries: SheetEntry[];
   supervisor: boolean;
-  locked: boolean;
+  /** Captains the side and the game hasn't started: pre-confirms, takes off, adds. */
+  captain: boolean;
   busy: string | null;
   change: (entry: SheetEntry, c: RosterChange) => Promise<void>;
   run: (key: string, action: () => Promise<unknown>) => Promise<void>;
 }
 
-/** One college's side of the sheet. */
-function Side({ match, collegeId, entries, supervisor, locked, busy, change, run }: SideProps) {
+/** One college's side of the sheet: a supervisor's controls, a captain's (until the start), or both for someone who is both. */
+function Side({ match, collegeId, entries, supervisor, captain, busy, change, run }: SideProps) {
   const playing = entries.filter((e) => e.captainStatus !== "removed");
   const removed = entries.filter((e) => e.captainStatus === "removed");
   const present = playing.filter((e) => e.present).length;
   const confirmed = playing.filter((e) => e.captainStatus === "confirmed");
+  const editing = supervisor || captain;
 
-  const bulk = supervisor
-    ? { label: "Mark all captain-confirmed present", todo: confirmed.filter((e) => !e.present), c: { present: true } }
-    : { label: "Confirm everyone", todo: playing.filter((e) => e.captainStatus !== "confirmed"), c: { captainStatus: "confirmed" as const } };
+  const bulks = [
+    ...(captain ? [{ label: "Confirm everyone", todo: playing.filter((e) => e.captainStatus !== "confirmed"), c: { captainStatus: "confirmed" as const } }] : []),
+    ...(supervisor ? [{ label: "Mark all captain-confirmed present", todo: confirmed.filter((e) => !e.present), c: { present: true } }] : []),
+  ].filter((bulk) => bulk.todo.length > 0);
 
   return (
     <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-950 overflow-hidden">
@@ -202,7 +205,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
                 {[origin(entry), ...standing(entry)].join(" · ")}
               </div>
             </div>
-            {!locked && !supervisor && entry.captainStatus !== "confirmed" && (
+            {captain && entry.captainStatus !== "confirmed" && (
               <button
                 className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-600 text-white disabled:opacity-50"
                 disabled={busy !== null}
@@ -211,7 +214,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
                 Confirm
               </button>
             )}
-            {!locked && !supervisor && entry.captainStatus === "confirmed" && (
+            {captain && entry.captainStatus === "confirmed" && (
               <button
                 className="text-xs text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1"
                 title="Take back the confirmation"
@@ -221,7 +224,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
                 <FaCheck /> confirmed
               </button>
             )}
-            {!locked && (
+            {editing && (
               <button
                 className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
                 aria-label={`Remove ${entry.name}`}
@@ -247,7 +250,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
                 </span>
                 <span className="ml-2 text-xs">taken off by {caller(entry)}</span>
               </span>
-              {!locked && (
+              {editing && (
                 <button
                   className="text-xs inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 disabled:opacity-50"
                   disabled={busy !== null}
@@ -261,11 +264,12 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
         </div>
       )}
 
-      {!locked && (
+      {editing && (
         <div className="px-4 py-3 space-y-3 border-t border-black/5 dark:border-white/5">
           <AddPlayer match={match} collegeId={collegeId} onRoster={entries} busy={busy} run={run} />
-          {bulk.todo.length > 0 && (
+          {bulks.map((bulk) => (
             <button
+              key={bulk.label}
               className="w-full py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white disabled:opacity-50"
               disabled={busy !== null}
               onClick={() =>
@@ -276,7 +280,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
             >
               {bulk.label} ({bulk.todo.length})
             </button>
-          )}
+          ))}
         </div>
       )}
     </section>

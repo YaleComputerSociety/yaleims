@@ -74,8 +74,10 @@ export const withdraw = (seasonId: string, matchId: string) =>
 export interface RosterSheet {
   /** The sides (college ids) the caller manages. */
   collegeIds: string[];
-  /** A supervisor: takes attendance, any time; otherwise a captain, until the start. */
+  /** A supervisor: confirms who came (attendance), takes players off or puts them back, any time. */
   supervisor: boolean;
+  /** The sides the caller captains: pre-confirm, take off and add there, until the start (a supervisor may captain too). */
+  captainOf: string[];
   /**
    * Each entry with the player's identity (their NetID tells same-named
    * players apart; null: none recorded yet, or a placeholder "netid-<netid>",

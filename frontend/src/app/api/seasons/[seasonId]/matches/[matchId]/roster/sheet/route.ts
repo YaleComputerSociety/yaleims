@@ -13,7 +13,8 @@ type Params = { seasonId: string; matchId: string };
 
 /**
  * The sheet captains and supervisors work on: every entry on the sides the
- * caller manages (both for a supervisor; a captain's own college), taken-off
+ * caller manages (both for a supervisor; a captain's own college) and which
+ * of them they captain (a supervisor may captain one too), taken-off
  * players too, with their ids and identities (emails for admins), and
  * whether they have signed in and have a college this season, and who
  * made the captain's call: a captain by name; a supervisor by name for
@@ -25,8 +26,9 @@ export const GET = route<Params>(async (req, { params }) => {
   const match = await getMatch(seasonId, matchId);
   if (!match) throw new ApiError("not-found", "No such game this season.");
   const supervisor = await can.takeAttendance(viewer);
-  const managed = await Promise.all(match.collegeIds.map((c) => can.manageRoster(viewer, c, match.sportId)));
-  const collegeIds = match.collegeIds.filter((_, i) => managed[i]);
+  const captained = await Promise.all(match.collegeIds.map((c) => can.prepareRoster(viewer, c, match.sportId)));
+  const captainOf = match.collegeIds.filter((_, i) => captained[i]);
+  const collegeIds = supervisor ? match.collegeIds : captainOf;
   if (collegeIds.length === 0) throw new ApiError("forbidden", "You don't have permission to do this.");
 
   const entries = (await listRoster(seasonId, matchId)).filter((e) => collegeIds.includes(e.collegeId));
@@ -56,5 +58,5 @@ export const GET = route<Params>(async (req, { params }) => {
       captainCall: callOf(e),
     };
   });
-  return ok({ collegeIds, supervisor, items, total: items.length } satisfies RosterSheet);
+  return ok({ collegeIds, supervisor, captainOf, items, total: items.length } satisfies RosterSheet);
 });
