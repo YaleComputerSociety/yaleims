@@ -4,8 +4,9 @@
 // that counts), takes players off or puts them back, and adds walk-ins, at
 // any time. One person may be both. Who may act on which side is the route's
 // check (server/auth.ts can.prepareRoster, can.takeAttendance), read again in
-// an add's transaction (rosterRolesIn); the deadlines are here. A
-// supervisor's change after the game's day (Eastern) is audit-logged (R5).
+// an add's transaction (rosterRolesIn); the deadlines are here. Every
+// take-off and put-back is audit-logged (C22), a supervisor's other changes
+// after the game's day (Eastern) too (R5).
 import "server-only";
 import { FieldValue, type Transaction, type WithFieldValue } from "firebase-admin/firestore";
 import { ApiError } from "@/lib/api/core";
@@ -42,15 +43,16 @@ const asCaptain = (by: SheetEditor, match: MatchDoc, now: Date) => by.captain &&
 
 const started = (match: MatchDoc, now: Date) => match.startsAt.toMillis() <= now.getTime();
 
-/** A supervisor's change on a later day than the game's is logged (R5). */
-function logIfLate(
+/** Logs a change that takes a player off or puts them back, by anyone, whenever (C22); a supervisor's other changes on a later day than the game's (R5). */
+function logChange(
   tx: Transaction,
   by: SheetEditor,
   match: MatchDoc,
   now: Date,
+  offOrBack: boolean,
   entry: Parameters<typeof logAction>[2]
 ): void {
-  if (by.supervisor && easternDate(now) > easternDate(match.startsAt.toDate())) logAction(tx, match.seasonId, entry);
+  if (offOrBack || (by.supervisor && easternDate(now) > easternDate(match.startsAt.toDate()))) logAction(tx, match.seasonId, entry);
 }
 
 // ── Changing an entry ──────────────────────────────────────────────────────
@@ -62,12 +64,14 @@ export interface EntryChange {
   present?: boolean;
 }
 
-export type ChangeResult = "ok" | "no-match" | "no-entry" | "cancelled" | "started" | "captains-only" | "taken-off";
+export type ChangeResult = "ok" | "no-match" | "no-entry" | "cancelled" | "started" | "captains-only" | "taken-off" | "supervisor-confirmed";
 
 /**
  * Changes the captain's call or the attendance of one player on a game. A
- * player taken off isn't marked present ("taken-off"): put back first. A
- * cancelled game's roster stays as it was, in case it is restored (C19).
+ * player taken off isn't marked present or pre-confirmed ("taken-off"): put
+ * back first. Once a supervisor confirmed a player, only a supervisor changes
+ * their call (C20). A cancelled game's roster stays as it was, in case it is
+ * restored (C19).
  */
 export async function changeEntry(
   seasonId: string,
@@ -86,12 +90,14 @@ export async function changeEntry(
     if (!entry) return "no-entry";
     if (match.status === "cancelled") return "cancelled";
     if (!by.supervisor && started(match, now)) return "started";
+    if (!by.supervisor && entry.present === true && change.captainStatus !== undefined) return "supervisor-confirmed";
     // Pre-confirming, or taking a pre-confirmation back: the captains', until the start.
     const preConfirming = change.captainStatus === "confirmed" || (change.captainStatus === null && entry.captainStatus === "confirmed");
     if (preConfirming && !by.captain) return "captains-only";
     if (preConfirming && !asCaptain(by, match, now)) return "started";
     const offAfter = change.captainStatus === undefined ? entry.captainStatus === "removed" : change.captainStatus === "removed";
     if (change.present === true && offAfter) return "taken-off";
+    if (change.captainStatus === "confirmed" && entry.captainStatus === "removed") return "taken-off";
 
     tx.update(entryRef, {
       ...(change.captainStatus !== undefined
@@ -101,7 +107,8 @@ export async function changeEntry(
         ? { present: change.present, presentBy: by.actor.userId, presentAt: FieldValue.serverTimestamp() }
         : {}),
     });
-    logIfLate(tx, by, match, now, {
+    const offOrBack = change.captainStatus === "removed" || (change.captainStatus === null && entry.captainStatus === "removed");
+    logChange(tx, by, match, now, offOrBack, {
       actor: by.actor,
       action: "changeRosterEntry",
       params: { matchId, playerId, ...change },
@@ -222,7 +229,7 @@ export async function addToGame(
     } else {
       tx.create(entryRef, { ...newEntry(game, matchId, playerId, side, name, captainAdds, actor), ...call });
     }
-    logIfLate(tx, by, game, now, {
+    logChange(tx, by, game, now, entry?.captainStatus === "removed", {
       actor,
       action: "addRosterPlayer",
       params: { matchId, playerId, side },

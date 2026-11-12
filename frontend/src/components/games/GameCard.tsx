@@ -313,8 +313,8 @@ const GameCard: React.FC<GameCardProps> = ({
             <MyEntryStatus mine={mine} started={isPastMatch} />
 
             {/* Sign-up button */}
-            {/* Withdrawing is open to whoever is on it, whatever their college. */}
-            {viewer && status === "upcoming" && !isPastMatch && !isCancelled && (isUserTeam || isSignedUp) && (
+            {/* Withdrawing is open to whoever is on it, whatever their college, until a supervisor confirms them (C21). */}
+            {viewer && status === "upcoming" && !isPastMatch && !isCancelled && (isUserTeam || isSignedUp) && !mine?.present && (
               signUpStatusLoading ? (
                 <div
                   className="h-6 w-[74px] rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"

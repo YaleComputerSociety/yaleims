@@ -28,7 +28,8 @@ async function editorOf(viewer: Viewer, collegeId: string, sportId: string): Pro
  * removed, or null to take it back) until the start; attendance (supervisors,
  * any time, before the start too). Supervisors may take a player off or put
  * them back, not pre-confirm or take back a captain's pre-confirmation.
- * Putting a player back restores what taking them off replaced (C12).
+ * Putting a player back restores what taking them off replaced (C12). Once a
+ * supervisor confirmed a player, only a supervisor changes their call (C20).
  */
 export const PATCH = route<Params>(async (req, { params }) => {
   const { seasonId, matchId, playerId } = await params;
@@ -46,6 +47,7 @@ export const PATCH = route<Params>(async (req, { params }) => {
   if (result === "no-entry") throw new ApiError("not-found", "They aren't on this game.");
   if (result === "cancelled") throw new ApiError("conflict", "This game is cancelled.");
   if (result === "started") throw STARTED;
+  if (result === "supervisor-confirmed") throw new ApiError("conflict", "A supervisor already confirmed them: only a supervisor can change that.");
   if (result === "taken-off") throw new ApiError("conflict", "They're taken off this game: put them back first.");
   if (result === "captains-only") throw new ApiError("forbidden", "Only the team's captains pre-confirm players; supervisors confirm who came.");
   return noContent();
@@ -53,8 +55,8 @@ export const PATCH = route<Params>(async (req, { params }) => {
 
 /**
  * Puts a season player on a side of the game (body { collegeId }; without
- * one, their college's): a captain's addition is confirmed (until the
- * start), a supervisor's present. Someone unassigned this season goes on
+ * one, their college's): a captain's addition is pre-confirmed (until the
+ * start), a supervisor's confirmed (present). Someone unassigned this season goes on
  * any side the caller manages, for this game only (account plan, 4a).
  */
 export const PUT = route<Params>(async (req, { params }) => {

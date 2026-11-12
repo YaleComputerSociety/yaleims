@@ -4,7 +4,8 @@
 // starts, which only prepares the roster; a supervisor confirms who came (✓✓,
 // one tap per player, any time: the final word), takes players off or puts
 // them back and adds walk-ins; someone who is both gets both on the sides
-// they captain. Levels and their words: lib/rosterLevels.ts. Both add
+// they captain. A player the supervisor confirmed is the supervisor's to
+// change (C20). Levels and their words: lib/rosterLevels.ts. Both add
 // players by NetID too (U10). The server decides who manages which side
 // (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -237,7 +238,7 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
                 Pre-confirm
               </button>
             )}
-            {captain && entry.captainStatus === "confirmed" && (
+            {captain && entry.captainStatus === "confirmed" && (supervisor || !entry.present) && (
               <button
                 className="text-xs text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1"
                 title="Take back the pre-confirmation"
@@ -247,7 +248,7 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
                 <FaCheck /> pre-confirmed
               </button>
             )}
-            {editing && (
+            {(supervisor || (captain && !entry.present)) && (
               <button
                 className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
                 aria-label={`Remove ${entry.name}`}

@@ -1,6 +1,7 @@
 // Game sign-ups (D34): a player with a college this season signs up for its
 // games, until they start; withdrawing (same deadline; their own entry,
-// whatever their college) deletes their roster entry. A captain's removal
+// whatever their college) deletes their roster entry, unless a supervisor
+// already confirmed them (C21). Neither on a cancelled game (C23). A captain's removal
 // stays on the roster ("removed"), and the player can't sign up again; only
 // a captain or supervisor can add them back. An entry on the other side
 // (placed there while they were unassigned, or before an admin changed their
@@ -85,7 +86,7 @@ export async function signUp(
   });
 }
 
-export type WithdrawResult = "ok" | "no-match" | "started" | "not-signed-up" | "removed";
+export type WithdrawResult = "ok" | "no-match" | "started" | "cancelled" | "not-signed-up" | "removed" | "confirmed";
 
 /** Takes the player off the game's roster. */
 export async function withdraw(
@@ -103,6 +104,8 @@ export async function withdraw(
     if (!entry) return "not-signed-up";
     if (entry.captainStatus === "removed") return "removed";
     if (match.startsAt.toMillis() <= now.getTime()) return "started";
+    if (match.status === "cancelled") return "cancelled";
+    if (entry.present === true) return "confirmed";
     tx.delete(entryRef);
     return "ok";
   });

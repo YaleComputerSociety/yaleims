@@ -88,11 +88,19 @@ describe("co-captains", () => {
 
     // Supervisors confirm who came, before the start too, but never pre-confirm (the captains' call), nor take a pre-confirmation back.
     expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: supervisor() }))).toMatchObject({ status: 403, body: { error: { message: "Only the team's captains pre-confirm players; supervisors confirm who came." } } });
-    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
+    // Taken off: put back before pre-confirming (putting back restores the pre-confirmation).
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(409);
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: sessionFor(captain) })).status).toBe(204);
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: "confirmed", captainCall: { by: "captain", name: await nameOf(captain) } });
     expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(403);
     expect((game.data() as MatchDoc).startsAt.toMillis()).toBeGreaterThan(Date.now());
     expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
     expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).get()).data()).toMatchObject({ captainStatus: "confirmed", present: true });
+    // Confirmed by the supervisor: theirs to change, not the captains' (C20); the player can't withdraw (C21).
+    for (const c of [{ captainStatus: "removed" }, { captainStatus: null }]) {
+      expect(await api("PATCH", entry, c, { session: sessionFor(captain) })).toMatchObject({ status: 409, body: { error: { message: "A supervisor already confirmed them: only a supervisor can change that." } } });
+    }
+    expect(await api("DELETE", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).toMatchObject({ status: 409, body: { error: { message: "The supervisor already confirmed you: ask them to take you off." } } });
     // A supervisor's take-off: by role for captains, by name for staff; no caller ids on the sheet or in the player's own entry.
     // Taking off clears the presence (a player taken off didn't play) and keeps what it replaced.
     const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
@@ -115,6 +123,11 @@ describe("co-captains", () => {
     const restored = (await stored.get()).data()!;
     expect(restored).toMatchObject({ captainStatus: "confirmed", captainBy: captain, captainByRole: "captain", present: true });
     expect(restored).not.toHaveProperty("beforeTakeOff");
+    // Every take-off and put-back is audit-logged with who did it, whatever the day (C22).
+    const logged = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "changeRosterEntry").where("params.matchId", "==", game.id).get()).docs
+      .filter((d) => d.data().params.playerId === signedUp)
+      .map((d) => `${d.data().actor.userId} ${d.data().params.captainStatus}`);
+    expect(logged.sort()).toEqual([`${coCaptain} removed`, `${captain} null`, `${people.supervisor} removed`, `${people.supervisor} null`].sort());
     expect(await callOf(coCaptain)).toMatchObject({ captainCall: { by: "captain", name: await nameOf(captain) } });
     // A call from before the role was stored: a current captain's is theirs, anyone else's a supervisor's.
     await stored.update({ captainByRole: FieldValue.delete(), captainBy: coCaptain });
@@ -350,6 +363,7 @@ describe("cancelling and deleting games", () => {
 
     expect((await api("PATCH", path, { status: "cancelled" }, { session: supervisor() })).status).toBe(204);
     expect(await api("PATCH", entry, { present: false }, { session: supervisor() })).toMatchObject({ status: 409, body: { error: { message: "This game is cancelled." } } });
+    expect(await api("DELETE", `${path}/roster/me`, undefined, { session: sessionFor(signedUp) })).toMatchObject({ status: 409, body: { error: { message: "This game is cancelled." } } });
     expect((await mine()).present).toBe(false);
     expect((await api("GET", `${path}/roster`, undefined, { session: sessionFor(signedUp) })).body).toMatchObject({ items: [], total: 0 });
     expect((await db.doc(`seasons/${current}/matches/${id}/roster/${signedUp}`).get()).data()).toMatchObject({ present: true });

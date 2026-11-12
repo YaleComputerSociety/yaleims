@@ -16,7 +16,7 @@ const SIGN_UP_REFUSALS: Record<Exclude<SignUpResult, "ok" | "already-signed-up">
   "other-college": new ApiError("forbidden", "You can only sign up for your college's games."),
   started: new ApiError("conflict", "Sign-up is closed: the game has started."),
   cancelled: new ApiError("conflict", "This game is cancelled."),
-  removed: new ApiError("forbidden", "Your captain took you off this game."),
+  removed: new ApiError("forbidden", "You were taken off this game: only a captain or supervisor can put you back."),
 };
 
 /**
@@ -42,10 +42,12 @@ export const PUT = route<Params>(async (req, { params }) => {
 const WITHDRAW_REFUSALS: Record<Exclude<WithdrawResult, "ok" | "not-signed-up">, ApiError> = {
   "no-match": new ApiError("not-found", "No such game this season."),
   started: new ApiError("conflict", "Withdrawing is closed: the game has started."),
-  removed: new ApiError("conflict", "Your captain already took you off this game."),
+  removed: new ApiError("conflict", "You were already taken off this game."),
+  cancelled: new ApiError("conflict", "This game is cancelled."),
+  confirmed: new ApiError("conflict", "The supervisor already confirmed you: ask them to take you off."),
 };
 
-/** Takes the caller off the game until it starts (D34), whatever their college; not on it is fine. */
+/** Takes the caller off the game until it starts (D34), whatever their college, unless a supervisor confirmed them; not on it is fine. */
 export const DELETE = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
   const viewer = await requireViewer();
