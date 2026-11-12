@@ -304,7 +304,12 @@ export interface RosterEntryDoc {
   presentAt: StoredTimestamp | null;
   /** The admin who confirmed this attendance though lib/attendance.ts puts it under review; absent: none. */
   attendanceConfirmedBy?: string | null;
+  /** While taken off: the call and presence the take-off replaced, which putting them back restores (C12); absent otherwise. */
+  beforeTakeOff?: TakenOffFrom | null;
 }
+
+/** What a roster entry held before it was taken off. */
+export type TakenOffFrom = Pick<RosterEntryDoc, "captainStatus" | "captainBy" | "captainByRole" | "captainAt" | "present" | "presentBy" | "presentAt">;
 
 export type ScoreReportStatus = "open" | "resolved";
 

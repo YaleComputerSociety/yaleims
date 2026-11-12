@@ -28,6 +28,7 @@ async function editorOf(viewer: Viewer, collegeId: string, sportId: string): Pro
  * removed, or null to take it back) until the start; attendance (supervisors,
  * any time, before the start too). Supervisors may take a player off or put
  * them back, not pre-confirm or take back a captain's pre-confirmation.
+ * Putting a player back restores what taking them off replaced (C12).
  */
 export const PATCH = route<Params>(async (req, { params }) => {
   const { seasonId, matchId, playerId } = await params;
@@ -44,6 +45,7 @@ export const PATCH = route<Params>(async (req, { params }) => {
   if (result === "no-match") throw NO_MATCH;
   if (result === "no-entry") throw new ApiError("not-found", "They aren't on this game.");
   if (result === "started") throw STARTED;
+  if (result === "taken-off") throw new ApiError("conflict", "They're taken off this game: put them back first.");
   if (result === "captains-only") throw new ApiError("forbidden", "Only the team's captains pre-confirm players; supervisors confirm who came.");
   return noContent();
 });

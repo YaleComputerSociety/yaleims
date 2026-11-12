@@ -403,11 +403,11 @@ async function foldSeason(tx: Transaction, seasonId: string, from: string, to: s
  */
 function mergeEntries(kept: RosterEntryDoc | undefined, moved: RosterEntryDoc): RosterEntryDoc {
   if (!kept) return moved;
-  const { present, presentBy, presentAt, captainStatus, captainBy, captainByRole = null, captainAt } = moved;
+  const { present, presentBy, presentAt, captainStatus, captainBy, captainByRole = null, captainAt, beforeTakeOff = null } = moved;
   return {
     ...kept,
     ...(present && !kept.present ? { present, presentBy, presentAt } : {}),
-    ...(kept.captainStatus === null ? { captainStatus, captainBy, captainByRole, captainAt } : {}),
+    ...(kept.captainStatus === null ? { captainStatus, captainBy, captainByRole, captainAt, beforeTakeOff } : {}),
   };
 }
 

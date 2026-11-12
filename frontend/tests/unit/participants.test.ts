@@ -26,5 +26,8 @@ describe("shownEntries", () => {
     expect(shownEntries(before).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded", "GH signed up", "GH confirmed", "GH never recorded"]);
     const taking = [...side("BF"), { id: "BF present", collegeId: "BF", captainStatus: null, present: true }, ...side("GH")];
     expect(shownEntries(taking).map((e) => e.id)).toEqual(["BF present", "GH signed up", "GH confirmed", "GH never recorded"]);
+    // Taken off: never listed, nor does an old presence of theirs start attendance on the side (C12).
+    const takenOff = [...side("BF"), { id: "BF off, present", collegeId: "BF", captainStatus: "removed" as const, present: true }];
+    expect(shownEntries(takenOff).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded"]);
   });
 });

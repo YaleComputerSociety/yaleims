@@ -1,6 +1,6 @@
 import { myMatchesQuerySchema, type MyMatchList } from "@/lib/api/me";
 import { toMatch } from "@/lib/api/matches";
-import { assignmentsOf, disputed } from "@/lib/attendance";
+import { assignmentsOf, countsAsAttended, disputed } from "@/lib/attendance";
 import { requireViewer } from "@/server/auth";
 import { getMatches } from "@/server/data/matches";
 import { getPlayer } from "@/server/data/players";
@@ -17,7 +17,7 @@ export const GET = route(async (req) => {
   const viewer = await requireViewer();
   const { seasonId, upcoming } = readQuery(req, myMatchesQuerySchema);
   const [entries, player] = await Promise.all([listPlayerEntries(seasonId, viewer.userId), getPlayer(seasonId, viewer.userId)]);
-  const attended = entries.filter((e) => e.present === true);
+  const attended = entries.filter(countsAsAttended);
   const review = disputed(
     player ? assignmentsOf(player) : [],
     attended.map((e) => ({ collegeId: e.collegeId, startsAt: e.startsAt.toMillis(), adminConfirmed: !!e.attendanceConfirmedBy }))

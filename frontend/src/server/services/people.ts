@@ -8,7 +8,7 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { toOwnReview } from "@/lib/api/reviews";
-import { assignmentsOf, disputed } from "@/lib/attendance";
+import { assignmentsOf, countsAsAttended, disputed } from "@/lib/attendance";
 import type { AttendanceFix, Person, PersonSummary, ProfileFix } from "@/lib/api/people";
 import { toJson } from "@/lib/api/core";
 import type { PlayerDoc, RosterEntryDoc, UserDoc, WithId } from "@/types/firestore";
@@ -122,7 +122,7 @@ export async function personView(userId: string, seasonId: string): Promise<Pers
 
 /** The games whose recorded attendance is under review (lib/attendance.ts), by match id. */
 function underReview(player: PlayerDoc | undefined, entries: RosterEntryDoc[]): Set<string> {
-  const attended = entries.filter((e) => e.present === true);
+  const attended = entries.filter(countsAsAttended);
   const flags = disputed(
     player ? assignmentsOf(player) : [],
     attended.map((e) => ({ collegeId: e.collegeId, startsAt: e.startsAt.toMillis(), adminConfirmed: !!e.attendanceConfirmedBy }))

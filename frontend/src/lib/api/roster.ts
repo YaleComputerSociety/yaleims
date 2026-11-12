@@ -10,9 +10,15 @@ import { request, toJson, url, type Json } from "./core";
 import type { Identity } from "./users";
 
 /** An entry for its player or on the sheet: without who made the calls (supervisors stay anonymous; the sheet names captains). */
-export type RosterEntry = Json<Omit<RosterEntryDoc, "captainBy" | "captainByRole" | "presentBy">>;
+export type RosterEntry = Json<Omit<RosterEntryDoc, "captainBy" | "captainByRole" | "presentBy" | "beforeTakeOff">>;
 
-export function toOwnEntry({ captainBy: _captainBy, captainByRole: _captainByRole, presentBy: _presentBy, ...entry }: RosterEntryDoc): RosterEntry {
+export function toOwnEntry({
+  captainBy: _captainBy,
+  captainByRole: _captainByRole,
+  presentBy: _presentBy,
+  beforeTakeOff: _beforeTakeOff,
+  ...entry
+}: RosterEntryDoc): RosterEntry {
   return toJson(entry);
 }
 
@@ -24,7 +30,7 @@ export interface CaptainCall {
 
 /** An entry as the game's participants are shown: college and status, no ids (the name and NetID come with Identity). */
 export type PublicRosterEntry = Json<
-  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "captainByRole" | "presentBy" | "attendanceConfirmedBy">
+  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "captainByRole" | "presentBy" | "attendanceConfirmedBy" | "beforeTakeOff">
 >;
 
 export function toPublicEntry({
@@ -34,6 +40,7 @@ export function toPublicEntry({
   captainByRole: _captainByRole,
   presentBy: _presentBy,
   attendanceConfirmedBy: _attendanceConfirmedBy,
+  beforeTakeOff: _beforeTakeOff,
   ...entry
 }: RosterEntryDoc): PublicRosterEntry {
   return toJson(entry);

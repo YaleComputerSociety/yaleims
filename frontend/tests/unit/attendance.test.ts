@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { assignmentsOf, disputed, expectedCollege, type Assignment, type Attended } from "@/lib/attendance";
+import { assignmentsOf, countsAsAttended, disputed, expectedCollege, type Assignment, type Attended } from "@/lib/attendance";
 
 const at = (ms: number) => ({ seconds: ms / 1000, nanoseconds: 0, toDate: () => new Date(ms), toMillis: () => ms });
 const game = (collegeId: string, startsAt: number, adminConfirmed = false): Attended => ({ collegeId, startsAt, adminConfirmed });
+
+describe("countsAsAttended", () => {
+  it("counts a supervisor's presence, not one taken off the game", () => {
+    expect(countsAsAttended({ present: true, captainStatus: null })).toBe(true);
+    expect(countsAsAttended({ present: true, captainStatus: "confirmed" })).toBe(true);
+    expect(countsAsAttended({ present: true, captainStatus: "removed" })).toBe(false);
+    expect(countsAsAttended({ present: false, captainStatus: "confirmed" })).toBe(false);
+    expect(countsAsAttended({ present: null, captainStatus: null })).toBe(false);
+  });
+});
 
 describe("assignmentsOf", () => {
   it("reads the history, or a legacy college as assigned at join", () => {

@@ -93,17 +93,30 @@ describe("co-captains", () => {
     expect((game.data() as MatchDoc).startsAt.toMillis()).toBeGreaterThan(Date.now());
     expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
     expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).get()).data()).toMatchObject({ captainStatus: "confirmed", present: true });
-    // A supervisor's call (taking off; putting back stays theirs too): by role for captains, by name for staff; no caller ids on the sheet or in the player's own entry.
-    expect((await api("PATCH", entry, { captainStatus: "removed", present: true }, { session: supervisor() })).status).toBe(204);
+    // A supervisor's take-off: by role for captains, by name for staff; no caller ids on the sheet or in the player's own entry.
+    // Taking off clears the presence (a player taken off didn't play) and keeps what it replaced.
+    const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
+    expect((await api("PATCH", entry, { captainStatus: "removed", present: true }, { session: supervisor() })).status).toBe(409);
+    expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: supervisor() })).status).toBe(204);
+    expect((await stored.get()).data()).toMatchObject({
+      captainStatus: "removed", captainByRole: "supervisor", present: false,
+      beforeTakeOff: { captainStatus: "confirmed", captainBy: captain, captainByRole: "captain", present: true, presentBy: people.supervisor },
+    });
     const call = await callOf(captain);
     expect(call.captainCall).toEqual({ by: "supervisor", name: null });
     expect((await callOf(people.supervisor)).captainCall).toEqual({ by: "supervisor", name: await nameOf(people.supervisor) });
-    for (const field of ["captainBy", "captainByRole", "presentBy"]) expect(call).not.toHaveProperty(field);
+    for (const field of ["captainBy", "captainByRole", "presentBy", "beforeTakeOff"]) expect(call).not.toHaveProperty(field);
     const own = await api("GET", path, undefined, { session: sessionFor(signedUp) });
-    expect(own.body.mine).toMatchObject({ captainStatus: "removed", present: true });
-    for (const field of ["captainBy", "captainByRole", "presentBy"]) expect(own.body.mine).not.toHaveProperty(field);
+    expect(own.body.mine).toMatchObject({ captainStatus: "removed", present: false });
+    for (const field of ["captainBy", "captainByRole", "presentBy", "beforeTakeOff"]) expect(own.body.mine).not.toHaveProperty(field);
+    // Taken off: not marked present until put back; putting back restores the captain's pre-confirmation and the presence.
+    expect((await api("PATCH", entry, { present: true }, { session: supervisor() }))).toMatchObject({ status: 409, body: { error: { message: "They're taken off this game: put them back first." } } });
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(204);
+    const restored = (await stored.get()).data()!;
+    expect(restored).toMatchObject({ captainStatus: "confirmed", captainBy: captain, captainByRole: "captain", present: true });
+    expect(restored).not.toHaveProperty("beforeTakeOff");
+    expect(await callOf(coCaptain)).toMatchObject({ captainCall: { by: "captain", name: await nameOf(captain) } });
     // A call from before the role was stored: a current captain's is theirs, anyone else's a supervisor's.
-    const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
     await stored.update({ captainByRole: FieldValue.delete(), captainBy: coCaptain });
     expect((await callOf(captain)).captainCall).toEqual({ by: "captain", name: await nameOf(coCaptain) });
     await stored.update({ captainBy: people.supervisor });
