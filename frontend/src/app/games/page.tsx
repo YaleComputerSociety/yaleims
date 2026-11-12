@@ -21,6 +21,7 @@ import { MdSportsScore, MdSchedule, MdErrorOutline } from "react-icons/md";
 import { BsCollection } from "react-icons/bs";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import { signInUrl } from "@/lib/api/auth";
+import type { RosterEntry } from "@/lib/api/roster";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 interface TabConfig {
@@ -189,10 +190,10 @@ const GamesPage: React.FC = () => {
     };
   }, [viewer, selectedSeason]);
 
-  const handleSignUpStatusChange = useCallback((matchId: string, signed: boolean) => {
+  const handleSignUpStatusChange = useCallback((matchId: string, entry: RosterEntry | null) => {
     setMyEntries((prev) => {
       const next = new Map(prev);
-      if (signed) next.set(matchId, { captainStatus: null, present: false, underReview: false });
+      if (entry) next.set(matchId, { captainStatus: entry.captainStatus, present: entry.present === true, underReview: false });
       else next.delete(matchId);
       return next;
     });

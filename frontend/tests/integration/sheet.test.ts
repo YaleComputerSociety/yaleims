@@ -72,7 +72,7 @@ describe("co-captains", () => {
     const { captain, collegeId, game, path } = await captainWithGame();
     const team = db.doc(`seasons/${current}/colleges/${collegeId}/teams/${(game.data() as MatchDoc).sportId}`);
     const signedUp = await playerNotOn(game.id, collegeId);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
     const coCaptain = await playerNotOn(game.id, collegeId, [captain]); // not the one just signed up
     await team.update({ captainIds: FieldValue.arrayUnion(coCaptain) });
     const entry = `${path}/${encodeURIComponent(signedUp)}`;
@@ -122,8 +122,8 @@ describe("co-captains", () => {
     await stored.update({ captainBy: people.supervisor });
     expect((await callOf(captain)).captainCall).toEqual({ by: "supervisor", name: null });
 
-    // A captain who signs up for their team's game is confirmed at once, by themselves.
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(coCaptain) })).status).toBe(204);
+    // A captain who signs up for their team's game is pre-confirmed at once, by themselves; the answer says so.
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(coCaptain) }))).toMatchObject({ status: 200, body: { captainStatus: "confirmed" } });
     const self = (await api("GET", `${path}/sheet`, undefined, { session: sessionFor(captain) })).body.items.find((e: { playerId: string }) => e.playerId === coCaptain);
     expect(self).toMatchObject({ addedBy: "self", captainStatus: "confirmed", captainCall: { by: "captain", name: await nameOf(coCaptain) } });
     await db.doc(`seasons/${current}/matches/${game.id}/roster/${coCaptain}`).delete();
@@ -142,7 +142,7 @@ describe("a supervisor who captains the side", () => {
     expect((await api("GET", `${path}/sheet`, undefined, as)).body).toMatchObject({ supervisor: true, captainOf: [collegeId] });
 
     const signedUp = await playerNotOn(game.id, collegeId);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
     const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
     expect((await api("PATCH", `${path}/${encodeURIComponent(signedUp)}`, { captainStatus: "confirmed" }, as)).status).toBe(204);
     expect((await stored.get()).data()).toMatchObject({ captainStatus: "confirmed", captainBy: people.supervisor, captainByRole: "captain", present: false });
@@ -169,7 +169,7 @@ describe("the captain's side", () => {
   it("confirms, removes and takes back the call on their own side until the start; not attendance", async () => {
     const { captain, collegeId, game, path } = await captainWithGame();
     const signedUp = await playerNotOn(game.id, collegeId);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
     const entry = `${path}/${encodeURIComponent(signedUp)}`;
     const as = { session: sessionFor(captain) };
 
@@ -203,7 +203,7 @@ describe("the captain's side", () => {
   it("can't change the other side, or a game that has started", async () => {
     const { captain, other, game, path } = await captainWithGame();
     const opponent = await playerNotOn(game.id, other);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(opponent) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(opponent) })).status).toBe(200);
     expect((await api("PATCH", `${path}/${encodeURIComponent(opponent)}`, { captainStatus: "removed" }, { session: sessionFor(captain) })).status).toBe(403);
 
     // A started game of the captain's team: only a supervisor changes it.
@@ -335,7 +335,7 @@ describe("cancelling and deleting games", () => {
     expect((await db.doc(`seasons/${current}/matches/${id}`).get()).data()!.status).toBe("cancelled");
     expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(409);
     expect((await api("PATCH", path, { status: "scheduled" }, { session: supervisor() })).status).toBe(204);
-    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(204);
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(200);
   });
 
   it("keeps a cancelled game's roster unchanged and its attendance uncounted, and shows nobody (C19)", async () => {
@@ -344,7 +344,7 @@ describe("cancelling and deleting games", () => {
     const signedUp = player(0, 6);
     const entry = `${path}/roster/${encodeURIComponent(signedUp)}`;
     const mine = async () => (await api("GET", `/api/me/matches?seasonId=${current}`, undefined, { session: sessionFor(signedUp) })).body.items.find((m: { id: string }) => m.id === id).mine;
-    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
     expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
     expect((await mine()).present).toBe(true);
 
@@ -363,7 +363,7 @@ describe("cancelling and deleting games", () => {
   it("deletes an unscored game with its roster; not a scored game or a bracket's", async () => {
     const id = await newGame();
     const path = `/api/seasons/${current}/matches/${id}`;
-    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(204);
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(200);
     expect((await api("DELETE", path, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(403);
     expect((await api("DELETE", path, undefined, { session: supervisor() })).status).toBe(204);
     expect((await db.doc(`seasons/${current}/matches/${id}`).get()).exists).toBe(false);
@@ -400,7 +400,7 @@ describe("reads for the game-day screens", () => {
   it("GET /api/me/matches: each game with the caller's captain call and attendance", async () => {
     const { captain, collegeId, game } = await captainWithGame();
     const me = await playerNotOn(game.id, collegeId);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(me) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(me) })).status).toBe(200);
     await api("PATCH", `/api/seasons/${current}/matches/${game.id}/roster/${encodeURIComponent(me)}`, { captainStatus: "confirmed" }, { session: sessionFor(captain) });
     const r = await api("GET", `/api/me/matches?seasonId=${current}&upcoming=true`, undefined, { session: sessionFor(me) });
     expect(r.body.items.find((m: { id: string }) => m.id === game.id)).toMatchObject({ mine: { captainStatus: "confirmed", present: false } });

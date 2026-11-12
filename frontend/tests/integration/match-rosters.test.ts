@@ -288,10 +288,10 @@ describe("rosters follow match participants", () => {
     const responses = await Promise.all(calls);
     const [signed, edited] = order === "roster first" ? responses : [responses[1], responses[0]];
     expect(edited.status).toBe(204);
-    expect([204, 403]).toContain(signed.status);
+    expect([200, 403]).toContain(signed.status);
     expect(await entries(id)).toEqual([]);
     expect(await game(id)).toMatchObject({ homeCollegeId: "MC", awayCollegeId: "BK" });
-    if (signed.status === 204) {
+    if (signed.status === 200) {
       const audit = await latestAudit("editMatch", id);
       expect(audit.before[paths.rosterEntry(current, id, email)]).toMatchObject({ collegeId: "BF", playerId: email });
     }
@@ -305,10 +305,10 @@ describe("rosters follow match participants", () => {
     const responses = await Promise.all(order === "roster first" ? [signup(), advance()] : [advance(), signup()]);
     const [signed, scored] = order === "roster first" ? responses : [responses[1], responses[0]];
     expect(scored.status).toBe(204);
-    expect([204, 403]).toContain(signed.status);
+    expect([200, 403]).toContain(signed.status);
     expect(await entries(next)).toEqual([]);
     expect(await game(next)).toMatchObject({ homeCollegeId: "ES", awayCollegeId: "BK" });
-    if (signed.status === 204) {
+    if (signed.status === 200) {
       const audit = await latestAudit("scoreMatch", source);
       expect(audit.before[paths.rosterEntry(current, next, email)]).toMatchObject({ collegeId: "MC", playerId: email });
     }

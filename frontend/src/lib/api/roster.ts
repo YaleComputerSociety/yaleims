@@ -64,9 +64,13 @@ export interface Roster {
 export const fetchRoster = (seasonId: string, matchId: string) =>
   request<Roster>("GET", url`/api/seasons/${seasonId}/matches/${matchId}/roster`);
 
-/** PUT …/roster/me: signs the caller up, on their college's side (already on it: fine). */
+/**
+ * PUT …/roster/me: signs the caller up, on their college's side (already on
+ * it: fine); their entry (a captain's is pre-confirmed; null: gone again at
+ * once, when the game's teams were just replaced).
+ */
 export const signUp = (seasonId: string, matchId: string) =>
-  request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/me`);
+  request<RosterEntry | null>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/me`);
 
 /** DELETE …/roster/me: takes the caller off (not on it: fine). */
 export const withdraw = (seasonId: string, matchId: string) =>

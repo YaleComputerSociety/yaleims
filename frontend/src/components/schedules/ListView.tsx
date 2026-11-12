@@ -9,6 +9,7 @@ import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signInUrl } from "@/lib/api/auth";
+import type { RosterEntry } from "@/lib/api/roster";
 
 interface ListViewProps {
   /** The current season's games, by start. */
@@ -59,10 +60,10 @@ const ListView: React.FC<ListViewProps> = ({ matches, topDate, setTopDate }) => 
     return eachDayOfInterval({ start, end });
   }, [matches]);
 
-  const handleStatusChange = useCallback((matchId: string, signed: boolean) => {
+  const handleStatusChange = useCallback((matchId: string, entry: RosterEntry | null) => {
     setMyEntries((prev) => {
       const next = new Map(prev);
-      if (signed) next.set(matchId, { captainStatus: null, present: false, underReview: false });
+      if (entry) next.set(matchId, { captainStatus: entry.captainStatus, present: entry.present === true, underReview: false });
       else next.delete(matchId);
       return next;
     });

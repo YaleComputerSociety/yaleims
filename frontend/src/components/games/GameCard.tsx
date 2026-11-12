@@ -5,7 +5,7 @@ import TournamentBadge from "@/components/ui/TournamentBadge";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { FaCircle, FaMapMarkerAlt } from "react-icons/fa";
-import { signUp, withdraw } from "@/lib/api/roster";
+import { signUp, withdraw, type RosterEntry } from "@/lib/api/roster";
 import type { Match } from "@/lib/api/matches";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
@@ -45,7 +45,8 @@ interface GameCardProps {
   /** The viewer's own entry, when they're on the game. */
   mine?: MyMatch["mine"];
   signUpStatusLoading?: boolean;
-  onStatusChange?: (matchId: string, signed: boolean) => void;
+  /** After a sign-up (their entry) or a withdrawal (null). */
+  onStatusChange?: (matchId: string, entry: RosterEntry | null) => void;
 }
 
 const GameCard: React.FC<GameCardProps> = ({
@@ -78,8 +79,12 @@ const GameCard: React.FC<GameCardProps> = ({
   const changeSignUp = async (signed: boolean) => {
     setSignUpLoading(true);
     try {
-      await (signed ? signUp : withdraw)(match.seasonId, match.id);
-      onStatusChange?.(match.id, signed);
+      if (signed) {
+        onStatusChange?.(match.id, await signUp(match.seasonId, match.id));
+      } else {
+        await withdraw(match.seasonId, match.id);
+        onStatusChange?.(match.id, null);
+      }
     } catch (err) {
       toast.error((err as Error).message);
     } finally {

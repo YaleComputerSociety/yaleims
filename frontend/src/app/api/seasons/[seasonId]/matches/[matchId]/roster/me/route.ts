@@ -1,7 +1,9 @@
 import { ApiError } from "@/lib/api/core";
+import { toOwnEntry } from "@/lib/api/roster";
 import { requireViewer } from "@/server/auth";
+import { getRosterEntry } from "@/server/data/roster";
 import { getCurrentSeasonId } from "@/server/data/seasons";
-import { noContent, route } from "@/server/http";
+import { noContent, ok, route } from "@/server/http";
 import { joinSeasonOnVisit } from "@/server/services/accounts";
 import { signUp, withdraw, type SignUpResult, type WithdrawResult } from "@/server/services/signups";
 
@@ -21,6 +23,7 @@ const SIGN_UP_REFUSALS: Record<Exclude<SignUpResult, "ok" | "already-signed-up">
  * Signs the caller up for the game, on their college's side, until it starts
  * (D34); already signed up is fine. A student who hasn't joined the current
  * season yet joins it first, with the college the directory gives (D30).
+ * Answers with their entry (a captain of the team is pre-confirmed at once, C15).
  */
 export const PUT = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -31,7 +34,9 @@ export const PUT = route<Params>(async (req, { params }) => {
     result = await signUp(seasonId, matchId, viewer.userId);
   }
   if (result !== "ok" && result !== "already-signed-up") throw SIGN_UP_REFUSALS[result];
-  return noContent();
+  // null: gone again at once (the game's teams were just replaced).
+  const entry = await getRosterEntry(seasonId, matchId, viewer.userId);
+  return ok(entry && toOwnEntry(entry));
 });
 
 const WITHDRAW_REFUSALS: Record<Exclude<WithdrawResult, "ok" | "not-signed-up">, ApiError> = {
