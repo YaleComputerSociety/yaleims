@@ -86,7 +86,7 @@ describe("co-captains", () => {
     expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: sessionFor(coCaptain) })).status).toBe(204);
     expect(await callOf(captain)).toMatchObject({ captainStatus: "removed", captainCall: { by: "captain", name: await nameOf(coCaptain) } });
 
-    // Supervisors take attendance, before the start too, but never confirm (the captains' call), nor take a confirmation back.
+    // Supervisors confirm who came, before the start too, but never pre-confirm (the captains' call), nor take a pre-confirmation back.
     expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: supervisor() }))).toMatchObject({ status: 403, body: { error: { message: "Only the team's captains pre-confirm players; supervisors confirm who came." } } });
     expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
     expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(403);
@@ -179,7 +179,7 @@ describe("the captain's side", () => {
     // Removed: the player can't sign up again or withdraw.
     expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(403);
     expect((await api("PATCH", entry, { captainStatus: null }, as)).status).toBe(204);
-    expect((await api("PATCH", entry, { present: true }, as))).toMatchObject({ status: 403, body: { error: { message: "Only a supervisor takes attendance." } } });
+    expect((await api("PATCH", entry, { present: true }, as))).toMatchObject({ status: 403, body: { error: { message: "Only a supervisor confirms who came." } } });
     expect((await api("PATCH", entry, {}, as)).status).toBe(400);
   });
 

@@ -39,7 +39,7 @@ export const PATCH = route<Params>(async (req, { params }) => {
   if (!entry) throw new ApiError("not-found", "They aren't on this game.");
   const editor = await editorOf(viewer, entry.collegeId, match.sportId);
   if (change.present !== undefined && !editor.supervisor) {
-    throw new ApiError("forbidden", "Only a supervisor takes attendance.");
+    throw new ApiError("forbidden", "Only a supervisor confirms who came.");
   }
   const result = await changeEntry(seasonId, matchId, playerId, change, editor);
   if (result === "no-match") throw NO_MATCH;

@@ -271,18 +271,18 @@ function GameRow({ game, sport, disabled, reason, onFix }: { game: PersonGame; s
         {date(game.startsAt)} · {sport} · {teams} · on {game.collegeId}
         <span className="block text-xs text-gray-500">
           {[
-            game.present === true ? "present" : game.present === false ? "not marked present" : "attendance never recorded",
-            game.captainStatus === "removed" ? "taken off by the captain" : null,
+            game.captainStatus === "removed" ? "taken off" : game.captainStatus === "confirmed" ? "pre-confirmed by captain" : null,
+            game.present === true ? "confirmed by supervisor" : game.present === false ? "not confirmed by a supervisor" : "attendance never recorded",
             game.cancelled ? "game cancelled: doesn't count" : null,
             game.underReview ? "under review" : null,
-            game.confirmedByAdmin ? "confirmed by an admin" : null,
+            game.confirmedByAdmin ? "approved by an admin" : null,
           ].filter(Boolean).join(" · ")}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
         {(game.underReview || game.confirmedByAdmin) && (
           <button className={button} disabled={disabled} onClick={() => onFix({ action: "confirm", confirmed: !game.confirmedByAdmin })}>
-            {game.confirmedByAdmin ? "Take back confirmation" : "Confirm attendance"}
+            {game.confirmedByAdmin ? "Take back approval" : "Approve attendance"}
           </button>
         )}
         <input className={input} placeholder="Right NetID" value={netid} onChange={(e) => setNetid(e.target.value)} aria-label="Right NetID" />

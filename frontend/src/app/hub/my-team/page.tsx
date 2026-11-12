@@ -1,8 +1,9 @@
 "use client";
 // My team (captains): the upcoming games of the team
-// they captain this season, with how many signed up and how many they
-// confirmed; tapping a game opens its roster to confirm, remove and add
-// players until it starts. Captains of two sports pick one.
+// they captain this season, with how many are on its roster, how many they
+// pre-confirmed and how many the supervisor confirmed; tapping a game opens
+// its roster to pre-confirm, take off and add players until it starts.
+// Captains of two sports pick one.
 import { useEffect, useMemo, useState } from "react";
 import PageHeading from "@/components/layout/PageHeading";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -72,8 +73,9 @@ function MyTeamPage() {
           )}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300 px-1">
-          Before each game, confirm who&apos;s playing, take off anyone who isn&apos;t and add teammates who didn&apos;t
-          sign up. It saves the supervisor time at the field.
+          Before each game, pre-confirm who&apos;s playing, take off anyone who isn&apos;t and add teammates who
+          didn&apos;t sign up. It saves the supervisor time at the field, where they confirm who actually played: only
+          that counts.
         </p>
 
         <section>

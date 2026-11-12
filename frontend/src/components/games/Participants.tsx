@@ -1,10 +1,11 @@
 "use client";
 // A game's participants, behind a "Participants" toggle so the game lists
 // stay short. The server decides who sees them and which (lib/participants.ts):
-// who is on each side, ✓ when a captain confirmed them; once a supervisor
-// takes attendance on a side, only those recorded present, ✓✓. Name first,
-// NetID (and, for admins, the email) in small print. Read when opened, and
-// again when `refreshKey` changes while open (the viewer signed up or withdrew).
+// who is on each side, ✓ when a captain pre-confirmed them; once a supervisor
+// confirms players on a side, only those, ✓✓ (lib/rosterLevels.ts). After the
+// start, a side nobody confirmed yet says so. Name first, NetID (and, for
+// admins, the email) in small print. Read when opened, and again when
+// `refreshKey` changes while open (the viewer signed up or withdrew).
 import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import PersonName from "@/components/ui/PersonName";
@@ -12,11 +13,11 @@ import { useSession } from "@/context/SessionContext";
 import type { Match } from "@/lib/api/matches";
 import { fetchRoster, type Roster } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
+import { LEGEND, LEVELS, levelOf } from "@/lib/rosterLevels";
 
 type Entry = Roster["items"][number];
 
-/** A player's mark: ✓✓ recorded present by a supervisor, ✓ confirmed by a captain, none: signed up. */
-const mark = (e: Entry) => (e.present ? "✓✓" : e.captainStatus === "confirmed" ? "✓" : "");
+const mark = (e: Entry) => LEVELS[levelOf(e)].mark;
 
 export default function Participants({ match, refreshKey }: { match: Match; refreshKey?: unknown }) {
   const { viewer } = useSession();
@@ -54,12 +55,14 @@ export default function Participants({ match, refreshKey }: { match: Match; refr
             <p>Only the two colleges&apos; players, people on this game and supervisors see who&apos;s playing.</p>
           ) : (
             <>
-              {roster.items.some(mark) && <p>✓ confirmed by a captain · ✓✓ present (recorded by a supervisor)</p>}
+              {roster.items.some(mark) && <p>{LEGEND}</p>}
               {match.collegeIds.map((collegeId) => {
                 const side = roster.items.filter((e) => e.collegeId === collegeId);
+                const unconfirmed = roster.started && side.length > 0 && !side.some((e) => e.present);
                 return (
                   <div key={collegeId}>
                     <span className="font-semibold text-black dark:text-gray-300">{collegeName(collegeId)}:</span>{" "}
+                    {unconfirmed && <span className="italic">(no supervisor has confirmed anyone yet) </span>}
                     {side.length === 0 ? (
                       <span>nobody yet</span>
                     ) : (

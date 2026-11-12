@@ -96,14 +96,19 @@ export default function Faq() {
             "Yes. Players can be added by NetID before they ever sign in. When you sign in with that NetID, those games appear in your Profile.",
         },
         {
+          question: "What do signed up, pre-confirmed (✓) and confirmed (✓✓) mean?",
+          answer:
+            "Signed up: you signed yourself up, or a captain added you. Pre-confirmed (✓): your captain expects you to play; it only prepares the roster so the supervisor doesn't have to look everyone up. Confirmed (✓✓): the supervisor at the game confirmed you played. That last one is final and the only one that counts. Sign-ups, withdrawals and captains' changes lock when the game starts; the supervisor can confirm or take players off before and after it.",
+        },
+        {
           question: "Which games count as games I played?",
           answer:
-            "Only games where a supervisor recorded you as present. A game can show as \"under review\" when your recorded games this season are for more than one college; an admin then confirms or removes it.",
+            "Only games where a supervisor confirmed you (✓✓), and not cancelled games. A game can show as \"under review\" when your confirmed games this season are for more than one college; an admin then approves or removes it.",
         },
         {
           question: "Who can see who is playing in a game?",
           answer:
-            "Open a game's Participants to see them. You see the participants of every game your college plays in, and of any game you're on, on both sides. Until the game starts it lists who signed up or was added; after the start, only the players a supervisor recorded as present. Supervisors and admins see every game's participants.",
+            "Open a game's Participants to see them. You see the participants of every game your college plays in, and of any game you're on, on both sides. Each side lists who signed up or was added until the supervisor confirms players there; from then on, only the players the supervisor confirmed. A cancelled game shows nobody. Supervisors and admins see every game's participants.",
         },
         {
           question: "Something about my name, college or games is wrong. How do I get it fixed?",

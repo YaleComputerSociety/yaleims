@@ -1,10 +1,12 @@
 "use client";
-// A game's roster sheet, for the sides the
-// viewer manages: a captain confirms, removes and adds their college's
-// players until the game starts; a supervisor ticks who came (one tap per
-// player, any time) and adds walk-ins; someone who is both gets both on the
-// sides they captain. Both add players by NetID too (U10). The server
-// decides who manages which side (GET …/roster/sheet) and checks every change.
+// A game's roster sheet, for the sides the viewer manages: a captain
+// pre-confirms (✓), takes off and adds their college's players until the game
+// starts, which only prepares the roster; a supervisor confirms who came (✓✓,
+// one tap per player, any time: the final word), takes players off or puts
+// them back and adds walk-ins; someone who is both gets both on the sides
+// they captain. Levels and their words: lib/rosterLevels.ts. Both add
+// players by NetID too (U10). The server decides who manages which side
+// (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCheck, FaTimes, FaUndo } from "react-icons/fa";
@@ -22,6 +24,7 @@ import {
   type RosterSheet as Sheet,
 } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
+import { LEVELS, levelOf } from "@/lib/rosterLevels";
 import { NETID_PATTERN, placeholderNetid } from "@/lib/netid";
 import { useNow } from "@/lib/useNow";
 
@@ -49,14 +52,14 @@ function caller({ captainCall: call }: SheetEntry): string {
   return call?.name ? `${by} (${call.name})` : by;
 }
 
-/** How an entry got on the roster and who confirmed it, for the row's small print. */
-function origin(entry: SheetEntry): string {
-  const how = entry.addedBy === "supervisor"
-      ? "walk-in"
-      : entry.addedBy === "captain"
-        ? "added by captain"
-        : "signed up";
-  return entry.captainStatus === "confirmed" ? `${how} · confirmed by ${caller(entry)}` : how;
+/** The row's small print, lowest level first: how they got on the roster, the captain's pre-confirmation (by whom), the supervisor's confirmation. */
+function origin(entry: SheetEntry): string[] {
+  const how = entry.addedBy === "supervisor" ? "walk-in" : entry.addedBy === "captain" ? "added by captain" : "signed up";
+  return [
+    how,
+    ...(entry.captainStatus === "confirmed" ? [`pre-confirmed by ${caller(entry)}`] : []),
+    ...(entry.present ? [LEVELS.confirmed.label] : []),
+  ];
 }
 
 interface RosterSheetProps {
@@ -125,9 +128,21 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
 
   return (
     <div className="space-y-6">
+      {!cancelled && (sheet.supervisor ? (
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Tick each player who came: a supervisor&apos;s tick confirms them (✓✓), the final word and the only one that
+          counts. A captain&apos;s pre-confirmation (✓) only prepares the roster.
+        </p>
+      ) : !started && (
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Pre-confirm who&apos;s playing (✓), take off anyone who isn&apos;t and add teammates who didn&apos;t sign up,
+          until the game starts. This prepares the roster for the supervisor, who confirms who actually played (✓✓):
+          only that counts.
+        </p>
+      ))}
       {locked && (
         <p className="rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm px-3 py-2">
-          The game has started: the supervisor takes attendance from here.
+          The game has started: pre-confirmations are locked. The supervisor confirms who played.
         </p>
       )}
       {cancelled && (
@@ -169,13 +184,14 @@ interface SideProps {
 function Side({ match, collegeId, entries, supervisor, captain, busy, change, run }: SideProps) {
   const playing = entries.filter((e) => e.captainStatus !== "removed");
   const removed = entries.filter((e) => e.captainStatus === "removed");
-  const present = playing.filter((e) => e.present).length;
-  const confirmed = playing.filter((e) => e.captainStatus === "confirmed");
+  const preConfirmed = playing.filter((e) => e.captainStatus === "confirmed");
+  const confirmed = playing.filter((e) => e.present).length;
   const editing = supervisor || captain;
 
   const bulks = [
-    ...(captain ? [{ label: "Confirm everyone", todo: playing.filter((e) => e.captainStatus !== "confirmed"), c: { captainStatus: "confirmed" as const } }] : []),
-    ...(supervisor ? [{ label: "Mark all captain-confirmed present", todo: confirmed.filter((e) => !e.present), c: { present: true } }] : []),
+    // Pre-confirming adds nothing for a player the supervisor already confirmed.
+    ...(captain ? [{ label: "Pre-confirm everyone", todo: playing.filter((e) => e.captainStatus !== "confirmed" && !e.present), c: { captainStatus: "confirmed" as const } }] : []),
+    ...(supervisor ? [{ label: "Confirm everyone pre-confirmed", todo: preConfirmed.filter((e) => !e.present), c: { present: true } }] : []),
   ].filter((bulk) => bulk.todo.length > 0);
 
   return (
@@ -185,8 +201,7 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
           {collegeId} · {collegeName(collegeId)}
         </h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {playing.length} on roster · {confirmed.length} captain-confirmed
-          {supervisor ? ` · ${present} present` : ""}
+          {playing.length} on roster · {preConfirmed.length} pre-confirmed · {confirmed} confirmed
         </span>
       </header>
 
@@ -197,7 +212,7 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
             {supervisor && (
               <input
                 type="checkbox"
-                aria-label={`${entry.name} present`}
+                aria-label={`${entry.name} came: confirm`}
                 className="h-5 w-5 accent-emerald-600"
                 checked={!!entry.present}
                 disabled={busy !== null}
@@ -207,28 +222,29 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
             <div className="flex-1 min-w-0">
               <div className="font-medium break-words">
                 <PersonName person={entry} tag={who(entry)} />
+                {LEVELS[levelOf(entry)].mark && <span className="text-emerald-700 dark:text-emerald-400"> {LEVELS[levelOf(entry)].mark}</span>}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {[origin(entry), ...standing(entry)].join(" · ")}
+                {[...origin(entry), ...standing(entry)].join(" · ")}
               </div>
             </div>
-            {captain && entry.captainStatus !== "confirmed" && (
+            {captain && entry.captainStatus !== "confirmed" && !entry.present && (
               <button
                 className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-600 text-white disabled:opacity-50"
                 disabled={busy !== null}
                 onClick={() => change(entry, { captainStatus: "confirmed" })}
               >
-                Confirm
+                Pre-confirm
               </button>
             )}
             {captain && entry.captainStatus === "confirmed" && (
               <button
                 className="text-xs text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1"
-                title="Take back the confirmation"
+                title="Take back the pre-confirmation"
                 disabled={busy !== null}
                 onClick={() => change(entry, { captainStatus: null })}
               >
-                <FaCheck /> confirmed
+                <FaCheck /> pre-confirmed
               </button>
             )}
             {editing && (

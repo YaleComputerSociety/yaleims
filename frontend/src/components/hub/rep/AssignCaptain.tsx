@@ -10,7 +10,7 @@ import type { Sport } from "@/lib/api/seasons";
 
 /**
  * The rep's college: who captains each of the season's sports (every term's,
- * for now). A sport may have several captains (any one of them confirms
+ * for now). A sport may have several captains (any one of them pre-confirms
  * players, D34) and a player may captain several sports.
  */
 export default function AssignCaptain() {
@@ -61,7 +61,7 @@ export default function AssignCaptain() {
     <div className="space-y-4 py-4">
       <p className="text-sm text-gray-600 dark:text-gray-300">
         <span className="font-semibold">{covered}</span> of {sports.length} sports this season have a captain. A
-        sport can have several captains; any one of them can confirm players.
+        sport can have several captains; any one of them can pre-confirm players.
       </p>
 
       <ul className="divide-y divide-black/5 rounded-xl bg-white shadow-md dark:divide-white/5 dark:bg-neutral-900 dark:shadow-black/40">
