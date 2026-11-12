@@ -196,6 +196,18 @@ describe("the captain's side", () => {
     expect((await api("PATCH", entry, {}, as)).status).toBe(400);
   });
 
+  it("doesn't hold a pre-confirmed player: they withdraw, and signing up again starts without the pre-confirmation (C24)", async () => {
+    const { captain, collegeId, game, path } = await captainWithGame();
+    const signedUp = await playerNotOn(game.id, collegeId);
+    const me = `/api/seasons/${current}/matches/${game.id}/roster/me`;
+    expect((await api("PUT", me, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
+    expect((await api("PATCH", `${path}/${encodeURIComponent(signedUp)}`, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
+    expect((await api("DELETE", me, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).get()).exists).toBe(false);
+    expect(await api("PUT", me, undefined, { session: sessionFor(signedUp) })).toMatchObject({ status: 200, body: { addedBy: "self", captainStatus: null } });
+    await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).delete();
+  });
+
   it("adds their college's players (confirmed), not the other side's or nobody", async () => {
     const { captain, collegeId, other, game, path } = await captainWithGame();
     const as = { session: sessionFor(captain) };
