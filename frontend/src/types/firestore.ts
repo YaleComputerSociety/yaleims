@@ -88,6 +88,14 @@ export interface UserDoc {
   createdBy: string | null;
   /** null: never looked up since November 2026. */
   directory: DirectoryState | null;
+  /** The sports and colleges they follow (the games list's Favorites tab); absent on older docs = none. */
+  favorites: Favorites;
+}
+
+/** Up to 30 of each; sport ids are stable across seasons (the rollover copies them). */
+export interface Favorites {
+  sportIds: string[];
+  collegeIds: string[];
 }
 
 /** loginAttempts/{stateHash}: private, single-use browser binding before CAS login. */

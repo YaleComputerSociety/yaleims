@@ -1,8 +1,9 @@
-// The caller's own things: their name (PATCH /api/me), a new
-// directory lookup (POST /api/me/directory) and the games they're signed up
-// for (GET /api/me/matches).
+// The caller's own things: their name (PATCH /api/me), their favorites
+// (PUT /api/me/favorites), a new directory lookup (POST /api/me/directory)
+// and the games they're signed up for (GET /api/me/matches).
 import { z } from "zod";
-import type { DirectoryOutcome, RosterEntryDoc } from "@/types/firestore";
+import type { DirectoryOutcome, Favorites, RosterEntryDoc } from "@/types/firestore";
+import { collegeIdSchema } from "./colleges";
 import { request } from "./core";
 import type { Match } from "./matches";
 
@@ -16,6 +17,14 @@ export const meChangeSchema = z.strictObject({
     .regex(/^[^\p{C}<>]+$/u, "A name can't contain < > or control characters."),
 });
 export type MeChange = z.infer<typeof meChangeSchema>;
+
+const unique = (ids: string[]) => [...new Set(ids)];
+/** PUT /api/me/favorites: the whole value (the session's `favorites` then shows it). */
+export const favoritesSchema: z.ZodType<Favorites, Favorites> = z.strictObject({
+  sportIds: z.array(z.string().min(1).max(40)).max(30).transform(unique),
+  collegeIds: z.array(collegeIdSchema).max(30).transform(unique),
+});
+export const saveFavorites = (favorites: Favorites) => request<void>("PUT", "/api/me/favorites", { body: favorites });
 
 /** POST /api/me/directory: what the new lookup found (the session shows the result). */
 export interface DirectoryRefresh {

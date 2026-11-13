@@ -10,14 +10,16 @@ import type { DocumentData, DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
 import { paths } from "@/lib/paths";
 import type { Identity } from "@/lib/api/users";
-import type { GlobalRole, UserDoc, WithId } from "@/types/firestore";
+import type { Favorites, GlobalRole, UserDoc, WithId } from "@/types/firestore";
 import { placeholderId } from "@/lib/netid";
 import { pickFields } from "./util";
 
 const USER_FIELDS: Record<keyof UserDoc, true> = {
   email: true, name: true, nameSource: true, netid: true,
-  roles: true, claimedAt: true, createdBy: true, directory: true,
+  roles: true, claimedAt: true, createdBy: true, directory: true, favorites: true,
 };
+
+export const NO_FAVORITES: Favorites = { sportIds: [], collegeIds: [] };
 
 /**
  * A stored user's current fields. Docs from before November 2026 have no
@@ -39,7 +41,19 @@ export function readUser(data: DocumentData): UserDoc {
     claimedAt: user.claimedAt ?? null,
     createdBy: user.createdBy ?? null,
     directory: user.directory ?? null,
+    favorites: user.favorites ?? NO_FAVORITES,
   };
+}
+
+/** Replaces the user's favorites; false when there's no such user. */
+export async function setFavorites(userId: string, favorites: Favorites): Promise<boolean> {
+  try {
+    await userRef(userId).update({ favorites });
+    return true;
+  } catch (err) {
+    if ((err as { code?: number }).code === 5) return false; // NOT_FOUND
+    throw err;
+  }
 }
 
 /** The name to show for a user: their name, else their NetID. */

@@ -1,7 +1,7 @@
 // The session API: who is signed in (GET /api/auth/session) and signing out
 // (POST /api/auth/logout). Signing in is a page navigation to
 // /api/auth/login?from=<page> (Yale CAS), not a call.
-import type { DirectoryOutcome, GlobalRole, SeasonRole } from "@/types/firestore";
+import type { DirectoryOutcome, Favorites, GlobalRole, SeasonRole } from "@/types/firestore";
 import { request } from "./core";
 
 /**
@@ -43,6 +43,8 @@ export interface SessionViewer {
   roles: (GlobalRole | SeasonRole)[];
   /** The sports (ids) whose teams they captain this season. */
   captainOf: string[];
+  /** The sports and colleges they follow (PUT /api/me/favorites). */
+  favorites: Favorites;
   can: ViewerPermissions;
 }
 
