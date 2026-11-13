@@ -22,15 +22,17 @@ interface GamesByDayProps {
   action?: (match: Match) => ReactNode;
   /** Something after a competition's name (the favorites' ★). */
   competitionAside?: (group: CompetitionGroup) => ReactNode;
+  /** Day headers stick under the nav bar while scrolling (off inside a short box, as on the Hub). */
+  sticky?: boolean;
 }
 
-export default function GamesByDay({ days, today, now, myEntries, action, competitionAside }: GamesByDayProps) {
+export default function GamesByDay({ days, today, now, myEntries, action, competitionAside, sticky = true }: GamesByDayProps) {
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 overflow-hidden">
       {days.map((day) => (
         <section key={day.day} aria-label={dayLabel(day.day, today)}>
           <h2
-            className={`sticky top-16 md:top-0 z-10 px-3 py-2 text-xs font-bold uppercase tracking-wide border-b border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 ${
+            className={`${sticky ? "sticky top-16 md:top-0 z-10" : ""} px-3 py-2 text-xs font-bold uppercase tracking-wide border-b border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 ${
               day.day < today ? "text-gray-500 dark:text-gray-400" : "text-gray-800 dark:text-gray-100"
             }`}
           >
