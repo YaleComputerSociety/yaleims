@@ -41,6 +41,11 @@ const nobody = encodeURIComponent("nobody@example.edu");
 const game = { startsAt: new Date().toISOString(), homeCollegeId: "BF", awayCollegeId: "BK", venue: null, venueDetail: null };
 const cases: Record<string, Case> = {
   "set the champion": { method: "PATCH", path: (s) => `/api/seasons/${s}`, body: { championCollegeId: "XX", celebrationActive: false }, allowed: adminOrDev, currentOnly: true },
+  // Games and brackets are for signed-in users (D45); a bad query or an unknown id keeps the answer small.
+  "list a season's games": { method: "GET", path: (s) => `/api/seasons/${s}/matches?order=up`, allowed: signedIn },
+  "read a game": { method: "GET", path: (s) => `/api/seasons/${s}/matches/nope`, allowed: signedIn },
+  "list brackets": { method: "GET", path: (s) => `/api/seasons/${s}/brackets?kind=cup`, allowed: signedIn },
+  "read a bracket": { method: "GET", path: (s) => `/api/seasons/${s}/brackets/nope`, allowed: signedIn },
   "upload a schedule": { method: "POST", path: (s) => `/api/seasons/${s}/matches`, body: { sportId: "99", matches: [game] }, allowed: supervisors },
   "edit a game": { method: "PATCH", path: (s) => `/api/seasons/${s}/matches/nope`, body: { venue: "X" }, allowed: supervisors },
   "score a game": { method: "PUT", path: (s) => `/api/seasons/${s}/matches/nope/result`, body: { homeScore: 1, awayScore: 0, homeForfeit: false, awayForfeit: false }, allowed: supervisors },

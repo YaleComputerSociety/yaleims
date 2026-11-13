@@ -8,6 +8,8 @@ import { useRef } from "react";
 import BracketCell from "@/components/brackets/BracketCell";
 import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
+import SignInRequired from "@/components/layout/SignInRequired";
+import { useSession } from "@/context/SessionContext";
 import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
 import { getVersionedImage } from "@/lib/images";
@@ -31,6 +33,7 @@ const BracketsPage: React.FC = () => {
   const { collapsed } = useNavbar();
   const [isMobile, setIsMobile] = useState(false);
   const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
+  const { viewer, loading: sessionLoading } = useSession();
   // The sport (id) and the season (the current one until one is picked).
   const [sport, setSport] = useState<string>("");
   const [pickedSeason, setSeason] = useState<string | null>(null);
@@ -99,9 +102,10 @@ const BracketsPage: React.FC = () => {
     [hoveredTeam, teamConnections]
   );
 
-  if (seasonLoading || loading) {
+  if (sessionLoading || seasonLoading || loading) {
     return <LoadingScreen />;
   }
+  if (!viewer) return <SignInRequired heading="Brackets" message="Sign in to see the playoff brackets." />;
 
   // TODO: remove when mobile view is ready
   if (isMobile) {

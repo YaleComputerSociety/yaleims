@@ -8,7 +8,7 @@ import {
   type MatchPage,
   type ScheduleUploadResult,
 } from "@/lib/api/matches";
-import { authorize, can } from "@/server/auth";
+import { authorize, can, requireViewer } from "@/server/auth";
 import { listMatchPage, listSeasonMatches, listSeasonMatchPage } from "@/server/data/matches";
 import { created, ok, readBody, readQuery, route } from "@/server/http";
 import { addSchedule } from "@/server/services/schedule";
@@ -17,8 +17,9 @@ type Params = { seasonId: string };
 
 const date = (iso: string | undefined) => (iso ? new Date(iso) : undefined);
 
-/** A season's games by start (public): a cursor page with `limit`, one page with `page`, else every game that passes the filters. */
+/** A season's games by start (signed in, D45): a cursor page with `limit`, one page with `page`, else every game that passes the filters. */
 export const GET = route<Params>(async (req, { params }) => {
+  await requireViewer();
   const { seasonId } = await params;
   const query = readQuery(req, seasonMatchesQuerySchema);
   const filter = {

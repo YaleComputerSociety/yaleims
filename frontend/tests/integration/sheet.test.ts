@@ -415,12 +415,13 @@ describe("GET /api/auth/session: what the viewer may do", () => {
 });
 
 describe("reads for the game-day screens", () => {
-  it("GET …/matches/{m}: one game, public", async () => {
+  it("GET …/matches/{m}: one game, signed in", async () => {
     const game = (await db.collection(`seasons/${current}/matches`).limit(1).get()).docs[0];
-    const r = await api("GET", `/api/seasons/${current}/matches/${game.id}`);
+    const r = await api("GET", `/api/seasons/${current}/matches/${game.id}`, undefined, { session: supervisor() });
     expect(r).toMatchObject({ status: 200, body: { id: game.id, seasonId: current } });
     expect(r.body).not.toHaveProperty("scoredBy");
-    expect((await api("GET", `/api/seasons/${current}/matches/nope`)).status).toBe(404);
+    expect((await api("GET", `/api/seasons/${current}/matches/nope`, undefined, { session: supervisor() })).status).toBe(404);
+    expect((await api("GET", `/api/seasons/${current}/matches/${game.id}`)).status).toBe(401);
   });
 
   it("GET /api/me/matches: each game with the caller's captain call and attendance", async () => {

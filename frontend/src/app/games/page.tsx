@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import PageHeading from "@/components/layout/PageHeading";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import SignInRequired from "@/components/layout/SignInRequired";
 import Link from "next/link";
 import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
@@ -164,7 +166,7 @@ const GamesPage: React.FC = () => {
   }, [highlightedDates, isCurrentSeason]);
 
   // ── user sign-up state ────────────────────────────────────────────────────────
-  const { viewer } = useSession();
+  const { viewer, loading: sessionLoading } = useSession();
   // The games the user signed up for, by id, with their entry's status. Until
   // these land we can't tell sign-up state apart from not-signed-up, so the
   // cards show a skeleton rather than flashing "Sign Up" at someone already playing.
@@ -332,6 +334,10 @@ const GamesPage: React.FC = () => {
     [allMatches]
   );
   const showSignInPrompt = !viewer && isCurrentSeason && hasUpcomingGames;
+
+  // The games are for signed-in users (D45).
+  if (sessionLoading) return <LoadingScreen />;
+  if (!viewer) return <SignInRequired heading="Games" message="Sign in to see the games." />;
 
   return (
     <div className="min-h-screen">

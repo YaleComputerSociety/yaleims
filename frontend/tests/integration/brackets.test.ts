@@ -9,6 +9,8 @@ beforeAll(async () => {
 });
 const admin = () => sessionFor(people.admin);
 const player = () => sessionFor(people.student(3, 6));
+/** A signed-in GET (D45: brackets are for signed-in users). */
+const get = (path: string) => api("GET", path, undefined, { session: player() });
 
 /** A full first round: slots 2–4 and 8–10 with two colleges each, byes in 1 and 7, later rounds empty. */
 function slots(withThirdPlace = false) {
@@ -26,20 +28,21 @@ function slots(withThirdPlace = false) {
 
 describe("GET /api/seasons/{s}/brackets", () => {
   it("lists the season's brackets, newest first, by kind (public)", async () => {
-    const all = await api("GET", `/api/seasons/${current}/brackets`, undefined, { origin: null });
+    expect((await api("GET", `/api/seasons/${current}/brackets`)).status).toBe(401);
+    const all = await api("GET", `/api/seasons/${current}/brackets`, undefined, { origin: null, session: player() });
     expect(all.status).toBe(200);
     expect(all.body.items.map((b: { kind: string }) => b.kind).sort()).toEqual(["playoffs", "tournament"]);
     const created = all.body.items.map((b: { createdAt: string }) => b.createdAt);
     expect(created).toEqual([...created].sort().reverse());
-    const tournaments = await api("GET", `/api/seasons/${previous}/brackets?kind=tournament`);
+    const tournaments = await get(`/api/seasons/${previous}/brackets?kind=tournament`);
     expect(tournaments.body).toMatchObject({ total: 1, items: [{ kind: "tournament", name: "Spring Volleyball Tournament" }] });
-    expect((await api("GET", `/api/seasons/${current}/brackets?kind=cup`)).status).toBe(400);
+    expect((await get(`/api/seasons/${current}/brackets?kind=cup`)).status).toBe(400);
   });
 });
 
 describe("GET /api/seasons/{s}/brackets/{b}", () => {
   it("has the slots (byes without a game) and the games in slot order", async () => {
-    const r = await api("GET", `/api/seasons/${previous}/brackets/spring-volleyball-tournament`);
+    const r = await get(`/api/seasons/${previous}/brackets/spring-volleyball-tournament`);
     expect(r.status).toBe(200);
     expect(r.body.slots).toHaveLength(16);
     const byes = r.body.slots.filter((s: { matchId: string | null }) => !s.matchId);
@@ -50,7 +53,7 @@ describe("GET /api/seasons/{s}/brackets/{b}", () => {
     expect(r.body.placements.first).toBeTruthy(); // played out by the seed
   });
   it("is 404 for an unknown bracket", async () => {
-    expect((await api("GET", `/api/seasons/${current}/brackets/nope`)).status).toBe(404);
+    expect((await get(`/api/seasons/${current}/brackets/nope`)).status).toBe(404);
   });
 });
 
@@ -72,7 +75,7 @@ describe("POST and DELETE /api/seasons/{s}/brackets", () => {
   it("creates a sport's playoffs: games for every slot but the byes, a bye's college in its quarterfinal", async () => {
     const r = await create(current, playoffs, admin());
     expect(r).toMatchObject({ status: 201, body: { id: "volleyball-playoffs" } });
-    const detail = await api("GET", `/api/seasons/${current}/brackets/volleyball-playoffs`);
+    const detail = await get(`/api/seasons/${current}/brackets/volleyball-playoffs`);
     expect(detail.body).toMatchObject({ kind: "playoffs", name: "Volleyball Playoffs", sportId: "11", placementPoints: null });
     expect(detail.body.matches).toHaveLength(13);
     const quarterfinal = detail.body.matches.find((m: { bracketSlot: number }) => m.bracketSlot === 5);
@@ -82,12 +85,12 @@ describe("POST and DELETE /api/seasons/{s}/brackets", () => {
   it("creates a tournament with the default placement points", async () => {
     const r = await create(current, { kind: "tournament", name: "Winter Volleyball Cup", sportId: "11", slots: slots(true) }, admin());
     expect(r).toMatchObject({ status: 201, body: { id: "winter-volleyball-cup" } });
-    const detail = await api("GET", `/api/seasons/${current}/brackets/winter-volleyball-cup`);
+    const detail = await get(`/api/seasons/${current}/brackets/winter-volleyball-cup`);
     expect(detail.body).toMatchObject({ thirdPlaceSlot: 16, placementPoints: { first: 20, second: 15, third: 10 }, placements: { first: null } });
   });
   it("deletes: 409 with the scored games, then with force, taking the points back", async () => {
     const path = `/api/seasons/${current}/brackets/volleyball-playoffs`;
-    const game = (await api("GET", path)).body.matches.find((m: { bracketSlot: number }) => m.bracketSlot === 2);
+    const game = (await get(path)).body.matches.find((m: { bracketSlot: number }) => m.bracketSlot === 2);
     const points = async () => (await db.doc(`seasons/${current}/colleges/${game.homeCollegeId}`).get()).data()!.points;
     const before = await points();
     expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/result`, { homeScore: 2, awayScore: 0, homeForfeit: false, awayForfeit: false }, { session: admin() })).status).toBe(204);

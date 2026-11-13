@@ -8,6 +8,8 @@ import BracketCell from "@/components/brackets/BracketCell";
 import PlacementPanel from "@/components/brackets/PlacementPanel";
 import { useSeason } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
+import SignInRequired from "@/components/layout/SignInRequired";
+import { useSession } from "@/context/SessionContext";
 import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
 import { getVersionedImage } from "@/lib/images";
@@ -45,6 +47,7 @@ const TournamentsPage: React.FC = () => {
   const { collapsed } = useNavbar();
   const [isMobile, setIsMobile] = useState(false);
   const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
+  const { viewer, loading: sessionLoading } = useSession();
 
   // The current season until one is picked.
   const [pickedSeason, setSeason] = useState<string | null>(null);
@@ -132,9 +135,10 @@ const TournamentsPage: React.FC = () => {
     );
   };
 
-  if (seasonLoading || loading) {
+  if (sessionLoading || seasonLoading || loading) {
     return <LoadingScreen />;
   }
+  if (!viewer) return <SignInRequired heading="Tournaments" message="Sign in to see the tournaments." />;
 
   if (isMobile) {
     return (

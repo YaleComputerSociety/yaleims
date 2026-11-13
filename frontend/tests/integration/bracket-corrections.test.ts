@@ -50,7 +50,7 @@ async function createFixture(kind: "playoffs" | "tournament" = "playoffs"): Prom
   expect(response.status).toBe(201);
   const id = response.body.id as string;
   created.push(id);
-  const detail = (await api("GET", `/api/seasons/${current}/brackets/${id}`)).body as BracketDetail;
+  const detail = (await api("GET", `/api/seasons/${current}/brackets/${id}`, undefined, admin())).body as BracketDetail;
   return { id, matchIds: new Map(detail.matches.map((m) => [m.bracketSlot!, m.id])) };
 }
 

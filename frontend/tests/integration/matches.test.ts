@@ -10,10 +10,16 @@ beforeAll(async () => {
 const admin = () => sessionFor(people.admin);
 const player = () => sessionFor(people.student(3, 6));
 const ids = (body: { items: { id: string }[] }) => body.items.map((m) => m.id);
+/** A signed-in GET (D45: the games are for signed-in users). */
+const get = (path: string) => api("GET", path, undefined, { session: player() });
 
 describe("GET /api/seasons/{s}/matches", () => {
+  it("needs a session (D45)", async () => {
+    expect(await api("GET", `/api/seasons/${current}/matches`)).toMatchObject({ status: 401, body: { error: { code: "unauthenticated" } } });
+    expect((await api("GET", `/api/seasons/${current}/matches?limit=5`)).status).toBe(401);
+  });
   it("returns the whole season without a page, with no emails", async () => {
-    const r = await api("GET", `/api/seasons/${current}/matches`, undefined, { origin: null });
+    const r = await api("GET", `/api/seasons/${current}/matches`, undefined, { origin: null, session: player() });
     expect(r.status).toBe(200);
     const stored = await db.collection(`seasons/${current}/matches`).count().get();
     expect(r.body.total).toBe(stored.data().count);
@@ -25,7 +31,7 @@ describe("GET /api/seasons/{s}/matches", () => {
   });
   it("filters by college, sport, status and time, in either order", async () => {
     const from = new Date().toISOString();
-    const r = await api("GET", `/api/seasons/${current}/matches?collegeId=MC&status=scheduled&from=${from}&order=desc`);
+    const r = await get(`/api/seasons/${current}/matches?collegeId=MC&status=scheduled&from=${from}&order=desc`);
     expect(r.status).toBe(200);
     expect(r.body.total).toBeGreaterThan(0);
     for (const m of r.body.items) {
@@ -35,18 +41,18 @@ describe("GET /api/seasons/{s}/matches", () => {
     }
     const starts = r.body.items.map((m: { startsAt: string }) => m.startsAt);
     expect(starts).toEqual([...starts].sort().reverse());
-    const soccer = await api("GET", `/api/seasons/${previous}/matches?sportId=1`);
+    const soccer = await get(`/api/seasons/${previous}/matches?sportId=1`);
     expect(soccer.body.items.every((m: { sportId: string }) => m.sportId === "1")).toBe(true);
   });
   it("pages: page n of the same filtered list, with the filtered total", async () => {
-    const all = await api("GET", `/api/seasons/${current}/matches?collegeId=BK`);
-    const page2 = await api("GET", `/api/seasons/${current}/matches?collegeId=BK&page=2&pageSize=5`);
+    const all = await get(`/api/seasons/${current}/matches?collegeId=BK`);
+    const page2 = await get(`/api/seasons/${current}/matches?collegeId=BK&page=2&pageSize=5`);
     expect(page2.body.total).toBe(all.body.total);
     expect(ids(page2.body)).toEqual(ids(all.body).slice(5, 10));
   });
   it("refuses bad parameters", async () => {
     for (const query of ["pageSize=101", "page=0", "collegeId=XX", "order=up", "from=yesterday", "colour=red"]) {
-      expect((await api("GET", `/api/seasons/${current}/matches?${query}`)).status).toBe(400);
+      expect((await get(`/api/seasons/${current}/matches?${query}`)).status).toBe(400);
     }
   });
 
@@ -55,7 +61,7 @@ describe("GET /api/seasons/{s}/matches", () => {
     const pages: string[][] = [];
     let after: string | null = null;
     do {
-      const r = await api("GET", `/api/seasons/${current}/matches?${query}&limit=${limit}${after ? `&after=${after}` : ""}`);
+      const r = await get(`/api/seasons/${current}/matches?${query}&limit=${limit}${after ? `&after=${after}` : ""}`);
       expect(r.status).toBe(200);
       expect(r.body.items.length).toBeLessThanOrEqual(limit);
       pages.push(ids(r.body));
@@ -65,7 +71,7 @@ describe("GET /api/seasons/{s}/matches", () => {
   };
   it("pages by cursor: full pages that tile the filtered list, in either order; the last page has no next", async () => {
     for (const order of ["asc", "desc"]) {
-      const all = await api("GET", `/api/seasons/${current}/matches?collegeId=BK&order=${order}`);
+      const all = await get(`/api/seasons/${current}/matches?collegeId=BK&order=${order}`);
       const pages = await walk(`collegeId=BK&order=${order}`, 5);
       expect(pages.flat()).toEqual(ids(all.body));
       expect(pages.length).toBeGreaterThan(1);
@@ -73,15 +79,15 @@ describe("GET /api/seasons/{s}/matches", () => {
     }
   });
   it("continues after a cursor that sits inside a run of games starting at the same minute", async () => {
-    const all = (await api("GET", `/api/seasons/${current}/matches`)).body.items as { id: string; startsAt: string }[];
+    const all = (await get(`/api/seasons/${current}/matches`)).body.items as { id: string; startsAt: string }[];
     const i = all.findIndex((m, k) => k > 0 && m.startsAt === all[k - 1].startsAt);
     expect(i).toBeGreaterThan(0); // the seed schedules games at the same time
     const before = all[i - 1];
-    const r = await api("GET", `/api/seasons/${current}/matches?limit=3&after=${Date.parse(before.startsAt)}|${before.id}`);
+    const r = await get(`/api/seasons/${current}/matches?limit=3&after=${Date.parse(before.startsAt)}|${before.id}`);
     expect(ids(r.body)).toEqual(all.slice(i, i + 3).map((m) => m.id));
   });
   it("lists the games of any favorite college or sport together, each once, in order", async () => {
-    const all = (await api("GET", `/api/seasons/${current}/matches`)).body.items as { id: string; sportId: string; collegeIds: string[]; status: string }[];
+    const all = (await get(`/api/seasons/${current}/matches`)).body.items as { id: string; sportId: string; collegeIds: string[]; status: string }[];
     const colleges = ["BK", "MC"], sports = ["1"];
     const wanted = all.filter((m) => m.collegeIds.some((c) => colleges.includes(c)) || sports.includes(m.sportId));
     expect(wanted.length).toBeGreaterThan(7);
@@ -97,7 +103,7 @@ describe("GET /api/seasons/{s}/matches", () => {
       "limit=0", "limit=101", "page=1&limit=5", "after=1|a", "limit=5&after=nope", "collegeIds=BK,MC",
       "limit=5&collegeId=BK&collegeIds=MC", "limit=5&sportId=1&sportIds=1", "limit=5&collegeIds=", `limit=5&collegeIds=${Array(31).fill("BK").join(",")}`,
     ];
-    for (const query of bad) expect((await api("GET", `/api/seasons/${current}/matches?${query}`)).status, query).toBe(400);
+    for (const query of bad) expect((await get(`/api/seasons/${current}/matches?${query}`)).status, query).toBe(400);
   });
 });
 
@@ -136,7 +142,7 @@ describe("GET /api/matches (played games in one season)", () => {
     const page = Number.MAX_SAFE_INTEGER;
     const scores = await api("GET", `/api/matches?page=${page}`, undefined, options);
     expect(scores).toMatchObject({ status: 200, body: { items: [], total: await playedCount(current) } });
-    const games = await api("GET", `/api/seasons/${current}/matches?page=${page}`);
+    const games = await get(`/api/seasons/${current}/matches?page=${page}`);
     const total = (await db.collection(`seasons/${current}/matches`).count().get()).data().count;
     expect(games).toMatchObject({ status: 200, body: { items: [], total } });
   });
