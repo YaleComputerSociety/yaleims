@@ -73,7 +73,7 @@ export function competitionOf(
       sportId,
       emoji: "🏆",
       name: bracket.name,
-      href: `/tournaments?season=${match.seasonId}&id=${match.bracketId}`,
+      href: `/events?season=${match.seasonId}&id=${match.bracketId}`,
     };
   }
   if (match.stage === "playoff") {

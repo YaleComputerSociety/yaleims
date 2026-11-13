@@ -46,7 +46,7 @@ describe("competitionOf", () => {
       key: "playoffs:1", kind: "playoffs", name: "Soccer Playoffs", href: "/brackets?season=2026-2027&sport=1",
     });
     expect(competition(game({ id: "c", stage: "playoff", bracketId: "fall-classic" }))).toMatchObject({
-      key: "tournament:fall-classic", kind: "tournament", name: "Fall Classic", href: "/tournaments?season=2026-2027&id=fall-classic",
+      key: "tournament:fall-classic", kind: "tournament", name: "Fall Classic", href: "/events?season=2026-2027&id=fall-classic",
     });
   });
   it("copes with an unknown sport", () => {

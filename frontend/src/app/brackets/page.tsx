@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { Suspense, useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
@@ -34,9 +35,10 @@ const BracketsPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
   const { viewer, loading: sessionLoading } = useSession();
-  // The sport (id) and the season (the current one until one is picked).
-  const [sport, setSport] = useState<string>("");
-  const [pickedSeason, setSeason] = useState<string | null>(null);
+  // The sport (id) and the season (the current one until one is picked); the games list links here with ?season=&sport= (lib/games.ts).
+  const params = useSearchParams();
+  const [sport, setSport] = useState<string>(params.get("sport") ?? "");
+  const [pickedSeason, setSeason] = useState<string | null>(params.get("season"));
   const season = pickedSeason ?? currentSeason?.id ?? "";
   const sports = useSeasonDetail(season || null)?.sports ?? [];
   const sportName = sports.find((s) => s.id === sport)?.name ?? "";
@@ -363,4 +365,11 @@ const BracketsPage: React.FC = () => {
   );
 };
 
-export default BracketsPage;
+/** useSearchParams needs a Suspense boundary around the page. */
+export default function BracketsPageWithSuspense() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <BracketsPage />
+    </Suspense>
+  );
+}

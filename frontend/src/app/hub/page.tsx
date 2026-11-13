@@ -110,10 +110,10 @@ const Dashboard: React.FC = () => {
       gradient: "from-emerald-500/10 to-green-500/10",
     },
     {
-      title: "View Tournaments",
-      link: "/tournaments",
+      title: "View Special Events",
+      link: "/events",
       icon: "🏐",
-      description: "Follow one-day tournament brackets and placement points",
+      description: "Tournaments and other special events: brackets and placement points",
       gradient: "from-sky-500/10 to-indigo-500/10",
     },
   ];
@@ -222,10 +222,10 @@ const Dashboard: React.FC = () => {
               when: can.editSchedule,
             },
             {
-              title: "Tournaments",
-              link: "/hub/upload-tournaments",
+              title: "Special Events",
+              link: "/hub/events",
               icon: "🏆",
-              description: "Set up one-day tournaments and their placement points",
+              description: "Set up tournaments (one-day brackets with placement points)",
               gradient: "from-fuchsia-500/10 to-pink-500/10",
               when: can.editSchedule,
             },

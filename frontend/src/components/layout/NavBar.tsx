@@ -70,7 +70,7 @@ const NavBar: React.FC = () => {
     { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard /> },
     { href: "/games", text: "Games", icon: <MdSports /> },
     { href: "/brackets", text: "Playoff Brackets", icon: <TbBrackets /> },
-    { href: "/tournaments", text: "Tournaments", icon: <TbTournament /> },
+    { href: "/events", text: "Special Events", icon: <TbTournament /> },
     { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
     { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
     { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
