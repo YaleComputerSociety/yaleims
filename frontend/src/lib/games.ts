@@ -46,6 +46,7 @@ export type CompetitionKind = "regular" | "playoffs" | "tournament";
 export interface Competition {
   key: string;
   kind: CompetitionKind;
+  sportId: string;
   emoji: string;
   name: string;
   /** The playoffs' bracket or the tournament's page; null for the regular season. */
@@ -64,10 +65,12 @@ export function competitionOf(
   bracket: Pick<Bracket, "kind" | "name"> | undefined,
 ): Competition {
   const sportName = sport?.name ?? "Unknown sport";
+  const { sportId } = match;
   if (match.bracketId && bracket?.kind === "tournament") {
     return {
       key: `tournament:${match.bracketId}`,
       kind: "tournament",
+      sportId,
       emoji: "🏆",
       name: bracket.name,
       href: `/tournaments?season=${match.seasonId}&id=${match.bracketId}`,
@@ -75,14 +78,15 @@ export function competitionOf(
   }
   if (match.stage === "playoff") {
     return {
-      key: `playoffs:${match.sportId}`,
+      key: `playoffs:${sportId}`,
       kind: "playoffs",
+      sportId,
       emoji: "🏅",
       name: bracket?.name ?? `${sportName} Playoffs`,
-      href: `/brackets?season=${match.seasonId}&sport=${match.sportId}`,
+      href: `/brackets?season=${match.seasonId}&sport=${sportId}`,
     };
   }
-  return { key: `sport:${match.sportId}`, kind: "regular", emoji: sport?.emoji ?? "🏅", name: sportName, href: null };
+  return { key: `sport:${sportId}`, kind: "regular", sportId, emoji: sport?.emoji ?? "🏅", name: sportName, href: null };
 }
 
 // ── Grouping ────────────────────────────────────────────────────────────────

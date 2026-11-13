@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { FaChevronLeft } from "react-icons/fa";
+import FavoriteStar from "@/components/games/FavoriteStar";
 import { ParticipantsList } from "@/components/games/Participants";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
 import SignUpButton from "@/components/games/SignUpButton";
@@ -99,6 +100,7 @@ export default function GamePage() {
               <span>{competition.name}</span>
             )}
             <span>· {competition.kind === "regular" ? "Regular season" : matchTypeLabel(match, competition.kind === "tournament")}</span>
+            <FavoriteStar kind="sport" id={match.sportId} name={sport?.name ?? "this sport"} />
           </div>
           <ScoreBoard match={match} state={state} />
           <div className="text-sm text-gray-600 dark:text-gray-300">
@@ -152,9 +154,12 @@ function ScoreBoard({ match, state }: { match: Match; state: RowState }) {
           <span className="w-12 h-12 rounded-full border border-dashed border-gray-400" aria-hidden />
         )}
         {id ? (
-          <Link href={`/games?college=${id}`} className={`text-sm hover:underline ${won ? "font-bold" : ""}`}>
-            {name}
-          </Link>
+          <span className="inline-flex items-center">
+            <Link href={`/games?college=${id}`} className={`text-sm hover:underline ${won ? "font-bold" : ""}`}>
+              {name}
+            </Link>
+            <FavoriteStar kind="college" id={id} name={name} />
+          </span>
         ) : (
           <span className="text-sm text-gray-500">{name}</span>
         )}

@@ -41,7 +41,7 @@ describe("rowState", () => {
 
 describe("competitionOf", () => {
   it("lists a regular game under its sport, a playoff game under the sport's playoffs, a tournament game under the tournament", () => {
-    expect(competition(game({ id: "a" }))).toEqual({ key: "sport:1", kind: "regular", emoji: "⚽", name: "Soccer", href: null });
+    expect(competition(game({ id: "a" }))).toEqual({ key: "sport:1", kind: "regular", sportId: "1", emoji: "⚽", name: "Soccer", href: null });
     expect(competition(game({ id: "b", stage: "playoff", bracketId: "soccer-playoffs", round: "Semifinal" }))).toMatchObject({
       key: "playoffs:1", kind: "playoffs", name: "Soccer Playoffs", href: "/brackets?season=2026-2027&sport=1",
     });

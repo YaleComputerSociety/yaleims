@@ -12,7 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { fetchMatchPage, type Match } from "@/lib/api/matches";
 import type { MyMatch } from "@/lib/api/me";
 import { easternDate } from "@/lib/dates";
-import { groupGames, listBounds, matchesFilter, mergeGames, type Competition, type ListFilter } from "@/lib/games";
+import { groupGames, listBounds, matchesFilter, mergeGames, type Competition, type CompetitionGroup, type ListFilter } from "@/lib/games";
 import type { EasternDate } from "@/types/firestore";
 import GamesByDay from "./GamesByDay";
 
@@ -35,6 +35,8 @@ interface GamesListProps {
   emptyMessage: string;
   /** Something for a row's right edge (the sign-up page's button). */
   action?: (match: Match) => ReactNode;
+  /** Something after a competition's name (the favorites' ★). */
+  competitionAside?: (group: CompetitionGroup) => ReactNode;
 }
 
 interface Loaded {
@@ -51,7 +53,7 @@ interface Loaded {
 
 type Busy = "first" | "down" | "up" | null;
 
-export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage, action }: GamesListProps) {
+export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage, action, competitionAside }: GamesListProps) {
   const key = JSON.stringify([seasonId, filter, anchor]);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -189,7 +191,7 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
       ) : days.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">{emptyMessage}</p>
       ) : (
-        <GamesByDay days={days} today={easternDate(now)} now={now} myEntries={myEntries} action={action} />
+        <GamesByDay days={days} today={easternDate(now)} now={now} myEntries={myEntries} action={action} competitionAside={competitionAside} />
       )}
       <div ref={sentinel} aria-hidden className="h-px" />
       {busy === "down" && <p className="text-center text-xs text-gray-400 dark:text-gray-500">Loading…</p>}

@@ -11,6 +11,8 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import DayView from "@/components/games/DayView";
+import FavoriteStar from "@/components/games/FavoriteStar";
+import FavoritesEditor from "@/components/games/FavoritesEditor";
 import FiltersSheet, { KINDS, NO_FILTERS, STATUSES, type SheetFilters } from "@/components/games/FiltersSheet";
 import GamesList from "@/components/games/GamesList";
 import SportChips, { chipClass } from "@/components/games/SportChips";
@@ -138,6 +140,9 @@ function GamesPage() {
     return { ...chosen, collegeId: state.collegeId || undefined };
   }, [state, viewer]);
 
+  // The Favorites tab's editor: open on request, and always while there's nothing to show yet.
+  const [editingFavorites, setEditingFavorites] = useState(false);
+
   if (sessionLoading) return <LoadingScreen />;
   if (!viewer) return <SignInRequired heading="Games" message="Sign in to see the games." />;
   if (!currentSeason || !seasonId || !season || !brackets) return <LoadingScreen />;
@@ -164,6 +169,16 @@ function GamesPage() {
         {state.tab !== "favorites" && <SportChips sports={season.sports} term={season.currentTerm} value={state.sport} onChange={(sport) => change({ sport })} />}
         <Tabs value={state.tab} onChange={(tab) => change({ tab })} college={collegeName(viewer.collegeId)} />
         {state.tab === "all" && <Filters value={state} onChange={(filters) => change(filters)} />}
+        {state.tab === "favorites" && (
+          <div className="space-y-2">
+            {filter !== null && (
+              <button type="button" aria-expanded={editingFavorites} onClick={() => setEditingFavorites(!editingFavorites)} className={chipClass(editingFavorites)}>
+                {editingFavorites ? "Done" : "Edit favorites"}
+              </button>
+            )}
+            {(editingFavorites || filter === null) && <FavoritesEditor sports={season.sports} />}
+          </div>
+        )}
         {filter === null ? (
           state.tab === "favorites" ? (
             <Notice>Star a sport or a college to see its games here.</Notice>
@@ -197,6 +212,7 @@ function GamesPage() {
             now={now}
             refresh={isCurrent && anchor === today}
             emptyMessage={emptyMessage}
+            competitionAside={(group) => group.kind === "regular" && <FavoriteStar kind="sport" id={group.sportId} name={group.name} />}
           />
         )}
       </div>
