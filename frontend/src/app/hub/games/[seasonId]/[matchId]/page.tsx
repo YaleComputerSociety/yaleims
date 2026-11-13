@@ -14,7 +14,7 @@ import LoadingScreen from "@/components/layout/LoadingScreen";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import RosterSheet from "@/components/gameday/RosterSheet";
 import ScorePanel from "@/components/gameday/ScorePanel";
-import { CancelledBadge } from "@/components/games/MyEntryStatus";
+import { CancelledBadge } from "@/components/games/CancelledBadge";
 import { EditMatchModal } from "@/components/hub/admin/EditMatchModal";
 import { useSeasonDetail } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";

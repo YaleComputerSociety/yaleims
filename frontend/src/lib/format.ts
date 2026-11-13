@@ -45,16 +45,6 @@ export function pointsEarned(match: Pick<Match, "result" | "pointsForWin">, side
   return outcome === side ? match.pointsForWin : null;
 }
 
-/** The games grouped by their (local) start day, "yyyy-mm-dd", in the order given. */
-export function groupByDay<M extends Pick<Match, "startsAt">>(matches: M[]): Map<string, M[]> {
-  const days = new Map<string, M[]>();
-  for (const match of matches) {
-    const day = new Date(match.startsAt).toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
-    days.set(day, [...(days.get(day) ?? []), match]);
-  }
-  return days;
-}
-
 /** A Google Calendar link that adds the game as a one-hour event. */
 export function calendarLink(
   match: Pick<Match, "startsAt" | "homeCollegeId" | "awayCollegeId" | "venue" | "venueDetail">,

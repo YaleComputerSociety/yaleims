@@ -11,7 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import GameRow, { useSheets } from "@/components/gameday/GameRow";
 import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import { useSeason } from "@/context/SeasonContext";
-import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { fetchMatchPage, fetchSeasonMatches, type Match } from "@/lib/api/matches";
 import { addDays, easternDate, easternMidnight } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
 
@@ -37,12 +37,12 @@ function GameDayPage() {
       () => live && setGames([])
     );
     // Games from before this day still waiting for a score.
-    fetchSeasonMatches(currentSeason.id, {
+    // A page of them is all the banner needs to count.
+    fetchMatchPage(currentSeason.id, {
       status: "scheduled",
       to: new Date(Math.min(from.getTime(), Date.now()) - 1).toISOString(),
-      page: 1,
-      pageSize: 1,
-    }).then(({ total }) => live && setOlderUnscored(total), () => {});
+      limit: 100,
+    }).then(({ items }) => live && setOlderUnscored(items.length), () => {});
     return () => {
       live = false;
     };

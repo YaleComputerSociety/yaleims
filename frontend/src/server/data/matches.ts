@@ -101,27 +101,6 @@ export async function listMatchPage(
   return { items: games.slice(0, limit), more: games.length > limit };
 }
 
-/** One numbered page and the filtered total, from a single season. */
-export async function listSeasonMatchPage(
-  seasonId: string,
-  filter: SeasonMatchFilter,
-  order: SortOrder,
-  { page, pageSize }: { page: number; pageSize: number },
-): Promise<{ items: WithId<MatchDoc>[]; total: number }> {
-  const query = seasonMatchQuery(seasonId, filter, order);
-  const offset = (page - 1) * pageSize;
-  const count = query.count().get().then((snap) => snap.data().count);
-  const readPage = async () => {
-    // Read page one in parallel with the count. Later pages can skip the
-    // offset query entirely when they are beyond the end of the results.
-    if (offset > 0 && offset >= (await count)) return [];
-    const snap = await query.offset(offset).limit(pageSize).get();
-    return snap.docs.map((d) => withId<MatchDoc>(d));
-  };
-  const [items, total] = await Promise.all([readPage(), count]);
-  return { items, total };
-}
-
 /**
  * When the season's first game starts, counting only games from `from` on
  * (null: none yet). The range also skips games without a time.

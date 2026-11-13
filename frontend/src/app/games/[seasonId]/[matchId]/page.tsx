@@ -11,7 +11,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { FaChevronLeft } from "react-icons/fa";
 import FavoriteStar from "@/components/games/FavoriteStar";
-import { ParticipantsList } from "@/components/games/Participants";
+import Participants from "@/components/games/Participants";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
 import SignUpButton from "@/components/games/SignUpButton";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
@@ -129,7 +129,7 @@ export default function GamePage() {
           {match.status === "cancelled" ? (
             <p className="text-xs text-gray-500">A cancelled game has no participants.</p>
           ) : roster ? (
-            <ParticipantsList match={match} roster={roster} />
+            <Participants match={match} roster={roster} />
           ) : (
             <p className="text-xs text-gray-500">Loading…</p>
           )}

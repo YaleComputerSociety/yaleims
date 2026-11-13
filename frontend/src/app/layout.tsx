@@ -5,7 +5,6 @@ import "./globals.css";
 import NavBar from "@/components/layout/NavBar";
 import { useEffect } from "react";
 import { SessionProvider } from "@/context/SessionContext";
-import FiltersProvider from "@/context/FiltersContext";
 import { ThemeProvider } from "next-themes";
 import Footer from "@/components/layout/Footer";
 import { initAnalytics } from "@/lib/firebase";
@@ -55,7 +54,6 @@ export default function RootLayout({
 }) {
   return (
     <SessionProvider>      
-      <FiltersProvider>
         <NavbarProvider>
           <html lang="en" suppressHydrationWarning>
             <head>
@@ -71,7 +69,6 @@ export default function RootLayout({
             </body>
           </html>
         </NavbarProvider>
-      </FiltersProvider>
     </SessionProvider>
   );
 }

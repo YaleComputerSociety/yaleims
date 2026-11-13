@@ -1,7 +1,6 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
-import { FiltersContext } from "@/context/FiltersContext";
 import { useSession } from "@/context/SessionContext";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import Image from "next/image";
@@ -34,8 +33,6 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
 };
 
 const NavBar: React.FC = () => {
-  const filtersContext = useContext(FiltersContext);
-  const { resetFilters } = filtersContext;
   const [isClick, setisClick] = useState(false);
   const { viewer, loading } = useSession();
   const { isLight, toggleTheme } = useLightTheme();
@@ -62,7 +59,6 @@ const NavBar: React.FC = () => {
 
   const turnMenuOff = () => {
     setisClick(false);
-    resetFilters();
   };
 
   const links = [
@@ -99,7 +95,7 @@ const NavBar: React.FC = () => {
               key={link.href}
               href={link.href}
               className={`${baseLink} ${active ? activeLink : hoverLink}`}
-              onClick={resetFilters}
+             
               target={link.text === "Feedback" ? "_blank" : ""}
             >
               {collapsed ? 

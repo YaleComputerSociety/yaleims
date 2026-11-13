@@ -1,5 +1,5 @@
-// The matches API: a season's games (/api/seasons/{seasonId}/matches), one
-// game's details and result, and one season's played games (/api/matches).
+// The matches API: a season's games (/api/seasons/{seasonId}/matches, whole
+// or in cursor pages), one game's details and result.
 import { z } from "zod";
 import type { MatchDoc, WithId } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
@@ -12,6 +12,7 @@ export function toMatch({ scoredBy: _scoredBy, ...match }: WithId<MatchDoc>): Ma
   return toJson(match);
 }
 
+/** The whole filtered list (the Day view's season). */
 export interface MatchList {
   items: Match[];
   total: number;
@@ -35,9 +36,6 @@ const filters = {
   /** Starts at or before. */
   to: time.optional(),
 };
-const page = z.coerce.number<number>().int().min(1);
-const pageSize = z.coerce.number<number>().int().min(1).max(100).default(20);
-
 /** Up to 30 ids (what one Firestore `in` or `array-contains-any` takes), comma-separated in the URL. */
 const idList = <Item extends z.ZodType<string, string>>(item: Item) =>
   z.string().transform((text) => text.split(",")).pipe(z.array(item).min(1).max(30));
@@ -54,46 +52,33 @@ const cursor = z.string().regex(/^\d{1,15}\|[^/|]{1,128}$/, "Not a cursor").tran
 });
 
 /**
- * GET /api/seasons/{seasonId}/matches, by start. Three modes: `limit` (cursor
- * paging: that many games after `after`, the previous answer's `next`; answers
- * a `MatchPage`), `page` (offset paging with the filtered total) or neither
- * (every game that passes the filters). In cursor mode `collegeIds` or
- * `sportIds` list the games of any of those colleges or sports together (the
- * favorites tab), instead of the single `collegeId` / `sportId`.
+ * GET /api/seasons/{seasonId}/matches, by start. With `limit`, one cursor
+ * page: that many games after `after` (the previous answer's `next`),
+ * answered as a `MatchPage`; without it, every game that passes the filters
+ * (a `MatchList`). In cursor mode `collegeIds` or `sportIds` list the games
+ * of any of those colleges or sports together (the favorites tab), instead
+ * of the single `collegeId` / `sportId`.
  */
 export const seasonMatchesQuerySchema = z.strictObject({
   ...filters,
   status: z.enum(["scheduled", "final", "cancelled"]).optional(),
   order: z.enum(["asc", "desc"]).default("asc"),
-  page: page.optional(),
-  pageSize,
   limit: z.coerce.number<number>().int().min(1).max(100).optional(),
   after: cursor.optional(),
   collegeIds: idList(collegeIdSchema).optional(),
   sportIds: idList(z.string().min(1)).optional(),
 })
-  .refine((q) => q.page === undefined || q.limit === undefined, { message: "Use page or limit, not both", path: ["limit"] })
   .refine((q) => q.limit !== undefined || (q.after ?? q.collegeIds ?? q.sportIds) === undefined, { message: "after, collegeIds and sportIds need limit", path: ["limit"] })
   .refine((q) => q.collegeId === undefined || q.collegeIds === undefined, { message: "Use collegeId or collegeIds, not both", path: ["collegeIds"] })
   .refine((q) => q.sportId === undefined || q.sportIds === undefined, { message: "Use sportId or sportIds, not both", path: ["sportIds"] });
 export type SeasonMatchesQuery = z.input<typeof seasonMatchesQuerySchema>;
 
 /** The cursor mode's query, with its id lists as arrays. */
-export type MatchPageQuery = Omit<SeasonMatchesQuery, "page" | "pageSize" | "collegeIds" | "sportIds"> & {
+export type MatchPageQuery = Omit<SeasonMatchesQuery, "collegeIds" | "sportIds"> & {
   limit: number;
   collegeIds?: string[];
   sportIds?: string[];
 };
-
-/** GET /api/matches (signed in): played games in the selected or current season. */
-export const playedMatchesQuerySchema = z.strictObject({
-  ...filters,
-  seasonId: z.string().regex(/^\d{4}-\d{4}$/, "Choose a season in YYYY-YYYY format").optional(),
-  order: z.enum(["asc", "desc"]).default("desc"),
-  page: page.default(1),
-  pageSize,
-});
-export type PlayedMatchesQuery = z.input<typeof playedMatchesQuerySchema>;
 
 export const fetchSeasonMatches = (seasonId: string, query: SeasonMatchesQuery = {}) =>
   request<MatchList>("GET", url`/api/seasons/${seasonId}/matches`, { query });
@@ -107,9 +92,6 @@ export const fetchMatchPage = (seasonId: string, { collegeIds, sportIds, ...quer
 /** GET /api/seasons/{seasonId}/matches/{matchId} (public). */
 export const fetchMatch = (seasonId: string, matchId: string) =>
   request<Match>("GET", url`/api/seasons/${seasonId}/matches/${matchId}`);
-
-export const fetchPlayedMatches = (query: PlayedMatchesQuery = {}) =>
-  request<MatchList>("GET", "/api/matches", { query });
 
 // ── Writes (admins) ────────────────────────────────────────────────────────
 

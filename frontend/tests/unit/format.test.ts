@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/lib/api/matches";
 import { collegeName } from "@/lib/colleges";
-import { calendarLink, getPlace, groupByDay, matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
+import { calendarLink, getPlace, matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
 
 const game = (fields: Partial<Match>): Match =>
   ({ stage: "regular", round: null, result: null, pointsForWin: 6, startsAt: "2026-11-01T22:00:00.000Z", ...fields }) as Match;
@@ -41,11 +41,7 @@ describe("pointsEarned", () => {
   });
 });
 
-describe("groupByDay and calendarLink", () => {
-  it("groups games by start day in order", () => {
-    const days = groupByDay([game({ id: "a" }), game({ id: "b" }), game({ id: "c", startsAt: "2026-11-03T22:00:00.000Z" })]);
-    expect([...days.values()].map((ms) => ms.map((m) => m.id))).toEqual([["a", "b"], ["c"]]);
-  });
+describe("calendarLink", () => {
   it("adds the game as a one-hour event", () => {
     const link = new URL(calendarLink(game({ homeCollegeId: "MC", awayCollegeId: "BK", venue: "Field", venueDetail: "2" }), "Soccer"));
     expect(link.searchParams.get("text")).toBe("IM Soccer: MC vs. BK");
