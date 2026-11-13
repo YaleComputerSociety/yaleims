@@ -17,6 +17,12 @@ export interface MatchList {
   total: number;
 }
 
+/** One page in cursor mode; `next` goes back as `after` for the page after it (null at the end). */
+export interface MatchPage {
+  items: Match[];
+  next: string | null;
+}
+
 // ── Lists ──────────────────────────────────────────────────────────────────
 
 const time = z.iso.datetime({ offset: true });
@@ -32,9 +38,28 @@ const filters = {
 const page = z.coerce.number<number>().int().min(1);
 const pageSize = z.coerce.number<number>().int().min(1).max(100).default(20);
 
+/** Up to 30 ids (what one Firestore `in` or `array-contains-any` takes), comma-separated in the URL. */
+const idList = <Item extends z.ZodType<string, string>>(item: Item) =>
+  z.string().transform((text) => text.split(",")).pipe(z.array(item).min(1).max(30));
+
+/** A place in a season's list: a game's start (ms since the epoch) and id, sent as `<ms>|<id>`. */
+export interface MatchCursor {
+  startsAtMs: number;
+  id: string;
+}
+export const encodeCursor = ({ startsAtMs, id }: MatchCursor): string => `${startsAtMs}|${id}`;
+const cursor = z.string().regex(/^\d{1,15}\|[^/|]{1,128}$/, "Not a cursor").transform((text): MatchCursor => {
+  const bar = text.indexOf("|");
+  return { startsAtMs: Number(text.slice(0, bar)), id: text.slice(bar + 1) };
+});
+
 /**
- * GET /api/seasons/{seasonId}/matches (public), by start. Without `page`,
- * every game that passes the filters (the games page reads the whole season).
+ * GET /api/seasons/{seasonId}/matches, by start. Three modes: `limit` (cursor
+ * paging: that many games after `after`, the previous answer's `next`; answers
+ * a `MatchPage`), `page` (offset paging with the filtered total) or neither
+ * (every game that passes the filters). In cursor mode `collegeIds` or
+ * `sportIds` list the games of any of those colleges or sports together (the
+ * favorites tab), instead of the single `collegeId` / `sportId`.
  */
 export const seasonMatchesQuerySchema = z.strictObject({
   ...filters,
@@ -42,8 +67,23 @@ export const seasonMatchesQuerySchema = z.strictObject({
   order: z.enum(["asc", "desc"]).default("asc"),
   page: page.optional(),
   pageSize,
-});
+  limit: z.coerce.number<number>().int().min(1).max(100).optional(),
+  after: cursor.optional(),
+  collegeIds: idList(collegeIdSchema).optional(),
+  sportIds: idList(z.string().min(1)).optional(),
+})
+  .refine((q) => q.page === undefined || q.limit === undefined, { message: "Use page or limit, not both", path: ["limit"] })
+  .refine((q) => q.limit !== undefined || (q.after ?? q.collegeIds ?? q.sportIds) === undefined, { message: "after, collegeIds and sportIds need limit", path: ["limit"] })
+  .refine((q) => q.collegeId === undefined || q.collegeIds === undefined, { message: "Use collegeId or collegeIds, not both", path: ["collegeIds"] })
+  .refine((q) => q.sportId === undefined || q.sportIds === undefined, { message: "Use sportId or sportIds, not both", path: ["sportIds"] });
 export type SeasonMatchesQuery = z.input<typeof seasonMatchesQuerySchema>;
+
+/** The cursor mode's query, with its id lists as arrays. */
+export type MatchPageQuery = Omit<SeasonMatchesQuery, "page" | "pageSize" | "collegeIds" | "sportIds"> & {
+  limit: number;
+  collegeIds?: string[];
+  sportIds?: string[];
+};
 
 /** GET /api/matches (signed in): played games in the selected or current season. */
 export const playedMatchesQuerySchema = z.strictObject({
@@ -57,6 +97,12 @@ export type PlayedMatchesQuery = z.input<typeof playedMatchesQuerySchema>;
 
 export const fetchSeasonMatches = (seasonId: string, query: SeasonMatchesQuery = {}) =>
   request<MatchList>("GET", url`/api/seasons/${seasonId}/matches`, { query });
+
+/** The same route in cursor mode: one page of `limit` games after `after`. */
+export const fetchMatchPage = (seasonId: string, { collegeIds, sportIds, ...query }: MatchPageQuery) =>
+  request<MatchPage>("GET", url`/api/seasons/${seasonId}/matches`, {
+    query: { ...query, collegeIds: collegeIds?.join(","), sportIds: sportIds?.join(",") },
+  });
 
 /** GET /api/seasons/{seasonId}/matches/{matchId} (public). */
 export const fetchMatch = (seasonId: string, matchId: string) =>

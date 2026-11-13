@@ -1,13 +1,15 @@
 import { ApiError } from "@/lib/api/core";
 import {
+  encodeCursor,
   scheduleUploadSchema,
   seasonMatchesQuerySchema,
   toMatch,
   type MatchList,
+  type MatchPage,
   type ScheduleUploadResult,
 } from "@/lib/api/matches";
 import { authorize, can } from "@/server/auth";
-import { listSeasonMatches, listSeasonMatchPage } from "@/server/data/matches";
+import { listMatchPage, listSeasonMatches, listSeasonMatchPage } from "@/server/data/matches";
 import { created, ok, readBody, readQuery, route } from "@/server/http";
 import { addSchedule } from "@/server/services/schedule";
 
@@ -15,7 +17,7 @@ type Params = { seasonId: string };
 
 const date = (iso: string | undefined) => (iso ? new Date(iso) : undefined);
 
-/** A season's games by start (public): one page with `page`, else every game that passes the filters. */
+/** A season's games by start (public): a cursor page with `limit`, one page with `page`, else every game that passes the filters. */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId } = await params;
   const query = readQuery(req, seasonMatchesQuerySchema);
@@ -26,6 +28,17 @@ export const GET = route<Params>(async (req, { params }) => {
     from: date(query.from),
     to: date(query.to),
   };
+  if (query.limit !== undefined) {
+    const { items, more } = await listMatchPage(
+      seasonId,
+      { ...filter, collegeIds: query.collegeIds, sportIds: query.sportIds },
+      query.order,
+      { limit: query.limit, after: query.after },
+    );
+    const last = items.at(-1);
+    const next = more && last ? encodeCursor({ startsAtMs: last.startsAt.toMillis(), id: last.id }) : null;
+    return ok({ items: items.map(toMatch), next } satisfies MatchPage);
+  }
   if (query.page === undefined) {
     const games = await listSeasonMatches(seasonId, filter, query.order);
     return ok({ items: games.map(toMatch), total: games.length } satisfies MatchList);
