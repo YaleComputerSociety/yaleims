@@ -1,538 +1,359 @@
 "use client";
-
-import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import PageHeading from "@/components/layout/PageHeading";
-import LoadingScreen from "@/components/layout/LoadingScreen";
-import SignInRequired from "@/components/layout/SignInRequired";
+// The games page (GAMES-REDESIGN-PLAN §2.1): a season's games in one list by
+// day and competition, from today on, earlier games on request (the List
+// view), or one day at a time on a date strip (the Day view, the older layout
+// kept as a choice, G15). Tabs: All, Favorites (the viewer's starred sports
+// and colleges), My college. Sport chips and a Filters panel narrow the list.
+// Everything the viewer chose lives in the URL (?tab=&sport=&college=&kind=
+// &status=&date=&season=&view=), so a view can be shared and the back button
+// works. Signed in only (D45).
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import DayView from "@/components/games/DayView";
+import FiltersSheet, { KINDS, NO_FILTERS, STATUSES, type SheetFilters } from "@/components/games/FiltersSheet";
+import GamesList from "@/components/games/GamesList";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import PageHeading from "@/components/layout/PageHeading";
+import SignInRequired from "@/components/layout/SignInRequired";
+import GlassDropdown from "@/components/ui/GlassDropdown";
 import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
-import { useStandings } from "@/hooks/useStandings";
-import { useTournamentNames } from "@/hooks/useTournamentNames";
-import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { useSeasonBrackets } from "@/hooks/useSeasonBrackets";
+import type { Match } from "@/lib/api/matches";
 import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
-import { COLLEGES, collegeName } from "@/lib/colleges";
-import GameCard, { getMatchStatus } from "@/components/games/GameCard";
-import DateScroller from "@/components/games/DateScroller";
-import GamesFilterBar from "@/components/games/GamesFilterBar";
-import FilterStatsCard, { seasonStats } from "@/components/games/FilterStatsCard";
-import { EmptyState, SkeletonList, type GamesTab as Tab } from "@/components/games/GameListStates";
-import { FaCalendarAlt, FaCalendarDay } from "react-icons/fa";
-import { MdSportsScore, MdSchedule, MdErrorOutline } from "react-icons/md";
-import { BsCollection } from "react-icons/bs";
-import GlassDropdown from "@/components/ui/GlassDropdown";
-import { signInUrl } from "@/lib/api/auth";
-import type { RosterEntry } from "@/lib/api/roster";
+import type { Sport } from "@/lib/api/seasons";
+import { COLLEGES, collegeIdOfName, collegeName } from "@/lib/colleges";
+import { easternDate } from "@/lib/dates";
+import { competitionOf, type ListFilter } from "@/lib/games";
+import { isSportInTerm, sortSports } from "@/lib/sports";
+import { useNow } from "@/lib/useNow";
+import type { EasternDate, Term } from "@/types/firestore";
 
-// ─── types ────────────────────────────────────────────────────────────────────
-interface TabConfig {
-  id: Tab;
-  label: string;
-  icon: React.ReactNode;
+// ── URL state ───────────────────────────────────────────────────────────────
+
+const TABS = ["all", "favorites", "college"] as const;
+type Tab = (typeof TABS)[number];
+const VIEWS = ["list", "day"] as const;
+type View = (typeof VIEWS)[number];
+
+/** Everything the viewer chose, as the URL carries it; defaults stay out of the URL. */
+interface PageState extends SheetFilters {
+  tab: Tab;
+  view: View;
+  /** null: the current season. */
+  season: string | null;
+  sport: string;
+  /** null: today, or a past season's first week. */
+  date: EasternDate | null;
 }
 
-const TABS: TabConfig[] = [
-  { id: "all",      label: "All",      icon: <BsCollection size={14} /> },
-  { id: "upcoming", label: "Live & Upcoming", icon: <MdSchedule size={14} /> },
-  { id: "scored",   label: "Scored",   icon: <MdSportsScore size={14} /> },
-  { id: "unscored", label: "Unscored", icon: <MdErrorOutline size={14} /> },
-];
+const DEFAULTS: PageState = { tab: "all", view: "list", season: null, sport: "", date: null, ...NO_FILTERS };
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-function toYMD(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const oneOf = <T extends string>(values: readonly T[], value: string | null) => values.find((v) => v === value);
+
+/** The URL's choices; unknown values fall back to the defaults. `college` may be a name (the leaderboard's older links). */
+function readState(params: URLSearchParams): PageState {
+  const date = params.get("date");
+  return {
+    tab: oneOf(TABS, params.get("tab")) ?? "all",
+    view: oneOf(VIEWS, params.get("view")) ?? "list",
+    season: params.get("season"),
+    sport: params.get("sport") ?? "",
+    collegeId: collegeIdOfName(COLLEGES, params.get("college")) ?? "",
+    kind: oneOf(KINDS.map((k) => k.value), params.get("kind")) ?? "",
+    status: oneOf(STATUSES.map((s) => s.value), params.get("status")) ?? "",
+    date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+  };
 }
 
-function isSameDay(a: Date, b: Date): boolean {
-  return toYMD(a) === toYMD(b);
-}
-
-function groupByTime(matches: Match[]): Map<string, Match[]> {
-  const map = new Map<string, Match[]>();
-  matches.forEach((m) => {
-    const key = new Date(m.startsAt).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(m);
-  });
-  return map;
-}
-
-/** Sep 1 of the first year in "YYYY-YYYY" */
-function seasonStartDate(seasonYear: string): Date {
-  const year = parseInt(seasonYear.split("-")[0], 10);
-  return new Date(year, 8, 1); // September 1
-}
-
-/** Jun 30 of the second year, capped at 60 days from now for the current season */
-function seasonEndDate(seasonYear: string, isCurrent: boolean): Date {
-  const year = parseInt(seasonYear.split("-")[1], 10);
-  const end = new Date(year, 5, 30); // June 30
-  if (isCurrent) {
-    const future = new Date();
-    future.setDate(future.getDate() + 60);
-    return future < end ? future : end;
+function writeState(state: PageState): string {
+  const params = new URLSearchParams();
+  const names: Record<keyof PageState, string> = { tab: "tab", view: "view", season: "season", sport: "sport", collegeId: "college", kind: "kind", status: "status", date: "date" };
+  for (const key of Object.keys(names) as (keyof PageState)[]) {
+    const value = state[key];
+    if (value && value !== DEFAULTS[key]) params.set(names[key], value);
   }
-  return end;
+  const text = params.toString();
+  return text ? `?${text}` : "";
 }
 
+// ── The page ────────────────────────────────────────────────────────────────
 
-
-// ─── page ─────────────────────────────────────────────────────────────────────
-const GamesPage: React.FC = () => {
-  const searchParams = useSearchParams();
-  const { currentSeason, pastSeasonIds } = useSeason();
-  const defaultSeasonYear = currentSeason?.id ?? "";
-
-  // ── season selector (the current season until one is picked) ─────────────────
-  const [pickedSeason, setSelectedSeason] = useState<string | null>(null);
-  const selectedSeason = pickedSeason ?? defaultSeasonYear;
-  const isCurrentSeason = selectedSeason === defaultSeasonYear;
-  const sports = useSeasonDetail(selectedSeason || null)?.sports;
-
-  const minDate = useMemo(() => seasonStartDate(selectedSeason), [selectedSeason]);
-  const maxDate = useMemo(
-    () => seasonEndDate(selectedSeason, isCurrentSeason),
-    [selectedSeason, isCurrentSeason]
-  );
-
-  // ── the whole season's games, once per season ───────────────────────────────
-  const [allMatches, setAllMatches] = useState<Match[]>([]);
-  const [seasonLoading, setSeasonLoading] = useState(true);
-
-  useEffect(() => {
-    if (!selectedSeason) return;
-    let live = true;
-    setSeasonLoading(true);
-    fetchSeasonMatches(selectedSeason)
-      .then(
-        ({ items }) => live && setAllMatches(items),
-        (err) => {
-          console.error("Failed to fetch season matches:", err);
-          if (live) setAllMatches([]);
-        }
-      )
-      .finally(() => live && setSeasonLoading(false));
-    return () => {
-      live = false;
-    };
-  }, [selectedSeason]);
-
-  // The standings (for a college's record) and the tournaments (for the badges).
-  const standings = useStandings(selectedSeason || null).colleges;
-  const tournamentOf = useTournamentNames(allMatches);
-  const sportOf = useMemo(() => new Map((sports ?? []).map((sport) => [sport.id, sport])), [sports]);
-
-  // ── dates that have at least one game (for DateScroller dots) ────────────────
-  const highlightedDates = useMemo<Set<string>>(() => {
-    const s = new Set<string>();
-    allMatches.forEach((m) => s.add(toYMD(new Date(m.startsAt))));
-    return s;
-  }, [allMatches]);
-
-  // ── auto-jump to nearest upcoming date with games on season/data change ──────
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-
-  // Ref to skip the auto-jump once (used by goToToday)
-  const skipNextAutoJump = useRef(false);
-
-  useEffect(() => {
-    if (highlightedDates.size === 0) return;
-    if (skipNextAutoJump.current) {
-      skipNextAutoJump.current = false;
-      return;
-    }
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const gameDates = [...highlightedDates]
-      .map((ymd) => new Date(`${ymd}T00:00:00`))
-      .sort((a, b) => a.getTime() - b.getTime());
-    if (isCurrentSeason) {
-      // For the current season: jump to the nearest upcoming game date
-      const upcoming = gameDates.find((d) => d >= now);
-      setSelectedDate(upcoming ?? gameDates[gameDates.length - 1]);
-    } else {
-      // For past seasons: jump to the first game of the season
-      setSelectedDate(gameDates[0]);
-    }
-  }, [highlightedDates, isCurrentSeason]);
-
-  // ── user sign-up state ────────────────────────────────────────────────────────
+function GamesPage() {
   const { viewer, loading: sessionLoading } = useSession();
-  // The games the user signed up for, by id, with their entry's status. Until
-  // these land we can't tell sign-up state apart from not-signed-up, so the
-  // cards show a skeleton rather than flashing "Sign Up" at someone already playing.
-  const [myEntries, setMyEntries] = useState<Map<string, MyMatch["mine"]>>(new Map());
-  const [userMatchesLoading, setUserMatchesLoading] = useState(true);
+  const { currentSeason, pastSeasonIds } = useSeason();
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const state = useMemo(() => readState(params), [params]);
+  const change = useCallback(
+    (changes: Partial<PageState>) => router.replace(pathname + writeState({ ...state, ...changes }), { scroll: false }),
+    [router, pathname, state],
+  );
 
+  const seasonId = state.season ?? currentSeason?.id ?? null;
+  const isCurrent = seasonId !== null && seasonId === currentSeason?.id;
+  const season = useSeasonDetail(seasonId);
+  const sportOf = useMemo(() => new Map((season?.sports ?? []).map((sport) => [sport.id, sport])), [season]);
+  const brackets = useSeasonBrackets(viewer ? seasonId : null);
+  const competition = useCallback(
+    (game: Match) => competitionOf(game, sportOf.get(game.sportId), game.bracketId ? brackets?.get(game.bracketId) : undefined),
+    [sportOf, brackets],
+  );
+
+  const nowMs = useNow();
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
+  const today = easternDate(now);
+  // The list opens on today (the current season), on a past season's first week, or on the day picked.
+  const anchor: EasternDate = state.date ?? (isCurrent ? today : (season?.mvpWeekOne ?? `${season?.startYear ?? today.slice(0, 4)}-09-01`));
+
+  // The viewer's entries this season mark their games (Signed up, ✓, ✓✓).
+  const [myEntries, setMyEntries] = useState<Map<string, MyMatch["mine"]>>(new Map());
   useEffect(() => {
-    if (!viewer || !selectedSeason) {
-      setMyEntries(new Map());
-      setUserMatchesLoading(!!viewer); // signed in: waiting for the season
-      return;
-    }
+    if (!viewer || !seasonId) return;
     let live = true;
-    setUserMatchesLoading(true);
-    fetchMyMatches({ seasonId: selectedSeason })
-      .then(
-        ({ items }) => live && setMyEntries(new Map(items.map((m) => [m.id, m.mine]))),
-        (err) => console.error("Error fetching user matches:", err)
-      )
-      .finally(() => live && setUserMatchesLoading(false));
+    fetchMyMatches({ seasonId }).then(
+      ({ items }) => live && setMyEntries(new Map(items.map((m) => [m.id, m.mine]))),
+      (err) => console.error("Failed to load your games:", err),
+    );
     return () => {
       live = false;
     };
-  }, [viewer, selectedSeason]);
+  }, [viewer, seasonId]);
 
-  const handleSignUpStatusChange = useCallback((matchId: string, entry: RosterEntry | null) => {
-    setMyEntries((prev) => {
-      const next = new Map(prev);
-      if (entry) next.set(matchId, { captainStatus: entry.captainStatus, present: entry.present === true, underReview: false });
-      else next.delete(matchId);
-      return next;
-    });
-  }, []);
-
-  // ── filter / tab state ───────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<Tab>("all");
-  const [sportFilter, setSportFilter] = useState<string>("");
-  const [collegeFilter, setCollegeFilter] = useState<string>("");
-
-  // Sync college filter from URL (e.g. when navigating from leaderboard)
-  useEffect(() => {
-    const college = searchParams.get("college");
-    setCollegeFilter(college ? decodeURIComponent(college) : "");
-  }, [searchParams]);
-
-  // ── matches for the selected day (client-side filter) ───────────────────────
-  const dayMatches = useMemo<Match[]>(
-    () => allMatches.filter((m) => isSameDay(new Date(m.startsAt), selectedDate)),
-    [allMatches, selectedDate]
-  );
-
-  // The filters name a sport and a college; the games refer to them by id.
-  const sportFilterId = sports?.find((sport) => sport.name === sportFilter)?.id ?? null;
-  const collegeFilterId = COLLEGES.find((college) => college.name === collegeFilter)?.id ?? null;
-
-  // ── tab + sport/college filtered list ────────────────────────────────────────
-  const displayMatches = useMemo<Match[]>(() => {
-    let result = dayMatches.filter((m) => {
-      if (sportFilter && m.sportId !== sportFilterId) return false;
-      if (
-        collegeFilter &&
-        collegeName(m.homeCollegeId) !== collegeFilter &&
-        collegeName(m.awayCollegeId) !== collegeFilter
-      )
-        return false;
-      return true;
-    });
-    if (activeTab === "upcoming")
-      result = result.filter((m) => {
-        const s = getMatchStatus(m);
-        return s === "upcoming" || s === "live";
-      });
-    else if (activeTab === "scored") result = result.filter((m) => m.result);
-    else if (activeTab === "unscored") result = result.filter((m) => getMatchStatus(m) === "completed" && !m.result);
-    // Live games float to top
-    return [...result].sort((a, b) => {
-      const sa = getMatchStatus(a);
-      const sb = getMatchStatus(b);
-      if (sa === "live" && sb !== "live") return -1;
-      if (sb === "live" && sa !== "live") return 1;
-      return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
-    });
-  }, [dayMatches, activeTab, sportFilter, sportFilterId, collegeFilter]);
-
-  const liveCount = useMemo(
-    () => dayMatches.filter((m) => getMatchStatus(m) === "live").length,
-    [dayMatches]
-  );
-
-  const groupedByTime = useMemo(() => groupByTime(displayMatches), [displayMatches]);
-
-  // ── filter stats (season-wide, for the stats card) ─────────────────────────────
-  const filterStats = useMemo(
-    () =>
-      seasonStats(
-        allMatches,
-        { collegeId: collegeFilterId, collegeName: collegeFilter, sportId: sportFilterId, sportName: sportFilter },
-        standings
-      ),
-    [allMatches, collegeFilter, collegeFilterId, sportFilter, sportFilterId, standings]
-  );
-
-  // ── handlers ──────────────────────────────────────────────────────────────────
-  const handleCollegeClick = (college: string) =>
-    setCollegeFilter((prev) => (prev === college ? "" : college));
-
-  const handleSportClick = (sport: string) =>
-    setSportFilter((prev) => (prev === sport ? "" : sport));
-
-  const handleSportChange = useCallback(
-    (newSport: string) => {
-      setSportFilter(newSport);
-      // Jump to the sport's first game (the list is by start).
-      const sportId = sports?.find((sport) => sport.name === newSport)?.id;
-      const first = newSport ? allMatches.find((m) => m.sportId === sportId) : undefined;
-      if (first) {
-        const firstDate = new Date(first.startsAt);
-        firstDate.setHours(0, 0, 0, 0);
-        setSelectedDate(firstDate);
-      }
-    },
-    [allMatches, sports]
-  );
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setActiveTab("all");
-  };
-
-  const handleSeasonChange = (season: string) => {
-    setSelectedSeason(season);
-    setActiveTab("all");
-    setSportFilter("");
-    setCollegeFilter("");
-  };
-
-  const goToToday = () => {
-    skipNextAutoJump.current = true;
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    setSelectedDate(d);
-    if (!isCurrentSeason) {
-      setSelectedSeason(defaultSeasonYear);
-      setSportFilter("");
-      setCollegeFilter("");
+  // What the list asks for, from the tab and the filters; null while the tab has nothing to show.
+  const filter = useMemo((): ListFilter | null => {
+    const chosen = { sportId: state.sport || undefined, kind: state.kind || undefined, status: state.status || undefined };
+    if (state.tab === "favorites") {
+      const favorites = viewer?.favorites;
+      if (!favorites || (favorites.sportIds.length === 0 && favorites.collegeIds.length === 0)) return null;
+      return {
+        ...chosen,
+        sportId: undefined,
+        collegeIds: favorites.collegeIds.length > 0 ? favorites.collegeIds : undefined,
+        sportIds: favorites.sportIds.length > 0 ? favorites.sportIds : undefined,
+      };
     }
-    setActiveTab("all");
-  };
+    if (state.tab === "college") return viewer?.collegeId ? { ...chosen, collegeId: viewer.collegeId } : null;
+    return { ...chosen, collegeId: state.collegeId || undefined };
+  }, [state, viewer]);
 
-  // ── day label ─────────────────────────────────────────────────────────────────
-  const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
-  const yesterday = useMemo(() => { const d = new Date(today); d.setDate(d.getDate()-1); return d; }, [today]);
-  const tomorrow  = useMemo(() => { const d = new Date(today); d.setDate(d.getDate()+1); return d; }, [today]);
-
-  const dayLabel = isSameDay(selectedDate, today)
-    ? "Today"
-    : isSameDay(selectedDate, yesterday)
-    ? "Yesterday"
-    : isSameDay(selectedDate, tomorrow)
-    ? "Tomorrow"
-    : selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-
-  const hasUpcomingGames = useMemo(
-    () => allMatches.some((m) => getMatchStatus(m) === "upcoming" || getMatchStatus(m) === "live"),
-    [allMatches]
-  );
-  const showSignInPrompt = !viewer && isCurrentSeason && hasUpcomingGames;
-
-  // The games are for signed-in users (D45).
   if (sessionLoading) return <LoadingScreen />;
   if (!viewer) return <SignInRequired heading="Games" message="Sign in to see the games." />;
+  if (!currentSeason || !seasonId || !season || !brackets) return <LoadingScreen />;
+
+  const emptyMessage =
+    state.tab === "college" ? "No games for your college here." : state.tab === "favorites" ? "No games of your favorites here." : "No games here. Try another day, sport or filter.";
 
   return (
     <div className="min-h-screen">
       <PageHeading heading="Games" />
-
-      <div className="mt-20 md:mt-16 px-3 sm:px-6 max-w-6xl mx-auto pb-10">
-
-        {/* ── Sign in prompt for unauthenticated users ────────────────────── */}
-        {showSignInPrompt && (
-          <div className="mb-4 rounded-xl border border-blue-500/30 dark:border-blue-400/30 bg-blue-500/10 dark:bg-blue-500/5 px-4 py-3 flex items-center justify-between gap-4">
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Sign in to sign up for games and report score issues.
-            </p>
-            <Link
-              href={signInUrl("/games")}
-              prefetch={false}
-              className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-            >
-              Sign in
-            </Link>
-          </div>
-        )}
-
-        {/* ── Season selector + DateScroller ─────────────────────────────── */}
-        <div className="mb-5 space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-              Season
-            </span>
-            <GlassDropdown
-              placeholder={defaultSeasonYear}
-              value={selectedSeason}
-              options={[
-                { value: defaultSeasonYear, label: `${defaultSeasonYear} (Current)` },
-                ...pastSeasonIds
-                  .filter((y) => y !== defaultSeasonYear)
-                  .map((y) => ({ value: y, label: y })),
-              ]}
-              onChange={handleSeasonChange}
-              allowReset={false}
-            />
-            {/* Today button */}
-            {(!isSameDay(selectedDate, today) || !isCurrentSeason) && (
-              <button
-                onClick={goToToday}
-                className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-400 dark:hover:text-gray-950 transition-all"
-              >
-                <FaCalendarDay size={10} />
-                Today
-              </button>
-            )}
-            {/* Legend */}
-            <div className="ml-auto flex items-center gap-3 text-[10px] text-gray-400 dark:text-gray-500">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-                Has games
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
-                Today
-              </span>
-            </div>
-          </div>
-
-          {/* Date strip */}
-          {seasonLoading ? (
-            <div className="h-[76px] rounded-xl bg-gray-200/60 dark:bg-gray-900/60 animate-pulse" />
+      <div className="mt-20 md:mt-16 px-3 sm:px-6 max-w-3xl mx-auto pb-10 space-y-4">
+        <Toolbar
+          seasonId={seasonId}
+          currentSeasonId={currentSeason.id}
+          pastSeasonIds={pastSeasonIds}
+          date={anchor}
+          showToday={!isCurrent || anchor !== today}
+          view={state.view}
+          onSeason={(id) => change({ season: id === currentSeason.id ? null : id, date: null })}
+          onToday={() => change({ season: null, date: null })}
+          onDate={(date) => change({ date: date && !(isCurrent && date === today) ? date : null })}
+          onView={(view) => change({ view })}
+        />
+        {state.tab !== "favorites" && <SportChips sports={season.sports} term={season.currentTerm} value={state.sport} onChange={(sport) => change({ sport })} />}
+        <Tabs value={state.tab} onChange={(tab) => change({ tab })} college={collegeName(viewer.collegeId)} />
+        {state.tab === "all" && <Filters value={state} onChange={(filters) => change(filters)} />}
+        {filter === null ? (
+          state.tab === "favorites" ? (
+            <Notice>Star a sport or a college to see its games here.</Notice>
           ) : (
-            <DateScroller
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              minDate={minDate}
-              maxDate={maxDate}
-              highlightedDates={highlightedDates}
-            />
-          )}
-        </div>
-
-        {/* ── Day label + live badge + filter bar ───────────────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <FaCalendarAlt className="text-blue-600 dark:text-blue-400" size={14} />
-            <h2 className="text-base font-bold text-gray-800 dark:text-white">
-              {dayLabel}
-            </h2>
-            {!seasonLoading && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                {(sportFilter || collegeFilter || activeTab !== "all")
-                  ? `· ${displayMatches.length} of ${dayMatches.length} game${dayMatches.length !== 1 ? "s" : ""}`
-                  : `· ${dayMatches.length} game${dayMatches.length !== 1 ? "s" : ""}`}
-              </span>
-            )}
-            {liveCount > 0 && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                {liveCount} LIVE
-              </span>
-            )}
-          </div>
-          <GamesFilterBar
-            sports={sports ?? []}
-            sportFilter={sportFilter}
-            collegeFilter={collegeFilter}
-            onSportChange={handleSportChange}
-            onCollegeChange={setCollegeFilter}
+            <Notice>
+              Your college isn&apos;t set yet.{" "}
+              <Link href="/profile" className="underline">
+                Set it on your profile
+              </Link>
+              .
+            </Notice>
+          )
+        ) : state.view === "day" ? (
+          <DayView
+            seasonId={seasonId}
+            startYear={season.startYear}
+            day={anchor}
+            onDay={(date) => change({ date: isCurrent && date === today ? null : date })}
+            filter={filter}
+            competitionOf={competition}
+            myEntries={myEntries}
+            now={now}
           />
-        </div>
-
-        {/* ── Filter stats card (slides down when college or sport selected) ────── */}
-        {filterStats && (
-          <FilterStatsCard
-            stats={filterStats}
-            isLoading={seasonLoading}
-            seasonYear={selectedSeason}
-          />
-        )}
-
-        {/* ── Tab bar ──────────────────────────────────────────────────── */}
-        <div className="flex gap-1 mb-5 bg-gray-200 dark:bg-gray-950 rounded-xl p-1">
-          {TABS.map(({ id, label, icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-semibold transition-all duration-150
-                ${
-                  activeTab === id
-                    ? "bg-gray-50 dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                }`}
-            >
-              {icon}
-              <span>{label}</span>
-              {id === "upcoming" && liveCount > 0 && (
-                <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white leading-none">
-                  <span className="w-1 h-1 rounded-full bg-white animate-ping" />
-                  {liveCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Match list ─────────────────────────────────────────────────── */}
-        {seasonLoading ? (
-          <SkeletonList />
-        ) : displayMatches.length === 0 ? (
-          <EmptyState tab={activeTab} dayLabel={dayLabel} hasGamesOnDay={dayMatches.length > 0} sportFilter={sportFilter} collegeFilter={collegeFilter} onClearFilters={() => { setSportFilter(""); setCollegeFilter(""); setActiveTab("all"); }} />
         ) : (
-          <div className="space-y-6">
-            {[...groupedByTime.entries()].map(([timeKey, timeMatches]) => (
-              <div key={timeKey}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-                  <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                    {timeKey}
-                  </span>
-                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {timeMatches.map((match) => (
-                    <GameCard
-                      key={match.id}
-                      match={match}
-                      sport={sportOf.get(match.sportId)}
-                      tournament={tournamentOf(match)}
-                      onCollegeClick={handleCollegeClick}
-                      onSportClick={handleSportClick}
-                      viewer={viewer}
-                      isSignedUp={myEntries.has(match.id)}
-                      mine={myEntries.get(match.id)}
-                      signUpStatusLoading={userMatchesLoading}
-                      onStatusChange={handleSignUpStatusChange}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <GamesList
+            seasonId={seasonId}
+            filter={filter}
+            anchor={anchor}
+            competitionOf={competition}
+            myEntries={myEntries}
+            now={now}
+            refresh={isCurrent && anchor === today}
+            emptyMessage={emptyMessage}
+          />
         )}
       </div>
     </div>
   );
-};
+}
 
-function GamesPageFallback() {
+// ── Controls ────────────────────────────────────────────────────────────────
+
+const pill = (on: boolean) =>
+  `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+    on ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+  }`;
+
+interface ToolbarProps {
+  seasonId: string;
+  currentSeasonId: string;
+  pastSeasonIds: string[];
+  date: EasternDate;
+  showToday: boolean;
+  view: View;
+  onSeason: (seasonId: string) => void;
+  onToday: () => void;
+  onDate: (date: string) => void;
+  onView: (view: View) => void;
+}
+
+/** The season, a Today button, a day to jump to, and the List / Day switch. */
+function Toolbar({ seasonId, currentSeasonId, pastSeasonIds, date, showToday, view, onSeason, onToday, onDate, onView }: ToolbarProps) {
   return (
-    <div className="min-h-screen pt-20 px-6 flex items-center justify-center">
-      <div className="animate-pulse text-gray-400">Loading games…</div>
+    <div className="flex flex-wrap items-center gap-2">
+      <GlassDropdown
+        placeholder="Season"
+        value={seasonId}
+        options={[
+          { value: currentSeasonId, label: `${currentSeasonId} (Current)` },
+          ...pastSeasonIds.filter((id) => id !== currentSeasonId).map((id) => ({ value: id, label: id })),
+        ]}
+        onChange={onSeason}
+        allowReset={false}
+      />
+      {showToday && (
+        <button type="button" onClick={onToday} className={pill(false)}>
+          Today
+        </button>
+      )}
+      <label className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="sr-only">Jump to a day</span>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => onDate(e.target.value)}
+          className="rounded-full border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-1 text-xs text-gray-700 dark:text-gray-200"
+        />
+      </label>
+      <div className="ml-auto inline-flex rounded-full border border-gray-300 dark:border-gray-700 p-0.5" role="group" aria-label="View">
+        {VIEWS.map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={view === v}
+            onClick={() => onView(v)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${view === v ? "bg-gray-800 text-white dark:bg-gray-100 dark:text-gray-900" : "text-gray-600 dark:text-gray-300"}`}
+          >
+            {v === "list" ? "List" : "Day"}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
+/** One sport at a time: this term's sports first, then the others. */
+function SportChips({ sports, term, value, onChange }: { sports: Sport[]; term: Term; value: string; onChange: (sportId: string) => void }) {
+  const sorted = sortSports(sports);
+  const thisTerm = sorted.filter((sport) => isSportInTerm(sport, term));
+  const others = sorted.filter((sport) => !isSportInTerm(sport, term));
+  const chip = (id: string, label: string) => (
+    <button key={id} type="button" aria-pressed={value === id} onClick={() => onChange(value === id ? "" : id)} className={`flex-none ${pill(value === id)}`}>
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1" role="group" aria-label="Sport">
+      {chip("", "All sports")}
+      {thisTerm.map((sport) => chip(sport.id, `${sport.emoji} ${sport.name}`))}
+      {others.length > 0 && <span className="flex-none w-px h-5 bg-gray-300 dark:bg-gray-700" aria-hidden />}
+      {others.map((sport) => chip(sport.id, `${sport.emoji} ${sport.name}`))}
+    </div>
+  );
+}
+
+function Tabs({ value, onChange, college }: { value: Tab; onChange: (tab: Tab) => void; college: string | null }) {
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "favorites", label: "Favorites ★" },
+    { id: "college", label: college ?? "My college" },
+  ];
+  return (
+    <div className="flex gap-1 bg-gray-200 dark:bg-gray-950 rounded-xl p-1" role="tablist">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={value === tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`flex-1 py-2 px-2 rounded-lg text-xs font-semibold transition-all ${
+            value === tab.id ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The Filters button with the active filters as chips, and the panel when open. */
+function Filters({ value, onChange }: { value: SheetFilters; onChange: (value: SheetFilters) => void }) {
+  const [open, setOpen] = useState(false);
+  const active = [
+    value.collegeId && (collegeName(value.collegeId) ?? value.collegeId),
+    KINDS.find((k) => k.value === value.kind)?.label,
+    STATUSES.find((s) => s.value === value.status)?.label,
+  ].filter((label): label is string => !!label);
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className={pill(open)}>
+          Filters{active.length > 0 && ` · ${active.length}`}
+        </button>
+        {active.map((label) => (
+          <span key={label} className="px-2 py-1 rounded-full text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+            {label}
+          </span>
+        ))}
+        {active.length > 0 && (
+          <button type="button" onClick={() => onChange(NO_FILTERS)} className="text-xs text-gray-500 dark:text-gray-400 underline">
+            Clear
+          </button>
+        )}
+      </div>
+      {open && <FiltersSheet value={value} onChange={onChange} />}
+    </div>
+  );
+}
+
+const Notice = ({ children }: { children: ReactNode }) => (
+  <p className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">{children}</p>
+);
+
+/** useSearchParams needs a Suspense boundary around the page. */
 export default function GamesPageWithSuspense() {
   return (
-    <Suspense fallback={<GamesPageFallback />}>
+    <Suspense fallback={<LoadingScreen />}>
       <GamesPage />
     </Suspense>
   );

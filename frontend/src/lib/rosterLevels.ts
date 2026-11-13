@@ -21,5 +21,11 @@ export function levelOf(entry: Pick<RosterEntryDoc, "captainStatus" | "present">
   return entry.captainStatus === "confirmed" ? "pre-confirmed" : "signed-up";
 }
 
+/** The level that counts once the game has started: a captain's pre-confirmation only before it (C14, C17); a supervisor's confirmation always. */
+export function levelAt(entry: Pick<RosterEntryDoc, "captainStatus" | "present">, started: boolean): Level {
+  const level = levelOf(entry);
+  return started && level === "pre-confirmed" ? "signed-up" : level;
+}
+
 /** The marks explained, lowest first. */
 export const LEGEND = "✓ pre-confirmed by captain · ✓✓ confirmed by supervisor (final: the only one that counts)";

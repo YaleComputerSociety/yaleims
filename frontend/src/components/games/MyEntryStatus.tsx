@@ -1,5 +1,5 @@
 import type { MyMatch } from "@/lib/api/me";
-import { LEVELS } from "@/lib/rosterLevels";
+import { LEVELS, levelAt } from "@/lib/rosterLevels";
 
 /**
  * Where the viewer's own sign-up for a game stands (D34, C14, C17): confirmed
@@ -8,9 +8,10 @@ import { LEVELS } from "@/lib/rosterLevels";
  * nothing shown.
  */
 export default function MyEntryStatus({ mine, started }: { mine: MyMatch["mine"] | undefined; started: boolean }) {
-  const level = !mine ? null : mine.present ? LEVELS.confirmed : !started && mine.captainStatus === "confirmed" ? LEVELS["pre-confirmed"] : null;
-  if (!level) return null;
-  const label = `${level.label[0].toUpperCase()}${level.label.slice(1)} ${level.mark}`;
+  const level = mine && levelAt(mine, started);
+  if (!level || level === "signed-up") return null;
+  const { label: text, mark } = LEVELS[level];
+  const label = `${text[0].toUpperCase()}${text.slice(1)} ${mark}`;
   return (
     <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
       {label}

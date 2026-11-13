@@ -67,9 +67,9 @@ const TournamentsPage: React.FC = () => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Tournament list for the season, refetched whenever the year changes.
+  // Tournament list for the season, refetched whenever the year changes (signed in only, D45).
   useEffect(() => {
-    if (!season) return;
+    if (!season || !viewer) return;
 
     const fetchTournaments = async () => {
       try {
@@ -92,7 +92,7 @@ const TournamentsPage: React.FC = () => {
     };
 
     fetchTournaments();
-  }, [season]);
+  }, [season, viewer]);
 
   const selected = useMemo(
     () => tournaments.find((t) => t.id === selectedId) || null,
