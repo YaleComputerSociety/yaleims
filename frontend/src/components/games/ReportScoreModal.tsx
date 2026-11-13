@@ -229,5 +229,3 @@ const ReportScoreModal: React.FC<ReportScoreModalProps> = ({ match, sportName, s
     </div>
   );
 };
-
-export default ReportScoreModal;
