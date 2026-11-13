@@ -90,9 +90,9 @@ const Dashboard: React.FC = () => {
   const userActions: HubAction[] = [
     {
       title: "Sign Up for Games",
-      link: "/schedules",
+      link: "/sign-up",
       icon: "📅",
-      description: "View schedule and sign up for upcoming matches",
+      description: "Your college's upcoming games, with sign-up",
       gradient: "from-blue-500/10 to-cyan-500/10",
     },
     {

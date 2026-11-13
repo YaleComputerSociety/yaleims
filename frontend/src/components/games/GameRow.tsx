@@ -34,7 +34,7 @@ export default function GameRow({ match, now, mine, detail, action }: GameRowPro
   const aside = match.result ? null : (action ?? (mine && <MyLevel mine={mine} started={state !== "upcoming"} />));
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/60 transition-colors">
-      <Link href={gameHref(match)} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 min-h-14">
+      <Link href={gameHref(match)} className="grid grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2 min-h-14">
         <State state={state} time={gameTime(match)} detail={detail} />
         <div className="flex flex-col gap-1 min-w-0">
           <Side match={match} side="home" state={state} />

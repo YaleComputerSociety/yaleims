@@ -39,13 +39,13 @@ export default function Footer() {
               <h3 className="text-lg font-bold text-white">Explore</h3>
               <ul className="mt-2 space-y-1">
                 <li>
-                  <Link href="/scores" className="hover:underline">
+                  <Link href="/games?status=scored" className="hover:underline">
                     Scores
                   </Link>
                 </li>
                 <li>
-                  <Link href="/schedules" className="hover:underline">
-                    Schedules
+                  <Link href="/sign-up" className="hover:underline">
+                    Sign up for games
                   </Link>
                 </li>
                 <li>

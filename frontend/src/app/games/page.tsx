@@ -13,6 +13,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import DayView from "@/components/games/DayView";
 import FiltersSheet, { KINDS, NO_FILTERS, STATUSES, type SheetFilters } from "@/components/games/FiltersSheet";
 import GamesList from "@/components/games/GamesList";
+import SportChips, { chipClass } from "@/components/games/SportChips";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import PageHeading from "@/components/layout/PageHeading";
 import SignInRequired from "@/components/layout/SignInRequired";
@@ -22,13 +23,11 @@ import { useSession } from "@/context/SessionContext";
 import { useSeasonBrackets } from "@/hooks/useSeasonBrackets";
 import type { Match } from "@/lib/api/matches";
 import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
-import type { Sport } from "@/lib/api/seasons";
 import { COLLEGES, collegeIdOfName, collegeName } from "@/lib/colleges";
 import { easternDate } from "@/lib/dates";
 import { competitionOf, type ListFilter } from "@/lib/games";
-import { isSportInTerm, sortSports } from "@/lib/sports";
 import { useNow } from "@/lib/useNow";
-import type { EasternDate, Term } from "@/types/firestore";
+import type { EasternDate } from "@/types/firestore";
 
 // ── URL state ───────────────────────────────────────────────────────────────
 
@@ -207,11 +206,6 @@ function GamesPage() {
 
 // ── Controls ────────────────────────────────────────────────────────────────
 
-const pill = (on: boolean) =>
-  `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-    on ? "bg-blue-600 border-blue-600 text-white" : "border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-  }`;
-
 interface ToolbarProps {
   seasonId: string;
   currentSeasonId: string;
@@ -240,7 +234,7 @@ function Toolbar({ seasonId, currentSeasonId, pastSeasonIds, date, showToday, vi
         allowReset={false}
       />
       {showToday && (
-        <button type="button" onClick={onToday} className={pill(false)}>
+        <button type="button" onClick={onToday} className={chipClass(false)}>
           Today
         </button>
       )}
@@ -266,26 +260,6 @@ function Toolbar({ seasonId, currentSeasonId, pastSeasonIds, date, showToday, vi
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-/** One sport at a time: this term's sports first, then the others. */
-function SportChips({ sports, term, value, onChange }: { sports: Sport[]; term: Term; value: string; onChange: (sportId: string) => void }) {
-  const sorted = sortSports(sports);
-  const thisTerm = sorted.filter((sport) => isSportInTerm(sport, term));
-  const others = sorted.filter((sport) => !isSportInTerm(sport, term));
-  const chip = (id: string, label: string) => (
-    <button key={id} type="button" aria-pressed={value === id} onClick={() => onChange(value === id ? "" : id)} className={`flex-none ${pill(value === id)}`}>
-      {label}
-    </button>
-  );
-  return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1" role="group" aria-label="Sport">
-      {chip("", "All sports")}
-      {thisTerm.map((sport) => chip(sport.id, `${sport.emoji} ${sport.name}`))}
-      {others.length > 0 && <span className="flex-none w-px h-5 bg-gray-300 dark:bg-gray-700" aria-hidden />}
-      {others.map((sport) => chip(sport.id, `${sport.emoji} ${sport.name}`))}
     </div>
   );
 }
@@ -327,7 +301,7 @@ function Filters({ value, onChange }: { value: SheetFilters; onChange: (value: S
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className={pill(open)}>
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className={chipClass(open)}>
           Filters{active.length > 0 && ` · ${active.length}`}
         </button>
         {active.map((label) => (

@@ -146,10 +146,10 @@ const Profile = () => {
                   <ListView matches={availableMatches} isSignedUp={false} />
                   <div className="flex justify-center w pt-4">
                     <Link
-                      href="/schedules"
+                      href="/sign-up"
                       className="p-2 sm:p-4 text-white text-xs sm:text-sm rounded-lg shadow transition duration-200 ease-in-out bg-blue-600 hover:scale-110"
                     >
-                      See More on the Schedules Page!
+                      Sign up for more games
                     </Link>
                   </div>
                 </div>

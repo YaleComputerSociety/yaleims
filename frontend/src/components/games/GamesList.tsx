@@ -8,7 +8,7 @@
 // counterpart: it hides loaded games and loads on until a screen is full.
 // While the tab is visible, the first page is read again every minute so new
 // scores show without a reload (G8).
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { fetchMatchPage, type Match } from "@/lib/api/matches";
 import type { MyMatch } from "@/lib/api/me";
 import { easternDate } from "@/lib/dates";
@@ -33,6 +33,8 @@ interface GamesListProps {
   refresh: boolean;
   /** What to say when nothing passes the filter. */
   emptyMessage: string;
+  /** Something for a row's right edge (the sign-up page's button). */
+  action?: (match: Match) => ReactNode;
 }
 
 interface Loaded {
@@ -49,7 +51,7 @@ interface Loaded {
 
 type Busy = "first" | "down" | "up" | null;
 
-export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage }: GamesListProps) {
+export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage, action }: GamesListProps) {
   const key = JSON.stringify([seasonId, filter, anchor]);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -187,7 +189,7 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
       ) : days.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">{emptyMessage}</p>
       ) : (
-        <GamesByDay days={days} today={easternDate(now)} now={now} myEntries={myEntries} />
+        <GamesByDay days={days} today={easternDate(now)} now={now} myEntries={myEntries} action={action} />
       )}
       <div ref={sentinel} aria-hidden className="h-px" />
       {busy === "down" && <p className="text-center text-xs text-gray-400 dark:text-gray-500">Loading…</p>}

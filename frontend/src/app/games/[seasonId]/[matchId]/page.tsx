@@ -10,9 +10,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { FaChevronLeft } from "react-icons/fa";
-import { toast } from "react-toastify";
 import { ParticipantsList } from "@/components/games/Participants";
 import { ReportScoreButton } from "@/components/games/ReportScoreModal";
+import SignUpButton from "@/components/games/SignUpButton";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import PageHeading from "@/components/layout/PageHeading";
@@ -21,7 +21,7 @@ import { useSeasonDetail } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
 import { useSeasonBrackets } from "@/hooks/useSeasonBrackets";
 import { fetchMatch, type Match } from "@/lib/api/matches";
-import { fetchRoster, signUp, withdraw, type Roster } from "@/lib/api/roster";
+import { fetchRoster, type Roster } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
 import { calendarLink, matchTypeLabel, pointsEarned } from "@/lib/format";
 import { competitionOf, gameDateTime, rowState, type RowState } from "@/lib/games";
@@ -200,26 +200,11 @@ function StateBadge({ state, result }: { state: RowState; result: MatchResult | 
  * on a cancelled one).
  */
 function SignUpBlock({ match, roster, viewerCollegeId, onChanged }: { match: Match; roster: Roster | null; viewerCollegeId: string | null; onChanged: () => void }) {
-  const [busy, setBusy] = useState(false);
   if (!roster) return null;
   const mine = roster.mine;
   const plays = viewerCollegeId !== null && match.collegeIds.includes(viewerCollegeId);
   if (!mine && !plays) return null;
-
-  const act = async (action: () => Promise<unknown>, done: string) => {
-    setBusy(true);
-    try {
-      await action();
-      toast.success(done);
-      onChanged();
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
   const level = mine && levelAt(mine, false);
-  const button = "px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60";
   return (
     <section className="rounded-2xl border border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between gap-3">
       <div className="text-sm">
@@ -237,22 +222,7 @@ function SignUpBlock({ match, roster, viewerCollegeId, onChanged }: { match: Mat
           <span>Your college plays this game.</span>
         )}
       </div>
-      {mine ? (
-        mine.present !== true && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => act(() => withdraw(match.seasonId, match.id), "You're off the game")}
-            className={`${button} border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40`}
-          >
-            Withdraw
-          </button>
-        )
-      ) : (
-        <button type="button" disabled={busy} onClick={() => act(() => signUp(match.seasonId, match.id), "You're signed up")} className={`${button} bg-blue-600 text-white hover:bg-blue-700`}>
-          Sign up
-        </button>
-      )}
+      <SignUpButton match={match} mine={mine} onChanged={onChanged} />
     </section>
   );
 }
