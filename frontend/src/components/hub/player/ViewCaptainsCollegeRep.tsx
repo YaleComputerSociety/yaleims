@@ -3,7 +3,7 @@ import { useSeason } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
 import { fetchCollegeLeaders } from "@/lib/api/colleges";
 
-type CaptainRow = { sport: string; name: string };
+type CaptainRow = { sport: string; names: string[] };
 type RepRow = { name: string; email: string | null };
 
 /** The user's college this season: its captains (by sport) and its college reps. */
@@ -22,9 +22,13 @@ export default function ViewCaptainsCollegeRep() {
     fetchCollegeLeaders(currentSeason.id, collegeId).then(
       ({ reps, captains }) => {
         if (!live) return;
-        const sportName = new Map(currentSeason.sports.map((sport) => [sport.id, sport.name]));
         setRepRows(reps.map((rep) => ({ name: rep.name, email: rep.email })));
-        setCaptainRows(captains.map((c) => ({ sport: sportName.get(c.sportId) ?? c.sportId, name: c.name })));
+        // One row per sport (a sport may have several captains), in the season's sport order.
+        setCaptainRows(
+          currentSeason.sports
+            .map((sport) => ({ sport: sport.name, names: captains.filter((c) => c.sportId === sport.id).map((c) => c.name) }))
+            .filter((row) => row.names.length > 0)
+        );
       },
       (e: Error) => {
         console.error(e);
@@ -66,10 +70,10 @@ export default function ViewCaptainsCollegeRep() {
             <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm">No captains found.</div>
           ) : (
             <ul className="divide-y divide-black/10 dark:divide-white/10 rounded-xl text-xs md:text-sm bg-black/[0.03] dark:bg-white/5 p-2">
-              {captainRows.map((r, i) => (
-                <li key={`${r.sport}-${i}`} className="flex items-center justify-between py-2">
+              {captainRows.map((r) => (
+                <li key={r.sport} className="flex items-center justify-between gap-3 py-2">
                   <span className="text-gray-600 dark:text-gray-300">{r.sport}</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{r.name}</span>
+                  <span className="font-medium text-right text-gray-900 dark:text-white">{r.names.join(", ")}</span>
                 </li>
               ))}
             </ul>

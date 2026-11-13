@@ -1,10 +1,13 @@
 // Who sees a game's participants, and which (NAMES-AND-PARTICIPANTS-PLAN,
 // decisions D-P1–D-P4): supervisors and admins see every game; a player sees
 // the games their college plays in, and anyone on a game sees that game,
-// both sides each time. Until the start they see who signed up or was put on
-// it (not those a captain took off); from the start only those a supervisor
-// recorded present, the only attendance that counts (lib/attendance.ts).
-import type { RosterEntryDoc } from "@/types/firestore";
+// both sides each time. Each side lists who signed up or was put on it (not
+// those taken off) until a supervisor records one of its players present,
+// at any time; from then on only those recorded present, the only attendance
+// that counts (lib/attendance.ts; user, 2026-11-10). A cancelled game shows
+// nobody (C19).
+import type { MatchDoc, RosterEntryDoc } from "@/types/firestore";
+import { countsAsAttended } from "./attendance";
 
 export interface ParticipantsViewer {
   /** A supervisor or an admin. */
@@ -19,7 +22,14 @@ export function seesParticipants(viewer: ParticipantsViewer, game: { collegeIds:
   return viewer.staff || viewer.onGame || (viewer.collegeId !== null && game.collegeIds.includes(viewer.collegeId));
 }
 
-/** The entries to list: before the start the game's players; from it those recorded present. */
-export function shownEntries<T extends Pick<RosterEntryDoc, "captainStatus" | "present">>(entries: T[], started: boolean): T[] {
-  return entries.filter((e) => (started ? e.present === true : e.captainStatus !== "removed"));
+/**
+ * The entries to list, side by side: its players, or once attendance is
+ * being taken on that side, those recorded present (never those taken off);
+ * nobody on a cancelled game (C19).
+ */
+export function shownEntries<T extends Pick<RosterEntryDoc, "collegeId" | "captainStatus" | "present">>(entries: T[], game: Pick<MatchDoc, "status">): T[] {
+  if (game.status === "cancelled") return [];
+  const present = (e: T) => countsAsAttended(e, game);
+  const taking = new Set(entries.filter(present).map((e) => e.collegeId));
+  return entries.filter((e) => (taking.has(e.collegeId) ? present(e) : e.captainStatus !== "removed"));
 }

@@ -1,18 +1,20 @@
-// The roster sheet: before a game, each team's
-// captain prepares their college's side (confirm, remove, add players, by
-// NetID too) until it starts; a supervisor marks who came and adds walk-ins,
-// at any time. Who may act on which side is the route's check (server/auth.ts
-// can.manageRoster, can.takeAttendance), read again in an add's transaction
-// (rosterRoleIn); the deadlines are here. A
-// supervisor's change after the game's day (Eastern) is audit-logged (R5).
+// The roster sheet: before a game, each team's captains prepare their
+// college's side (pre-confirm, take off, add players, by NetID too) until it
+// starts; a supervisor confirms who came (the final word: the only attendance
+// that counts), takes players off or puts them back, and adds walk-ins, at
+// any time. One person may be both. Who may act on which side is the route's
+// check (server/auth.ts can.prepareRoster, can.takeAttendance), read again in
+// an add's transaction (rosterRolesIn); the deadlines are here. Every
+// take-off and put-back is audit-logged (C22), a supervisor's other changes
+// after the game's day (Eastern) too (R5).
 import "server-only";
 import { FieldValue, type Transaction, type WithFieldValue } from "firebase-admin/firestore";
 import { ApiError } from "@/lib/api/core";
 import { collegeIdOfName, collegeName } from "@/lib/colleges";
 import { easternDate } from "@/lib/dates";
 import { placeholderId } from "@/lib/netid";
-import type { CaptainStatus, MatchDoc, RosterEntryDoc } from "@/types/firestore";
-import { rosterRoleIn } from "../auth";
+import type { CaptainStatus, MatchDoc, RosterEntryDoc, TakenOffFrom } from "@/types/firestore";
+import { rosterRolesIn } from "../auth";
 import { logAction, type Actor } from "../data/auditLog";
 import { listColleges } from "../data/colleges";
 import { getMatch, matchRef } from "../data/matches";
@@ -24,37 +26,53 @@ import { runTransaction } from "../data/util";
 import { lookUpNetid } from "../directory";
 import { claimPlaceholders, collegeAfterLookup, readAccount, writeAccount, writeSeasonPlayer } from "./accounts";
 
-/** Who acts: a supervisor (any time, may take attendance) or a captain (until the start). */
+/**
+ * Who acts, as what: a supervisor (attendance at any time, before the start
+ * too; may take a player off or put them back, never pre-confirm: that is
+ * the captains' call) and/or a captain of the side's team (pre-confirm, take
+ * off, add, until the start).
+ */
 export interface SheetEditor {
   supervisor: boolean;
+  captain: boolean;
   actor: Actor;
 }
 
+/** Whether `by` acts as the side's captain now: a captain, before the start (after it, only as a supervisor). */
+const asCaptain = (by: SheetEditor, match: MatchDoc, now: Date) => by.captain && !started(match, now);
+
 const started = (match: MatchDoc, now: Date) => match.startsAt.toMillis() <= now.getTime();
 
-/** A supervisor's change on a later day than the game's is logged (R5). */
-function logIfLate(
+/** Logs a change that takes a player off or puts them back, by anyone, whenever (C22); a supervisor's other changes on a later day than the game's (R5). */
+function logChange(
   tx: Transaction,
   by: SheetEditor,
   match: MatchDoc,
   now: Date,
+  offOrBack: boolean,
   entry: Parameters<typeof logAction>[2]
 ): void {
-  if (by.supervisor && easternDate(now) > easternDate(match.startsAt.toDate())) logAction(tx, match.seasonId, entry);
+  if (offOrBack || (by.supervisor && easternDate(now) > easternDate(match.startsAt.toDate()))) logAction(tx, match.seasonId, entry);
 }
 
 // ── Changing an entry ──────────────────────────────────────────────────────
 
 export interface EntryChange {
-  /** The captain's call; null takes it back. */
+  /** The captain's call; null takes it back (for a player taken off: puts them back). */
   captainStatus?: CaptainStatus | null;
   /** Came to the game (supervisors). */
   present?: boolean;
 }
 
-export type ChangeResult = "ok" | "no-match" | "no-entry" | "started";
+export type ChangeResult = "ok" | "no-match" | "no-entry" | "cancelled" | "started" | "captains-only" | "taken-off" | "supervisor-confirmed";
 
-/** Changes the captain's call or the attendance of one player on a game. */
+/**
+ * Changes the captain's call or the attendance of one player on a game. A
+ * player taken off isn't marked present or pre-confirmed ("taken-off"): put
+ * back first. Once a supervisor confirmed a player, only a supervisor changes
+ * their call (C20). A cancelled game's roster stays as it was, in case it is
+ * restored (C19).
+ */
 export async function changeEntry(
   seasonId: string,
   matchId: string,
@@ -68,18 +86,29 @@ export async function changeEntry(
     const [matchSnap, entrySnap] = await Promise.all([tx.get(matchRef(seasonId, matchId)), tx.get(entryRef)]);
     const match = matchSnap.data();
     if (!match) return "no-match";
-    if (!entrySnap.exists) return "no-entry";
+    const entry = entrySnap.data();
+    if (!entry) return "no-entry";
+    if (match.status === "cancelled") return "cancelled";
     if (!by.supervisor && started(match, now)) return "started";
+    if (!by.supervisor && entry.present === true && change.captainStatus !== undefined) return "supervisor-confirmed";
+    // Pre-confirming, or taking a pre-confirmation back: the captains', until the start.
+    const preConfirming = change.captainStatus === "confirmed" || (change.captainStatus === null && entry.captainStatus === "confirmed");
+    if (preConfirming && !by.captain) return "captains-only";
+    if (preConfirming && !asCaptain(by, match, now)) return "started";
+    const offAfter = change.captainStatus === undefined ? entry.captainStatus === "removed" : change.captainStatus === "removed";
+    if (change.present === true && offAfter) return "taken-off";
+    if (change.captainStatus === "confirmed" && entry.captainStatus === "removed") return "taken-off";
 
     tx.update(entryRef, {
       ...(change.captainStatus !== undefined
-        ? { captainStatus: change.captainStatus, captainBy: by.actor.userId, captainAt: FieldValue.serverTimestamp() }
+        ? callUpdate(entry, change.captainStatus, by.actor, asCaptain(by, match, now) ? "captain" : "supervisor")
         : {}),
       ...(change.present !== undefined
         ? { present: change.present, presentBy: by.actor.userId, presentAt: FieldValue.serverTimestamp() }
         : {}),
     });
-    logIfLate(tx, by, match, now, {
+    const offOrBack = change.captainStatus === "removed" || (change.captainStatus === null && entry.captainStatus === "removed");
+    logChange(tx, by, match, now, offOrBack, {
       actor: by.actor,
       action: "changeRosterEntry",
       params: { matchId, playerId, ...change },
@@ -87,6 +116,34 @@ export async function changeEntry(
     });
     return "ok";
   });
+}
+
+/**
+ * What a change of the captain's call writes. Taking a player off saves the
+ * call and presence it replaces and clears the presence (a player taken off
+ * didn't play); putting them back restores both, whoever took them off, so
+ * a mistaken take-off costs nothing (C12). Entries taken off before then
+ * have nothing saved: putting them back leaves no call.
+ */
+function callUpdate(entry: RosterEntryDoc, status: CaptainStatus | null, actor: Actor, role: "captain" | "supervisor") {
+  const call = { captainStatus: status, captainBy: actor.userId, captainByRole: role, captainAt: FieldValue.serverTimestamp() };
+  if (status === "removed" && entry.captainStatus !== "removed") {
+    const saved: TakenOffFrom = {
+      captainStatus: entry.captainStatus ?? null,
+      captainBy: entry.captainBy ?? null,
+      captainByRole: entry.captainByRole ?? null,
+      captainAt: entry.captainAt ?? null,
+      present: entry.present ?? null,
+      presentBy: entry.presentBy ?? null,
+      presentAt: entry.presentAt ?? null,
+    };
+    const absent = entry.present ? { present: false, presentBy: actor.userId, presentAt: FieldValue.serverTimestamp() } : {};
+    return { ...call, ...absent, beforeTakeOff: saved };
+  }
+  if (status === null && entry.captainStatus === "removed" && entry.beforeTakeOff) {
+    return { ...entry.beforeTakeOff, beforeTakeOff: FieldValue.delete() };
+  }
+  return call;
 }
 
 // ── Adding players ─────────────────────────────────────────────────────────
@@ -103,8 +160,9 @@ export type AddResult =
 
 /**
  * Puts someone on `side` (a college) of a game: a captain's addition counts
- * as confirmed (until the start), a supervisor's as present (a walk-in). A
- * player already on it (or taken off) is put back the same way.
+ * as pre-confirmed (until the start), a supervisor's as present (a walk-in;
+ * someone who is both adds as the captain until the start). A player already
+ * on it (or taken off) is put back the same way.
  *
  * Rule 4a: a person with a college this season (or whose college the
  * directory names) goes on that college's side only; an unassigned one on
@@ -138,10 +196,12 @@ export async function addToGame(
     const game = (await tx.get(matchRef(seasonId, matchId))).data();
     if (!game) return { status: "no-match" };
     if (!game.collegeIds.includes(side)) return { status: "not-in-game" };
-    const role = await rosterRoleIn(tx, currentSeasonId, actor.userId, { seasonId, collegeId: side, sportId: game.sportId });
-    if (!role) return { status: "forbidden" };
+    const roles = await rosterRolesIn(tx, currentSeasonId, actor.userId, { seasonId, collegeId: side, sportId: game.sportId });
+    if (!roles.supervisor && !roles.captain) return { status: "forbidden" };
     if (game.status === "cancelled") return { status: "cancelled" };
-    if (role === "captain" && started(game, now)) return { status: "started" };
+    if (!roles.supervisor && started(game, now)) return { status: "started" };
+    const by: SheetEditor = { ...roles, actor };
+    const captainAdds = asCaptain(by, game, now);
 
     const account = byNetid && (await readAccount(tx, byNetid.netid, byNetid.found));
     const playerId = byNetid ? (account?.existing?.id ?? placeholderId(byNetid.netid)) : (who as { playerId: string }).playerId;
@@ -156,20 +216,20 @@ export async function addToGame(
     if (byNetid && account) {
       // A label typed for someone the directory can't name becomes their unverified name (D-N3).
       name = writeAccount(tx, account, byNetid.found, { by: actor, seasonId, label: byNetid.name }).name;
-      writeSeasonPlayer(tx, seasonId, playerId, player, directoryCollege, { name, joinedVia: role });
+      writeSeasonPlayer(tx, seasonId, playerId, player, directoryCollege, { name, joinedVia: captainAdds ? "captain" : "supervisor" });
     }
-    const by: SheetEditor = { supervisor: role === "supervisor", actor };
-    const call = by.supervisor
-      ? { present: true, presentBy: actor.userId, presentAt: FieldValue.serverTimestamp() }
-      : { captainStatus: "confirmed" as const, captainBy: actor.userId, captainAt: FieldValue.serverTimestamp() };
+    const call = captainAdds
+      ? { captainStatus: "confirmed" as const, captainBy: actor.userId, captainByRole: "captain" as const, captainAt: FieldValue.serverTimestamp() }
+      : { present: true, presentBy: actor.userId, presentAt: FieldValue.serverTimestamp() };
     const entry = entrySnap.data();
     if (entry) {
-      // Taken off before: the supervisor's or captain's addition overrides that.
-      tx.update(entryRef, { ...(entry.captainStatus === "removed" ? { captainStatus: null } : {}), ...call });
+      // Taken off before: the supervisor's or captain's addition overrides that (and what the take-off saved).
+      const back = entry.captainStatus === "removed" ? { captainStatus: null, beforeTakeOff: FieldValue.delete() } : {};
+      tx.update(entryRef, { ...back, ...call });
     } else {
-      tx.create(entryRef, { ...newEntry(game, matchId, playerId, side, name, by), ...call });
+      tx.create(entryRef, { ...newEntry(game, matchId, playerId, side, name, captainAdds, actor), ...call });
     }
-    logIfLate(tx, by, game, now, {
+    logChange(tx, by, game, now, entry?.captainStatus === "removed", {
       actor,
       action: "addRosterPlayer",
       params: { matchId, playerId, side },
@@ -216,7 +276,8 @@ function newEntry(
   playerId: string,
   collegeId: string,
   name: string,
-  by: SheetEditor
+  byCaptain: boolean,
+  actor: Actor
 ): WithFieldValue<RosterEntryDoc> {
   return {
     seasonId: match.seasonId,
@@ -226,11 +287,12 @@ function newEntry(
     playerId,
     name,
     startsAt: match.startsAt,
-    addedBy: by.supervisor ? "supervisor" : "captain",
-    addedByUser: by.actor.userId,
+    addedBy: byCaptain ? "captain" : "supervisor",
+    addedByUser: actor.userId,
     signedUpAt: FieldValue.serverTimestamp(),
     captainStatus: null,
     captainBy: null,
+    captainByRole: null,
     captainAt: null,
     present: false,
     presentBy: null,

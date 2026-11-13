@@ -136,6 +136,10 @@ describe("the permissions (Phase 3A defaults, P10)", () => {
     expect(await can.listPlayers(captain, "BK")).toBe(false);
     expect(await can.manageRoster(await who([], ["supervisor"]), "BK", "1")).toBe(true);
     expect(await can.manageRoster(await who([]), "MC", "1")).toBe(false);
+    // Pre-confirming is the captains' alone; a supervisor who captains the team may.
+    expect(await can.prepareRoster(captain, "MC", "1")).toBe(true);
+    expect(await can.prepareRoster(await who(["admin"], ["supervisor"]), "MC", "1")).toBe(false);
+    expect(await can.prepareRoster(await who([], ["supervisor"], "MC", ["1"]), "MC", "1")).toBe(true);
   });
   it("lets a rep act for their own college only", async () => {
     const rep = await who([], ["college_rep"]);

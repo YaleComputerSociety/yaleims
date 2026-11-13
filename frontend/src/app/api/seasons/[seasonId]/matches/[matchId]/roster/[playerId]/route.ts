@@ -12,15 +12,24 @@ type Params = { seasonId: string; matchId: string; playerId: string };
 const NO_MATCH = new ApiError("not-found", "No such game this season.");
 const STARTED = new ApiError("conflict", "The game has started: only a supervisor can change its roster now.");
 
-/** The caller as an editor of `collegeId`'s side of `sportId`'s game: a supervisor, or that team's captain (403 otherwise). */
+/** The caller as an editor of `collegeId`'s side of `sportId`'s game: a supervisor and/or that team's captain (403 otherwise). */
 async function editorOf(viewer: Viewer, collegeId: string, sportId: string): Promise<SheetEditor> {
   await authorize(can.manageRoster, collegeId, sportId);
-  return { supervisor: await can.takeAttendance(viewer), actor: await viewer.actor() };
+  const [supervisor, captain, actor] = await Promise.all([
+    can.takeAttendance(viewer),
+    can.prepareRoster(viewer, collegeId, sportId),
+    viewer.actor(),
+  ]);
+  return { supervisor, captain, actor };
 }
 
 /**
- * Changes one player's entry: the captain's call (confirmed, removed, or
- * null to take it back) until the start; attendance (supervisors, any time).
+ * Changes one player's entry: the captain's call (confirmed = pre-confirmed,
+ * removed, or null to take it back) until the start; attendance (supervisors,
+ * any time, before the start too). Supervisors may take a player off or put
+ * them back, not pre-confirm or take back a captain's pre-confirmation.
+ * Putting a player back restores what taking them off replaced (C12). Once a
+ * supervisor confirmed a player, only a supervisor changes their call (C20).
  */
 export const PATCH = route<Params>(async (req, { params }) => {
   const { seasonId, matchId, playerId } = await params;
@@ -31,19 +40,23 @@ export const PATCH = route<Params>(async (req, { params }) => {
   if (!entry) throw new ApiError("not-found", "They aren't on this game.");
   const editor = await editorOf(viewer, entry.collegeId, match.sportId);
   if (change.present !== undefined && !editor.supervisor) {
-    throw new ApiError("forbidden", "Only a supervisor takes attendance.");
+    throw new ApiError("forbidden", "Only a supervisor confirms who came.");
   }
   const result = await changeEntry(seasonId, matchId, playerId, change, editor);
   if (result === "no-match") throw NO_MATCH;
   if (result === "no-entry") throw new ApiError("not-found", "They aren't on this game.");
+  if (result === "cancelled") throw new ApiError("conflict", "This game is cancelled.");
   if (result === "started") throw STARTED;
+  if (result === "supervisor-confirmed") throw new ApiError("conflict", "A supervisor already confirmed them: only a supervisor can change that.");
+  if (result === "taken-off") throw new ApiError("conflict", "They're taken off this game: put them back first.");
+  if (result === "captains-only") throw new ApiError("forbidden", "Only the team's captains pre-confirm players; supervisors confirm who came.");
   return noContent();
 });
 
 /**
  * Puts a season player on a side of the game (body { collegeId }; without
- * one, their college's): a captain's addition is confirmed (until the
- * start), a supervisor's present. Someone unassigned this season goes on
+ * one, their college's): a captain's addition is pre-confirmed (until the
+ * start), a supervisor's confirmed (present). Someone unassigned this season goes on
  * any side the caller manages, for this game only (account plan, 4a).
  */
 export const PUT = route<Params>(async (req, { params }) => {

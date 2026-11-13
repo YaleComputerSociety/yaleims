@@ -8,10 +8,10 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { toOwnReview } from "@/lib/api/reviews";
-import { assignmentsOf, disputed } from "@/lib/attendance";
+import { assignmentsOf, countsAsAttended, disputed } from "@/lib/attendance";
 import type { AttendanceFix, Person, PersonSummary, ProfileFix } from "@/lib/api/people";
 import { toJson } from "@/lib/api/core";
-import type { PlayerDoc, RosterEntryDoc, UserDoc, WithId } from "@/types/firestore";
+import type { MatchDoc, PlayerDoc, RosterEntryDoc, UserDoc, WithId } from "@/types/firestore";
 import { logAction, type Actor } from "../data/auditLog";
 import { getMatches } from "../data/matches";
 import { getPlayers, playerRef } from "../data/players";
@@ -82,7 +82,7 @@ export async function personView(userId: string, seasonId: string): Promise<Pers
   const player = playerSnap.data();
   const entries = entrySnaps.docs.map((d) => d.data());
   const games = await getMatches(seasonId, entries.map((e) => e.matchId));
-  const review = underReview(player, entries);
+  const review = underReview(player, entries, games);
   return {
     ...summary(user, player),
     nameSource: user.nameSource,
@@ -111,6 +111,7 @@ export async function personView(userId: string, seasonId: string): Promise<Pers
         addedBy: e.addedBy,
         captainStatus: e.captainStatus,
         present: e.present,
+        cancelled: game?.status === "cancelled",
         underReview: review.has(e.matchId),
         confirmedByAdmin: !!e.attendanceConfirmedBy,
         revision: revisionOf(snap)!,
@@ -121,8 +122,8 @@ export async function personView(userId: string, seasonId: string): Promise<Pers
 }
 
 /** The games whose recorded attendance is under review (lib/attendance.ts), by match id. */
-function underReview(player: PlayerDoc | undefined, entries: RosterEntryDoc[]): Set<string> {
-  const attended = entries.filter((e) => e.present === true);
+function underReview(player: PlayerDoc | undefined, entries: RosterEntryDoc[], games: Map<string, MatchDoc>): Set<string> {
+  const attended = entries.filter((e) => countsAsAttended(e, games.get(e.matchId)));
   const flags = disputed(
     player ? assignmentsOf(player) : [],
     attended.map((e) => ({ collegeId: e.collegeId, startsAt: e.startsAt.toMillis(), adminConfirmed: !!e.attendanceConfirmedBy }))

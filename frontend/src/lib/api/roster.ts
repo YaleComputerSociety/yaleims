@@ -9,20 +9,38 @@ import { NETID_PATTERN } from "../netid";
 import { request, toJson, url, type Json } from "./core";
 import type { Identity } from "./users";
 
-/** The caller's own entry, whole. */
-export type RosterEntry = Json<RosterEntryDoc>;
+/** An entry for its player or on the sheet: without who made the calls (supervisors stay anonymous; the sheet names captains). */
+export type RosterEntry = Json<Omit<RosterEntryDoc, "captainBy" | "captainByRole" | "presentBy" | "beforeTakeOff">>;
+
+export function toOwnEntry({
+  captainBy: _captainBy,
+  captainByRole: _captainByRole,
+  presentBy: _presentBy,
+  beforeTakeOff: _beforeTakeOff,
+  ...entry
+}: RosterEntryDoc): RosterEntry {
+  return toJson(entry);
+}
+
+/** Who made the captain's call on a sheet entry, by role, and by name (or NetID) for a captain; a supervisor's name only for staff (null: not shown, or unknown). */
+export interface CaptainCall {
+  by: "captain" | "supervisor";
+  name: string | null;
+}
 
 /** An entry as the game's participants are shown: college and status, no ids (the name and NetID come with Identity). */
 export type PublicRosterEntry = Json<
-  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "presentBy" | "attendanceConfirmedBy">
+  Omit<RosterEntryDoc, "playerId" | "addedByUser" | "captainBy" | "captainByRole" | "presentBy" | "attendanceConfirmedBy" | "beforeTakeOff">
 >;
 
 export function toPublicEntry({
   playerId: _playerId,
   addedByUser: _addedByUser,
   captainBy: _captainBy,
+  captainByRole: _captainByRole,
   presentBy: _presentBy,
   attendanceConfirmedBy: _attendanceConfirmedBy,
+  beforeTakeOff: _beforeTakeOff,
   ...entry
 }: RosterEntryDoc): PublicRosterEntry {
   return toJson(entry);
@@ -30,10 +48,10 @@ export function toPublicEntry({
 
 /**
  * GET …/roster (signed in): the game's participants, in sign-up order, for
- * those who may see them (`visible`, lib/participants.ts): until the start
- * who is on it, from the start (`started`) those recorded present; and the
- * caller's own entry (a removed one too, so the page can say why they can't
- * sign up).
+ * those who may see them (`visible`, lib/participants.ts): each side's
+ * players, or once a supervisor takes attendance on that side, those
+ * recorded present; whether the game has `started`; and the caller's own
+ * entry (a removed one too, so the page can say why they can't sign up).
  */
 export interface Roster {
   visible: boolean;
@@ -46,9 +64,13 @@ export interface Roster {
 export const fetchRoster = (seasonId: string, matchId: string) =>
   request<Roster>("GET", url`/api/seasons/${seasonId}/matches/${matchId}/roster`);
 
-/** PUT …/roster/me: signs the caller up, on their college's side (already on it: fine). */
+/**
+ * PUT …/roster/me: signs the caller up, on their college's side (already on
+ * it: fine); their entry (a captain's is pre-confirmed; null: gone again at
+ * once, when the game's teams were just replaced).
+ */
 export const signUp = (seasonId: string, matchId: string) =>
-  request<void>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/me`);
+  request<RosterEntry | null>("PUT", url`/api/seasons/${seasonId}/matches/${matchId}/roster/me`);
 
 /** DELETE …/roster/me: takes the caller off (not on it: fine). */
 export const withdraw = (seasonId: string, matchId: string) =>
@@ -63,16 +85,19 @@ export const withdraw = (seasonId: string, matchId: string) =>
 export interface RosterSheet {
   /** The sides (college ids) the caller manages. */
   collegeIds: string[];
-  /** A supervisor: takes attendance, any time; otherwise a captain, until the start. */
+  /** A supervisor: confirms who came (attendance), takes players off or puts them back, any time. */
   supervisor: boolean;
+  /** The sides the caller captains: pre-confirm, take off and add there, until the start (a supervisor may captain too). */
+  captainOf: string[];
   /**
    * Each entry with the player's identity (their NetID tells same-named
    * players apart; null: none recorded yet, or a placeholder "netid-<netid>",
    * whose id holds it; emails for admins); whether they have signed in (an
    * account made for them stays unclaimed until then); whether they have a
-   * college this season.
+   * college this season; who made the captain's call (co-captains share one
+   * call per player: the last one counts; null: no call).
    */
-  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean })[];
+  items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean; captainCall: CaptainCall | null })[];
   total: number;
 }
 

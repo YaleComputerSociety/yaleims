@@ -98,8 +98,8 @@ describe("PUT and DELETE …/matches/{m}/roster/me", () => {
     const me = people.student(5, 7); // Grace Hopper (index 5), not signed up anywhere
     const path = `/api/seasons/${current}/matches/${game.id}/roster/me`;
     expect((await api("PUT", path)).status).toBe(401);
-    expect((await api("PUT", path, undefined, { session: sessionFor(me) })).status).toBe(204);
-    expect((await api("PUT", path, undefined, { session: sessionFor(me) })).status).toBe(204);
+    expect(await api("PUT", path, undefined, { session: sessionFor(me) })).toMatchObject({ status: 200, body: { playerId: me, captainStatus: null, present: false } });
+    expect((await api("PUT", path, undefined, { session: sessionFor(me) })).status).toBe(200);
     const entry = (await db.doc(`seasons/${current}/matches/${game.id}/roster/${me}`).get()).data()!;
     expect(entry).toMatchObject({ collegeId: "GH", addedBy: "self", addedByUser: me, captainStatus: null });
     expect((await api("DELETE", path, undefined, { session: sessionFor(me) })).status).toBe(204);
@@ -129,7 +129,7 @@ describe("PUT and DELETE …/matches/{m}/roster/me", () => {
     expect((await db.doc(`seasons/${current}/players/${alum}`).get()).exists).toBe(false);
     const login = { netid: "zz903", college: "Morse" };
     const r = await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(alum, [], login) });
-    expect(r.status).toBe(204);
+    expect(r.status).toBe(200);
     const { name } = (await db.doc(`users/${alum}`).get()).data()!;
     expect((await db.doc(`seasons/${current}/players/${alum}`).get()).data()).toMatchObject({ collegeId: "BF", name, joinedVia: "login" });
   });

@@ -1,10 +1,13 @@
 "use client";
-// A game's roster sheet, for the sides the
-// viewer manages: a captain confirms, removes and adds their college's
-// players until the game starts; a supervisor ticks who came (one tap per
-// player, any time) and adds walk-ins. Both add players by NetID too
-// (U10). The server decides who
-// manages which side (GET …/roster/sheet) and checks every change.
+// A game's roster sheet, for the sides the viewer manages: a captain
+// pre-confirms (✓), takes off and adds their college's players until the game
+// starts, which only prepares the roster; a supervisor confirms who came (✓✓,
+// one tap per player, any time: the final word), takes players off or puts
+// them back and adds walk-ins; someone who is both gets both on the sides
+// they captain. A player the supervisor confirmed is the supervisor's to
+// change (C20). Levels and their words: lib/rosterLevels.ts. Both add
+// players by NetID too (U10). The server decides who manages which side
+// (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCheck, FaTimes, FaUndo } from "react-icons/fa";
@@ -22,6 +25,7 @@ import {
   type RosterSheet as Sheet,
 } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
+import { LEVELS, levelOf } from "@/lib/rosterLevels";
 import { NETID_PATTERN, placeholderNetid } from "@/lib/netid";
 import { useNow } from "@/lib/useNow";
 
@@ -43,14 +47,20 @@ function standing(entry: SheetEntry): string[] {
   return [...(entry.signedIn ? [] : ["not signed in yet"]), ...(entry.collegeAssigned ? [] : ["college unassigned"])];
 }
 
-/** How an entry got on the roster, for the row's small print; supervisors also see the captain's confirmation. */
-function origin(entry: SheetEntry, supervisor: boolean): string {
-  const how = entry.addedBy === "supervisor"
-      ? "walk-in"
-      : entry.addedBy === "captain"
-        ? "added by captain"
-        : "signed up";
-  return supervisor && entry.captainStatus === "confirmed" ? `${how} · captain ✓` : how;
+/** Who made the captain's call (co-captains share one: the last one counts): "captain (Name)", "supervisor" (with the name for staff). */
+function caller({ captainCall: call }: SheetEntry): string {
+  const by = call?.by ?? "captain";
+  return call?.name ? `${by} (${call.name})` : by;
+}
+
+/** The row's small print, lowest level first: how they got on the roster, the captain's pre-confirmation (by whom), the supervisor's confirmation. */
+function origin(entry: SheetEntry): string[] {
+  const how = entry.addedBy === "supervisor" ? "walk-in" : entry.addedBy === "captain" ? "added by captain" : "signed up";
+  return [
+    how,
+    ...(entry.captainStatus === "confirmed" ? [`pre-confirmed by ${caller(entry)}`] : []),
+    ...(entry.present ? [LEVELS.confirmed.label] : []),
+  ];
 }
 
 interface RosterSheetProps {
@@ -99,7 +109,8 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
   if (!sheet) return <div className="flex justify-center py-10"><LoadingSpinner /></div>;
 
   const started = new Date(match.startsAt).getTime() <= now;
-  const locked = !sheet.supervisor && started;
+  const cancelled = match.status === "cancelled";
+  const locked = !sheet.supervisor && started && !cancelled;
 
   /** Runs one change (or several), then reloads the sheet. */
   const run = async (key: string, action: () => Promise<unknown>) => {
@@ -118,9 +129,27 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
 
   return (
     <div className="space-y-6">
+      {!cancelled && (sheet.supervisor ? (
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Tick each player who came: a supervisor&apos;s tick confirms them (✓✓), the final word and the only one that
+          counts. A captain&apos;s pre-confirmation (✓) only prepares the roster.
+        </p>
+      ) : !started && (
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Pre-confirm who&apos;s playing (✓), take off anyone who isn&apos;t and add teammates who didn&apos;t sign up,
+          until the game starts. This prepares the roster for the supervisor, who confirms who actually played (✓✓):
+          only that counts.
+        </p>
+      ))}
       {locked && (
         <p className="rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm px-3 py-2">
-          The game has started: the supervisor takes attendance from here.
+          The game has started: pre-confirmations are locked. The supervisor confirms who played.
+        </p>
+      )}
+      {cancelled && (
+        <p className="rounded-lg bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 text-sm px-3 py-2">
+          This game is cancelled: its roster is kept as it was (in case the game is restored), can&apos;t be changed,
+          and its attendance doesn&apos;t count.
         </p>
       )}
       {sheet.collegeIds.map((collegeId) => (
@@ -129,8 +158,8 @@ function MatchRosterSheet({ match, onChange }: RosterSheetProps) {
           match={match}
           collegeId={collegeId}
           entries={sheet.items.filter((e) => e.collegeId === collegeId)}
-          supervisor={sheet.supervisor}
-          locked={locked}
+          supervisor={sheet.supervisor && !cancelled}
+          captain={!started && !cancelled && sheet.captainOf.includes(collegeId)}
           busy={busy}
           change={change}
           run={run}
@@ -145,22 +174,26 @@ interface SideProps {
   collegeId: string;
   entries: SheetEntry[];
   supervisor: boolean;
-  locked: boolean;
+  /** Captains the side and the game hasn't started: pre-confirms, takes off, adds. */
+  captain: boolean;
   busy: string | null;
   change: (entry: SheetEntry, c: RosterChange) => Promise<void>;
   run: (key: string, action: () => Promise<unknown>) => Promise<void>;
 }
 
-/** One college's side of the sheet. */
-function Side({ match, collegeId, entries, supervisor, locked, busy, change, run }: SideProps) {
+/** One college's side of the sheet: a supervisor's controls, a captain's (until the start), or both for someone who is both. */
+function Side({ match, collegeId, entries, supervisor, captain, busy, change, run }: SideProps) {
   const playing = entries.filter((e) => e.captainStatus !== "removed");
   const removed = entries.filter((e) => e.captainStatus === "removed");
-  const present = playing.filter((e) => e.present).length;
-  const confirmed = playing.filter((e) => e.captainStatus === "confirmed");
+  const preConfirmed = playing.filter((e) => e.captainStatus === "confirmed");
+  const confirmed = playing.filter((e) => e.present).length;
+  const editing = supervisor || captain;
 
-  const bulk = supervisor
-    ? { label: "Mark all captain-confirmed present", todo: confirmed.filter((e) => !e.present), c: { present: true } }
-    : { label: "Confirm everyone", todo: playing.filter((e) => e.captainStatus !== "confirmed"), c: { captainStatus: "confirmed" as const } };
+  const bulks = [
+    // Pre-confirming adds nothing for a player the supervisor already confirmed.
+    ...(captain ? [{ label: "Pre-confirm everyone", todo: playing.filter((e) => e.captainStatus !== "confirmed" && !e.present), c: { captainStatus: "confirmed" as const } }] : []),
+    ...(supervisor ? [{ label: "Confirm everyone pre-confirmed", todo: preConfirmed.filter((e) => !e.present), c: { present: true } }] : []),
+  ].filter((bulk) => bulk.todo.length > 0);
 
   return (
     <section className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-gray-950 overflow-hidden">
@@ -169,8 +202,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
           {collegeId} · {collegeName(collegeId)}
         </h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {supervisor ? `${present} present · ` : ""}
-          {playing.length} on roster · {confirmed.length} confirmed
+          {playing.length} on roster · {preConfirmed.length} pre-confirmed · {confirmed} confirmed
         </span>
       </header>
 
@@ -181,7 +213,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
             {supervisor && (
               <input
                 type="checkbox"
-                aria-label={`${entry.name} present`}
+                aria-label={`${entry.name} came: confirm`}
                 className="h-5 w-5 accent-emerald-600"
                 checked={!!entry.present}
                 disabled={busy !== null}
@@ -191,31 +223,32 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
             <div className="flex-1 min-w-0">
               <div className="font-medium break-words">
                 <PersonName person={entry} tag={who(entry)} />
+                {LEVELS[levelOf(entry)].mark && <span className="text-emerald-700 dark:text-emerald-400"> {LEVELS[levelOf(entry)].mark}</span>}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {[origin(entry, supervisor), ...standing(entry)].join(" · ")}
+                {[...origin(entry), ...standing(entry)].join(" · ")}
               </div>
             </div>
-            {!locked && !supervisor && entry.captainStatus !== "confirmed" && (
+            {captain && entry.captainStatus !== "confirmed" && !entry.present && (
               <button
                 className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-600 text-white disabled:opacity-50"
                 disabled={busy !== null}
                 onClick={() => change(entry, { captainStatus: "confirmed" })}
               >
-                Confirm
+                Pre-confirm
               </button>
             )}
-            {!locked && !supervisor && entry.captainStatus === "confirmed" && (
+            {captain && entry.captainStatus === "confirmed" && (supervisor || !entry.present) && (
               <button
                 className="text-xs text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1"
-                title="Take back the confirmation"
+                title="Take back the pre-confirmation"
                 disabled={busy !== null}
                 onClick={() => change(entry, { captainStatus: null })}
               >
-                <FaCheck /> confirmed
+                <FaCheck /> pre-confirmed
               </button>
             )}
-            {!locked && (
+            {(supervisor || (captain && !entry.present)) && (
               <button
                 className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
                 aria-label={`Remove ${entry.name}`}
@@ -235,10 +268,13 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
           <div className="text-xs uppercase tracking-wide text-gray-400 pt-3 pb-1">Taken off</div>
           {removed.map((entry) => (
             <div key={entry.playerId} className="flex items-center justify-between py-1.5 text-sm text-gray-500">
-              <span className="line-through">
-                <PersonName person={entry} tag={who(entry)} />
+              <span>
+                <span className="line-through">
+                  <PersonName person={entry} tag={who(entry)} />
+                </span>
+                <span className="ml-2 text-xs">taken off by {caller(entry)}</span>
               </span>
-              {!locked && (
+              {editing && (
                 <button
                   className="text-xs inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 disabled:opacity-50"
                   disabled={busy !== null}
@@ -252,11 +288,12 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
         </div>
       )}
 
-      {!locked && (
+      {editing && (
         <div className="px-4 py-3 space-y-3 border-t border-black/5 dark:border-white/5">
           <AddPlayer match={match} collegeId={collegeId} onRoster={entries} busy={busy} run={run} />
-          {bulk.todo.length > 0 && (
+          {bulks.map((bulk) => (
             <button
+              key={bulk.label}
               className="w-full py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white disabled:opacity-50"
               disabled={busy !== null}
               onClick={() =>
@@ -267,7 +304,7 @@ function Side({ match, collegeId, entries, supervisor, locked, busy, change, run
             >
               {bulk.label} ({bulk.todo.length})
             </button>
-          )}
+          ))}
         </div>
       )}
     </section>

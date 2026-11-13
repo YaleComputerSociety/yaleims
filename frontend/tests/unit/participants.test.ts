@@ -15,15 +15,23 @@ describe("seesParticipants", () => {
 });
 
 describe("shownEntries", () => {
-  const entries = [
-    { id: "signed up", captainStatus: null, present: false },
-    { id: "confirmed", captainStatus: "confirmed" as const, present: false },
-    { id: "taken off", captainStatus: "removed" as const, present: false },
-    { id: "present", captainStatus: null, present: true },
-    { id: "never recorded", captainStatus: null, present: null },
+  const scheduled = { status: "scheduled" as const };
+  const side = (collegeId: string) => [
+    { id: `${collegeId} signed up`, collegeId, captainStatus: null, present: false },
+    { id: `${collegeId} confirmed`, collegeId, captainStatus: "confirmed" as const, present: false },
+    { id: `${collegeId} taken off`, collegeId, captainStatus: "removed" as const, present: false },
+    { id: `${collegeId} never recorded`, collegeId, captainStatus: null, present: null },
   ];
-  it("lists the game's players before the start, those recorded present from it", () => {
-    expect(shownEntries(entries, false).map((e) => e.id)).toEqual(["signed up", "confirmed", "present", "never recorded"]);
-    expect(shownEntries(entries, true).map((e) => e.id)).toEqual(["present"]);
+  it("lists a side's players until a supervisor records one present, then only those present", () => {
+    const before = [...side("BF"), ...side("GH")];
+    expect(shownEntries(before, scheduled).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded", "GH signed up", "GH confirmed", "GH never recorded"]);
+    const taking = [...side("BF"), { id: "BF present", collegeId: "BF", captainStatus: null, present: true }, ...side("GH")];
+    expect(shownEntries(taking, scheduled).map((e) => e.id)).toEqual(["BF present", "GH signed up", "GH confirmed", "GH never recorded"]);
+    // Taken off: never listed, nor does an old presence of theirs start attendance on the side (C12).
+    const takenOff = [...side("BF"), { id: "BF off, present", collegeId: "BF", captainStatus: "removed" as const, present: true }];
+    expect(shownEntries(takenOff, scheduled).map((e) => e.id)).toEqual(["BF signed up", "BF confirmed", "BF never recorded"]);
+  });
+  it("lists nobody on a cancelled game (C19)", () => {
+    expect(shownEntries([...side("BF"), { id: "BF present", collegeId: "BF", captainStatus: null, present: true }], { status: "cancelled" })).toEqual([]);
   });
 });

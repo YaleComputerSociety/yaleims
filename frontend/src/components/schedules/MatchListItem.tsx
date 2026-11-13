@@ -4,7 +4,7 @@ import { FaCalendar } from "react-icons/fa";
 import TournamentBadge from "@/components/ui/TournamentBadge";
 import { EditMatchButton } from "@/components/hub/admin/EditMatchModal";
 import type { Match } from "@/lib/api/matches";
-import { signUp, withdraw } from "@/lib/api/roster";
+import { signUp, withdraw, type RosterEntry } from "@/lib/api/roster";
 import type { Sport } from "@/lib/api/seasons";
 import { collegeName } from "@/lib/colleges";
 import { calendarLink, matchTypeLabel } from "@/lib/format";
@@ -21,7 +21,8 @@ interface MatchListItemProps {
   isSignedUp: boolean;
   /** The viewer's own entry, when they're on the game. */
   mine?: MyMatch["mine"];
-  onStatusChange: (id: string, signed: boolean) => void;
+  /** After a sign-up (their entry) or a withdrawal (null). */
+  onStatusChange: (id: string, entry: RosterEntry | null) => void;
 }
 
 const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament, viewer, isSignedUp, mine, onStatusChange }) => {
@@ -35,8 +36,12 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
   const changeSignUp = async (signed: boolean) => {
     setIsLoading(true);
     try {
-      await (signed ? signUp : withdraw)(match.seasonId, match.id);
-      onStatusChange(match.id, signed);
+      if (signed) {
+        onStatusChange(match.id, await signUp(match.seasonId, match.id));
+      } else {
+        await withdraw(match.seasonId, match.id);
+        onStatusChange(match.id, null);
+      }
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
@@ -67,8 +72,9 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
   const isUserTeam =
     !!viewer?.collegeId &&
     (match.homeCollegeId === viewer.collegeId || match.awayCollegeId === viewer.collegeId);
-  // Withdrawing is open to whoever is on it, whatever their college.
+  // Withdrawing is open to whoever is on it, whatever their college, until a supervisor confirms them (C21: the badge says so).
   const canChange = isUserTeam || isSignedUp;
+  const confirmed = !!mine?.present;
 
   const homeName = collegeName(match.homeCollegeId) ?? "";
   const awayName = collegeName(match.awayCollegeId) ?? "";
@@ -122,29 +128,31 @@ const MatchListItem: React.FC<MatchListItemProps> = ({ match, sport, tournament,
           ) : (
             // Show signup and calendar buttons for future matches
             <>
-              <button
-                onClick={() => changeSignUp(!isSignedUp)}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                className={`ml-5 w-20 sm:w-36 text-xs sm:text-sm h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
-                  isLoading || !canChange
-                    ? "bg-gray-400 cursor-not-allowed"
+              {!confirmed && (
+                <button
+                  onClick={() => changeSignUp(!isSignedUp)}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  className={`ml-5 w-20 sm:w-36 text-xs sm:text-sm h-10 text-white rounded-lg shadow transition duration-200 ease-in-out ${
+                    isLoading || !canChange
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : isSignedUp
+                      ? "bg-green-600 hover:bg-red-600"
+                      : "bg-blue-600 hover:scale-110"
+                  }`}
+                  disabled={isLoading || !canChange}
+                >
+                  {isLoading
+                    ? "Loading..."
+                    : !canChange
+                    ? "Not Your College"
                     : isSignedUp
-                    ? "bg-green-600 hover:bg-red-600"
-                    : "bg-blue-600 hover:scale-110"
-                }`}
-                disabled={isLoading || !canChange}
-              >
-                {isLoading
-                  ? "Loading..."
-                  : !canChange
-                  ? "Not Your College"
-                  : isSignedUp
-                  ? isHovered
-                    ? "Unregister"
-                    : "Playing!"
-                  : "Sign Up"}
-              </button>
+                    ? isHovered
+                      ? "Unregister"
+                      : "Playing!"
+                    : "Sign Up"}
+                </button>
+              )}
 
               <button
                 onClick={handleAddToGCal}

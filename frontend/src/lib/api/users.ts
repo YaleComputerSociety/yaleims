@@ -34,8 +34,8 @@ export type RoleHoldersQuery = z.infer<typeof roleHoldersQuerySchema>;
  */
 export const userRolesSchema = z.strictObject({
   roles: z.array(z.enum(["admin", "dev", "college_rep", "supervisor"])).max(4),
-  /** Sport ids; [] = no captaincies. */
-  captainOf: z.array(z.string().min(1)).max(15),
+  /** Sport ids; [] = no captaincies. A bound on the body, not the league's size (the service checks each id). */
+  captainOf: z.array(z.string().min(1)).max(50),
 });
 export type UserRoles = z.infer<typeof userRolesSchema>;
 

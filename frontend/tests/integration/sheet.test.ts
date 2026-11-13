@@ -1,6 +1,7 @@
 // The roster sheet (D34): captains prepare their side until the start,
 // supervisors take attendance at any time; and cancelling and deleting games.
 import { beforeAll, describe, expect, it } from "vitest";
+import { FieldValue } from "firebase-admin/firestore";
 import type { MatchDoc, TeamDoc } from "@/types/firestore";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
@@ -35,11 +36,11 @@ async function captainWithGame() {
   throw new Error("The seed has no captain with an upcoming game");
 }
 
-/** A season player of `collegeId` who isn't on `matchId`'s roster. */
-async function playerNotOn(matchId: string, collegeId: string): Promise<string> {
+/** A season player of `collegeId` who isn't on `matchId`'s roster (nor one of `except`). */
+async function playerNotOn(matchId: string, collegeId: string, except: string[] = []): Promise<string> {
   const players = await db.collection(`seasons/${current}/players`).where("collegeId", "==", collegeId).get();
   for (const p of players.docs) {
-    if (p.id.startsWith("guest-")) continue;
+    if (p.id.startsWith("guest-") || except.includes(p.id)) continue;
     if (!(await db.doc(`seasons/${current}/matches/${matchId}/roster/${p.id}`).get()).exists) return p.id;
   }
   throw new Error(`Everyone of ${collegeId} is on ${matchId}`);
@@ -53,11 +54,11 @@ describe("GET …/roster/sheet", () => {
 
     const mine = await api("GET", `${path}/sheet`, undefined, { session: sessionFor(captain) });
     expect(mine.status).toBe(200);
-    expect(mine.body).toMatchObject({ collegeIds: [collegeId], supervisor: false });
+    expect(mine.body).toMatchObject({ collegeIds: [collegeId], supervisor: false, captainOf: [collegeId] });
     for (const e of mine.body.items) expect(e).toMatchObject({ collegeId, playerId: expect.any(String) });
 
     const all = await api("GET", `${path}/sheet`, undefined, { session: supervisor() });
-    expect(all.body.supervisor).toBe(true);
+    expect(all.body).toMatchObject({ supervisor: true, captainOf: [] });
     expect([...all.body.collegeIds].sort()).toEqual([collegeId, other].sort());
     // Names and NetIDs for every editor; emails for admins only.
     for (const e of all.body.items) expect(e).not.toHaveProperty("email");
@@ -66,11 +67,122 @@ describe("GET …/roster/sheet", () => {
   });
 });
 
+describe("co-captains", () => {
+  it("share one call per player: the last one counts, and the sheet names who made it", async () => {
+    const { captain, collegeId, game, path } = await captainWithGame();
+    const team = db.doc(`seasons/${current}/colleges/${collegeId}/teams/${(game.data() as MatchDoc).sportId}`);
+    const signedUp = await playerNotOn(game.id, collegeId);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
+    const coCaptain = await playerNotOn(game.id, collegeId, [captain]); // not the one just signed up
+    await team.update({ captainIds: FieldValue.arrayUnion(coCaptain) });
+    const entry = `${path}/${encodeURIComponent(signedUp)}`;
+    const callOf = async (viewer: string) =>
+      (await api("GET", `${path}/sheet`, undefined, { session: sessionFor(viewer) })).body.items.find((e: { playerId: string }) => e.playerId === signedUp);
+    const nameOf = async (id: string) => (await db.doc(`users/${id}`).get()).data()!.name;
+
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: null, captainCall: null });
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: "confirmed", captainCall: { by: "captain", name: await nameOf(captain) } });
+    expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: sessionFor(coCaptain) })).status).toBe(204);
+    expect(await callOf(captain)).toMatchObject({ captainStatus: "removed", captainCall: { by: "captain", name: await nameOf(coCaptain) } });
+
+    // Supervisors confirm who came, before the start too, but never pre-confirm (the captains' call), nor take a pre-confirmation back.
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: supervisor() }))).toMatchObject({ status: 403, body: { error: { message: "Only the team's captains pre-confirm players; supervisors confirm who came." } } });
+    // Taken off: put back before pre-confirming (putting back restores the pre-confirmation).
+    expect((await api("PATCH", entry, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(409);
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: sessionFor(captain) })).status).toBe(204);
+    expect(await callOf(coCaptain)).toMatchObject({ captainStatus: "confirmed", captainCall: { by: "captain", name: await nameOf(captain) } });
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(403);
+    expect((game.data() as MatchDoc).startsAt.toMillis()).toBeGreaterThan(Date.now());
+    expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).get()).data()).toMatchObject({ captainStatus: "confirmed", present: true });
+    // Confirmed by the supervisor: theirs to change, not the captains' (C20); the player can't withdraw (C21).
+    for (const c of [{ captainStatus: "removed" }, { captainStatus: null }]) {
+      expect(await api("PATCH", entry, c, { session: sessionFor(captain) })).toMatchObject({ status: 409, body: { error: { message: "A supervisor already confirmed them: only a supervisor can change that." } } });
+    }
+    expect(await api("DELETE", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).toMatchObject({ status: 409, body: { error: { message: "The supervisor already confirmed you: ask them to take you off." } } });
+    // A supervisor's take-off: by role for captains, by name for staff; no caller ids on the sheet or in the player's own entry.
+    // Taking off clears the presence (a player taken off didn't play) and keeps what it replaced.
+    const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
+    expect((await api("PATCH", entry, { captainStatus: "removed", present: true }, { session: supervisor() })).status).toBe(409);
+    expect((await api("PATCH", entry, { captainStatus: "removed" }, { session: supervisor() })).status).toBe(204);
+    expect((await stored.get()).data()).toMatchObject({
+      captainStatus: "removed", captainByRole: "supervisor", present: false,
+      beforeTakeOff: { captainStatus: "confirmed", captainBy: captain, captainByRole: "captain", present: true, presentBy: people.supervisor },
+    });
+    const call = await callOf(captain);
+    expect(call.captainCall).toEqual({ by: "supervisor", name: null });
+    expect((await callOf(people.supervisor)).captainCall).toEqual({ by: "supervisor", name: await nameOf(people.supervisor) });
+    for (const field of ["captainBy", "captainByRole", "presentBy", "beforeTakeOff"]) expect(call).not.toHaveProperty(field);
+    const own = await api("GET", path, undefined, { session: sessionFor(signedUp) });
+    expect(own.body.mine).toMatchObject({ captainStatus: "removed", present: false });
+    for (const field of ["captainBy", "captainByRole", "presentBy", "beforeTakeOff"]) expect(own.body.mine).not.toHaveProperty(field);
+    // Taken off: not marked present until put back; putting back restores the captain's pre-confirmation and the presence.
+    expect((await api("PATCH", entry, { present: true }, { session: supervisor() }))).toMatchObject({ status: 409, body: { error: { message: "They're taken off this game: put them back first." } } });
+    expect((await api("PATCH", entry, { captainStatus: null }, { session: supervisor() })).status).toBe(204);
+    const restored = (await stored.get()).data()!;
+    expect(restored).toMatchObject({ captainStatus: "confirmed", captainBy: captain, captainByRole: "captain", present: true });
+    expect(restored).not.toHaveProperty("beforeTakeOff");
+    // Every take-off and put-back is audit-logged with who did it, whatever the day (C22).
+    const logged = (await db.collection(`seasons/${current}/auditLog`).where("action", "==", "changeRosterEntry").where("params.matchId", "==", game.id).get()).docs
+      .filter((d) => d.data().params.playerId === signedUp)
+      .map((d) => `${d.data().actor.userId} ${d.data().params.captainStatus}`);
+    expect(logged.sort()).toEqual([`${coCaptain} removed`, `${captain} null`, `${people.supervisor} removed`, `${people.supervisor} null`].sort());
+    expect(await callOf(coCaptain)).toMatchObject({ captainCall: { by: "captain", name: await nameOf(captain) } });
+    // A call from before the role was stored: a current captain's is theirs, anyone else's a supervisor's.
+    await stored.update({ captainByRole: FieldValue.delete(), captainBy: coCaptain });
+    expect((await callOf(captain)).captainCall).toEqual({ by: "captain", name: await nameOf(coCaptain) });
+    await stored.update({ captainBy: people.supervisor });
+    expect((await callOf(captain)).captainCall).toEqual({ by: "supervisor", name: null });
+
+    // A captain who signs up for their team's game is pre-confirmed at once, by themselves; the answer says so.
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(coCaptain) }))).toMatchObject({ status: 200, body: { captainStatus: "confirmed" } });
+    const self = (await api("GET", `${path}/sheet`, undefined, { session: sessionFor(captain) })).body.items.find((e: { playerId: string }) => e.playerId === coCaptain);
+    expect(self).toMatchObject({ addedBy: "self", captainStatus: "confirmed", captainCall: { by: "captain", name: await nameOf(coCaptain) } });
+    await db.doc(`seasons/${current}/matches/${game.id}/roster/${coCaptain}`).delete();
+
+    await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).delete();
+    await team.update({ captainIds: FieldValue.arrayRemove(coCaptain) });
+  });
+});
+
+describe("a supervisor who captains the side", () => {
+  it("acts as its captain until the start (pre-confirms, adds as the captain) and as a supervisor at any time", async () => {
+    const { collegeId, game, path } = await captainWithGame();
+    const team = db.doc(`seasons/${current}/colleges/${collegeId}/teams/${(game.data() as MatchDoc).sportId}`);
+    await team.update({ captainIds: FieldValue.arrayUnion(people.supervisor) });
+    const as = { session: supervisor() };
+    expect((await api("GET", `${path}/sheet`, undefined, as)).body).toMatchObject({ supervisor: true, captainOf: [collegeId] });
+
+    const signedUp = await playerNotOn(game.id, collegeId);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
+    const stored = db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`);
+    expect((await api("PATCH", `${path}/${encodeURIComponent(signedUp)}`, { captainStatus: "confirmed" }, as)).status).toBe(204);
+    expect((await stored.get()).data()).toMatchObject({ captainStatus: "confirmed", captainBy: people.supervisor, captainByRole: "captain", present: false });
+    expect((await api("PATCH", `${path}/${encodeURIComponent(signedUp)}`, { present: true }, as)).status).toBe(204);
+
+    // Their addition before the start is the captain's (pre-confirmed), not a walk-in.
+    const teammate = await playerNotOn(game.id, collegeId, [signedUp]);
+    expect((await api("PUT", `${path}/${encodeURIComponent(teammate)}`, undefined, as)).status).toBe(204);
+    const added = db.doc(`seasons/${current}/matches/${game.id}/roster/${teammate}`);
+    expect((await added.get()).data()).toMatchObject({ addedBy: "captain", captainStatus: "confirmed", captainByRole: "captain", present: false });
+
+    // From the start: a supervisor only (no pre-confirming), attendance still.
+    await game.ref.update({ startsAt: new Date(Date.now() - 60_000) });
+    expect((await api("GET", `${path}/sheet`, undefined, as)).body.captainOf).toEqual([collegeId]);
+    expect((await api("PATCH", `${path}/${encodeURIComponent(teammate)}`, { captainStatus: null }, as)).status).toBe(409);
+    expect((await api("PATCH", `${path}/${encodeURIComponent(teammate)}`, { present: true }, as)).status).toBe(204);
+
+    await game.ref.update({ startsAt: (game.data() as MatchDoc).startsAt });
+    await Promise.all([stored.delete(), added.delete(), team.update({ captainIds: FieldValue.arrayRemove(people.supervisor) })]);
+  });
+});
+
 describe("the captain's side", () => {
   it("confirms, removes and takes back the call on their own side until the start; not attendance", async () => {
     const { captain, collegeId, game, path } = await captainWithGame();
     const signedUp = await playerNotOn(game.id, collegeId);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
     const entry = `${path}/${encodeURIComponent(signedUp)}`;
     const as = { session: sessionFor(captain) };
 
@@ -80,8 +192,20 @@ describe("the captain's side", () => {
     // Removed: the player can't sign up again or withdraw.
     expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(403);
     expect((await api("PATCH", entry, { captainStatus: null }, as)).status).toBe(204);
-    expect((await api("PATCH", entry, { present: true }, as))).toMatchObject({ status: 403, body: { error: { message: "Only a supervisor takes attendance." } } });
+    expect((await api("PATCH", entry, { present: true }, as))).toMatchObject({ status: 403, body: { error: { message: "Only a supervisor confirms who came." } } });
     expect((await api("PATCH", entry, {}, as)).status).toBe(400);
+  });
+
+  it("doesn't hold a pre-confirmed player: they withdraw, and signing up again starts without the pre-confirmation (C24)", async () => {
+    const { captain, collegeId, game, path } = await captainWithGame();
+    const signedUp = await playerNotOn(game.id, collegeId);
+    const me = `/api/seasons/${current}/matches/${game.id}/roster/me`;
+    expect((await api("PUT", me, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
+    expect((await api("PATCH", `${path}/${encodeURIComponent(signedUp)}`, { captainStatus: "confirmed" }, { session: sessionFor(captain) })).status).toBe(204);
+    expect((await api("DELETE", me, undefined, { session: sessionFor(signedUp) })).status).toBe(204);
+    expect((await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).get()).exists).toBe(false);
+    expect(await api("PUT", me, undefined, { session: sessionFor(signedUp) })).toMatchObject({ status: 200, body: { addedBy: "self", captainStatus: null } });
+    await db.doc(`seasons/${current}/matches/${game.id}/roster/${signedUp}`).delete();
   });
 
   it("adds their college's players (confirmed), not the other side's or nobody", async () => {
@@ -104,7 +228,7 @@ describe("the captain's side", () => {
   it("can't change the other side, or a game that has started", async () => {
     const { captain, other, game, path } = await captainWithGame();
     const opponent = await playerNotOn(game.id, other);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(opponent) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(opponent) })).status).toBe(200);
     expect((await api("PATCH", `${path}/${encodeURIComponent(opponent)}`, { captainStatus: "removed" }, { session: sessionFor(captain) })).status).toBe(403);
 
     // A started game of the captain's team: only a supervisor changes it.
@@ -236,13 +360,36 @@ describe("cancelling and deleting games", () => {
     expect((await db.doc(`seasons/${current}/matches/${id}`).get()).data()!.status).toBe("cancelled");
     expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(409);
     expect((await api("PATCH", path, { status: "scheduled" }, { session: supervisor() })).status).toBe(204);
-    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(204);
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(200);
+  });
+
+  it("keeps a cancelled game's roster unchanged and its attendance uncounted, and shows nobody (C19)", async () => {
+    const id = await newGame();
+    const path = `/api/seasons/${current}/matches/${id}`;
+    const signedUp = player(0, 6);
+    const entry = `${path}/roster/${encodeURIComponent(signedUp)}`;
+    const mine = async () => (await api("GET", `/api/me/matches?seasonId=${current}`, undefined, { session: sessionFor(signedUp) })).body.items.find((m: { id: string }) => m.id === id).mine;
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
+    expect((await api("PATCH", entry, { present: true }, { session: supervisor() })).status).toBe(204);
+    expect((await mine()).present).toBe(true);
+
+    expect((await api("PATCH", path, { status: "cancelled" }, { session: supervisor() })).status).toBe(204);
+    expect(await api("PATCH", entry, { present: false }, { session: supervisor() })).toMatchObject({ status: 409, body: { error: { message: "This game is cancelled." } } });
+    expect(await api("DELETE", `${path}/roster/me`, undefined, { session: sessionFor(signedUp) })).toMatchObject({ status: 409, body: { error: { message: "This game is cancelled." } } });
+    expect((await mine()).present).toBe(false);
+    expect((await api("GET", `${path}/roster`, undefined, { session: sessionFor(signedUp) })).body).toMatchObject({ items: [], total: 0 });
+    expect((await db.doc(`seasons/${current}/matches/${id}/roster/${signedUp}`).get()).data()).toMatchObject({ present: true });
+
+    // Restored: the attendance counts again.
+    expect((await api("PATCH", path, { status: "scheduled" }, { session: supervisor() })).status).toBe(204);
+    expect((await mine()).present).toBe(true);
+    expect((await api("DELETE", path, undefined, { session: supervisor() })).status).toBe(204);
   });
 
   it("deletes an unscored game with its roster; not a scored game or a bracket's", async () => {
     const id = await newGame();
     const path = `/api/seasons/${current}/matches/${id}`;
-    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(204);
+    expect((await api("PUT", `${path}/roster/me`, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(200);
     expect((await api("DELETE", path, undefined, { session: sessionFor(player(0, 6)) })).status).toBe(403);
     expect((await api("DELETE", path, undefined, { session: supervisor() })).status).toBe(204);
     expect((await db.doc(`seasons/${current}/matches/${id}`).get()).exists).toBe(false);
@@ -279,7 +426,7 @@ describe("reads for the game-day screens", () => {
   it("GET /api/me/matches: each game with the caller's captain call and attendance", async () => {
     const { captain, collegeId, game } = await captainWithGame();
     const me = await playerNotOn(game.id, collegeId);
-    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(me) })).status).toBe(204);
+    expect((await api("PUT", `/api/seasons/${current}/matches/${game.id}/roster/me`, undefined, { session: sessionFor(me) })).status).toBe(200);
     await api("PATCH", `/api/seasons/${current}/matches/${game.id}/roster/${encodeURIComponent(me)}`, { captainStatus: "confirmed" }, { session: sessionFor(captain) });
     const r = await api("GET", `/api/me/matches?seasonId=${current}&upcoming=true`, undefined, { session: sessionFor(me) });
     expect(r.body.items.find((m: { id: string }) => m.id === game.id)).toMatchObject({ mine: { captainStatus: "confirmed", present: false } });

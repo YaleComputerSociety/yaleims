@@ -24,7 +24,8 @@ export interface DirectoryRefresh {
 
 /**
  * One of the caller's games, with where their own entry stands: the
- * captain's call, attendance, and whether that attendance is under review
+ * captain's call, attendance that counts (`present`: false on a cancelled
+ * game, C19), and whether that attendance is under review
  * (lib/attendance.ts: it doesn't count until an admin confirms it).
  */
 export type MyMatch = Match & { mine: Pick<RosterEntryDoc, "captainStatus" | "present"> & { underReview: boolean } };

@@ -54,6 +54,8 @@ export interface PersonGame {
   addedBy: string;
   captainStatus: string | null;
   present: boolean | null;
+  /** The game is cancelled: its attendance is kept but doesn't count (C19). */
+  cancelled: boolean;
   /** By lib/attendance.ts; false once an admin confirmed it. */
   underReview: boolean;
   confirmedByAdmin: boolean;

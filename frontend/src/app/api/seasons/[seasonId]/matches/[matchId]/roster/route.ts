@@ -1,5 +1,4 @@
-import { toJson } from "@/lib/api/core";
-import { toPublicEntry, type Roster } from "@/lib/api/roster";
+import { toOwnEntry, toPublicEntry, type Roster } from "@/lib/api/roster";
 import { seesParticipants, shownEntries } from "@/lib/participants";
 import { can, requireViewer } from "@/server/auth";
 import { getMatch } from "@/server/data/matches";
@@ -29,8 +28,8 @@ export const GET = route<Params>(async (req, { params }) => {
   const mine = roster.find((e) => e.playerId === viewer.userId);
   const started = !!match && match.startsAt.toMillis() <= Date.now();
   const visible = !!match && seesParticipants({ staff, collegeId: player?.collegeId ?? null, onGame: !!mine && mine.captainStatus !== "removed" }, match);
-  const shown = visible ? shownEntries(roster, started) : [];
+  const shown = visible ? shownEntries(roster, match) : [];
   const users = await getUsers(shown.map((e) => e.playerId));
   const items = shown.map((e) => ({ ...toPublicEntry(e), ...identityOf(users.get(e.playerId), e.name, withEmail) }));
-  return ok({ visible, started, items, total: items.length, mine: mine ? toJson(mine) : null } satisfies Roster);
+  return ok({ visible, started, items, total: items.length, mine: mine ? toOwnEntry(mine) : null } satisfies Roster);
 });

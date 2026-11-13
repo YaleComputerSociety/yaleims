@@ -162,15 +162,7 @@ export default function GamePage() {
         {tab === "score" && viewer.can.score ? (
           <ScorePanel match={match} onSaved={load} />
         ) : (
-          <>
-            {!supervisor && !started && (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Confirm who&apos;s playing, take off anyone who isn&apos;t, and add teammates who didn&apos;t sign up. The
-                supervisor takes attendance at the game.
-              </p>
-            )}
-            <RosterSheet match={match} />
-          </>
+          <RosterSheet match={match} />
         )}
       </div>
 

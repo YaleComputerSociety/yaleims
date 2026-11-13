@@ -148,11 +148,13 @@ export const can = {
   editSchedule: isSupervisor,
   /** Score and undo games; see every score report, with reporters' user ids, and resolve them. */
   score: isSupervisor,
-  /** Mark who came to a game and add walk-ins, at any time (D34 R4, R5). */
+  /** Confirm who came to a game (the final word), take players off or put them back, add walk-ins, at any time (D34 R4, R5). */
   takeAttendance: isSupervisor,
   /** Look people up in the Yale directory by NetID, to add them to a game (captains and supervisors, U10). */
   addPlayers: async (viewer: Viewer) => (await isSupervisor(viewer)) || (await viewer.captainOf()).length > 0,
-  /** Confirm, remove and add a college's players on its team's game in a sport, until it starts (D34 R3). */
+  /** Pre-confirm, take off and add a college's players on its team's game in a sport, until it starts: its captains (D34 R3). */
+  prepareRoster: (viewer: Viewer, collegeId: string, sportId: string) => isCaptainOf(viewer, collegeId, sportId),
+  /** Work on a side's roster sheet at all: its captains (prepareRoster) or a supervisor (takeAttendance); one person may be both. */
   manageRoster: async (viewer: Viewer, collegeId: string, sportId: string) =>
     (await isSupervisor(viewer)) || isCaptainOf(viewer, collegeId, sportId),
   /** Name the season's champion and run the celebration. */
@@ -177,26 +179,28 @@ export const can = {
 };
 
 /**
- * can.manageRoster and can.takeAttendance, read again inside a transaction
+ * can.takeAttendance and can.prepareRoster, read again inside a transaction
  * (services/roster.ts), so a role taken away while an add waited on the
- * directory counts: "supervisor" (an admin, or the current season's
- * supervisor), "captain" (of the side's team in the sport, in the current
- * season), or null.
+ * directory counts: `supervisor` (an admin, or the current season's
+ * supervisor) and `captain` (of the side's team in the sport, in the current
+ * season). One person may be both.
  */
-export async function rosterRoleIn(
+export async function rosterRolesIn(
   tx: Transaction,
   currentSeasonId: string | null,
   userId: string,
   side: { seasonId: string; collegeId: string; sportId: string }
-): Promise<"supervisor" | "captain" | null> {
+): Promise<{ supervisor: boolean; captain: boolean }> {
   const userSnap = await tx.get(userRef(userId));
   const roles = userSnap.exists ? readUser(userSnap.data()!).roles : [];
-  if (roles.includes("admin") || roles.includes("dev")) return "supervisor";
-  if (!currentSeasonId) return null;
+  const admin = roles.includes("admin") || roles.includes("dev");
+  if (!currentSeasonId) return { supervisor: admin, captain: false };
   const [playerSnap, teamSnap] = await Promise.all([
     tx.get(playerRef(currentSeasonId, userId)),
     tx.get(teamRef(side.seasonId, side.collegeId, side.sportId)),
   ]);
-  if (playerSnap.data()?.roles.includes("supervisor")) return "supervisor";
-  return side.seasonId === currentSeasonId && teamSnap.data()?.captainIds.includes(userId) ? "captain" : null;
+  return {
+    supervisor: admin || !!playerSnap.data()?.roles.includes("supervisor"),
+    captain: side.seasonId === currentSeasonId && !!teamSnap.data()?.captainIds.includes(userId),
+  };
 }
