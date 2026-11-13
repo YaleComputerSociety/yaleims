@@ -1,11 +1,13 @@
 "use client";
-// A game's participants, behind a "Participants" toggle so the game lists
-// stay short. The server decides who sees them and which (lib/participants.ts):
-// who is on each side, ✓ when a captain pre-confirmed them; once a supervisor
-// confirms players on a side, only those, ✓✓ (lib/rosterLevels.ts). After the
-// start, a side nobody confirmed yet says so. Name first, NetID (and, for
-// admins, the email) in small print. Read when opened, and again when
-// `refreshKey` changes while open (the viewer signed up or withdrew).
+// A game's participants: who is on each side, ✓ when a captain pre-confirmed
+// them; once a supervisor confirms players on a side, only those, ✓✓
+// (lib/rosterLevels.ts). After the start, a side nobody confirmed yet says
+// so. Name first, NetID (and, for admins, the email) in small print. The
+// server decides who sees them and which (lib/participants.ts).
+// `ParticipantsList` draws a roster its caller read (the game page, which
+// also needs the viewer's own entry from it); `Participants` keeps the older
+// lists short behind a toggle and reads the roster when opened, and again
+// when `refreshKey` changes (the viewer signed up or withdrew).
 import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa";
 import PersonName from "@/components/ui/PersonName";
@@ -16,8 +18,41 @@ import { collegeName } from "@/lib/colleges";
 import { LEGEND, LEVELS, levelOf } from "@/lib/rosterLevels";
 
 type Entry = Roster["items"][number];
-
 const mark = (e: Entry) => LEVELS[levelOf(e)].mark;
+
+export function ParticipantsList({ match, roster }: { match: Match; roster: Roster }) {
+  if (!roster.visible) {
+    return <p className="text-xs text-gray-500">Only the two colleges&apos; players, people on this game and supervisors see who&apos;s playing.</p>;
+  }
+  return (
+    <div className="space-y-1 text-left text-xs text-gray-500">
+      {roster.items.some(mark) && <p>{LEGEND}</p>}
+      {match.collegeIds.map((collegeId) => {
+        const side = roster.items.filter((e) => e.collegeId === collegeId);
+        const unconfirmed = roster.started && side.length > 0 && !side.some((e) => e.present);
+        return (
+          <div key={collegeId}>
+            <span className="font-semibold text-black dark:text-gray-300">{collegeName(collegeId)}:</span>{" "}
+            {unconfirmed && <span className="italic">(no supervisor has confirmed anyone yet) </span>}
+            {side.length === 0 ? (
+              <span>nobody yet</span>
+            ) : (
+              <ul className="inline">
+                {side.map((e, i) => (
+                  <li key={i} className="inline text-gray-800 dark:text-gray-300">
+                    <PersonName person={e} />
+                    {mark(e) && <span className="text-emerald-700 dark:text-emerald-400"> {mark(e)}</span>}
+                    {i < side.length - 1 && ", "}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Participants({ match, refreshKey }: { match: Match; refreshKey?: unknown }) {
   const { viewer } = useSession();
@@ -46,41 +81,8 @@ export default function Participants({ match, refreshKey }: { match: Match; refr
         Participants
       </button>
       {open && (
-        <div className="mt-2 space-y-1 text-left">
-          {failed ? (
-            <p>Couldn&apos;t load the participants. Try again later.</p>
-          ) : !roster ? (
-            <FaSpinner className="animate-spin" aria-label="Loading" />
-          ) : !roster.visible ? (
-            <p>Only the two colleges&apos; players, people on this game and supervisors see who&apos;s playing.</p>
-          ) : (
-            <>
-              {roster.items.some(mark) && <p>{LEGEND}</p>}
-              {match.collegeIds.map((collegeId) => {
-                const side = roster.items.filter((e) => e.collegeId === collegeId);
-                const unconfirmed = roster.started && side.length > 0 && !side.some((e) => e.present);
-                return (
-                  <div key={collegeId}>
-                    <span className="font-semibold text-black dark:text-gray-300">{collegeName(collegeId)}:</span>{" "}
-                    {unconfirmed && <span className="italic">(no supervisor has confirmed anyone yet) </span>}
-                    {side.length === 0 ? (
-                      <span>nobody yet</span>
-                    ) : (
-                      <ul className="inline">
-                        {side.map((e, i) => (
-                          <li key={i} className="inline text-gray-800 dark:text-gray-300">
-                            <PersonName person={e} />
-                            {mark(e) && <span className="text-emerald-700 dark:text-emerald-400"> {mark(e)}</span>}
-                            {i < side.length - 1 && ", "}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
+        <div className="mt-2">
+          {failed ? <p>Couldn&apos;t load the participants. Try again later.</p> : !roster ? <FaSpinner className="animate-spin" aria-label="Loading" /> : <ParticipantsList match={match} roster={roster} />}
         </div>
       )}
     </div>
