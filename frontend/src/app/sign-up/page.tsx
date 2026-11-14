@@ -95,6 +95,7 @@ export default function SignUpPage() {
             myEntries={myEntries}
             now={now}
             refresh={false}
+            earlier={false}
             emptyMessage="No upcoming games to sign up for."
             action={(game) => <SignUpButton match={game} mine={myEntries.get(game.id)} onChanged={(entry) => changed(game.id, entry)} />}
           />

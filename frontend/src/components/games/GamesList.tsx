@@ -37,6 +37,8 @@ interface GamesListProps {
   action?: (match: Match) => ReactNode;
   /** Something after a competition's name (the favorites' ★). */
   competitionAside?: (group: CompetitionGroup) => ReactNode;
+  /** Offer "Earlier games" (off where earlier games are no use, as on the sign-up page). */
+  earlier?: boolean;
 }
 
 interface Loaded {
@@ -53,7 +55,7 @@ interface Loaded {
 
 type Busy = "first" | "down" | "up" | null;
 
-export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage, action, competitionAside }: GamesListProps) {
+export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage, action, competitionAside, earlier = true }: GamesListProps) {
   const key = JSON.stringify([seasonId, filter, anchor]);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -164,7 +166,7 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
   }, [filter.kind, current, busy, visible.length, loadDown]);
 
   const days = groupGames(visible, competitionOf);
-  const canLoadEarlier = order === "asc" && current !== null && current.earlier !== null;
+  const canLoadEarlier = earlier && order === "asc" && current !== null && current.earlier !== null;
 
   return (
     <div className="space-y-3">
