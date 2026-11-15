@@ -24,7 +24,7 @@ import { mvpsRef } from "../data/mvps";
 import { playerEntriesQuery, rosterEntryRef } from "../data/roster";
 import { getCurrentSeasonId, listSeasons } from "../data/seasons";
 import { collegeTeamsRef } from "../data/teams";
-import { displayName, holderOfNetid, ownsName, readUser, userRef, usersByNetidQuery } from "../data/users";
+import { NO_FAVORITES, displayName, holderOfNetid, ownsName, readUser, userRef, usersByNetidQuery } from "../data/users";
 import { runTransaction } from "../data/util";
 import { lookUpNetid, type DirectoryResult } from "../directory";
 
@@ -126,6 +126,7 @@ export function writeAccount(
     claimedAt: signingIn ? FieldValue.serverTimestamp() : null,
     createdBy: createdFor?.by.userId ?? null,
     directory: directoryState(found),
+    favorites: NO_FAVORITES,
   } satisfies Record<keyof UserDoc, unknown>);
   if (createdFor) {
     logAction(tx, createdFor.seasonId, {

@@ -1,7 +1,6 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
-import { FiltersContext } from "@/context/FiltersContext";
 import { useSession } from "@/context/SessionContext";
 import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import Image from "next/image";
@@ -34,8 +33,6 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
 };
 
 const NavBar: React.FC = () => {
-  const filtersContext = useContext(FiltersContext);
-  const { resetFilters } = filtersContext;
   const [isClick, setisClick] = useState(false);
   const { viewer, loading } = useSession();
   const { isLight, toggleTheme } = useLightTheme();
@@ -62,7 +59,6 @@ const NavBar: React.FC = () => {
 
   const turnMenuOff = () => {
     setisClick(false);
-    resetFilters();
   };
 
   const links = [
@@ -70,7 +66,7 @@ const NavBar: React.FC = () => {
     { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard /> },
     { href: "/games", text: "Games", icon: <MdSports /> },
     { href: "/brackets", text: "Playoff Brackets", icon: <TbBrackets /> },
-    { href: "/tournaments", text: "Tournaments", icon: <TbTournament /> },
+    { href: "/events", text: "Special Events", icon: <TbTournament /> },
     { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
     { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
     { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
@@ -99,7 +95,6 @@ const NavBar: React.FC = () => {
               key={link.href}
               href={link.href}
               className={`${baseLink} ${active ? activeLink : hoverLink}`}
-              onClick={resetFilters}
               target={link.text === "Feedback" ? "_blank" : ""}
             >
               {collapsed ? 

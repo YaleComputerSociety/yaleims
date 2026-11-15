@@ -57,7 +57,7 @@ async function createBracket() {
   }, admin());
   expect(response.status).toBe(201);
   brackets.push(response.body.id);
-  const detail = (await api("GET", `/api/seasons/${current}/brackets/${response.body.id}`)).body as BracketDetail;
+  const detail = (await api("GET", `/api/seasons/${current}/brackets/${response.body.id}`, undefined, admin())).body as BracketDetail;
   const id = (slot: number) => detail.matches.find((m) => m.bracketSlot === slot)!.id;
   return { source: id(13), next: id(15), loserNext: id(16) };
 }

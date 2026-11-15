@@ -11,7 +11,7 @@ import GameRow, { useSheets } from "@/components/gameday/GameRow";
 import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import { useSeason } from "@/context/SeasonContext";
 import { useSession } from "@/context/SessionContext";
-import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { fetchMatchPage, fetchSeasonMatches, type Match } from "@/lib/api/matches";
 import { collegeName } from "@/lib/colleges";
 
 function MyTeamPage() {
@@ -34,7 +34,7 @@ function MyTeamPage() {
       ({ items }) => live && setUpcoming(items.filter((m) => m.status !== "cancelled")),
       () => live && setUpcoming([])
     );
-    fetchSeasonMatches(currentSeason.id, { ...filter, to: now, order: "desc", page: 1, pageSize: 3 }).then(
+    fetchMatchPage(currentSeason.id, { ...filter, to: now, order: "desc", limit: 3 }).then(
       ({ items }) => live && setRecent(items),
       () => {}
     );

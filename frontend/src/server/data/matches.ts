@@ -2,8 +2,9 @@
 // their number as the doc id; new ones get auto ids (D28). Byes are bracket
 // slots, not games.
 import "server-only";
-import type { DocumentReference, Query } from "firebase-admin/firestore";
+import { Timestamp, type DocumentReference, type Query } from "firebase-admin/firestore";
 import { adminDb } from "../firebaseAdmin";
+import type { MatchCursor } from "@/lib/api/matches";
 import { paths } from "@/lib/paths";
 import type { MatchDoc, MatchStatus, WithId } from "@/types/firestore";
 import { withId } from "./util";
@@ -62,25 +63,42 @@ export async function listSeasonMatches(
   return snap.docs.map((d) => withId<MatchDoc>(d));
 }
 
-/** One numbered page and the filtered total, from a single season. */
-export async function listSeasonMatchPage(
+/** The filter plus the favorites: games of any of these colleges, or of any of these sports (each up to 30). */
+export interface MatchPageFilter extends SeasonMatchFilter {
+  collegeIds?: string[];
+  sportIds?: string[];
+}
+
+/**
+ * `limit` games after `after` in `order`, and whether more follow. A college
+ * list and a sport list can't be OR'ed in one Firestore query, so each reads
+ * its own page from the same cursor and the pages are merged in list order,
+ * each game once. The list order is start, then id, as Firestore's is.
+ */
+export async function listMatchPage(
   seasonId: string,
-  filter: SeasonMatchFilter,
+  { collegeIds, sportIds, ...filter }: MatchPageFilter,
   order: SortOrder,
-  { page, pageSize }: { page: number; pageSize: number },
-): Promise<{ items: WithId<MatchDoc>[]; total: number }> {
-  const query = seasonMatchQuery(seasonId, filter, order);
-  const offset = (page - 1) * pageSize;
-  const count = query.count().get().then((snap) => snap.data().count);
-  const readPage = async () => {
-    // Read page one in parallel with the count. Later pages can skip the
-    // offset query entirely when they are beyond the end of the results.
-    if (offset > 0 && offset >= (await count)) return [];
-    const snap = await query.offset(offset).limit(pageSize).get();
-    return snap.docs.map((d) => withId<MatchDoc>(d));
+  { limit, after }: { limit: number; after?: MatchCursor },
+): Promise<{ items: WithId<MatchDoc>[]; more: boolean }> {
+  const base = seasonMatchQuery(seasonId, filter, order);
+  const lists = [
+    collegeIds && base.where("collegeIds", "array-contains-any", collegeIds),
+    sportIds && base.where("sportId", "in", sportIds),
+  ].filter((q) => q !== undefined);
+  const readPage = (query: Query) => {
+    const ordered = query.orderBy("__name__", order);
+    const from = after ? ordered.startAfter(Timestamp.fromMillis(after.startsAtMs), after.id) : ordered;
+    return from.limit(limit + 1).get();
   };
-  const [items, total] = await Promise.all([readPage(), count]);
-  return { items, total };
+  const snaps = await Promise.all((lists.length > 0 ? lists : [base]).map(readPage));
+  const byId = new Map(snaps.flatMap((snap) => snap.docs).map((d) => [d.id, withId<MatchDoc>(d)]));
+  const sign = order === "asc" ? 1 : -1;
+  const byIdThen = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  const games = [...byId.values()].sort(
+    (a, b) => sign * (a.startsAt.toMillis() - b.startsAt.toMillis() || byIdThen(a.id, b.id)),
+  );
+  return { items: games.slice(0, limit), more: games.length > limit };
 }
 
 /**

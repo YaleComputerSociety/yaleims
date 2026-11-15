@@ -114,7 +114,7 @@ async function createTournament(): Promise<BracketDetail> {
   expect(response.status).toBe(201);
   const id = response.body.id as string;
   bracketIds.push(id);
-  return (await api("GET", `/api/seasons/${current}/brackets/${id}`)).body as BracketDetail;
+  return (await api("GET", `/api/seasons/${current}/brackets/${id}`, undefined, admin())).body as BracketDetail;
 }
 
 describe("bounded audit storage", () => {

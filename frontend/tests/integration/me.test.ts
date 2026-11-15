@@ -51,6 +51,7 @@ describe("GET /api/auth/session", () => {
       signedIn: true,
       viewer: {
         userId: id, email: id, name, canEditName: false, directory: null, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
+        favorites: { sportIds: [], collegeIds: [] },
         can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false, managePeople: false },
       },
     });
@@ -88,6 +89,35 @@ describe("POST /api/auth/logout", () => {
     expect(r.status).toBe(204);
     expect(r.setCookie).toMatch(/^token=;/);
     expect((await raw("POST", "/api/auth/logout", { origin: "https://evil.example" })).status).toBe(403);
+  });
+});
+
+describe("PUT /api/me/favorites", () => {
+  const id = people.student(4, 3);
+  const put = (body: unknown, session = sessionFor(id)) => api("PUT", "/api/me/favorites", body, { session });
+  const mine = async () => (await api("GET", "/api/auth/session", undefined, { session: sessionFor(id) })).body.viewer.favorites;
+
+  it("needs a session", async () => {
+    expect((await api("PUT", "/api/me/favorites", { sportIds: [], collegeIds: [] })).status).toBe(401);
+  });
+  it("replaces the whole value, each id once, and the session shows it", async () => {
+    expect(await mine()).toEqual({ sportIds: [], collegeIds: [] });
+    expect((await put({ sportIds: ["1", "2", "1"], collegeIds: ["BK"] })).status).toBe(204);
+    expect(await mine()).toEqual({ sportIds: ["1", "2"], collegeIds: ["BK"] });
+    expect((await put({ sportIds: [], collegeIds: ["MC", "BK"] })).status).toBe(204);
+    expect(await mine()).toEqual({ sportIds: [], collegeIds: ["MC", "BK"] });
+    expect((await db.doc(`users/${id}`).get()).data()!.favorites).toEqual({ sportIds: [], collegeIds: ["MC", "BK"] });
+  });
+  it("refuses bad values, and a login without an account", async () => {
+    const bad = [
+      { sportIds: ["1"] },
+      { sportIds: [], collegeIds: ["XX"] },
+      { sportIds: [""], collegeIds: [] },
+      { sportIds: Array.from({ length: 31 }, (_, i) => String(i)), collegeIds: [] },
+      { sportIds: [], collegeIds: [], extra: 1 },
+    ];
+    for (const body of bad) expect((await put(body)).status, JSON.stringify(body)).toBe(400);
+    expect((await put({ sportIds: [], collegeIds: [] }, sessionFor("netid-nobodyhere"))).status).toBe(404);
   });
 });
 

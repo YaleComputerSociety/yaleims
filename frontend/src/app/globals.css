@@ -135,7 +135,17 @@ html,
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+html {
+  overflow-x: hidden; /* The root's overflow applies to the viewport: no horizontal page scrolling. */
+}
+
+body {
+  /* Clips what overflows sideways, as hidden would; unlike hidden, clip doesn't make body a scroll
+     container, which would have position: sticky elements (the games' day headers) stick to body
+     instead of to the page. */
+  overflow-x: clip;
 }
 
 /* Apply styles to html and body */

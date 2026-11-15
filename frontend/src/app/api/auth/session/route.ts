@@ -5,7 +5,7 @@ import { getCurrentSeasonId } from "@/server/data/seasons";
 import { ok, route } from "@/server/http";
 import { placeholderId } from "@/lib/netid";
 import { getPlayer } from "@/server/data/players";
-import { ownsName } from "@/server/data/users";
+import { NO_FAVORITES, ownsName } from "@/server/data/users";
 import { claimPlaceholders, joinSeasonOnVisit, recordNetid } from "@/server/services/accounts";
 import { clearSessionCookie, getSessionToken } from "@/server/session";
 
@@ -61,6 +61,7 @@ export const GET = route(async () => {
       collegeId: player?.collegeId ?? null,
       roles: [...(user?.roles ?? []), ...(player?.roles ?? [])],
       captainOf: captainOf.map((team) => team.sportId),
+      favorites: user?.favorites ?? NO_FAVORITES,
       can: { editSchedule, score, takeAttendance, setChampion, manageRoles, managePeople },
     },
   } satisfies SessionState);

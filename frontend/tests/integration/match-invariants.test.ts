@@ -58,7 +58,7 @@ async function createBracket(slots: object[] = []): Promise<BracketDetail> {
   }, admin());
   expect(response.status).toBe(201);
   brackets.push(response.body.id);
-  return (await api("GET", `/api/seasons/${current}/brackets/${response.body.id}`)).body;
+  return (await api("GET", `/api/seasons/${current}/brackets/${response.body.id}`, undefined, admin())).body;
 }
 
 const slot = (n: number, home: string | null, away: string | null = null) => ({

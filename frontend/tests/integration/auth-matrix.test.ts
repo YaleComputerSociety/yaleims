@@ -41,6 +41,11 @@ const nobody = encodeURIComponent("nobody@example.edu");
 const game = { startsAt: new Date().toISOString(), homeCollegeId: "BF", awayCollegeId: "BK", venue: null, venueDetail: null };
 const cases: Record<string, Case> = {
   "set the champion": { method: "PATCH", path: (s) => `/api/seasons/${s}`, body: { championCollegeId: "XX", celebrationActive: false }, allowed: adminOrDev, currentOnly: true },
+  // Games and brackets are for signed-in users (D45); a bad query or an unknown id keeps the answer small.
+  "list a season's games": { method: "GET", path: (s) => `/api/seasons/${s}/matches?order=up`, allowed: signedIn },
+  "read a game": { method: "GET", path: (s) => `/api/seasons/${s}/matches/nope`, allowed: signedIn },
+  "list brackets": { method: "GET", path: (s) => `/api/seasons/${s}/brackets?kind=cup`, allowed: signedIn },
+  "read a bracket": { method: "GET", path: (s) => `/api/seasons/${s}/brackets/nope`, allowed: signedIn },
   "upload a schedule": { method: "POST", path: (s) => `/api/seasons/${s}/matches`, body: { sportId: "99", matches: [game] }, allowed: supervisors },
   "edit a game": { method: "PATCH", path: (s) => `/api/seasons/${s}/matches/nope`, body: { venue: "X" }, allowed: supervisors },
   "score a game": { method: "PUT", path: (s) => `/api/seasons/${s}/matches/nope/result`, body: { homeScore: 1, awayScore: 0, homeForfeit: false, awayForfeit: false }, allowed: supervisors },
@@ -66,7 +71,6 @@ const cases: Record<string, Case> = {
   "name an MVP": { method: "PUT", path: (s) => `/api/seasons/${s}/colleges/BF/mvps/40`, body: { playerId: "nobody@example.edu" }, allowed: ["rep", ...adminOrDev] },
   "list role holders": { method: "GET", path: () => "/api/users?role=nope", allowed: adminOrDev },
   "set someone's roles": { method: "PUT", path: () => `/api/users/${nobody}/roles`, body: { roles: [], captainOf: [] }, allowed: adminOrDev },
-  "read past results": { method: "GET", path: () => "/api/matches?page=0", allowed: signedIn },
   "change one's name": { method: "PATCH", path: () => "/api/me", body: { name: "" }, allowed: signedIn },
   "list one's games": { method: "GET", path: () => "/api/me/matches", allowed: signedIn },
   "list one's review requests": { method: "GET", path: () => "/api/me/review-requests", allowed: signedIn },

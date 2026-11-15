@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "@/context/SessionContext";
 import { useSeason } from "@/context/SeasonContext";
 import Image from "next/image";
 import LoadingScreen from "@/components/layout/LoadingScreen";
-import ListView from "@/components/profile/ListView";
+import GamesByDay from "@/components/games/GamesByDay";
+import SignUpButton from "@/components/games/SignUpButton";
 import CollegeAffiliation from "@/components/profile/CollegeAffiliation";
 import YourName from "@/components/profile/YourName";
 import ReviewRequests from "@/components/profile/ReviewRequests";
 import Link from "next/link";
 import { getCollegeFlag } from "@/lib/images";
 import SignInPrompt from "@/components/layout/SignInPrompt";
-import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
-import { fetchMyMatches } from "@/lib/api/me";
+import { useSeasonBrackets } from "@/hooks/useSeasonBrackets";
+import { fetchMatchPage, type Match } from "@/lib/api/matches";
+import { fetchMyMatches, type MyMatch } from "@/lib/api/me";
+import type { RosterEntry } from "@/lib/api/roster";
 import { collegeName } from "@/lib/colleges";
+import { easternDate } from "@/lib/dates";
+import { competitionOf, groupGames, mergeGames, type DayGroup } from "@/lib/games";
+import { useNow } from "@/lib/useNow";
 
 /** How many of the college's next games the profile offers to sign up for. */
 const UPCOMING_LIMIT = 6;
@@ -22,34 +28,27 @@ const UPCOMING_LIMIT = 6;
 const Profile = () => {
   const { viewer, loading, signOut } = useSession();
   const { currentSeason } = useSeason();
-  const [myMatches, setMyMatches] = useState<Match[]>([]);
-  const [collegeMatches, setCollegeMatches] = useState<Match[]>([]);
+  // The user's upcoming games, whatever their college, and their college's
+  // next ones to sign up for: one set of games, split by the user's entries.
+  const [games, setGames] = useState<Match[]>([]);
+  const [myEntries, setMyEntries] = useState<Map<string, MyMatch["mine"]>>(new Map());
   const [fetching, setFetching] = useState(false);
-
-  // The user's upcoming games, whatever their college; and their college's next ones, to sign up for.
   const signedIn = !!viewer;
   const collegeId = viewer?.collegeId ?? null;
+  const seasonId = currentSeason?.id ?? null;
   useEffect(() => {
-    if (!signedIn || !currentSeason) return;
+    if (!signedIn || !seasonId) return;
     let live = true;
     setFetching(true);
     Promise.all([
-      fetchMyMatches({ seasonId: currentSeason.id, upcoming: true }),
-      collegeId
-        ? fetchSeasonMatches(currentSeason.id, {
-            collegeId,
-            status: "scheduled",
-            from: new Date().toISOString(),
-            page: 1,
-            pageSize: UPCOMING_LIMIT,
-          })
-        : { items: [] },
+      fetchMyMatches({ seasonId, upcoming: true }),
+      collegeId ? fetchMatchPage(seasonId, { collegeId, status: "scheduled", from: new Date().toISOString(), limit: UPCOMING_LIMIT }) : { items: [] },
     ])
       .then(
         ([mine, college]) => {
           if (!live) return;
-          setMyMatches(mine.items);
-          setCollegeMatches(college.items);
+          setGames(mergeGames(mine.items, college.items, "asc"));
+          setMyEntries(new Map(mine.items.map((m) => [m.id, m.mine])));
         },
         (err) => console.error("Error fetching user matches:", err)
       )
@@ -57,10 +56,36 @@ const Profile = () => {
     return () => {
       live = false;
     };
-  }, [signedIn, collegeId, currentSeason]);
+  }, [signedIn, collegeId, seasonId]);
+  const changed = (matchId: string, entry: RosterEntry | null) =>
+    setMyEntries((previous) => {
+      const next = new Map(previous);
+      if (entry) next.set(matchId, { captainStatus: entry.captainStatus, present: entry.present === true, underReview: false });
+      else next.delete(matchId);
+      return next;
+    });
 
-  const signedUpMatches = myMatches;
-  const availableMatches = collegeMatches.filter((match) => !myMatches.some((m) => m.id === match.id));
+  // The lists as the games page draws them.
+  const brackets = useSeasonBrackets(signedIn ? seasonId : null);
+  const sportOf = useMemo(() => new Map((currentSeason?.sports ?? []).map((sport) => [sport.id, sport])), [currentSeason]);
+  const competition = useCallback(
+    (game: Match) => competitionOf(game, sportOf.get(game.sportId), game.bracketId ? brackets?.get(game.bracketId) : undefined),
+    [sportOf, brackets],
+  );
+  const nowMs = useNow();
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
+  const signedUp = groupGames(games.filter((game) => myEntries.has(game.id)), competition);
+  const available = groupGames(games.filter((game) => !myEntries.has(game.id)), competition);
+  const list = (days: DayGroup[]) => (
+    <GamesByDay
+      days={days}
+      today={easternDate(now)}
+      now={now}
+      myEntries={myEntries}
+      sticky={false}
+      action={(game) => <SignUpButton match={game} mine={myEntries.get(game.id)} onChanged={(entry) => changed(game.id, entry)} />}
+    />
+  );
 
   const handleLogout = async () => {
     try {
@@ -128,10 +153,8 @@ const Profile = () => {
               <div className="text-xl font-semibold mb-2">
                 Your Upcoming Games
               </div>
-              {signedUpMatches.length > 0 ? (
-                <div className="w-full">
-                  <ListView matches={signedUpMatches} isSignedUp={true} />
-                </div>
+              {signedUp.length > 0 ? (
+                list(signedUp)
               ) : (
                 <div className="text-center mt-8 text-gray-600">
                   No upcoming games found.
@@ -141,15 +164,15 @@ const Profile = () => {
 
             <div className="flex flex-col space-y-2">
               <div className="text-xl font-semibold mb-2">Sign Up Today</div>
-              {availableMatches.length > 0 ? (
+              {available.length > 0 ? (
                 <div className="w-full">
-                  <ListView matches={availableMatches} isSignedUp={false} />
+                  {list(available)}
                   <div className="flex justify-center w pt-4">
                     <Link
-                      href="/schedules"
+                      href="/sign-up"
                       className="p-2 sm:p-4 text-white text-xs sm:text-sm rounded-lg shadow transition duration-200 ease-in-out bg-blue-600 hover:scale-110"
                     >
-                      See More on the Schedules Page!
+                      Sign up for more games
                     </Link>
                   </div>
                 </div>

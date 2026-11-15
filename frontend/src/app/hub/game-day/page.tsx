@@ -11,7 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import GameRow, { useSheets } from "@/components/gameday/GameRow";
 import withRoleProtectedRoute from "@/components/hub/withRoleProtectedRoute";
 import { useSeason } from "@/context/SeasonContext";
-import { fetchSeasonMatches, type Match } from "@/lib/api/matches";
+import { fetchMatchPage, fetchSeasonMatches, type Match } from "@/lib/api/matches";
 import { addDays, easternDate, easternMidnight } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
 
@@ -24,7 +24,8 @@ function GameDayPage() {
   const today = easternDate(new Date(now));
   const [day, setDay] = useState(today);
   const [games, setGames] = useState<Match[] | null>(null);
-  const [olderUnscored, setOlderUnscored] = useState(0);
+  // Earlier games still waiting for a score: how many, up to a page, and whether there are more.
+  const [olderUnscored, setOlderUnscored] = useState({ count: 0, more: false });
 
   useEffect(() => {
     if (!currentSeason) return;
@@ -37,12 +38,12 @@ function GameDayPage() {
       () => live && setGames([])
     );
     // Games from before this day still waiting for a score.
-    fetchSeasonMatches(currentSeason.id, {
+    // A page of them is all the banner needs to count ("100+" beyond it).
+    fetchMatchPage(currentSeason.id, {
       status: "scheduled",
       to: new Date(Math.min(from.getTime(), Date.now()) - 1).toISOString(),
-      page: 1,
-      pageSize: 1,
-    }).then(({ total }) => live && setOlderUnscored(total), () => {});
+      limit: 100,
+    }).then(({ items, next }) => live && setOlderUnscored({ count: items.length, more: next !== null }), () => {});
     return () => {
       live = false;
     };
@@ -95,12 +96,12 @@ function GameDayPage() {
           </button>
         </div>
 
-        {olderUnscored > 0 && (
+        {olderUnscored.count > 0 && (
           <Link
             href="/hub/add-scores"
             className="block rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm px-3 py-2"
           >
-            ⚠ {olderUnscored} earlier {olderUnscored === 1 ? "game is" : "games are"} still waiting for a score →
+            ⚠ {olderUnscored.count}{olderUnscored.more && "+"} earlier {olderUnscored.count === 1 ? "game is" : "games are"} still waiting for a score →
           </Link>
         )}
 

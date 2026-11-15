@@ -25,7 +25,7 @@ export const COLLEGES = [
  * none matches. An id passed as `name` is returned as is.
  */
 export function collegeIdOfName(
-  colleges: { id: string; name: string }[],
+  colleges: readonly { id: string; name: string }[],
   name: unknown
 ): string | null {
   if (typeof name !== "string") return null;

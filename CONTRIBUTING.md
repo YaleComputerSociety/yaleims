@@ -54,14 +54,14 @@ generated agent Markdown; it can reappear locally when Next runs.
 - Shared pure behavior belongs in `src/lib`. Server modules use `server-only`
   to keep privileged code out of browser bundles.
 
-URLs generally mirror season-scoped document paths. The signed-in Scores API
-(`/api/matches`) defaults to the configured current season and accepts one
-explicit `seasonId` for history. Both match lists check the total before
-reading games on pages beyond the first. Use GET to read, POST to create,
+URLs generally mirror season-scoped document paths. A season's games
+(`/api/seasons/{seasonId}/matches`) come whole, or with `limit` in cursor
+pages (`{ items, next }`; `next` goes back as `after`), so long lists never
+use offsets. Use GET to read, POST to create,
 PATCH to edit fields, PUT to set a resource, and DELETE to remove.
 Successful handlers use `ok()`, `created()`, or `noContent()`; expected failures
 throw `ApiError`. The error shape is `{ error: { code, message } }`, optionally
-with details. Lists use `{ items, total }`; use existing pagination conventions.
+with details. Lists use `{ items, total }`, cursor pages `{ items, next }`.
 
 API writes require an Origin matching their host and port (`src/proxy.ts`).
 CLI tests should use `tests/integration/helpers.ts` or set that header explicitly.

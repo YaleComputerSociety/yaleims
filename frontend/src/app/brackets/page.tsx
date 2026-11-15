@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { Suspense, useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GlassDropdown from "@/components/ui/GlassDropdown";
 import { bracketIdOf, playoffsName } from "@/lib/brackets";
@@ -8,6 +9,8 @@ import { useRef } from "react";
 import BracketCell from "@/components/brackets/BracketCell";
 import { useSeason, useSeasonDetail } from "@/context/SeasonContext";
 import LoadingScreen from "@/components/layout/LoadingScreen";
+import SignInRequired from "@/components/layout/SignInRequired";
+import { useSession } from "@/context/SessionContext";
 import { useNavbar } from "@/context/NavbarContext";
 import PageHeading from "@/components/layout/PageHeading";
 import { getVersionedImage } from "@/lib/images";
@@ -31,9 +34,11 @@ const BracketsPage: React.FC = () => {
   const { collapsed } = useNavbar();
   const [isMobile, setIsMobile] = useState(false);
   const { currentSeason, pastSeasonIds, seasonLoading } = useSeason();
-  // The sport (id) and the season (the current one until one is picked).
-  const [sport, setSport] = useState<string>("");
-  const [pickedSeason, setSeason] = useState<string | null>(null);
+  const { viewer, loading: sessionLoading } = useSession();
+  // The sport (id) and the season (the current one until one is picked); the games list links here with ?season=&sport= (lib/games.ts).
+  const params = useSearchParams();
+  const [sport, setSport] = useState<string>(params.get("sport") ?? "");
+  const [pickedSeason, setSeason] = useState<string | null>(params.get("season"));
   const season = pickedSeason ?? currentSeason?.id ?? "";
   const sports = useSeasonDetail(season || null)?.sports ?? [];
   const sportName = sports.find((s) => s.id === sport)?.name ?? "";
@@ -63,10 +68,11 @@ const BracketsPage: React.FC = () => {
     setSport(sport);
   };
 
-  // The sport's playoffs that season, a cell per slot.
+  // The sport's playoffs that season, a cell per slot (signed in only, D45).
+  const wanted = viewer !== null && sportName !== "";
   const playoffs = useBracket(
-    sportName ? season : undefined,
-    sportName ? bracketIdOf(playoffsName(sportName)) : null
+    wanted ? season : undefined,
+    wanted ? bracketIdOf(playoffsName(sportName)) : null
   );
   const { cells: bracket, loading } = playoffs;
   const error =
@@ -99,9 +105,10 @@ const BracketsPage: React.FC = () => {
     [hoveredTeam, teamConnections]
   );
 
-  if (seasonLoading || loading) {
+  if (sessionLoading || seasonLoading || loading) {
     return <LoadingScreen />;
   }
+  if (!viewer) return <SignInRequired heading="Brackets" message="Sign in to see the playoff brackets." />;
 
   // TODO: remove when mobile view is ready
   if (isMobile) {
@@ -359,4 +366,11 @@ const BracketsPage: React.FC = () => {
   );
 };
 
-export default BracketsPage;
+/** useSearchParams needs a Suspense boundary around the page. */
+export default function BracketsPageWithSuspense() {
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <BracketsPage />
+    </Suspense>
+  );
+}

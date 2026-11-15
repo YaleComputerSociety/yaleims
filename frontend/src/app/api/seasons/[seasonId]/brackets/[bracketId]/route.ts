@@ -1,7 +1,7 @@
 import { deleteBracketQuerySchema, type BracketDetail } from "@/lib/api/brackets";
 import { ApiError, toJson } from "@/lib/api/core";
 import { toMatch } from "@/lib/api/matches";
-import { authorize, can, requireCurrentSeason } from "@/server/auth";
+import { authorize, can, requireCurrentSeason, requireViewer } from "@/server/auth";
 import { getBracket } from "@/server/data/brackets";
 import { getMatches } from "@/server/data/matches";
 import { noContent, ok, readQuery, route } from "@/server/http";
@@ -9,8 +9,9 @@ import { deleteBracket } from "@/server/services/brackets";
 
 type Params = { seasonId: string; bracketId: string };
 
-/** The bracket and its games in slot order (public). */
+/** The bracket and its games in slot order (signed in, D45). */
 export const GET = route<Params>(async (req, { params }) => {
+  await requireViewer();
   const { seasonId, bracketId } = await params;
   const bracket = await getBracket(seasonId, bracketId);
   if (!bracket) throw new ApiError("not-found", "No such bracket this season.");

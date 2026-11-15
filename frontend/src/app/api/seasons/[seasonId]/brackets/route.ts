@@ -1,14 +1,15 @@
 import { bracketsQuerySchema, newBracketSchema, type BracketList } from "@/lib/api/brackets";
 import { ApiError, toJson } from "@/lib/api/core";
-import { authorize, can, requireCurrentSeason } from "@/server/auth";
+import { authorize, can, requireCurrentSeason, requireViewer } from "@/server/auth";
 import { listBrackets } from "@/server/data/brackets";
 import { created, ok, readBody, readQuery, route } from "@/server/http";
 import { createBracket } from "@/server/services/brackets";
 
 type Params = { seasonId: string };
 
-/** The season's playoffs and tournaments, newest first (public). */
+/** The season's playoffs and tournaments, newest first (signed in, D45). */
 export const GET = route<Params>(async (req, { params }) => {
+  await requireViewer();
   const { seasonId } = await params;
   const { kind } = readQuery(req, bracketsQuerySchema);
   const brackets = (await listBrackets(seasonId, kind)).sort(

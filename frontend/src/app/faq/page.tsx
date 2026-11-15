@@ -46,7 +46,7 @@ export default function Faq() {
         {
           question: "Who can use YaleIMs?",
           answer:
-            "Anyone can view schedules, scores and standings. You sign in with your Yale NetID through Yale's sign-in page (CAS). Signing yourself up for games also needs a verified residential college this season.",
+            "Anyone can see the standings. The games, brackets and special events are for signed-in Yale students: you sign in with your Yale NetID through Yale's sign-in page (CAS). Signing yourself up for games also needs a verified residential college this season.",
         },
         {
           question: "Where can I submit feedback or bugs?",

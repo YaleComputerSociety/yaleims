@@ -1,5 +1,4 @@
-// A season's games (list, schedule upload, edit, result) and its played
-// games (/api/matches, current season by default).
+// A season's games: the list (whole, or cursor pages), schedule upload, edit, result.
 import { beforeAll, describe, expect, it } from "vitest";
 import { api, db, people, seasons, sessionFor } from "./helpers";
 
@@ -10,10 +9,16 @@ beforeAll(async () => {
 const admin = () => sessionFor(people.admin);
 const player = () => sessionFor(people.student(3, 6));
 const ids = (body: { items: { id: string }[] }) => body.items.map((m) => m.id);
+/** A signed-in GET (D45: the games are for signed-in users). */
+const get = (path: string) => api("GET", path, undefined, { session: player() });
 
 describe("GET /api/seasons/{s}/matches", () => {
+  it("needs a session (D45)", async () => {
+    expect(await api("GET", `/api/seasons/${current}/matches`)).toMatchObject({ status: 401, body: { error: { code: "unauthenticated" } } });
+    expect((await api("GET", `/api/seasons/${current}/matches?limit=5`)).status).toBe(401);
+  });
   it("returns the whole season without a page, with no emails", async () => {
-    const r = await api("GET", `/api/seasons/${current}/matches`, undefined, { origin: null });
+    const r = await api("GET", `/api/seasons/${current}/matches`, undefined, { origin: null, session: player() });
     expect(r.status).toBe(200);
     const stored = await db.collection(`seasons/${current}/matches`).count().get();
     expect(r.body.total).toBe(stored.data().count);
@@ -25,7 +30,7 @@ describe("GET /api/seasons/{s}/matches", () => {
   });
   it("filters by college, sport, status and time, in either order", async () => {
     const from = new Date().toISOString();
-    const r = await api("GET", `/api/seasons/${current}/matches?collegeId=MC&status=scheduled&from=${from}&order=desc`);
+    const r = await get(`/api/seasons/${current}/matches?collegeId=MC&status=scheduled&from=${from}&order=desc`);
     expect(r.status).toBe(200);
     expect(r.body.total).toBeGreaterThan(0);
     for (const m of r.body.items) {
@@ -35,83 +40,63 @@ describe("GET /api/seasons/{s}/matches", () => {
     }
     const starts = r.body.items.map((m: { startsAt: string }) => m.startsAt);
     expect(starts).toEqual([...starts].sort().reverse());
-    const soccer = await api("GET", `/api/seasons/${previous}/matches?sportId=1`);
+    const soccer = await get(`/api/seasons/${previous}/matches?sportId=1`);
     expect(soccer.body.items.every((m: { sportId: string }) => m.sportId === "1")).toBe(true);
   });
-  it("pages: page n of the same filtered list, with the filtered total", async () => {
-    const all = await api("GET", `/api/seasons/${current}/matches?collegeId=BK`);
-    const page2 = await api("GET", `/api/seasons/${current}/matches?collegeId=BK&page=2&pageSize=5`);
-    expect(page2.body.total).toBe(all.body.total);
-    expect(ids(page2.body)).toEqual(ids(all.body).slice(5, 10));
-  });
   it("refuses bad parameters", async () => {
-    for (const query of ["pageSize=101", "page=0", "collegeId=XX", "order=up", "from=yesterday", "colour=red"]) {
-      expect((await api("GET", `/api/seasons/${current}/matches?${query}`)).status).toBe(400);
+    for (const query of ["page=1", "pageSize=5", "collegeId=XX", "order=up", "from=yesterday", "colour=red"]) {
+      expect((await get(`/api/seasons/${current}/matches?${query}`)).status).toBe(400);
     }
   });
-});
 
-describe("GET /api/matches (played games in one season)", () => {
-  const playedCount = async (season: string) =>
-    (await db.collection(`seasons/${season}/matches`).where("status", "==", "final").count().get()).data().count;
-
-  it("needs a session", async () => {
-    expect(await api("GET", "/api/matches")).toMatchObject({ status: 401, body: { error: { code: "unauthenticated" } } });
-  });
-  it("pages through only the current season by default, newest first", async () => {
-    const options = { session: player() };
-    const page1 = await api("GET", "/api/matches?pageSize=20", undefined, options);
-    const page2 = await api("GET", "/api/matches?pageSize=20&page=2", undefined, options);
-    const both = await api("GET", "/api/matches?pageSize=40", undefined, options);
-    expect(page1.status).toBe(200);
-    expect(page1.body.total).toBe(await playedCount(current));
-    expect(page2.body.total).toBe(page1.body.total);
-    expect([...ids(page1.body), ...ids(page2.body)]).toEqual(ids(both.body));
-    const starts = both.body.items.map((m: { startsAt: string }) => m.startsAt);
-    expect(starts).toEqual([...starts].sort().reverse());
-    expect(new Set(both.body.items.map((m: { status: string }) => m.status))).toEqual(new Set(["final"]));
-    expect(new Set(both.body.items.map((m: { seasonId: string }) => m.seasonId))).toEqual(new Set([current]));
-  });
-  it("returns an explicitly selected past season with its own total", async () => {
-    const response = await api("GET", `/api/matches?seasonId=${previous}&pageSize=5&order=asc`, undefined, { session: player() });
-    expect(response.status).toBe(200);
-    expect(response.body.total).toBe(await playedCount(previous));
-    expect(response.body.items).toHaveLength(5);
-    expect(new Set(response.body.items.map((m: { seasonId: string }) => m.seasonId))).toEqual(new Set([previous]));
-    const starts = response.body.items.map((m: { startsAt: string }) => m.startsAt);
-    expect(starts).toEqual([...starts].sort());
-  });
-  it("handles out-of-range pages on both match lists", async () => {
-    const options = { session: player() };
-    const page = Number.MAX_SAFE_INTEGER;
-    const scores = await api("GET", `/api/matches?page=${page}`, undefined, options);
-    expect(scores).toMatchObject({ status: 200, body: { items: [], total: await playedCount(current) } });
-    const games = await api("GET", `/api/seasons/${current}/matches?page=${page}`);
-    const total = (await db.collection(`seasons/${current}/matches`).count().get()).data().count;
-    expect(games).toMatchObject({ status: 200, body: { items: [], total } });
-  });
-  it("rejects a season id that can change the query path", async () => {
-    const response = await api("GET", "/api/matches?seasonId=2025-2026%2Fmatches", undefined, { session: player() });
-    expect(response).toMatchObject({ status: 400, body: { error: { code: "bad-request" } } });
-  });
-  it("does not fall back to history when the current season is unset", async () => {
-    const config = db.doc("config/app");
-    const stored = (await config.get()).data()!;
-    try {
-      await config.delete();
-      const response = await api("GET", "/api/matches", undefined, { session: player() });
-      expect(response).toMatchObject({ status: 200, body: { items: [], total: 0 } });
-    } finally {
-      await config.set(stored);
+  // Cursor mode: every page of `query`, `limit` games each, following `next`.
+  const walk = async (query: string, limit: number) => {
+    const pages: string[][] = [];
+    let after: string | null = null;
+    do {
+      const r = await get(`/api/seasons/${current}/matches?${query}&limit=${limit}${after ? `&after=${after}` : ""}`);
+      expect(r.status).toBe(200);
+      expect(r.body.items.length).toBeLessThanOrEqual(limit);
+      pages.push(ids(r.body));
+      after = r.body.next;
+    } while (after);
+    return pages;
+  };
+  it("pages by cursor: full pages that tile the filtered list, in either order; the last page has no next", async () => {
+    for (const order of ["asc", "desc"]) {
+      const all = await get(`/api/seasons/${current}/matches?collegeId=BK&order=${order}`);
+      const pages = await walk(`collegeId=BK&order=${order}`, 5);
+      expect(pages.flat()).toEqual(ids(all.body));
+      expect(pages.length).toBeGreaterThan(1);
+      expect(pages.slice(0, -1).every((p) => p.length === 5)).toBe(true);
     }
   });
-  it("filters by college and time", async () => {
-    const recent = (await db.collection(`seasons/${current}/matches`).where("status", "==", "final").orderBy("startsAt", "desc").limit(1).get()).docs[0].data();
-    const college = recent.homeCollegeId;
-    const from = new Date(recent.startsAt.toMillis() - 24 * 3600 * 1000).toISOString();
-    const r = await api("GET", `/api/matches?collegeId=${college}&from=${from}`, undefined, { session: player() });
-    expect(r.body.total).toBeGreaterThan(0);
-    expect(r.body.items.every((m: { collegeIds: string[]; startsAt: string }) => m.collegeIds.includes(college) && m.startsAt >= from)).toBe(true);
+  it("continues after a cursor that sits inside a run of games starting at the same minute", async () => {
+    const all = (await get(`/api/seasons/${current}/matches`)).body.items as { id: string; startsAt: string }[];
+    const i = all.findIndex((m, k) => k > 0 && m.startsAt === all[k - 1].startsAt);
+    expect(i).toBeGreaterThan(0); // the seed schedules games at the same time
+    const before = all[i - 1];
+    const r = await get(`/api/seasons/${current}/matches?limit=3&after=${Date.parse(before.startsAt)}|${before.id}`);
+    expect(ids(r.body)).toEqual(all.slice(i, i + 3).map((m) => m.id));
+  });
+  it("lists the games of any favorite college or sport together, each once, in order", async () => {
+    const all = (await get(`/api/seasons/${current}/matches`)).body.items as { id: string; sportId: string; collegeIds: string[]; status: string }[];
+    const colleges = ["BK", "MC"], sports = ["1"];
+    const wanted = all.filter((m) => m.collegeIds.some((c) => colleges.includes(c)) || sports.includes(m.sportId));
+    expect(wanted.length).toBeGreaterThan(7);
+    expect(wanted.some((m) => m.collegeIds.includes("BK") && m.sportId === "1")).toBe(true); // in both lists: once
+    const favorites = `collegeIds=${colleges.join(",")}&sportIds=${sports.join(",")}`;
+    expect((await walk(favorites, 7)).flat()).toEqual(wanted.map((m) => m.id));
+    // A single filter narrows both lists; one list alone works too.
+    expect((await walk(`${favorites}&status=scheduled`, 50)).flat()).toEqual(wanted.filter((m) => m.status === "scheduled").map((m) => m.id));
+    expect((await walk(`sportIds=1`, 50)).flat()).toEqual(all.filter((m) => m.sportId === "1").map((m) => m.id));
+  });
+  it("refuses bad cursor parameters", async () => {
+    const bad = [
+      "limit=0", "limit=101", "page=1&limit=5", "after=1|a", "limit=5&after=nope", "collegeIds=BK,MC",
+      "limit=5&collegeId=BK&collegeIds=MC", "limit=5&sportId=1&sportIds=1", "limit=5&collegeIds=", `limit=5&collegeIds=${Array(31).fill("BK").join(",")}`,
+    ];
+    for (const query of bad) expect((await get(`/api/seasons/${current}/matches?${query}`)).status, query).toBe(400);
   });
 });
 

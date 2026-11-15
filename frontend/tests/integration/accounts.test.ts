@@ -60,6 +60,7 @@ describe("resolving a NetID to an account", () => {
       email: p.email, name: "Ann Lee", nameSource: "yalies", netid: p.netid,
       roles: [], claimedAt: expect.any(Timestamp), createdBy: null,
       directory: { outcome: "found", checkedAt: expect.any(Timestamp), nextAt: expect.any(Timestamp) },
+      favorites: { sportIds: [], collegeIds: [] },
     });
     expect(await player(p.id)).toMatchObject({
       collegeId: "BF", userId: p.id, joinedVia: "login", collegeHistory: [{ collegeId: "BF", source: "yalies", since: expect.any(Timestamp) }],
