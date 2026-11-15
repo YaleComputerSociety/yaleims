@@ -68,10 +68,11 @@ const BracketsPage: React.FC = () => {
     setSport(sport);
   };
 
-  // The sport's playoffs that season, a cell per slot.
+  // The sport's playoffs that season, a cell per slot (signed in only, D45).
+  const wanted = viewer !== null && sportName !== "";
   const playoffs = useBracket(
-    sportName ? season : undefined,
-    sportName ? bracketIdOf(playoffsName(sportName)) : null
+    wanted ? season : undefined,
+    wanted ? bracketIdOf(playoffsName(sportName)) : null
   );
   const { cells: bracket, loading } = playoffs;
   const error =

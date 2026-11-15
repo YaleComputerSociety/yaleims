@@ -8,7 +8,7 @@
 // counterpart: it hides loaded games and loads on until a screen is full.
 // While the tab is visible, the first page is read again every minute so new
 // scores show without a reload (G8).
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { fetchMatchPage, type Match } from "@/lib/api/matches";
 import type { MyMatch } from "@/lib/api/me";
 import { easternDate } from "@/lib/dates";
@@ -57,6 +57,9 @@ type Busy = "first" | "down" | "up" | null;
 
 export default function GamesList({ seasonId, filter, anchor, competitionOf, myEntries, now, refresh, emptyMessage, action, competitionAside, earlier = true }: GamesListProps) {
   const key = JSON.stringify([seasonId, filter, anchor]);
+  // The query as a value: callers may pass an equal filter as a new object on
+  // every render (a minute's tick, a session refresh), which must not start the list over.
+  const query = useMemo(() => JSON.parse(key) as [string, ListFilter, EasternDate], [key]);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,12 +71,13 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
   // One page: downwards from `after` in the list's order, or upwards (the games before the list's start, newest first).
   const readPage = useCallback(
     (direction: "down" | "up", after: string | null) => {
+      const [seasonId, filter, anchor] = query;
       const { order, from, to, status } = listBounds(filter, anchor, new Date());
       const base = { sportId: filter.sportId, collegeId: filter.collegeId, collegeIds: filter.collegeIds, sportIds: filter.sportIds, status, limit: PAGE_SIZE, after: after ?? undefined };
       if (direction === "down") return fetchMatchPage(seasonId, { ...base, order, from: from?.toISOString(), to: to?.toISOString() });
       return fetchMatchPage(seasonId, { ...base, order: "desc", to: new Date((from ?? new Date()).getTime() - 1).toISOString() });
     },
-    [seasonId, filter, anchor],
+    [query],
   );
 
   const run = useCallback(
@@ -96,13 +100,18 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
   const order = listBounds(filter, anchor, now).order;
 
   // The first page of a query.
+  const loadFirst = useCallback(
+    () => run("first", null, (_, items, next) => ({ key, games: items, next, earlier: undefined, fills: 0 })),
+    [run, key],
+  );
   useEffect(() => {
-    run("first", null, (_, items, next) => ({ key, games: items, next, earlier: undefined, fills: 0 }));
-  }, [key, run]);
+    loadFirst();
+  }, [loadFirst]);
 
+  // Not after a failed page: the sentinel would ask again at once, and again ("Try again" clears the error).
   const loadDown = useCallback(
     (fill = false) => {
-      if (!current?.next || busy) return;
+      if (!current?.next || busy || error) return;
       run("down", current.next, (previous, items, next) => ({
         key,
         games: mergeGames(previous?.games ?? [], items, order),
@@ -111,7 +120,7 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
         fills: (previous?.fills ?? 0) + (fill ? 1 : 0),
       }));
     },
-    [current, busy, run, key, order],
+    [current, busy, error, run, key, order],
   );
 
   // "Earlier games": keep what the viewer is looking at where it is.
@@ -183,7 +192,7 @@ export default function GamesList({ seasonId, filter, anchor, competitionOf, myE
       {error && (
         <p role="alert" className="rounded-xl border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
           {error}{" "}
-          <button type="button" className="underline font-semibold" onClick={() => run("first", null, (_, items, next) => ({ key, games: items, next, earlier: undefined, fills: 0 }))}>
+          <button type="button" className="underline font-semibold" onClick={() => (current ? setError(null) : loadFirst())}>
             Try again
           </button>
         </p>

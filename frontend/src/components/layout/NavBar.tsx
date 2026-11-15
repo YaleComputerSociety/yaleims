@@ -95,7 +95,6 @@ const NavBar: React.FC = () => {
               key={link.href}
               href={link.href}
               className={`${baseLink} ${active ? activeLink : hoverLink}`}
-             
               target={link.text === "Feedback" ? "_blank" : ""}
             >
               {collapsed ? 

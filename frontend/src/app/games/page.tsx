@@ -124,20 +124,19 @@ function GamesPage() {
   }, [viewer, seasonId]);
 
   // What the list asks for, from the tab and the filters; null while the tab has nothing to show.
+  // The Filters panel (college, kind, status) belongs to All: the other tabs don't show it, so they don't apply it.
   const filter = useMemo((): ListFilter | null => {
-    const chosen = { sportId: state.sport || undefined, kind: state.kind || undefined, status: state.status || undefined };
     if (state.tab === "favorites") {
       const favorites = viewer?.favorites;
       if (!favorites || (favorites.sportIds.length === 0 && favorites.collegeIds.length === 0)) return null;
       return {
-        ...chosen,
-        sportId: undefined,
         collegeIds: favorites.collegeIds.length > 0 ? favorites.collegeIds : undefined,
         sportIds: favorites.sportIds.length > 0 ? favorites.sportIds : undefined,
       };
     }
-    if (state.tab === "college") return viewer?.collegeId ? { ...chosen, collegeId: viewer.collegeId } : null;
-    return { ...chosen, collegeId: state.collegeId || undefined };
+    const sportId = state.sport || undefined;
+    if (state.tab === "college") return viewer?.collegeId ? { sportId, collegeId: viewer.collegeId } : null;
+    return { sportId, collegeId: state.collegeId || undefined, kind: state.kind || undefined, status: state.status || undefined };
   }, [state, viewer]);
 
   // The Favorites tab's editor: open on request, and always while there's nothing to show yet.
