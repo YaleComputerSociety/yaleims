@@ -15,6 +15,21 @@ export function countsAsAttended(entry: Pick<RosterEntryDoc, "present" | "captai
   return entry.present === true && entry.captainStatus !== "removed" && game?.status !== "cancelled";
 }
 
+/**
+ * How many games of `game`'s sport a player played before it (attendance
+ * that counts), from their roster entries this season and those entries'
+ * games by id.
+ */
+export function gamesPlayedBefore(
+  game: Pick<MatchDoc, "sportId" | "startsAt">,
+  entries: Pick<RosterEntryDoc, "matchId" | "sportId" | "startsAt" | "present" | "captainStatus">[],
+  games: Map<string, Pick<MatchDoc, "status">>
+): number {
+  return entries.filter(
+    (e) => e.sportId === game.sportId && e.startsAt.toMillis() < game.startsAt.toMillis() && countsAsAttended(e, games.get(e.matchId))
+  ).length;
+}
+
 /** One college assignment, in milliseconds; collegeId null: cleared. */
 export interface Assignment {
   collegeId: string | null;

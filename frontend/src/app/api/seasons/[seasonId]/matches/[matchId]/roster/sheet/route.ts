@@ -1,8 +1,9 @@
 import { ApiError } from "@/lib/api/core";
 import { toOwnEntry, type CaptainCall, type RosterSheet } from "@/lib/api/roster";
 import { can, requireViewer } from "@/server/auth";
-import { getMatch } from "@/server/data/matches";
-import { listRoster } from "@/server/data/roster";
+import { gamesPlayedBefore } from "@/lib/attendance";
+import { getMatch, getMatches } from "@/server/data/matches";
+import { listPlayerEntries, listRoster } from "@/server/data/roster";
 import { getPlayers } from "@/server/data/players";
 import { getTeam } from "@/server/data/teams";
 import { displayName, getUsers, identityOf } from "@/server/data/users";
@@ -16,9 +17,10 @@ type Params = { seasonId: string; matchId: string };
  * caller manages (both for a supervisor; a captain's own college) and which
  * of them they captain (a supervisor may captain one too), taken-off
  * players too, with their ids and identities (emails for admins), and
- * whether they have signed in and have a college this season, and who
- * made the captain's call: a captain by name; a supervisor by name for
- * staff, by role only for captains (their names mean nothing to students).
+ * whether they have signed in and have a college this season, who made
+ * the captain's call (a captain by name; a supervisor by name for staff, by
+ * role only for captains: their names mean nothing to students), and how
+ * many games of the sport they played before this one.
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -34,12 +36,16 @@ export const GET = route<Params>(async (req, { params }) => {
   const entries = (await listRoster(seasonId, matchId)).filter((e) => collegeIds.includes(e.collegeId));
   const ids = entries.map((e) => e.playerId);
   const callers = entries.flatMap((e) => (e.captainStatus && e.captainBy ? [e.captainBy] : []));
-  const [users, players, withEmail, teams] = await Promise.all([
+  const [users, players, withEmail, teams, histories] = await Promise.all([
     getUsers([...ids, ...callers]),
     getPlayers(seasonId, ids),
     can.seeEmails(viewer),
     Promise.all(collegeIds.map((c) => getTeam(seasonId, c, match.sportId))),
+    Promise.all(ids.map((id) => listPlayerEntries(seasonId, id))),
   ]);
+  const inSport = histories.flat().filter((e) => e.sportId === match.sportId);
+  const games = await getMatches(seasonId, [...new Set(inSport.map((e) => e.matchId))]);
+  const played = new Map(ids.map((id, i) => [id, gamesPlayedBefore(match, histories[i], games)]));
   const captainIds = new Set(teams.flatMap((t) => t?.captainIds ?? []));
   const callOf = (e: RosterEntryDoc): CaptainCall | null => {
     if (!e.captainStatus || !e.captainBy) return null;
@@ -56,6 +62,7 @@ export const GET = route<Params>(async (req, { params }) => {
       signedIn: !!user?.claimedAt,
       collegeAssigned: !!players.get(e.playerId)?.collegeId,
       captainCall: callOf(e),
+      gamesPlayed: played.get(e.playerId) ?? 0,
     };
   });
   return ok({ collegeIds, supervisor, captainOf, items, total: items.length } satisfies RosterSheet);
