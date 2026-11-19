@@ -145,7 +145,7 @@ const AboutUsPage: React.FC = () => {
     {
       name: "Brenna Ren",
       roles: ["Software Engineer"],
-      image: getDevImage("Brenna_Ren.png"),
+      image: getDevImage("Brenna_Ren.jpeg"),
       github: "https://github.com/brennaren/",
       linkedin: "https://www.linkedin.com/in/brenna-ren/",
       portfolio: "https://brennaren.com/",
