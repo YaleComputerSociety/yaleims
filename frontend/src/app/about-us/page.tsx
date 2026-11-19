@@ -12,6 +12,38 @@ const AboutUsPage: React.FC = () => {
 
   const pastMembers = [
     {
+      name: "Kaitlyn Oikle",
+      roles: ["Software Engineer"],
+      image: getDevImage("Kaitlyn_Oikle.jpg"),
+      github: "https://github.com/kjoikle",
+      linkedin: "https://www.linkedin.com/in/kaitlyn-oikle/",
+      portfolio: undefined,
+    },
+    {
+      name: "Daniel Morales",
+      roles: ["Software Engineer"],
+      image: getDevImage("Daniel_Morales.jpg"),
+      github: "https://github.com/dmo7567",
+      linkedin: "https://www.linkedin.com/in/dmorales7567/",
+      portfolio: undefined,
+    },
+    {
+      name: "Ella White",
+      roles: ["Software Engineer"],
+      image: getDevImage("Ella_White.png"),
+      github: undefined,
+      linkedin: "https://www.linkedin.com/in/ella-white-707012243/",
+      portfolio: undefined,
+    },
+    {
+      name: "Farhan Baig",
+      roles: ["Software Engineer"],
+      image: getDevImage("Farhan_Baig.jpeg"),
+      github: undefined,
+      linkedin: "https://www.linkedin.com/in/baig-farhan/",
+      portfolio: undefined,
+    },
+    {
       name: "Anna Xu",
       roles: ["Team Lead, Software Engineer"],
       image: getDevImage("Anna_Xu.jpeg"),
@@ -79,51 +111,19 @@ const AboutUsPage: React.FC = () => {
 
   const teamMembers = [
     {
-      name: "Ephraim Akai-Nettey",
-      roles: ["Lead Software Engineer"],
-      image: getDevImage("Ephraim_Akai-Nettey.jpg"),
-      github: "https://github.com/dennisephraim",
-      linkedin: "https://www.linkedin.com/in/ephraim-akai-nettey/",
-      portfolio: undefined,
-    },
-    {
-      name: "Kaitlyn Oikle",
-      roles: ["Software Engineer"],
-      image: getDevImage("Kaitlyn_Oikle.jpg"),
-      github: "https://github.com/kjoikle",
-      linkedin: "https://www.linkedin.com/in/kaitlyn-oikle/",
-      portfolio: undefined,
-    },
-    {
-      name: "Daniel Morales",
-      roles: ["Software Engineer"],
-      image: getDevImage("Daniel_Morales.jpg"),
-      github: "https://github.com/dmo7567",
-      linkedin: "https://www.linkedin.com/in/dmorales7567/",
-      portfolio: undefined,
-    },
-    {
-      name: "Ella White",
-      roles: ["Software Engineer"],
-      image: getDevImage("Ella_White.png"),
-      github: undefined,
-      linkedin: "https://www.linkedin.com/in/ella-white-707012243/",
-      portfolio: undefined,
-    },
-    {
-      name: "Farhan Baig",
-      roles: ["Software Engineer"],
-      image: getDevImage("Farhan_Baig.jpeg"),
-      github: undefined,
-      linkedin: "https://www.linkedin.com/in/baig-farhan/",
-      portfolio: undefined,
-    },
-    {
       name: "Vojtech Kysilka",
-      roles: ["Software Engineer"],
+      roles: ["Lead Software Engineer"],
       image: getDevImage("Vojtech_Kysilka.jpeg"),
       github: undefined,
       linkedin: "https://www.linkedin.com/in/vojtech-kysilka/",
+      portfolio: undefined,
+    },
+    {
+      name: "Ben Le",
+      roles: ["Lead Software Engineer"],
+      image: getDevImage("Ben_Le.png"),
+      github: "https://github.com/le-benjamin",
+      linkedin: "https://www.linkedin.com/in/benjamin-le-b836ba274/ ",
       portfolio: undefined,
     },
     {
@@ -134,13 +134,21 @@ const AboutUsPage: React.FC = () => {
       linkedin: "https://www.linkedin.com/in/claire-guo-881bb2287/",
       portfolio: undefined,
     },
-        {
-      name: "Ben Le",
-      roles: ["Software Engineer"],
-      image: getDevImage("Ben_Le.png"),
-      github: "https://github.com/le-benjamin",
-      linkedin: "https://www.linkedin.com/in/benjamin-le-b836ba274/ ",
+    {
+      name: "Ephraim Akai-Nettey",
+      roles: ["Lead Software Engineer"],
+      image: getDevImage("Ephraim_Akai-Nettey.jpg"),
+      github: "https://github.com/dennisephraim",
+      linkedin: "https://www.linkedin.com/in/ephraim-akai-nettey/",
       portfolio: undefined,
+    },
+    {
+      name: "Brenna Ren",
+      roles: ["Software Engineer"],
+      image: getDevImage("Brenna_Ren.jpeg"),
+      github: "https://github.com/brennaren/",
+      linkedin: "https://www.linkedin.com/in/brenna-ren/",
+      portfolio: "https://brennaren.com/",
     }
   ];
 
