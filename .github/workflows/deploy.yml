@@ -1,0 +1,72 @@
+name: Deploy
+
+# Rolls a commit of main out to yaleims.com: the pinned App Hosting rollout of
+# CONTRIBUTING's release step 4. Started by hand (Actions → Deploy → Run
+# workflow); the production environment accepts only main and waits for a
+# maintainer's approval. Backups and index/rules deploys stay manual steps.
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA on main (empty = main's latest commit)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  # To find the commit's CI run.
+  actions: read
+  # To sign in to Google Cloud with GitHub's OIDC token instead of a stored key.
+  id-token: write
+
+# One rollout at a time; a second one waits rather than cancelling the first.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollout:
+    name: Roll out to yaleims.com
+    runs-on: ubuntu-latest
+    # A build plus rollout takes about 5–10 minutes.
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://yaleims.com
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # The input goes through env, never into the script text (no injection).
+      - name: Check the commit is on main and passed CI
+        env:
+          INPUT: ${{ inputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMIT=${INPUT:-$(git rev-parse origin/main)}
+          if ! [[ $COMMIT =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Give a full 40-character commit SHA"; exit 1
+          fi
+          if ! git merge-base --is-ancestor "$COMMIT" origin/main; then
+            echo "::error::$COMMIT is not on main"; exit 1
+          fi
+          PASSED=$(gh run list --workflow ci.yml --commit "$COMMIT" --status success --json databaseId --jq length)
+          if [ "$PASSED" -eq 0 ]; then
+            echo "::error::CI hasn't passed for $COMMIT (still running? wait for it)"; exit 1
+          fi
+          echo "COMMIT=$COMMIT" >> "$GITHUB_ENV"
+      # Workload Identity Federation: Google accepts only this repository's
+      # jobs in the production environment (set up once in Google Cloud).
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/846558223250/locations/global/workloadIdentityPools/github/providers/yaleims
+          service_account: github-deploy@yims-125a2.iam.gserviceaccount.com
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      # Builds the commit on App Hosting and waits until the rollout is live.
+      - name: Roll out
+        run: npx -y firebase-tools@14 apphosting:rollouts:create yaleims-1 -g "$COMMIT" --project yims-125a2 --force
+      - name: Check the live site answers
+        run: curl -fsS -o /dev/null -w "yaleims.com answered %{http_code} in %{time_total}s\n" https://yaleims.com/

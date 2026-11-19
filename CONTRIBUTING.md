@@ -255,7 +255,10 @@ See Firebase's [rollout and rollback documentation](https://firebase.google.com/
    CAS service registration accepts `/api/auth/redirect?state=...`; the local
    fixtures cannot establish either production setting. Old pending callbacks
    without a matching attempt land on `/sign-in-failed`; existing sessions stay valid.
-4. Run the pinned rollout:
+4. Run the pinned rollout: Actions → Deploy → Run workflow with the full SHA,
+   then approve the `production` environment. The workflow refuses a commit
+   that is not on `main` or has not passed CI, and records the deployment on
+   GitHub. The same rollout from a terminal:
    `npx -y firebase-tools@14 apphosting:rollouts:create yaleims-1 -g FULL_COMMIT_SHA --project yims-125a2`.
 5. Check rollout/build logs, the live site signed out and in, relevant roles,
    and the feature's stored effects. Coordinate rules changes with the code
