@@ -141,6 +141,14 @@ const AboutUsPage: React.FC = () => {
       github: "https://github.com/le-benjamin",
       linkedin: "https://www.linkedin.com/in/benjamin-le-b836ba274/ ",
       portfolio: undefined,
+    },
+    {
+      name: "Brenna Ren",
+      roles: ["Software Engineer"],
+      image: getDevImage("Brenna_Ren.png"),
+      github: "https://github.com/brennaren/",
+      linkedin: "https://www.linkedin.com/in/brenna-ren/",
+      portfolio: "https://brennaren.com/",
     }
   ];
 
