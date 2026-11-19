@@ -120,11 +120,11 @@ export default function Footer() {
             University
           </p>
           <p className="hidden md:block text-md text-blue-700 dark:text-white">
-            YaleIMs © 2025
+            YaleIMs © 2026
           </p>
         </div>
         <p className="md:hidden block pt-4 text-center text-md text-blue-700 dark:text-white">
-          YaleIMs © 2025
+          YaleIMs © 2026
         </p>
       </div>
       <br></br>
