@@ -6,8 +6,9 @@
 // them back and adds walk-ins; someone who is both gets both on the sides
 // they captain. A player the supervisor confirmed is the supervisor's to
 // change (C20). Levels and their words: lib/rosterLevels.ts. Both add
-// players by NetID too (U10). The server decides who manages which side
-// (GET …/roster/sheet) and checks every change.
+// players by NetID too (U10). Each name shows the games of the sport the
+// player played before this one. The server decides who manages which
+// side (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCheck, FaTimes, FaUndo } from "react-icons/fa";
@@ -222,8 +223,14 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
             )}
             <div className="flex-1 min-w-0">
               <div className="font-medium break-words">
-                <PersonName person={entry} tag={who(entry)} />
+                <PersonName person={entry} tag={who(entry)} emailOnRequest />
                 {LEVELS[levelOf(entry)].mark && <span className="text-emerald-700 dark:text-emerald-400"> {LEVELS[levelOf(entry)].mark}</span>}
+                <span
+                  className="ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                  title={`Games of this sport ${entry.name} played this season before this one`}
+                >
+                  {entry.gamesPlayed} {entry.gamesPlayed === 1 ? "Game" : "Games"} Played
+                </span>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 {[...origin(entry), ...standing(entry)].join(" · ")}
@@ -270,7 +277,7 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
             <div key={entry.playerId} className="flex items-center justify-between py-1.5 text-sm text-gray-500">
               <span>
                 <span className="line-through">
-                  <PersonName person={entry} tag={who(entry)} />
+                  <PersonName person={entry} tag={who(entry)} emailOnRequest />
                 </span>
                 <span className="ml-2 text-xs">taken off by {caller(entry)}</span>
               </span>

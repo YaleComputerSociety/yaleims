@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignmentsOf, countsAsAttended, disputed, expectedCollege, type Assignment, type Attended } from "@/lib/attendance";
+import { assignmentsOf, countsAsAttended, disputed, expectedCollege, gamesPlayedBefore, type Assignment, type Attended } from "@/lib/attendance";
 
 const at = (ms: number) => ({ seconds: ms / 1000, nanoseconds: 0, toDate: () => new Date(ms), toMillis: () => ms });
 const game = (collegeId: string, startsAt: number, adminConfirmed = false): Attended => ({ collegeId, startsAt, adminConfirmed });
@@ -13,6 +13,27 @@ describe("countsAsAttended", () => {
     expect(countsAsAttended({ present: true, captainStatus: null }, { status: "cancelled" })).toBe(false);
     expect(countsAsAttended({ present: false, captainStatus: "confirmed" }, played)).toBe(false);
     expect(countsAsAttended({ present: null, captainStatus: null }, played)).toBe(false);
+  });
+});
+
+describe("gamesPlayedBefore", () => {
+  const entry = (matchId: string, sportId: string, startsAt: number, present: boolean | null = true, captainStatus: "confirmed" | "removed" | null = null) =>
+    ({ matchId, sportId, startsAt: at(startsAt), present, captainStatus });
+
+  it("counts the sport's earlier games they played: not this one, later ones, other sports, absences, take-offs or cancelled games", () => {
+    const games = new Map([["cancelled", { status: "cancelled" as const }]]);
+    const entries = [
+      entry("a", "1", 10),
+      entry("b", "1", 20, true, "confirmed"),
+      entry("now", "1", 30),
+      entry("later", "1", 40),
+      entry("other-sport", "2", 15),
+      entry("absent", "1", 16, false),
+      entry("taken-off", "1", 17, true, "removed"),
+      entry("cancelled", "1", 18),
+    ];
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, entries, games)).toBe(2);
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(5) }, entries, games)).toBe(0);
   });
 });
 
