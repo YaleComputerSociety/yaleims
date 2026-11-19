@@ -7,7 +7,7 @@
 // they captain. A player the supervisor confirmed is the supervisor's to
 // change (C20). Levels and their words: lib/rosterLevels.ts. Both add
 // players by NetID too (U10). Each name shows the games of the sport the
-// player played before this one (GP). The server decides who manages which
+// player played before this one. The server decides who manages which
 // side (GET …/roster/sheet) and checks every change.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -229,7 +229,7 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
                   className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400 whitespace-nowrap"
                   title={`Games of this sport ${entry.name} played this season before this one`}
                 >
-                  {entry.gamesPlayed} GP
+                  {entry.gamesPlayed} Games Played
                 </span>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
