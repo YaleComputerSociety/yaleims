@@ -229,7 +229,8 @@ function Side({ match, collegeId, entries, supervisor, captain, busy, change, ru
                   className="ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                   title={`Games of this sport ${entry.name} played this season before this one`}
                 >
-                  {entry.gamesPlayed} {entry.gamesPlayed === 1 ? "Game" : "Games"} Played
+                  {entry.gamesPlayed} <span className="sm:hidden">GP</span>
+                  <span className="hidden sm:inline">{entry.gamesPlayed === 1 ? "Game" : "Games"} Played</span>
                 </span>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">

@@ -4,7 +4,6 @@
 // admins, the email (lib/api/users Identity: the server sends it only to them),
 // shown at once or, with `emailOnRequest`, behind a button.
 import { useState } from "react";
-import { FaEllipsisH } from "react-icons/fa";
 import type { Identity } from "@/lib/api/users";
 
 export default function PersonName({ person, tag, emailOnRequest = false }: { person: Identity; tag?: string; emailOnRequest?: boolean }) {
@@ -17,13 +16,11 @@ export default function PersonName({ person, tag, emailOnRequest = false }: { pe
       {emailOnRequest && person.email && (
         <button
           type="button"
-          className="ml-1 p-0.5 align-middle rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          aria-label={emailShown ? "Hide email" : "Show email"}
+          className="ml-1.5 align-middle rounded-full px-2 py-0.5 text-xs font-normal whitespace-nowrap bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           aria-expanded={emailShown}
-          title={emailShown ? "Hide email" : "Show email"}
           onClick={() => setEmailShown((shown) => !shown)}
         >
-          <FaEllipsisH className="h-3 w-3" />
+          {emailShown ? "hide email" : "show email"}
         </button>
       )}
     </>
