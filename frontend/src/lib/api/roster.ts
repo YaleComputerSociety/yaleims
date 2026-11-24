@@ -96,7 +96,8 @@ export interface RosterSheet {
    * account made for them stays unclaimed until then); whether they have a
    * college this season; who made the captain's call (co-captains share one
    * call per player: the last one counts; null: no call); how many games of
-   * the sport they played before this one (lib/attendance.ts).
+   * the sport they played before this one, as the Hub counts them: not
+   * those under review (lib/attendance.ts).
    */
   items: (RosterEntry & Identity & { signedIn: boolean; collegeAssigned: boolean; captainCall: CaptainCall | null; gamesPlayed: number })[];
   total: number;

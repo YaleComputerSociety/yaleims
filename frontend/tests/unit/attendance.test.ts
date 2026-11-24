@@ -17,8 +17,9 @@ describe("countsAsAttended", () => {
 });
 
 describe("gamesPlayedBefore", () => {
-  const entry = (matchId: string, sportId: string, startsAt: number, present: boolean | null = true, captainStatus: "confirmed" | "removed" | null = null) =>
-    ({ matchId, sportId, startsAt: at(startsAt), present, captainStatus });
+  const entry = (matchId: string, sportId: string, startsAt: number, present: boolean | null = true, captainStatus: "confirmed" | "removed" | null = null, collegeId = "BF") =>
+    ({ matchId, sportId, collegeId, startsAt: at(startsAt), present, captainStatus });
+  const bf = { collegeId: "BF", joinedAt: at(0) };
 
   it("counts the sport's earlier games they played: not this one, later ones, other sports, absences, take-offs or cancelled games", () => {
     const games = new Map([["cancelled", { status: "cancelled" as const }]]);
@@ -32,8 +33,20 @@ describe("gamesPlayedBefore", () => {
       entry("taken-off", "1", 17, true, "removed"),
       entry("cancelled", "1", 18),
     ];
-    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, entries, games)).toBe(2);
-    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(5) }, entries, games)).toBe(0);
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, bf, entries, games)).toBe(2);
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(5) }, bf, entries, games)).toBe(0);
+  });
+
+  it("leaves out games under review, as the Hub does, unless an admin confirmed them", () => {
+    const entries = [entry("a", "1", 10), entry("for-MY", "1", 20, true, null, "MY")];
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, bf, entries, new Map())).toBe(1);
+    // With no college, games for two colleges are all under review (lib/attendance.ts, disputed).
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, undefined, entries, new Map())).toBe(0);
+    // Judged on every sport: with no college, another sport's game for another college puts this one under review too.
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, undefined, [entries[0]], new Map())).toBe(1);
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, undefined, [entries[0], entry("x", "2", 15, true, null, "MY")], new Map())).toBe(0);
+    const confirmed = [entries[0], { ...entries[1], attendanceConfirmedBy: "admin@example.edu" }];
+    expect(gamesPlayedBefore({ sportId: "1", startsAt: at(30) }, bf, confirmed, new Map())).toBe(2);
   });
 });
 

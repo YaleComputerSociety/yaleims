@@ -16,18 +16,24 @@ export function countsAsAttended(entry: Pick<RosterEntryDoc, "present" | "captai
 }
 
 /**
- * How many games of `game`'s sport a player played before it (attendance
- * that counts), from their roster entries this season and those entries'
+ * How many games of `game`'s sport a player played before it, as the Hub's
+ * "Games Played" counts them: attendance that counts, not under review
+ * (judged on all their attendance that season, in every sport). From the
+ * season player, all their roster entries this season and those entries'
  * games by id.
  */
 export function gamesPlayedBefore(
   game: Pick<MatchDoc, "sportId" | "startsAt">,
-  entries: Pick<RosterEntryDoc, "matchId" | "sportId" | "startsAt" | "present" | "captainStatus">[],
+  player: Pick<PlayerDoc, "collegeId" | "collegeHistory" | "joinedAt"> | undefined,
+  entries: Pick<RosterEntryDoc, "matchId" | "sportId" | "collegeId" | "startsAt" | "present" | "captainStatus" | "attendanceConfirmedBy">[],
   games: Map<string, Pick<MatchDoc, "status">>
 ): number {
-  return entries.filter(
-    (e) => e.sportId === game.sportId && e.startsAt.toMillis() < game.startsAt.toMillis() && countsAsAttended(e, games.get(e.matchId))
-  ).length;
+  const attended = entries.filter((e) => countsAsAttended(e, games.get(e.matchId)));
+  const review = disputed(
+    player ? assignmentsOf(player) : [],
+    attended.map((e) => ({ collegeId: e.collegeId, startsAt: e.startsAt.toMillis(), adminConfirmed: !!e.attendanceConfirmedBy }))
+  );
+  return attended.filter((e, i) => !review[i] && e.sportId === game.sportId && e.startsAt.toMillis() < game.startsAt.toMillis()).length;
 }
 
 /** One college assignment, in milliseconds; collegeId null: cleared. */

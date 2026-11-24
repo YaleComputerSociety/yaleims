@@ -88,8 +88,21 @@ describe("GET …/roster/sheet", () => {
     }
     expect(await playedOf()).toBe(before + 1);
 
+    // Presence for another college (an override, say) is under review: the Hub leaves it out, and so does the sheet.
+    const theirs = (await db.collection(`seasons/${current}/matches`).where("sportId", "==", sportId).where("startsAt", "<", startsAt).get()).docs
+      .find((g) => !(g.data() as MatchDoc).collegeIds.includes(collegeId) && (g.data() as MatchDoc).status !== "cancelled")!;
+    const other = (theirs.data() as MatchDoc).collegeIds[0];
+    const overridden = db.doc(`seasons/${current}/matches/${theirs.id}/roster/${signedUp}`);
+    await overridden.set({
+      ...(await db.doc(`seasons/${current}/matches/${earlier.id}/roster/${signedUp}`).get()).data(),
+      matchId: theirs.id, collegeId: other, startsAt: (theirs.data() as MatchDoc).startsAt,
+    });
+    const hub = await api("GET", `/api/me/matches?seasonId=${current}`, undefined, { session: sessionFor(signedUp) });
+    expect(hub.body.items.find((m: { id: string }) => m.id === theirs.id).mine).toMatchObject({ present: true, underReview: true });
+    expect(await playedOf()).toBe(before + 1);
+
     await Promise.all(
-      [game, earlier, later].map((g) => db.doc(`seasons/${current}/matches/${g.id}/roster/${signedUp}`).delete())
+      [game, earlier, later, theirs].map((g) => db.doc(`seasons/${current}/matches/${g.id}/roster/${signedUp}`).delete())
     );
   });
 });

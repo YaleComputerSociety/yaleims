@@ -20,7 +20,8 @@ type Params = { seasonId: string; matchId: string };
  * whether they have signed in and have a college this season, who made
  * the captain's call (a captain by name; a supervisor by name for staff, by
  * role only for captains: their names mean nothing to students), and how
- * many games of the sport they played before this one.
+ * many games of the sport they played before this one (as the Hub counts:
+ * not those under review).
  */
 export const GET = route<Params>(async (req, { params }) => {
   const { seasonId, matchId } = await params;
@@ -43,9 +44,10 @@ export const GET = route<Params>(async (req, { params }) => {
     Promise.all(collegeIds.map((c) => getTeam(seasonId, c, match.sportId))),
     Promise.all(ids.map((id) => listPlayerEntries(seasonId, id))),
   ]);
-  const inSport = histories.flat().filter((e) => e.sportId === match.sportId);
-  const games = await getMatches(seasonId, [...new Set(inSport.map((e) => e.matchId))]);
-  const played = new Map(ids.map((id, i) => [id, gamesPlayedBefore(match, histories[i], games)]));
+  // Only presence can count; whether it's under review depends on all of it, in every sport.
+  const present = histories.flat().filter((e) => e.present === true);
+  const games = await getMatches(seasonId, [...new Set(present.map((e) => e.matchId))]);
+  const played = new Map(ids.map((id, i) => [id, gamesPlayedBefore(match, players.get(id), histories[i], games)]));
   const captainIds = new Set(teams.flatMap((t) => t?.captainIds ?? []));
   const callOf = (e: RosterEntryDoc): CaptainCall | null => {
     if (!e.captainStatus || !e.captainBy) return null;
