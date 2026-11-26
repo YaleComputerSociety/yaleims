@@ -31,8 +31,12 @@ export interface SessionViewer {
   userId: string;
   /** Contact address; null: none known yet. */
   email: string | null;
+  /** Their Yale NetID (from the sign-in). */
+  netid: string;
   /** Their name, or their NetID when none is known. */
   name: string;
+  /** `name` is a recorded name, not the NetID stand-in (initials come only from a real name). */
+  named: boolean;
   /** They may set their name: none yet, one they typed or a captain's label (not the directory's or an admin's). */
   canEditName: boolean;
   /** Their last directory lookup and when "Check Yalies again" opens; null: none recorded. */

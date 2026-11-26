@@ -17,6 +17,8 @@ const STATUS_OF = {
   /** Too soon: details.retryAt says when (also the Retry-After header). */
   "rate-limited": 429,
   internal: 500,
+  /** A service the call needs (e.g. Yalemoji) can't be reached; try again later. */
+  unavailable: 503,
 } as const;
 
 export type ErrorCode = keyof typeof STATUS_OF;

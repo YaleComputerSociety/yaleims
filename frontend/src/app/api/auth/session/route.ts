@@ -48,8 +48,10 @@ export const GET = route(async () => {
     signedIn: true,
     viewer: {
       userId: viewer.userId,
+      netid: viewer.netid,
       email: user?.email ?? null,
       name,
+      named: !!user?.name,
       canEditName: !!user && ownsName(user),
       directory: user?.directory
         ? {
