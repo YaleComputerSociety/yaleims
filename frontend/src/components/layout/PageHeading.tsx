@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signInUrl } from '@/lib/api/auth';
 import { useSession } from '@/context/SessionContext'
-import useLightTheme from "@/hooks/useLightTheme";
-import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
+import ThemeToggle from "./ThemeToggle";
 import { useNavbar } from '@/context/NavbarContext';
 import { FaSignOutAlt } from "react-icons/fa";
 import { PiConfetti } from "react-icons/pi";
@@ -119,7 +118,6 @@ interface PageHeadingProps {
 export default function PageHeading({ heading }: PageHeadingProps) {
   const { viewer, loading } = useSession();
   const pathname = usePathname() || "/";
-  const { isLight, toggleTheme } = useLightTheme();
   const { collapsed } = useNavbar();
   const isMobile = useIsMobile();
 
@@ -134,17 +132,7 @@ export default function PageHeading({ heading }: PageHeadingProps) {
             <div className="w-full flex flex-row justify-between items-center">
             <h1 className="md:text-2xl text-xl font-bold text-gray-900 dark:text-white tracking-tight">{heading}</h1>
             <div className="hidden md:flex flex-row gap-x-4 items-center">
-                <button
-                onClick={toggleTheme}
-                className="p-2 rounded-xl transition-all duration-200 text-center hover:bg-gray-100 dark:hover:bg-gray-800"
-                aria-label="Toggle Light/Dark Mode"
-                >
-                {isLight ? (
-                    <MdOutlineLightMode className="text-gray-600 hover:text-amber-500 transition-colors" size={20} />
-                ) : (
-                    <MdDarkMode className="text-gray-300 hover:text-yellow-300 transition-colors" size={20} />
-                )}
-                </button>
+                <ThemeToggle />
                 {loading ? (
                 <div className="animate-pulse text-sm text-gray-500 dark:text-gray-400">
                     Loading...

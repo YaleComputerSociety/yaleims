@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { IoIosMenu, IoMdClose } from "react-icons/io";
 import { useSession } from "@/context/SessionContext";
-import { MdDarkMode, MdOutlineLightMode } from "react-icons/md";
 import Image from "next/image";
-import useLightTheme from "@/hooks/useLightTheme";
+import ThemeToggle from "./ThemeToggle";
 import { LuLayoutDashboard } from "react-icons/lu";
 import { MdOutlineScoreboard } from "react-icons/md";
 import { GrSchedules } from "react-icons/gr";
@@ -35,7 +34,6 @@ const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
 const NavBar: React.FC = () => {
   const [isClick, setisClick] = useState(false);
   const { viewer, loading } = useSession();
-  const { isLight, toggleTheme } = useLightTheme();
   const { collapsed, onToggleCollapse } = useNavbar()
    
 
@@ -135,29 +133,7 @@ const NavBar: React.FC = () => {
           )}
         </button>
         <div className="flex gap-4 items-center">
-          <div className="items-center flex">
-            {isClick ? ( 
-              ""
-            ) : (
-              <button
-                onClick={toggleTheme}
-                className="rounded transition-colors"
-                aria-label="Toggle Light/Dark Mode"
-              >
-                {isLight ? (
-                  <MdOutlineLightMode
-                    className="text-gray-800 hover:text-blue-600"
-                    size={24}
-                  />
-                ) : (
-                  <MdDarkMode
-                    className="text-gray-100 hover:text-blue-300"
-                    size={24}
-                  />
-                )}
-              </button>
-            )}
-          </div>
+          {!isClick && <ThemeToggle />}
           <div className="flex justify-between items-center">
             {!isClick ? (
               loading ? (
@@ -168,11 +144,7 @@ const NavBar: React.FC = () => {
                 <UserProfileButton name={viewer.name} />
               ) : (
                 <Link
-                  className={`py-1 px-3 rounded border ${
-                    isLight
-                      ? "border-black hover:border-gray-400 hover:text-gray-400"
-                      : "border-gray-200 hover:border-gray-400  hover:text-gray-400 text-gray-100"
-                  }`}
+                  className="py-1 px-3 rounded border border-black dark:border-gray-200 dark:text-gray-100 hover:border-gray-400 hover:text-gray-400"
                   href={signInUrl(pathname)}
                   prefetch={false}
                 >
