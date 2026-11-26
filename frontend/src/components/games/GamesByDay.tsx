@@ -34,7 +34,7 @@ export default function GamesByDay({ days, today, now, myEntries, action, compet
     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 overflow-clip">
       {days.map((day) => (
         <section key={day.day} aria-label={dayLabel(day.day, today)}>
-          {/* Stuck just under the fixed bar (the 46px nav bar on phones, the 60px page heading on desktops); a few px
+          {/* Stuck just under the fixed top bar (components/layout/TopBar.tsx: 46px on phones, 60px on desktops); a few px
               less, so the header slides under the translucent bar rather than leaving a gap above itself. */}
           <h2
             className={`${sticky ? "sticky top-11 md:top-14 z-10" : ""} px-3 py-2 text-xs font-bold uppercase tracking-wide border-b border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 ${

@@ -5,6 +5,7 @@
 // signing out is POST /api/auth/logout.
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { fetchSession, logout, type SessionViewer } from "@/lib/api/auth";
+import { clearYalemojiCache } from "@/lib/yalemojiCache";
 
 interface SessionState {
   /** The signed-in person; null when signed out (or before the first answer). */
@@ -42,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
+      clearYalemojiCache(); // the next person on this browser never sees this one's avatar
       await logout();
       setViewerState(null);
       // A full page load, so no page keeps the signed-in state.

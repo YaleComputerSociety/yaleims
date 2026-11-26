@@ -1,42 +1,34 @@
-import React, { useState } from "react";
+// The desktop sidebar: the logo and the site's links (collapsible). On
+// phones the same links unfold from the top bar's menu button (TopBar);
+// the account controls are in the top bar on both.
+import React from "react";
 import Link from "next/link";
-import { IoIosMenu, IoMdClose } from "react-icons/io";
-import { useSession } from "@/context/SessionContext";
 import Image from "next/image";
-import ThemeToggle from "./ThemeToggle";
-import { LuLayoutDashboard } from "react-icons/lu";
-import { MdOutlineScoreboard } from "react-icons/md";
-import { GrSchedules } from "react-icons/gr";
-import { IoInformationCircleOutline } from "react-icons/io5";
-import { VscFeedback } from "react-icons/vsc";
 import { usePathname } from "next/navigation";
-import { signInUrl } from "@/lib/api/auth";
 import { useNavbar } from "@/context/NavbarContext";
-import { MdOutlineKeyboardArrowLeft } from "react-icons/md";
-import { MdOutlineKeyboardArrowRight } from "react-icons/md";
-import { MdOutlineLeaderboard } from "react-icons/md";
-import { FaQuestionCircle } from "react-icons/fa";
 import { getVersionedImage } from "@/lib/images";
-import { MdOutlineSportsScore, MdSports } from "react-icons/md";
+import { FaQuestionCircle } from "react-icons/fa";
+import { IoInformationCircleOutline } from "react-icons/io5";
+import { LuLayoutDashboard } from "react-icons/lu";
+import { MdOutlineKeyboardArrowLeft, MdOutlineKeyboardArrowRight, MdOutlineLeaderboard, MdOutlineSportsScore, MdSports } from "react-icons/md";
 import { TbBrackets, TbTournament } from "react-icons/tb";
+import { VscFeedback } from "react-icons/vsc";
 
-const UserProfileButton: React.FC<{ name: string }> = ({ name }) => {
-  return (
-    <Link
-      href="/profile"
-      className="py-1 px-3 text-xs md:text-sm hover:text-blue-400 border rounded-lg border-blue-600 hover:border-blue-400 text-blue-600"
-    >
-      Welcome, {name.split(" ")[0]}!
-    </Link>
-  );
-};
+/** The site's pages, in menu order (the sidebar and the phone menu). */
+export const NAV_LINKS: { href: string; text: string; icon: React.ReactNode; external?: boolean }[] = [
+  { href: "/hub", text: "Hub", icon: <LuLayoutDashboard /> },
+  { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard /> },
+  { href: "/games", text: "Games", icon: <MdSports /> },
+  { href: "/brackets", text: "Playoff Brackets", icon: <TbBrackets /> },
+  { href: "/events", text: "Special Events", icon: <TbTournament /> },
+  { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
+  { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
+  { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
+  { href: "https://yaleims.canny.io", text: "Feedback", icon: <VscFeedback />, external: true },
+];
 
 const NavBar: React.FC = () => {
-  const [isClick, setisClick] = useState(false);
-  const { viewer, loading } = useSession();
-  const { collapsed, onToggleCollapse } = useNavbar()
-   
-
+  const { collapsed, onToggleCollapse } = useNavbar();
   const pathname = usePathname();
 
   const isActive = (href: string) => {
@@ -49,32 +41,11 @@ const NavBar: React.FC = () => {
   const hoverLink = "hover:bg-slate-300 dark:hover:bg-slate-800";
   const activeLink = "bg-blue-600 text-yellow-500 text-white dark:bg-slate-800 dark:text-yellow-500 font-semibold";
 
-  const homeActive = isActive("/");
-
-  const toggleNavbar = () => {
-    setisClick(!isClick);
-  };
-
-  const turnMenuOff = () => {
-    setisClick(false);
-  };
-
-  const links = [
-    { href: "/hub", text: "Hub", icon: <LuLayoutDashboard /> },
-    { href: "/", text: "Leaderboard", icon: <MdOutlineLeaderboard /> },
-    { href: "/games", text: "Games", icon: <MdSports /> },
-    { href: "/brackets", text: "Playoff Brackets", icon: <TbBrackets /> },
-    { href: "/events", text: "Special Events", icon: <TbTournament /> },
-    { href: "/about-us", text: "About Us", icon: <IoInformationCircleOutline /> },
-    { href: "/about-sports", text: "About Sports", icon: <MdOutlineSportsScore /> },
-    { href: "/faq", text: "FAQ", icon: <FaQuestionCircle /> },
-    { href: "https://yaleims.canny.io", text: "Feedback", icon: <VscFeedback /> },
-  ];
   const widthClass = collapsed ? "md:w-[5%]" : "md:w-[16%]";
 
   return (
-    <nav className={`transition-all duration-200 ${collapsed ? 'mg:p-2' : 'mg:p-5'} p-2 z-50 items-center ${widthClass} md:h-full w-full fixed backdrop-blur-sm bg-white/50 dark:bg-black/50`}>
-      <div className={`md:flex md:flex-col justify-between h-full ${collapsed ? "items-center" : "items-left"} hidden`}>
+    <nav className={`hidden md:block transition-all duration-200 ${collapsed ? 'mg:p-2' : 'mg:p-5'} p-2 z-50 items-center ${widthClass} h-full fixed backdrop-blur-sm bg-white/50 dark:bg-black/50`}>
+      <div className={`flex flex-col justify-between h-full ${collapsed ? "items-center" : "items-left"}`}>
         <div className="text-base pb-10 flex flex-row justify-between ">
             {collapsed ? <Image className="pt-6" src={getVersionedImage("/favicon.ico")} width={40} height={40} alt="Logo"/> :
             <Image 
@@ -86,14 +57,14 @@ const NavBar: React.FC = () => {
         </div>
         
         <div className={`flex mp:text-base text-sm flex-col space-y-1 ${collapsed ? "items-center" : "items-left"}`}>
-          {links.map((link) => {
+          {NAV_LINKS.map((link) => {
             const active = isActive(link.href);
             return (
             <Link
               key={link.href}
               href={link.href}
               className={`${baseLink} ${active ? activeLink : hoverLink}`}
-              target={link.text === "Feedback" ? "_blank" : ""}
+              {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
               {collapsed ? 
                 <span className="text-lg">{link.icon}</span> : 
@@ -112,87 +83,6 @@ const NavBar: React.FC = () => {
           {collapsed ? <MdOutlineKeyboardArrowRight size={24} /> : <MdOutlineKeyboardArrowLeft size={24} />}
         </button>
       </div>
-
-      {/* Mobile Navbar */}
-      <div
-        className={`${
-          isClick ? "bg-white dark:bg-black pt-4 rounded-lg" : "bg-transparent"
-        } md:hidden flex items-center justify-between`}
-      >
-        <button onClick={toggleNavbar} className="pl-4">
-          {isClick ? (
-            <IoMdClose
-              size={30}
-              className="-pl-8 text-gray-800 dark:text-gray-100"
-            />
-          ) : (
-            <IoIosMenu
-              size={30}
-              className=" text-gray-800 dark:text-gray-100"
-            />
-          )}
-        </button>
-        <div className="flex gap-4 items-center">
-          {!isClick && <ThemeToggle />}
-          <div className="flex justify-between items-center">
-            {!isClick ? (
-              loading ? (
-                <div className="animate-pulse text-gray-800 dark:text-gray-300 py-1 px-3">
-                  Loading...
-                </div>
-              ) : viewer ? (
-                <UserProfileButton name={viewer.name} />
-              ) : (
-                <Link
-                  className="py-1 px-3 rounded border border-black dark:border-gray-200 dark:text-gray-100 hover:border-gray-400 hover:text-gray-400"
-                  href={signInUrl(pathname)}
-                  prefetch={false}
-                >
-                  Sign In
-                </Link>
-              )
-            ) : (
-              ""
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Harmburger Menu */}
-      {isClick && (
-        <div className="mg:hidden bg-white dark:bg-black flex flex-col pb-4 px-3 space-y-4 rounded-b-lg shadow-lg">
-          {links.map((link, index) => (
-            <Link
-              key={index + "-second"}
-              href={link.href}
-              onClick={turnMenuOff}
-              className="hover:text-slate-300 dark:hover:text-blue-300 flex justify-center items-center font-medium transition duration-200"
-              target={link.text === "Feedback" ? "_blank" : ""}
-            >
-              {link.text}
-            </Link>
-          ))}
-          <div>
-            {loading ? (
-              <div className="animate-pulse text-gray-300 text-center">
-                Loading...
-              </div>
-            ) : viewer ? (
-              <div className="flex justify-center">
-                <UserProfileButton name={viewer.name} />
-              </div>
-            ) : (
-              <Link
-                className="block w-full bg-white items-cente text-center dark:bg-yellow-500 text-blue-700 dark:text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-yellow-600 transition duration-200"
-                href={signInUrl(pathname)}
-                prefetch={false}
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
     </nav>
   );
 };

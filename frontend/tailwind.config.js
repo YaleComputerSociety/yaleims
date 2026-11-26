@@ -22,6 +22,13 @@ module.exports = {
       fontFamily: {
         sans: ['Inter var', 'sans-serif'],
       },
+      // The top bar's menus (components/layout/useMenu.ts) unfold as they open.
+      keyframes: {
+        "menu-in": { from: { opacity: "0", transform: "translateY(-6px)" }, to: { opacity: "1", transform: "none" } },
+      },
+      animation: {
+        "menu-in": "menu-in 180ms ease-out",
+      },
     },
   },
   plugins: [],
