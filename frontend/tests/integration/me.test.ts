@@ -141,30 +141,47 @@ describe("GET /api/me/yalemoji", () => {
     svg_url: `https://storage.example/avatars/opaque/${version}/avatar.svg`,
     background_url: `https://storage.example/avatars/opaque/${version}/background.svg`,
   });
-  const id = people.student(4, 5);
-  const netid = id.split("@")[0];
-  const mine = (query = "") => api("GET", `/api/me/yalemoji${query}`, undefined, { session: sessionFor(id) });
+  const shown = (version: number) => ({ version, pngUrl: avatar(version).png_url, backgroundUrl: avatar(version).background_url });
+  // A student per case: the server reuses each person's answer for 5 s (server/yalemoji.ts).
+  const student = (position: number) => {
+    const id = people.student(4, position);
+    const mine = (query = "") => api("GET", `/api/me/yalemoji${query}`, undefined, { session: sessionFor(id) });
+    return { id, netid: id.split("@")[0], mine };
+  };
 
   it("needs a session", async () => {
     expect((await api("GET", "/api/me/yalemoji")).status).toBe(401);
   });
   it("is the session's NetID's avatar, never one asked for, and never cached", async () => {
+    const { id, netid, mine } = student(5);
     await setFakeYalemoji(netid, avatar(2));
     await setFakeYalemoji("zz902", avatar(7));
-    expect((await mine("?netid=zz902")).body).toEqual({
-      netid,
-      yalemoji: { version: 2, pngUrl: avatar(2).png_url, backgroundUrl: avatar(2).background_url },
-    });
+    expect((await mine("?netid=zz902")).body).toEqual({ netid, yalemoji: shown(2) });
     const res = await fetch(`${BASE}/api/me/yalemoji`, { headers: { cookie: `token=${sessionFor(id)}` } });
     expect(res.headers.get("cache-control")).toContain("no-store");
-  });
-  it("is null when they have none, 503 when Yalemoji can't be reached", async () => {
     await setFakeYalemoji(netid, null);
-    expect(await mine()).toMatchObject({ status: 200, body: { netid, yalemoji: null } });
+  });
+  it("is null when they have none, 503 when Yalemoji can't be reached or answers nonsense", async () => {
+    const none = student(6);
+    expect(await none.mine()).toMatchObject({ status: 200, body: { netid: none.netid, yalemoji: null } });
+    const down = student(7);
+    await setFakeYalemoji(down.netid, "down");
+    expect(await down.mine()).toMatchObject({ status: 503, body: { error: { code: "unavailable" } } });
+    const nonsense = student(4);
+    await setFakeYalemoji(nonsense.netid, { ...avatar(3), png_url: "javascript:alert(1)" });
+    expect((await nonsense.mine()).status).toBe(503);
+    await setFakeYalemoji(down.netid, null);
+    await setFakeYalemoji(nonsense.netid, null);
+  });
+  it("reuses a person's answer for a few seconds: requests in a loop don't each reach Yalemoji", async () => {
+    const { netid, mine } = student(3);
+    await setFakeYalemoji(netid, avatar(2));
+    expect((await mine()).body).toEqual({ netid, yalemoji: shown(2) });
     await setFakeYalemoji(netid, "down");
-    expect(await mine()).toMatchObject({ status: 503, body: { error: { code: "unavailable" } } });
-    await setFakeYalemoji(netid, { ...avatar(3), png_url: "javascript:alert(1)" });
-    expect((await mine()).status).toBe(503);
+    expect(await Promise.all([mine(), mine()])).toMatchObject([
+      { status: 200, body: { yalemoji: shown(2) } },
+      { status: 200, body: { yalemoji: shown(2) } },
+    ]);
     await setFakeYalemoji(netid, null);
   });
 });
