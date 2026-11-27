@@ -1,7 +1,8 @@
 "use client";
 // One game on game day: the roster sheet (a captain
 // prepares their side; a supervisor takes attendance) and, for supervisors,
-// the score; the ⋯ menu edits, cancels or deletes the game. The tabs and the
+// the score and the printable scoresheet; the ⋯ menu edits, cancels or
+// deletes the game. The tabs and the
 // menu follow what the session says the viewer may do; the server checks
 // each call again.
 import { useCallback, useEffect, useState } from "react";
@@ -14,6 +15,8 @@ import LoadingScreen from "@/components/layout/LoadingScreen";
 import SignInPrompt from "@/components/layout/SignInPrompt";
 import RosterSheet from "@/components/gameday/RosterSheet";
 import ScorePanel from "@/components/gameday/ScorePanel";
+import PrintButton from "@/components/scoresheet/PrintButton";
+import { scoresheetOf } from "@/components/scoresheet/fromMatch";
 import { CancelledBadge } from "@/components/games/CancelledBadge";
 import { EditMatchModal } from "@/components/hub/admin/EditMatchModal";
 import { useSeasonDetail } from "@/context/SeasonContext";
@@ -143,6 +146,11 @@ export default function GamePage() {
             {match.venue ? ` · ${match.venue}` : ""}
             {match.venueDetail ? ` · ${match.venueDetail}` : ""}
           </div>
+          {supervisor && !cancelled && (
+            <div className="mt-3">
+              <PrintButton game={() => scoresheetOf(match, sport?.name ?? "")} />
+            </div>
+          )}
         </header>
 
         {viewer.can.score && (

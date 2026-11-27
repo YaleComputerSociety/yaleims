@@ -22,6 +22,7 @@
     "test:emulator": "NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-yims npx -y firebase-tools@14 emulators:exec --only firestore --project demo-yims --config ../database/firebase.json \"npm run test:integration\""
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
     "canvas-confetti": "^1.9.4",
     "date-fns": "^3.6.0",
     "firebase": "^12.19.0",
