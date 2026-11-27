@@ -65,6 +65,46 @@ describe("GET …/roster/sheet", () => {
     const asAdmin = await api("GET", `${path}/sheet`, undefined, { session: sessionFor(people.admin) });
     for (const e of asAdmin.body.items) expect(e).toMatchObject({ name: expect.any(String), email: e.playerId.includes("@") ? e.playerId : null });
   });
+
+  it("gives each player's games of the sport played before this one", async () => {
+    const { collegeId, game, path } = await captainWithGame();
+    const { sportId, startsAt } = game.data() as MatchDoc;
+    const signedUp = await playerNotOn(game.id, collegeId);
+    expect((await api("PUT", `${path}/me`, undefined, { session: sessionFor(signedUp) })).status).toBe(200);
+    const playedOf = async () =>
+      (await api("GET", `${path}/sheet`, undefined, { session: supervisor() })).body.items.find((e: { playerId: string }) => e.playerId === signedUp).gamesPlayed;
+    const before = await playedOf();
+    expect(before).toEqual(expect.any(Number));
+
+    // A supervisor's walk-in is recorded present: an earlier game of the sport counts, a later one doesn't.
+    const sides = await db.collection(`seasons/${current}/matches`).where("collegeIds", "array-contains", collegeId).orderBy("startsAt").get();
+    const onIt = await Promise.all(sides.docs.map(async (g) => (await db.doc(`seasons/${current}/matches/${g.id}/roster/${signedUp}`).get()).exists));
+    const ofSport = sides.docs.filter((g, i) => !onIt[i] && (g.data() as MatchDoc).sportId === sportId && (g.data() as MatchDoc).status !== "cancelled");
+    const earlier = ofSport.find((g) => (g.data() as MatchDoc).startsAt.toMillis() < startsAt.toMillis())!;
+    const later = ofSport.find((g) => (g.data() as MatchDoc).startsAt.toMillis() > startsAt.toMillis())!;
+    for (const other of [earlier, later]) {
+      const walkIn = `/api/seasons/${current}/matches/${other.id}/roster/${encodeURIComponent(signedUp)}`;
+      expect((await api("PUT", walkIn, undefined, { session: supervisor() })).status).toBe(204);
+    }
+    expect(await playedOf()).toBe(before + 1);
+
+    // Presence for another college (an override, say) is under review: the Hub leaves it out, and so does the sheet.
+    const theirs = (await db.collection(`seasons/${current}/matches`).where("sportId", "==", sportId).where("startsAt", "<", startsAt).get()).docs
+      .find((g) => !(g.data() as MatchDoc).collegeIds.includes(collegeId) && (g.data() as MatchDoc).status !== "cancelled")!;
+    const other = (theirs.data() as MatchDoc).collegeIds[0];
+    const overridden = db.doc(`seasons/${current}/matches/${theirs.id}/roster/${signedUp}`);
+    await overridden.set({
+      ...(await db.doc(`seasons/${current}/matches/${earlier.id}/roster/${signedUp}`).get()).data(),
+      matchId: theirs.id, collegeId: other, startsAt: (theirs.data() as MatchDoc).startsAt,
+    });
+    const hub = await api("GET", `/api/me/matches?seasonId=${current}`, undefined, { session: sessionFor(signedUp) });
+    expect(hub.body.items.find((m: { id: string }) => m.id === theirs.id).mine).toMatchObject({ present: true, underReview: true });
+    expect(await playedOf()).toBe(before + 1);
+
+    await Promise.all(
+      [game, earlier, later, theirs].map((g) => db.doc(`seasons/${current}/matches/${g.id}/roster/${signedUp}`).delete())
+    );
+  });
 });
 
 describe("co-captains", () => {
