@@ -82,6 +82,11 @@ export default function PrivacyPage() {
             <li className="pl-10">
               As required by Google Analytics for anonymized data collection.
             </li>
+            <li className="pl-10">
+              When you&apos;re signed in, we send your NetID to Yalemoji, a y/cs
+              app, to show your avatar. Your browser then loads the avatar&apos;s
+              images from Google Cloud Storage.
+            </li>
           </ul>
         </section>
         <br></br>

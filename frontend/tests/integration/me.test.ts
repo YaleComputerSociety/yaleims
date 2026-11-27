@@ -1,7 +1,8 @@
 // Signing in and out, the session, and the caller's own things (/api/me).
 import { beforeAll, describe, expect, it } from "vitest";
 import { COLLEGES } from "@/lib/colleges";
-import { BASE, api, db, people, seasons, sessionFor } from "./helpers";
+import { setFakeYalemoji } from "./fakeYalemoji";
+import { BASE, api, db, people, seasons, sessionFor, sessionOf } from "./helpers";
 
 let current: string, previous: string;
 beforeAll(async () => {
@@ -50,7 +51,7 @@ describe("GET /api/auth/session", () => {
     expect(player.body).toEqual({
       signedIn: true,
       viewer: {
-        userId: id, email: id, name, canEditName: false, directory: null, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
+        userId: id, netid: id.split("@")[0], email: id, name, named: true, canEditName: false, directory: null, collegeId: COLLEGES[2].id, roles: [], captainOf: [],
         favorites: { sportIds: [], collegeIds: [] },
         can: { editSchedule: false, score: false, takeAttendance: false, setChampion: false, manageRoles: false, managePeople: false },
       },
@@ -61,6 +62,18 @@ describe("GET /api/auth/session", () => {
     expect(captain.body.viewer.captainOf).toHaveLength(1);
     const admin = await api("GET", "/api/auth/session", undefined, { session: sessionFor(people.admin) });
     expect(admin.body.viewer.roles).toEqual(["admin", "dev"]);
+    // An account the directory couldn't name: the NetID stands in, and `named` says so.
+    const unnamed = "netid-zz908";
+    await db.doc(`users/${unnamed}`).set({
+      email: null, name: null, nameSource: "none", netid: "zz908", roles: [], claimedAt: null, createdBy: null, directory: null,
+    });
+    try {
+      const session = await api("GET", "/api/auth/session", undefined, { session: sessionOf(unnamed, "zz908") });
+      expect(session.body.viewer).toMatchObject({ netid: "zz908", name: "zz908", named: false });
+    } finally {
+      await db.doc(`users/${unnamed}`).delete();
+      await db.doc(`seasons/${current}/players/${unnamed}`).delete(); // the visit joined the season
+    }
   });
   it("joins a returning student to the current season with the college Yalies gives now, never last season's or the cookie's (D30, decision 5)", async () => {
     const [known, unknown, unreachable] = ["alum05@example.edu", "alum06@example.edu", "alum07@example.edu"];
@@ -118,6 +131,41 @@ describe("PUT /api/me/favorites", () => {
     ];
     for (const body of bad) expect((await put(body)).status, JSON.stringify(body)).toBe(400);
     expect((await put({ sportIds: [], collegeIds: [] }, sessionFor("netid-nobodyhere"))).status).toBe(404);
+  });
+});
+
+describe("GET /api/me/yalemoji", () => {
+  const avatar = (version: number) => ({
+    version,
+    png_url: `https://storage.example/avatars/opaque/${version}/avatar.png`,
+    svg_url: `https://storage.example/avatars/opaque/${version}/avatar.svg`,
+    background_url: `https://storage.example/avatars/opaque/${version}/background.svg`,
+  });
+  const id = people.student(4, 5);
+  const netid = id.split("@")[0];
+  const mine = (query = "") => api("GET", `/api/me/yalemoji${query}`, undefined, { session: sessionFor(id) });
+
+  it("needs a session", async () => {
+    expect((await api("GET", "/api/me/yalemoji")).status).toBe(401);
+  });
+  it("is the session's NetID's avatar, never one asked for, and never cached", async () => {
+    await setFakeYalemoji(netid, avatar(2));
+    await setFakeYalemoji("zz902", avatar(7));
+    expect((await mine("?netid=zz902")).body).toEqual({
+      netid,
+      yalemoji: { version: 2, pngUrl: avatar(2).png_url, backgroundUrl: avatar(2).background_url },
+    });
+    const res = await fetch(`${BASE}/api/me/yalemoji`, { headers: { cookie: `token=${sessionFor(id)}` } });
+    expect(res.headers.get("cache-control")).toContain("no-store");
+  });
+  it("is null when they have none, 503 when Yalemoji can't be reached", async () => {
+    await setFakeYalemoji(netid, null);
+    expect(await mine()).toMatchObject({ status: 200, body: { netid, yalemoji: null } });
+    await setFakeYalemoji(netid, "down");
+    expect(await mine()).toMatchObject({ status: 503, body: { error: { code: "unavailable" } } });
+    await setFakeYalemoji(netid, { ...avatar(3), png_url: "javascript:alert(1)" });
+    expect((await mine()).status).toBe(503);
+    await setFakeYalemoji(netid, null);
   });
 });
 

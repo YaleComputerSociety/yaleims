@@ -71,6 +71,11 @@ env:
     availability:
       - RUNTIME
 
+  - variable: YALEMOJI_API_KEY
+    secret: YALEMOJI_API_KEY
+    availability:
+      - RUNTIME
+
   # Grant access to secrets in Cloud Secret Manager.
   # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
   # - variable: MY_SECRET

@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { Match } from "@/lib/api/matches";
 import { collegeName } from "@/lib/colleges";
-import { calendarLink, getPlace, matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
+import { calendarLink, getPlace, initialsOf, matchTypeLabel, pointsEarned, sideName } from "@/lib/format";
 
 const game = (fields: Partial<Match>): Match =>
   ({ stage: "regular", round: null, result: null, pointsForWin: 6, startsAt: "2026-11-01T22:00:00.000Z", ...fields }) as Match;
+
+describe("initialsOf", () => {
+  it("takes the first letters of the first and last words, one for a one-word name", () => {
+    expect(initialsOf("Vojtech Kysilka")).toBe("VK");
+    expect(initialsOf("  ada   b. lovelace ")).toBe("AL");
+    expect(initialsOf("Ada")).toBe("A");
+    expect(initialsOf("Émile Ørsted")).toBe("ÉØ");
+    expect(initialsOf("𝒜da Byron")).toBe("𝒜B");
+    expect(initialsOf("  ")).toBe("");
+  });
+});
 
 describe("names", () => {
   it("names a college by id, and a side waiting for a winner TBD", () => {

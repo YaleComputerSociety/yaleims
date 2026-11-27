@@ -7,16 +7,18 @@ import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { serveFakeYalies } from "../tests/integration/fakeYalies";
 import { serveFakeCas } from "../tests/integration/fakeCas";
+import { FAKE_YALEMOJI_KEY, serveFakeYalemoji } from "../tests/integration/fakeYalemoji";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error("Start the Firestore emulator first (npm run emulator) and set FIRESTORE_EMULATOR_HOST=127.0.0.1:8080.");
   process.exit(1);
 }
 const port = Number(process.env.TEST_PORT ?? 3210);
-// Local directory and CAS validation fixtures; never the real Yale services.
+// Local directory, CAS validation and Yalemoji fixtures; never the real services.
 const yaliesPort = port + 1;
 const yalies = await serveFakeYalies(yaliesPort);
 const cas = await serveFakeCas(port + 2);
+const yalemoji = await serveFakeYalemoji(port + 3);
 const env = {
   ...process.env,
   NEXT_PUBLIC_USE_EMULATOR: "true",
@@ -26,6 +28,9 @@ const env = {
   YALIES_API_URL: `http://127.0.0.1:${yaliesPort}`,
   YALIES_API_KEY: "fake",
   TEST_CAS_URL: `http://127.0.0.1:${port + 2}`,
+  // Plain http is allowed only because `next dev` runs with NODE_ENV=development (server/yalemoji.ts).
+  YALEMOJI_API_URL: `http://127.0.0.1:${port + 3}`,
+  YALEMOJI_API_KEY: FAKE_YALEMOJI_KEY,
   NEXT_TELEMETRY_DISABLED: "1",
 };
 
@@ -45,6 +50,7 @@ const stop = () => {
   server.kill("SIGTERM");
   yalies.close();
   cas.close();
+  yalemoji.close();
 };
 process.on("exit", stop);
 
@@ -64,7 +70,7 @@ if (!ready) {
   process.exit(1);
 }
 
-// Async, so this process keeps serving the fake directory while the tests run.
+// Async, so this process keeps serving the fakes while the tests run.
 const tests = spawn("npx", ["vitest", "run", "--project", "integration", ...process.argv.slice(2)], {
   env: { ...env, BASE: env.BASE_URL, TEST_JWT_SECRET: env.JWT_SECRET },
   stdio: "inherit",

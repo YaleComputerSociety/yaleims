@@ -146,7 +146,8 @@ npm run test:integration -- tests/rules/firestore.test.ts
 ```
 
 The integration wrapper starts Next on 3210 in `.next-test/`, supplies a
-throwaway session secret, and serves fake Yalies on 3211 and fake CAS on 3212.
+throwaway session secret, and serves fake Yalies on 3211, fake CAS on 3212 and
+fake Yalemoji on 3213.
 A test-only fetch preload redirects validation; the app's CAS authority is fixed.
 Use the wrapper
 rather than invoking the integration Vitest project directly. Its helpers
@@ -269,6 +270,8 @@ For rollback, use App Hosting's rollback controls to return to a known-good
 build and restore compatible rules as needed. Verify data/index compatibility
 before rollback. Avoid bare `firebase deploy`; target the intended resource.
 `frontend/apphosting.yaml` contains deployment environment and Secret Manager
-references. `JWT_SECRET` and `YALIES_API_KEY` are runtime secrets; changing the
-session secret signs everyone out. Keep production secrets out of local files
+references. `JWT_SECRET`, `YALIES_API_KEY` and `YALEMOJI_API_KEY` are runtime
+secrets; changing the session secret signs everyone out. A secret named there
+must exist in Secret Manager, with the backend granted access, before the
+rollout that adds it, or that build fails. Keep production secrets out of local files
 and source control.

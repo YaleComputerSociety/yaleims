@@ -1,6 +1,7 @@
 // The caller's own things: their name (PATCH /api/me), their favorites
-// (PUT /api/me/favorites), a new directory lookup (POST /api/me/directory)
-// and the games they're signed up for (GET /api/me/matches).
+// (PUT /api/me/favorites), a new directory lookup (POST /api/me/directory),
+// the games they're signed up for (GET /api/me/matches) and their Yalemoji
+// avatar (GET /api/me/yalemoji).
 import { z } from "zod";
 import type { DirectoryOutcome, Favorites, RosterEntryDoc } from "@/types/firestore";
 import { collegeIdSchema } from "./colleges";
@@ -60,3 +61,21 @@ export const refreshDirectory = () => request<DirectoryRefresh>("POST", "/api/me
 
 export const fetchMyMatches = (query: MyMatchesQuery) => request<MyMatchList>("GET", "/api/me/matches", { query });
 
+
+/** A Yalemoji avatar: a transparent PNG face over a square background, both public and versioned in their URLs. */
+export interface YalemojiAvatar {
+  /** 1, 2, …: goes up with each edit on Yalemoji. */
+  version: number;
+  pngUrl: string;
+  /** An SVG that stretches to any box (preserveAspectRatio="none"): show it square. */
+  backgroundUrl: string;
+}
+
+/** GET /api/me/yalemoji: the caller's avatar (null: they haven't made one); 503 when Yalemoji can't be reached. */
+export interface MyYalemoji {
+  /** Whose it is (the session's), so a page never shows one person's avatar to another. */
+  netid: string;
+  yalemoji: YalemojiAvatar | null;
+}
+
+export const fetchMyYalemoji = () => request<MyYalemoji>("GET", "/api/me/yalemoji");

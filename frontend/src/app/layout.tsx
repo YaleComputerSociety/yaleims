@@ -15,6 +15,7 @@ import { SeasonProvider } from "@/context/SeasonContext";
 import { NavbarProvider, useNavbar } from "@/context/NavbarContext";
 import AnalyticsListener from "@/components/layout/AnalyticsListener";
 import AffiliationNotice from "@/components/layout/AffiliationNotice";
+import TopBar from "@/components/layout/TopBar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,6 +38,7 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
       </div>
       <div className="transition-all duration-200">
         <SeasonProvider>
+          <TopBar />
           {children}
           <AffiliationNotice />
         </SeasonProvider>

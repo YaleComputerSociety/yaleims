@@ -1,5 +1,6 @@
-// How games, places and records read on the pages: pure text helpers shared by
-// the match lists (games, schedules, scores, profile, Hub).
+// How games, places, records and people read on the pages: pure text helpers
+// shared by the match lists (games, schedules, scores, profile, Hub) and the
+// account button.
 import type { Match } from "./api/matches";
 import { collegeName } from "./colleges";
 
@@ -18,6 +19,16 @@ export function getRatioAsString(part: number | undefined, whole: number | undef
   if (part === undefined || whole === undefined) return "0%";
   const ratio = (part / whole) * 100;
   return ratio == 0 ? "2%" : `${ratio}%`;
+}
+
+// ── People ─────────────────────────────────────────────────────────────────
+
+/** "Vojtech Kysilka" → "VK", "Ada" → "A": the first letters of the first and last words. */
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "";
+  const first = (word: string) => [...word][0].toUpperCase(); // by code point, not UTF-16 unit
+  return words.length === 1 ? first(words[0]) : first(words[0]) + first(words[words.length - 1]);
 }
 
 // ── Games ──────────────────────────────────────────────────────────────────
