@@ -21,6 +21,7 @@ const REFUSALS: Record<Exclude<EditResult, "ok">, ApiError> = {
   scored: new ApiError("conflict", "A scored game's colleges can't change, nor can it be cancelled; undo the score first."),
   "unknown-college": new ApiError("bad-request", "Unknown college."),
   "bad-time": new ApiError("bad-request", "Invalid start time."),
+  unchanged: new ApiError("bad-request", "Nothing to save: the game already has these details."),
 };
 
 /** Changes teams, venue, start or status (supervisors; audit-logged). Sport is fixed. */

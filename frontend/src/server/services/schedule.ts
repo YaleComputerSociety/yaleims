@@ -91,7 +91,8 @@ export type EditResult =
   | "not-found"
   | "scored" // a scored game's colleges can't change, nor can it be cancelled (undo the score first)
   | "unknown-college"
-  | "bad-time";
+  | "bad-time"
+  | "unchanged"; // the edit matches the game as it is: nothing is written or logged
 
 /** Changes teams, venue, start or status. Sport is fixed; new colleges start with blank rosters. */
 export async function editMatch(
@@ -126,6 +127,12 @@ export async function editMatch(
     const newStart = startsAt && startsAt.getTime() !== match.startsAt.toMillis()
       ? Timestamp.fromDate(startsAt)
       : null;
+    // Compare as stored ("" clears a venue, like the write below), so a save
+    // that changes nothing writes nothing and leaves no audit entry.
+    const changesVenue = edit.venue !== undefined && (edit.venue || null) !== match.venue;
+    const changesVenueDetail = edit.venueDetail !== undefined && (edit.venueDetail || null) !== match.venueDetail;
+    const changesStatus = edit.status !== undefined && edit.status !== match.status;
+    if (!changesTeams && !changesVenue && !changesVenueDetail && !newStart && !changesStatus) return "unchanged";
     const collegeIds = [...new Set([homeCollegeId, awayCollegeId].filter((c) => c !== null))];
     const roster = await readRosterChanges(tx, seasonId, [{
       before: snap,
