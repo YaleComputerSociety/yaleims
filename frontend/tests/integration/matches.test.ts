@@ -152,6 +152,26 @@ describe("PATCH /api/seasons/{s}/matches/{m}", () => {
     const moved = (await db.doc(`seasons/${current}/matches/${entry.matchId}/roster/${entry.playerId}`).get()).data()!;
     expect(moved.startsAt.toDate().toISOString()).toBe(later);
   });
+  it("refuses an edit that changes nothing, without writing or logging", async () => {
+    const doc = (await db.collection(`seasons/${current}/matches`).where("status", "==", "scheduled").limit(1).get()).docs[0];
+    const game = doc.data();
+    const logged = async () =>
+      (await db.collection(`seasons/${current}/auditLog`).where("targets", "array-contains", doc.ref.path).count().get()).data().count;
+    const before = await logged();
+    const same = {
+      homeCollegeId: game.homeCollegeId ?? undefined,
+      awayCollegeId: game.awayCollegeId ?? undefined,
+      venue: game.venue,
+      venueDetail: game.venueDetail ?? "",
+      startsAt: game.startsAt.toDate().toISOString(),
+      status: "scheduled",
+    };
+    for (const body of [same, {}, { venue: game.venue }]) {
+      expect(await edit(doc.id, body, admin())).toMatchObject({ status: 400, body: { error: { code: "bad-request" } } });
+    }
+    expect(await logged()).toBe(before);
+    expect((await doc.ref.get()).data()!.updatedAt).toEqual(game.updatedAt);
+  });
   it("won't change a scored game's colleges", async () => {
     const scored = (await db.collection(`seasons/${current}/matches`).where("status", "==", "final").limit(1).get()).docs[0];
     const other = ["BF", "BK", "BR"].find((c) => !scored.data().collegeIds.includes(c))!;
