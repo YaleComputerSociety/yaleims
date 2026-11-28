@@ -4,16 +4,36 @@
 // Modeled on Yalies' helper (apps/api/src/helpers/yalemojiAvatar.ts): a 404
 // means "has none" (null), anything else that goes wrong means "can't tell
 // right now" (undefined), so an outage never reads as "make your Yalemoji".
+// Each answer is reused for a few seconds: a signed-in person calling
+// GET /api/me/yalemoji in a loop reaches Yalemoji, under our key, at most
+// once per REUSE_MS per server instance.
 // YALEMOJI_API_URL points it elsewhere (the integration tests' fake).
 import "server-only";
 import type { YalemojiAvatar } from "@/lib/api/me";
 import { NETID_PATTERN } from "@/lib/netid";
 
+type Answer = YalemojiAvatar | null | undefined;
+
+/** Shorter than an edit on Yalemoji takes, so coming back from one still shows the new avatar. */
+const REUSE_MS = 5_000;
+/** Recent lookups by NetID, pending ones included (simultaneous requests share one). */
+const recent = new Map<string, { at: number; answer: Promise<Answer> }>();
+
 /** The avatar of `netid`; null: Yalemoji says they have none; undefined: unavailable (no key, outage, nonsense). */
-export async function getYalemojiAvatar(netid: string): Promise<YalemojiAvatar | null | undefined> {
+export function getYalemojiAvatar(netid: string): Promise<Answer> {
   const key = process.env.YALEMOJI_API_KEY;
   const id = netid.toLowerCase(); // the API doesn't lowercase: "ZZ1" is a 404
-  if (!key || !NETID_PATTERN.test(id)) return undefined;
+  if (!key || !NETID_PATTERN.test(id)) return Promise.resolve(undefined);
+  const now = Date.now();
+  const reused = recent.get(id);
+  if (reused && now - reused.at < REUSE_MS) return reused.answer;
+  for (const [stale, { at }] of recent) if (now - at >= REUSE_MS) recent.delete(stale);
+  const answer = lookUp(id, key);
+  recent.set(id, { at: now, answer });
+  return answer;
+}
+
+async function lookUp(id: string, key: string): Promise<Answer> {
   try {
     const res = await fetch(new URL(`/api/v1/users/${encodeURIComponent(id)}`, apiOrigin()), {
       headers: { Authorization: `Bearer ${key}` },

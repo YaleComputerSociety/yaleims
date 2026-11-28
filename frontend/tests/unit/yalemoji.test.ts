@@ -1,20 +1,26 @@
 // The Yalemoji lookup (server/yalemoji.ts), with Yalemoji stubbed: Yalies'
-// cases (apps/api/tests/yalemojiAvatar.test.mjs), plus the URL normalizing.
+// cases (apps/api/tests/yalemojiAvatar.test.mjs), plus the URL normalizing
+// and the reuse of recent answers.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-const { getYalemojiAvatar } = await import("@/server/yalemoji");
+let getYalemojiAvatar: typeof import("@/server/yalemoji").getYalemojiAvatar;
 
 const asset = (file: string) => `https://storage.googleapis.com/yalemoji-avatars/avatars/opaque/3/${file}`;
 const sent = { version: 3, png_url: asset("avatar.png"), svg_url: asset("avatar.svg"), background_url: asset("background.svg") };
 const avatar = { version: 3, pngUrl: asset("avatar.png"), backgroundUrl: asset("background.svg") };
 
-beforeEach(() => {
+beforeEach(async () => {
+  // A fresh module per test (no recent answers), on a clock the test moves.
+  vi.resetModules();
+  ({ getYalemojiAvatar } = await import("@/server/yalemoji"));
+  vi.useFakeTimers({ toFake: ["Date"] });
   vi.stubEnv("YALEMOJI_API_KEY", "test-key");
   vi.stubEnv("YALEMOJI_API_URL", undefined);
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -24,6 +30,11 @@ const answer = (body: unknown, status = 200) => {
   const fetch = vi.fn(async (_url: URL, _init?: RequestInit) => Response.json(body, { status }));
   vi.stubGlobal("fetch", fetch);
   return fetch;
+};
+/** A lookup once any recent answer has expired. */
+const askAgain = (netid = "abc123") => {
+  vi.advanceTimersByTime(5_000);
+  return getYalemojiAvatar(netid);
 };
 
 describe("getYalemojiAvatar", () => {
@@ -49,19 +60,19 @@ describe("getYalemojiAvatar", () => {
     const fetch = answer({ error: "not_found" }, 404);
     expect(await getYalemojiAvatar("abc123")).toBeNull();
     fetch.mockImplementation(async () => Response.json({ avatar: sent }));
-    expect(await getYalemojiAvatar("abc123")).toEqual(avatar);
+    expect(await askAgain()).toEqual(avatar);
   });
 
   it("is unavailable on a refused key, a rate limit, an outage or a timeout", async () => {
     const fetch = answer({});
     for (const status of [401, 429, 503]) {
       fetch.mockImplementation(async () => Response.json({ error: "unavailable" }, { status }));
-      expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+      expect(await askAgain()).toBeUndefined();
     }
     fetch.mockImplementation(async () => {
       throw new DOMException("Timed out", "TimeoutError");
     });
-    expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+    expect(await askAgain()).toBeUndefined();
   });
 
   it("refuses malformed avatars and unsafe asset URLs", async () => {
@@ -71,10 +82,10 @@ describe("getYalemojiAvatar", () => {
       { ...sent, background_url: "http://cdn/background.svg" }, { ...sent, png_url: "https://user:pw@cdn/avatar.png" },
     ]) {
       fetch.mockImplementation(async () => Response.json({ avatar: invalid }));
-      expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+      expect(await askAgain()).toBeUndefined();
     }
     fetch.mockImplementation(async () => new Response("<html>", { status: 200 }));
-    expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+    expect(await askAgain()).toBeUndefined();
   });
 
   it("sends the asset URLs normalized, quotes percent-encoded", async () => {
@@ -89,10 +100,27 @@ describe("getYalemojiAvatar", () => {
     expect(await getYalemojiAvatar("abc123")).toEqual(avatar);
     expect(String(fetch.mock.calls[0][0])).toBe("http://localhost:3002/api/v1/users/abc123");
     vi.stubEnv("YALEMOJI_API_URL", "http://yalemoji.com");
-    expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+    expect(await askAgain()).toBeUndefined();
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("YALEMOJI_API_URL", "http://localhost:3002");
-    expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+    expect(await askAgain()).toBeUndefined();
     expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it("reuses a NetID's answer for 5 s, shared by simultaneous requests, outages included", async () => {
+    const fetch = answer({ avatar: sent });
+    expect(await Promise.all([getYalemojiAvatar("abc123"), getYalemojiAvatar("ABC123")])).toEqual([avatar, avatar]);
+    fetch.mockImplementation(async () => Response.json({ error: "unavailable" }, { status: 503 }));
+    vi.advanceTimersByTime(4_999);
+    expect(await getYalemojiAvatar("abc123")).toEqual(avatar);
+    expect(fetch).toHaveBeenCalledOnce();
+    vi.advanceTimersByTime(1);
+    expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+    vi.advanceTimersByTime(2_500);
+    expect(await getYalemojiAvatar("abc123")).toBeUndefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    // Another person's lookup is their own.
+    await getYalemojiAvatar("xyz789");
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 });
