@@ -153,6 +153,24 @@ describe("score reports", () => {
       scoreAtReport: { home: game.data().result.homeScore, away: game.data().result.awayScore },
     });
   });
+  it("allow one open report per person per game, even sent at once, and another once it's resolved", async () => {
+    const game = (await db.collection(`seasons/${current}/matches`).where("status", "==", "final").orderBy("startsAt", "desc").limit(2).get()).docs[1];
+    const path = `/api/seasons/${current}/matches/${game.id}/reports`;
+    const reporter = sessionFor(people.student(5, 6));
+    const mine = async () => (await db.collection(`seasons/${current}/matches/${game.id}/scoreReports`).where("reportedBy", "==", people.student(5, 6)).get()).docs;
+
+    const burst = await Promise.all(Array.from({ length: 5 }, (_, i) => api("POST", path, { reason: `Spam ${i}` }, { session: reporter })));
+    expect(burst.map((r) => r.status).sort()).toEqual([201, 409, 409, 409, 409]);
+    expect(burst.find((r) => r.status === 409)!.body.error.code).toBe("conflict");
+    expect(await mine()).toHaveLength(1);
+    // Someone else can still report the same game.
+    expect((await api("POST", path, { reason: "Also wrong" }, { session: sessionFor(people.student(6, 6)) })).status).toBe(201);
+
+    const first = burst.find((r) => r.status === 201)!.body.id;
+    expect((await api("PATCH", `${path}/${first}`, { status: "resolved" }, { session: admin() })).status).toBe(204);
+    expect((await api("POST", path, { reason: "Still wrong" }, { session: reporter })).status).toBe(201);
+    expect(await mine()).toHaveLength(2);
+  });
   it("show reporters' ids to supervisors and admins only", async () => {
     const game = await played();
     const path = `/api/seasons/${current}/matches/${game.id}/reports`;

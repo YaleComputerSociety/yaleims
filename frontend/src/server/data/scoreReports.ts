@@ -34,16 +34,28 @@ export async function listSeasonScoreReports(seasonId: string): Promise<WithId<S
   return snap.docs.map((d) => withId<ScoreReportDoc>(d));
 }
 
-/** Files a report against an existing game, with its score read in the same transaction. */
+/**
+ * Files a report against an existing game, with its score read in the same
+ * transaction. One open report per person per game, so nobody can flood the
+ * admins' queue: a second is refused (409) until an admin resolves the first.
+ */
 export async function addScoreReport(
   seasonId: string,
   matchId: string,
   report: Pick<ScoreReportDoc, "reason" | "reportedBy" | "reporterName">
 ): Promise<string> {
-  const ref = scoreReportsRef(seasonId, matchId).doc();
+  const reports = scoreReportsRef(seasonId, matchId);
+  const ref = reports.doc();
   await runTransaction(async (tx) => {
-    const match = (await tx.get(matchRef(seasonId, matchId))).data();
+    // Read in the transaction, so simultaneous reports by one person can't both get in.
+    const [match, open] = await Promise.all([
+      tx.get(matchRef(seasonId, matchId)).then((s) => s.data()),
+      tx.get(reports.where("reportedBy", "==", report.reportedBy).where("status", "==", "open").limit(1)),
+    ]);
     if (!match) throw new ApiError("not-found", "No such game this season.");
+    if (!open.empty) {
+      throw new ApiError("conflict", "You've already reported this game's score. An admin will review it; you can report again once it's resolved.");
+    }
     tx.create(ref, {
       seasonId,
       matchId,
