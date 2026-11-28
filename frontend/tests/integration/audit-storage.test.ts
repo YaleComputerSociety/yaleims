@@ -216,8 +216,9 @@ describe("bounded audit storage", () => {
   it("leaves no orphan reports when reporting and deletion run concurrently", async () => {
     const id = await createGame();
     await addReports(id, 80);
+    // Other reporters than addReports' one, who already has open reports here (one open report per person per game).
     const reports = Array.from({ length: 3 }, (_, i) => api("POST", `/api/seasons/${current}/matches/${id}/reports`,
-      { reason: `Concurrent report ${i}` }, { session: sessionFor(people.student(0, 7)) }));
+      { reason: `Concurrent report ${i}` }, { session: sessionFor(people.student(i + 1, 7)) }));
     const [removed, ...results] = await Promise.all([
       api("DELETE", `/api/seasons/${current}/matches/${id}`, undefined, admin()), ...reports,
     ]);
